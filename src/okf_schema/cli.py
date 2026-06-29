@@ -417,14 +417,16 @@ def stats(ctx: click.Context, bundle_path: str) -> None:
     # Types (skip if empty or only one type)
     if len(s.types_distribution) > 1:
         sorted_types = sorted(s.types_distribution.items(), key=lambda x: (-x[1], x[0]))
-        type_parts = [f"{name} {count}" for name, count in sorted_types]
-        click.echo("  Types: " + "  ·  ".join(type_parts))
+        click.echo("  Types:")
+        for name, count in sorted_types:
+            click.echo(f"    {name} {count}")
 
     # Tags (ranked by frequency, skip if empty)
     if s.tags_distribution:
         sorted_tags = sorted(s.tags_distribution.items(), key=lambda x: (-x[1], x[0]))
-        tag_parts = [f"{tag} {count}" for tag, count in sorted_tags]
-        click.echo("  Tags:  " + "  ·  ".join(tag_parts))
+        click.echo("  Tags:")
+        for tag, count in sorted_tags:
+            click.echo(f"    {tag} {count}")
 
     # Health score
     score, issues = _health_score(s)
