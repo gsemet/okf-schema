@@ -245,12 +245,12 @@ for finding in report.findings:
 
 ## Documentation
 
-Full documentation is available at [https://okf-schema.readthedocs.io](https://okf-schema.readthedocs.io).
+Documentation is available at [okf-schema/README.md](https://github.com/gsemet/okf-schema/blob/main/README.md).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+See [CONTRIBUTING.md](https://github.com/gsemet/okf-schema/blob/main/CONTRIBUTING.md) for development setup and guidelines.
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](https://github.com/gsemet/okf-schema/blob/main/LICENSE) for details.
