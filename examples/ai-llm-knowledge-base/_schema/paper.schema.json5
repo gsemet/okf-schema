@@ -1,0 +1,88 @@
+// Schema for research papers, preprints, and technical reports.
+// The `type` field must be exactly `paper` so the validator loads this schema.
+// JSON5 allows comments like this one, trailing commas, and unquoted keys.
+{
+  $schema: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  description: "Schema for research papers, preprints, and technical reports. The `type` field must be exactly `paper` so the validator loads this schema.",
+  properties: {
+    type: {
+      type: "string",
+      const: "paper",
+      description: "Concept type — must match the schema file name in _schema/",
+      examples: ["paper"],
+    },
+    title: {
+      type: "string",
+      description: "Full title of the paper as published",
+      examples: [
+        "Attention Is All You Need",
+        "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+      ],
+    },
+    description: {
+      type: "string",
+      description: "Abstract or concise summary of the paper's contribution",
+      examples: [
+        "Introduces the Transformer architecture, replacing recurrent and convolutional layers with self-attention.",
+      ],
+    },
+    authors: {
+      type: "array",
+      items: { type: "string" },
+      description: "List of author names in the order they appear on the paper",
+      examples: [
+        ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar"],
+        ["Jason Wei", "Xuezhi Wang", "Dale Schuurmans"],
+      ],
+    },
+    year: {
+      type: "integer",
+      minimum: 1950,
+      maximum: 2030,
+      description: "Year of publication or preprint release",
+      examples: [2017, 2022],
+    },
+    venue: {
+      type: "string",
+      enum: ["NeurIPS", "ICML", "ICLR", "ACL", "EMNLP", "arXiv", "Other"],
+      description: "Conference, journal, or preprint server where the paper appeared",
+      examples: ["NeurIPS", "arXiv", "ICML"],
+    },
+    url: {
+      type: "string",
+      format: "uri",
+      description: "Direct link to the PDF, project page, or arXiv abstract",
+      examples: [
+        "https://arxiv.org/abs/1706.03762",
+        "https://arxiv.org/abs/2201.11903",
+      ],
+    },
+    tags: {
+      type: "array",
+      items: {
+        type: "string",
+        pattern: "^[a-z0-9-]+$",
+      },
+      description: "Lower-case kebab-case tags for topic classification and search",
+      examples: [
+        ["transformer", "attention", "architecture"],
+        ["chain-of-thought", "reasoning", "prompting"],
+      ],
+    },
+    bibtex_key: {
+      type: "string",
+      pattern: "^[A-Za-z0-9_-]+$",
+      description: "Unique citation key for reference management tools (BibTeX, Zotero, etc.)",
+      examples: ["vaswani-2017-attention", "wei-2022-cot"],
+    },
+    timestamp: {
+      type: "string",
+      format: "date",
+      description: "Date the paper was added or last updated (ISO 8601)",
+      examples: ["2026-06-29"],
+    },
+  },
+  required: ["type", "title", "authors", "year", "venue"],
+  additionalProperties: false,
+}

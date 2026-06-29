@@ -1,0 +1,17 @@
+{
+  "gate_runs": [
+    {
+      "gate": "task_inspector",
+      "started_at": "2026-06-25T08:34:25Z",
+      "ended_at": "2026-06-25T08:36:20.191000Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-06-25T10:00:00Z",
+      "ended_at": "2026-06-25T09:56:06.927946Z",
+      "token_count": null
+    }
+  ],
+  "cost_entries": []
+}

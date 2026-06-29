@@ -1,0 +1,95 @@
+---
+$schema: "http://json-schema.org/draft-07/schema#"
+type: object
+description: >
+  Schema for AI/LLM concepts such as techniques, patterns, or architectural ideas.
+  The `type` field must be exactly `concept` so the validator loads this schema.
+properties:
+  type:
+    type: string
+    const: concept
+    description: "Concept type — must match the schema file name in _schema/"
+    examples:
+      - concept
+  title:
+    type: string
+    description: "Short, human-readable title of the concept"
+    examples:
+      - "Retrieval-Augmented Generation"
+      - "Chain-of-Thought Prompting"
+  description:
+    type: string
+    description: "One-paragraph summary explaining what the concept is and why it matters"
+    examples:
+      - "A technique that enhances LLM outputs by retrieving relevant documents from an external knowledge store."
+  category:
+    type: string
+    enum:
+      - LLM
+      - AI Agent
+      - Coding Agent
+      - Prompt Engineering
+      - Tooling
+      - Evaluation
+    description: "High-level domain classification used for filtering and navigation"
+    examples:
+      - LLM
+      - AI Agent
+      - Prompt Engineering
+  maturity:
+    type: string
+    enum:
+      - experimental
+      - beta
+      - production
+      - deprecated
+    description: "Lifecycle stage indicating how stable or widely adopted the concept is"
+    examples:
+      - experimental
+      - production
+  author_email:
+    type: string
+    format: email
+    description: "Contact email of the primary author or maintainer of this concept"
+    examples:
+      - alice@example.com
+  complexity:
+    type: string
+    enum:
+      - beginner
+      - intermediate
+      - advanced
+    description: "Expected audience level — helps readers decide if the concept is suitable for them"
+    examples:
+      - beginner
+      - intermediate
+  tags:
+    type: array
+    items:
+      type: string
+      pattern: "^[a-z0-9-]+$"
+    description: "Lower-case kebab-case tags for search, filtering, and cross-linking"
+    examples:
+      - [rag, retrieval, llm]
+      - [prompting, reasoning]
+  related_tools:
+    type: array
+    items:
+      type: string
+      pattern: "^[A-Za-z0-9_-]+$"
+    description: "Names of tools, frameworks, or libraries commonly associated with this concept"
+    examples:
+      - [LangChain, OpenAI-API]
+      - [LlamaIndex]
+  timestamp:
+    type: string
+    format: date
+    description: "Date the concept was created or last updated (ISO 8601)"
+    examples:
+      - "2026-06-29"
+required:
+  - type
+  - title
+  - category
+  - maturity
+additionalProperties: false
