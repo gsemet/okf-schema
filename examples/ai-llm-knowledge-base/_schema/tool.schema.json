@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "description": "Schema for developer tools, frameworks, and libraries. The `type` field must be exactly `tool` so the validator loads this schema.",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "tool",
+      "description": "Concept type — must match the schema file name in _schema/",
+      "examples": ["tool"]
+    },
+    "title": {
+      "type": "string",
+      "description": "Official name of the tool or framework",
+      "examples": ["LangChain", "Ollama", "Pytest"]
+    },
+    "description": {
+      "type": "string",
+      "description": "What the tool does, its main purpose, and the problems it solves",
+      "examples": ["A Python framework for building applications with LLMs through composable chains and agents."]
+    },
+    "vendor": {
+      "type": "string",
+      "description": "Company, organization, or community that maintains the tool",
+      "examples": ["LangChain Inc.", "Pytest Development Team"]
+    },
+    "license": {
+      "type": "string",
+      "enum": ["MIT", "Apache-2.0", "GPL-3.0", "Proprietary", "Other"],
+      "description": "Software license governing use and distribution",
+      "examples": ["MIT", "Apache-2.0"]
+    },
+    "language": {
+      "type": "string",
+      "enum": ["Python", "JavaScript", "TypeScript", "Rust", "Go", "Java", "Multi-language"],
+      "description": "Primary implementation language or 'Multi-language' if broadly polyglot",
+      "examples": ["Python", "Multi-language", "Go"]
+    },
+    "maturity": {
+      "type": "string",
+      "enum": ["experimental", "beta", "production", "deprecated"],
+      "description": "Lifecycle stage of the tool",
+      "examples": ["production", "beta"]
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Official project homepage or repository URL",
+      "examples": ["https://www.langchain.com", "https://ollama.com"]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "description": "Lower-case kebab-case tags for categorization and search",
+      "examples": [["framework", "agents", "chains", "rag"], ["testing", "python", "automation"]]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the tool entry was created or last updated (ISO 8601)",
+      "examples": ["2026-06-29"]
+    }
+  },
+  "required": ["type", "title", "vendor", "license", "maturity"],
+  "additionalProperties": false
+}

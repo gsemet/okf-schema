@@ -1,0 +1,89 @@
+uv := "uv"
+uv_run := uv + " run --no-sync --"
+PACKAGE_NAME := "okf_schema"
+
+# Show this help message
+help:
+    @just --list
+
+# Install all dependencies (including dev)
+dev:
+    {{ uv }} sync --all-groups
+
+update:
+    rm -rf uv.lock
+    {{ uv }} sync
+
+# Run the full preflight check: style-check, lint, typecheck, test
+preflight:
+    just style-check
+    just lint
+    just typecheck
+    just test
+    just refresh-examples
+
+# Run tests with coverage
+[group("test")]
+test:
+    {{ uv_run }} pytest
+
+# Run tests in parallel with xdist
+[group("test")]
+test-fast:
+    {{ uv_run }} pytest -n auto
+
+# Format code with ruff
+[group("format")]
+style:
+    {{ uv_run }} ruff format src tests
+    {{ uv_run }} ruff check --fix src tests
+
+# Check formatting without modifying files
+[group("format")]
+style-check:
+    {{ uv_run }} ruff format --check src tests
+    {{ uv_run }} ruff check src tests
+
+# Run linters (ruff)
+[group("lint")]
+lint:
+    {{ uv_run }} ruff check src tests
+
+# Run type checkers (ty + mypy)
+[group("typecheck")]
+typecheck:
+    {{ uv_run }} ty check src
+    {{ uv_run }} mypy src
+
+# Build Sphinx documentation
+[group("docs")]
+docs:
+    {{ uv_run }} sphinx-build -b html docs/source docs/_build/html
+
+# Serve documentation locally
+[group("docs")]
+docs-serve: docs
+    {{ uv_run }} python -m http.server 8000 --directory docs/_build/html
+
+# Clean build artifacts
+[group("clean")]
+clean:
+    find . -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+    find . -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true
+    find . -name '.pytest_cache' -exec rm -rf {} + 2>/dev/null || true
+    find . -name '.mypy_cache' -exec rm -rf {} + 2>/dev/null || true
+    find . -name '.ruff_cache' -exec rm -rf {} + 2>/dev/null || true
+    rm -rf build dist docs/_build htmlcov .coverage coverage.xml 2>/dev/null || true
+
+# Build package distributions
+[group("build")]
+build:
+    {{ uv }} build
+
+[group("build")]
+refresh-examples:
+    {{ uv_run }} okf-schema index --path examples/ai-llm-knowledge-base
+    {{ uv_run }} okf-schema lint --path examples/ai-llm-knowledge-base
+    {{ uv_run }} okf-schema validate --path examples/ai-llm-knowledge-base --strict
+    {{ uv_run }} okf-schema stats --path examples/ai-llm-knowledge-base
+    {{ uv_run }} okf-schema list --path examples/ai-llm-knowledge-base

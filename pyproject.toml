@@ -1,0 +1,120 @@
+[project]
+name = "okf-schema"
+dynamic = ["version"]
+description = "CLI tool and Python library for working with OKF (Open Knowledge Format) bundles"
+authors = [{ name = "Gaetan Semet", email = "gaetan@xeberon.net" }]
+requires-python = ">=3.10"
+readme = "README.md"
+license = "MIT"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup",
+]
+dependencies = [
+    "ruamel.yaml>=0.18.0",
+    "jsonschema>=4.23.0",
+    "click>=8.0",
+    "pyjson5>=1.6.0",
+]
+
+[project.scripts]
+okf-schema = "okf_schema.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/gsemet/okf-schema"
+Documentation = "https://okf-schema.readthedocs.io"
+Repository = "https://github.com/gsemet/okf-schema"
+Issues = "https://github.com/gsemet/okf-schema/issues"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "pytest-xdist",
+    "ruff",
+    "ty",
+    "mypy",
+    "sphinx",
+    "sphinx-autodoc-typehints",
+    "sphinx-click",
+    "furo",
+    "myst-parser",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/okf_schema"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/okf_schema"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/okf_schema" = "okf_schema"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "W",   # pycodestyle warnings
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=okf_schema",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--cov-report=html",
+    "-v",
+]
+
+[tool.coverage.run]
+source = ["src/okf_schema"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 96
+show_missing = true
+skip_covered = false
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true

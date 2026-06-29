@@ -1,0 +1,109 @@
+# AGENTS.md
+
+**okf-schema**: A CLI tool and Python library for working with OKF (Open Knowledge Format) bundles — validating frontmatter metadata against JSONSchema, formatting while preserving comments, and managing bundle structure.
+
+Primary tech stack: Python 3.10+, Click, ruamel.yaml, jsonschema, UV
+
+---
+
+## Priority Hierarchy
+
+When instructions conflict, this order applies (highest wins):
+
+1. **CONSTITUTION.md** — rules for contributing and evolving the project; always wins
+2. **Guidelines** (`.agents/guidelines/`) — domain-specific coding rules, scoped by `applyTo`
+3. **AGENTS.md** (this file) — general project information and pointers
+4. **Skills / Prompts** — task-specific workflows; yield to guidelines
+
+---
+
+## Technology Stack
+
+- **Language**: Python 3.10+
+- **CLI Framework**: Click
+- **YAML Processing**: ruamel.yaml
+- **Validation**: jsonschema
+- **Package Manager**: uv
+- **Build Tool**: setuptools (via pyproject.toml)
+- **Task Runner**: just
+
+---
+
+## Preflight Validation
+
+Before submitting changes, run:
+
+```bash
+just preflight
+```
+
+This covers: style-check → lint → typecheck → test.
+All checks must pass before committing.
+
+---
+
+## Quick Navigation
+
+- **[README](./README.md)** — Project overview, quickstart, and Python API
+- **[CONTRIBUTING](./CONTRIBUTING.md)** — Developer setup and conventions
+- **[pyproject.toml](./pyproject.toml)** — Dependencies, scripts, and metadata
+- **[justfile](./justfile)** — All available development commands
+
+---
+
+## Setup & Development
+
+### Install & Run
+
+- **Install dependencies**: `just dev` or `uv sync --all-groups`
+- **Run CLI**: `uv run -- okf-schema --help`
+- **Build package**: `uv build`
+
+### Development Environment
+
+- **Required Python**: 3.10+ (see `pyproject.toml`)
+- **Virtual env**: `.venv/` managed by uv
+- **Environment**: No special env vars required
+
+---
+
+## Testing & Quality
+
+### Running Tests
+
+- **Run all tests**: `just test` or `uv run -- pytest`
+- **Run tests fast (parallel)**: `just test-fast`
+- **Generate coverage**: `pytest --cov=okf_schema`
+
+### Code Standards
+
+- **Formatting**: ruff (`just style` to fix, `just style-check` to verify)
+- **Linting**: ruff (`just lint`)
+- **Type checking**: ty + mypy (`just typecheck`)
+
+---
+
+## Project Structure
+
+```
+okf-schema/
+├── src/okf_schema/      # Main package code
+│   ├── cli.py           # Click CLI entry point
+│   ├── api.py           # Public Python API
+│   ├── _internal/       # Internal implementation
+│   └── schemas/         # Built-in JSONSchema definitions
+├── tests/               # pytest test suite
+├── docs/                # Sphinx documentation source
+├── justfile             # Task automation
+├── pyproject.toml       # Project configuration
+└── uv.lock              # Pinned dependency lockfile
+```
+
+---
+
+## Before You Commit
+
+1. Run `just preflight` — all checks must pass
+2. Ensure tests cover your changes
+3. Follow conventional commit messages
+4. Update `README.md` or `docs/` if public APIs change
