@@ -1,8 +1,11 @@
 # okf-schema
 
 [![CI](https://github.com/gsemet/okf-schema/actions/workflows/ci.yml/badge.svg)](https://github.com/gsemet/okf-schema/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)](./)
 [![PyPI](https://img.shields.io/pypi/v/okf-schema)](https://pypi.org/project/okf-schema/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/okf-schema)](https://pypi.org/project/okf-schema/)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![Type checked](https://img.shields.io/badge/type%20checked-mypy%2Fty-blue.svg)](./)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **okf-schema** is a CLI tool and Python library for working with **OKF (Open Knowledge Format)** bundles
