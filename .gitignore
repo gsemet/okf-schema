@@ -218,3 +218,8 @@ __marimo__/
 .streamlit/secrets.toml
 
 .agents/changes/
+
+# Skill evaluation outputs (generated, not committed)
+skills-evals/iteration-*/
+skills-evals/results/
+skills-evals/eval-report.html

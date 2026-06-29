@@ -1,0 +1,81 @@
+{
+  "skill_name": "okf-schema",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "validate-conformant-bundle",
+      "prompt": "THIS IS AN AUTOMATED EVAL — SKIP ANY INTERVIEW AND PROCEED DIRECTLY TO VALIDATION.\n\nValidate the OKF bundle at skills-evals/fixtures/conformant-bundle/ using okf-schema. Run:\n  uv run -- okf-schema validate --path skills-evals/fixtures/conformant-bundle/\nReport the results. Confirm the bundle passes all conformance rules with no errors.",
+      "expected_output": "Validator reports the bundle is fully conformant with OKF v0.1 — no errors, no warnings.",
+      "files": ["skills-evals/fixtures/conformant-bundle/"],
+      "assertions": [
+        "The agent executed okf-schema validate on the conformant bundle",
+        "The validator output contains 'Bundle is conformant' or 'conformant'",
+        "The validator reports zero errors (no E1, E2, or E3 findings)",
+        "The validator reports zero warnings (no W1–W7 findings)"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "validate-non-conformant-bundle",
+      "prompt": "THIS IS AN AUTOMATED EVAL — SKIP ANY INTERVIEW AND PROCEED DIRECTLY TO VALIDATION.\n\nValidate the OKF bundle at skills-evals/fixtures/non-conformant/ using okf-schema. Run:\n  uv run -- okf-schema validate --path skills-evals/fixtures/non-conformant/\nReport the results. Identify every conformance error (E1–E3) and warning (W1–W7) found.",
+      "expected_output": "Validator reports specific errors: E1 (missing frontmatter), E2 (missing type), E3 (unexpected frontmatter in subdir index.md). Warnings: W1 (missing title/description), W2 (broken link), W3 (missing timestamp), W5 (bad log date format).",
+      "files": ["skills-evals/fixtures/non-conformant/"],
+      "assertions": [
+        "The agent executed okf-schema validate on the non-conformant bundle",
+        "The validator output reports at least one E1 error (missing frontmatter)",
+        "The validator output reports at least one E2 error (missing type field)",
+        "The validator output reports at least one E3 error (unexpected frontmatter in reserved file)",
+        "The validator output reports at least one W2 warning (broken cross-link)",
+        "The validator output reports at least one W5 warning (log.md date not ISO 8601)",
+        "The final verdict states the bundle is NOT conformant"
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "create-okf-bundle",
+      "prompt": "THIS IS AN AUTOMATED EVAL — SKIP ANY INTERVIEW AND PROCEED DIRECTLY TO CREATION.\n\nCreate a new OKF bundle for a SaaS analytics domain with the following concepts: a 'users' table, a 'subscriptions' table, and an 'mrr' (Monthly Recurring Revenue) metric. Save the bundle under skills-evals/fixtures/create-output/. Follow all OKF rules: YAML frontmatter with type field, cross-links between concepts, index.md files for progressive disclosure, and bundle-root index.md with okf_version. Then run okf-schema validate on the created bundle to confirm conformance.",
+      "expected_output": "A complete OKF bundle with 3 concepts (users table, subscriptions table, mrr metric), proper frontmatter, cross-links, index.md files, and a passing validator result.",
+      "files": [],
+      "assertions": [
+        "The agent created an OKF bundle directory at skills-evals/fixtures/create-output/",
+        "The bundle contains at least 3 concept .md files with YAML frontmatter",
+        "Every concept file has a non-empty 'type' field in its frontmatter",
+        "The bundle contains at least one index.md file for progressive disclosure",
+        "The bundle-root index.md declares okf_version: \"0.1\" in its frontmatter",
+        "Concept files contain cross-links to each other using markdown link syntax",
+        "The agent ran okf-schema validate on the created bundle",
+        "The validator reports the created bundle is conformant (no errors)"
+      ]
+    },
+    {
+      "id": 4,
+      "eval_name": "validate-with-schema-database",
+      "prompt": "THIS IS AN AUTOMATED EVAL — SKIP ANY INTERVIEW AND PROCEED DIRECTLY TO VALIDATION.\n\nTest the OKF validator's schema validation feature using okf-schema.\n\n1. Run okf-schema validate with --schema-db on the conformant schema-valid bundle:\n   uv run -- okf-schema validate --path skills-evals/fixtures/schema-valid-bundle/ --schema-db skills-evals/fixtures/schema-db/\n   Confirm it passes with no errors and no warnings.\n\n2. Run okf-schema validate with --schema-db on the non-conformant schema-invalid bundle:\n   uv run -- okf-schema validate --path skills-evals/fixtures/schema-invalid-bundle/ --schema-db skills-evals/fixtures/schema-db/\n   Confirm it reports E4 errors for schema violations (extra field in table, invalid enum value in metric) and a W6 warning for the unknown type 'dashboard'. Confirm the bundle is NOT conformant.",
+      "expected_output": "Schema-valid bundle passes with zero errors and zero warnings. Schema-invalid bundle reports E4 errors for schema violations (extra field, invalid enum) and W6 warning for missing schema. Both results correctly identify conformance status.",
+      "files": ["skills-evals/fixtures/schema-valid-bundle/", "skills-evals/fixtures/schema-invalid-bundle/", "skills-evals/fixtures/schema-db/"],
+      "assertions": [
+        "The agent executed okf-schema validate with --schema-db on schema-valid-bundle",
+        "The validator output for schema-valid-bundle reports zero errors (no E1–E4)",
+        "The validator output for schema-valid-bundle reports zero warnings (no W1–W7)",
+        "The agent executed okf-schema validate with --schema-db on schema-invalid-bundle",
+        "The validator output for schema-invalid-bundle reports at least one E4 error (schema validation failure)",
+        "The validator output for schema-invalid-bundle reports at least one W6 warning (no schema found for type)",
+        "The validator output for schema-invalid-bundle states the bundle is NOT conformant",
+        "The validator output for schema-valid-bundle states the bundle is conformant"
+      ]
+    },
+    {
+      "id": 5,
+      "eval_name": "validate-with-yaml-schema-database",
+      "prompt": "THIS IS AN AUTOMATED EVAL — SKIP ANY INTERVIEW AND PROCEED DIRECTLY TO VALIDATION.\n\nTest that the OKF validator supports YAML schema files in the schema database.\n\n1. Run okf-schema validate with --schema-db pointing to the YAML-only schema database:\n   uv run -- okf-schema validate --path skills-evals/fixtures/schema-valid-bundle/ --schema-db skills-evals/fixtures/schema-db-yaml/\n   Confirm it passes with no errors and no warnings.\n\n2. Confirm that the YAML schemas are functionally equivalent to the JSON versions by comparing the validation results.",
+      "expected_output": "Schema-valid bundle passes with zero errors and zero warnings using YAML schemas. Schema linter reports all YAML schemas as valid. Results match JSON schema validation.",
+      "files": ["skills-evals/fixtures/schema-valid-bundle/", "skills-evals/fixtures/schema-db-yaml/"],
+      "assertions": [
+        "The agent executed okf-schema validate with --schema-db on schema-db-yaml",
+        "The validator output for schema-valid-bundle reports zero errors (no E1–E4)",
+        "The validator output for schema-valid-bundle reports zero warnings (no W1–W7)",
+        "The validator output for schema-valid-bundle states the bundle is conformant"
+      ]
+    }
+  ]
+}

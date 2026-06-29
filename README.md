@@ -247,6 +247,32 @@ for finding in report.findings:
 
 Documentation is available at [okf-schema/README.md](https://github.com/gsemet/okf-schema/blob/main/README.md).
 
+## Evaluation
+
+`okf-schema` includes an automated skill evaluation campaign in `skills-evals/` that validates the tool against a suite of fixture bundles. These evals verify that the validator correctly identifies conformant bundles, catches structural errors (E1–E6), reports warnings (W1–W7), and handles JSONSchema validation with both JSON and YAML schema databases.
+
+| Eval | Description |
+|------|-------------|
+| `validate-conformant-bundle` | Validates a fully conformant OKF bundle (0 errors, 0 warnings) |
+| `validate-non-conformant-bundle` | Validates a bundle with known errors (E1–E3) and warnings (W1–W7) |
+| `create-okf-bundle` | Creates a new OKF bundle from scratch and validates it |
+| `validate-with-schema-database` | Tests JSONSchema validation with `--schema-db` |
+| `validate-with-yaml-schema-database` | Tests YAML schema file support in schema DB |
+
+Run the eval campaign:
+```bash
+# Trigger eval via Copilot-CLI
+just copilot-cli-eval-okf-schema
+
+# Score eval outputs and generate report
+just eval-okf-schema
+
+# Open eval review in browser
+just eval-view-okf-schema
+```
+
+The eval system supports A/B comparison (`with_skill` vs `without_skill`) across iteration directories. Results are rendered as an interactive HTML dashboard.
+
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/gsemet/okf-schema/blob/main/CONTRIBUTING.md) for development setup and guidelines.
