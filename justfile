@@ -87,3 +87,22 @@ refresh-examples:
     {{ uv_run }} okf-schema validate --path examples/ai-llm-knowledge-base --strict
     {{ uv_run }} okf-schema stats --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema list --path examples/ai-llm-knowledge-base
+
+# ── Skill Evals ──────────────────────────────────────────────────────────────
+
+# Trigger okf-schema skill eval via Copilot-CLI
+[group('eval')]
+copilot-cli-eval-okf-schema:
+    # Or in Copilot chat: "Please follow the instructions in skills-evals/eval.prompt.md"
+    copilot --prompt skills-evals/eval.prompt.md
+
+# Score okf-schema eval outputs and generate report
+[group('eval')]
+eval-okf-schema:
+    bash skills-evals/eval-runner.sh
+    bash skills-evals/eval-viewer.sh
+
+# Open okf-schema eval review in browser
+[group('eval')]
+eval-view-okf-schema:
+    bash skills-evals/eval-viewer.sh
