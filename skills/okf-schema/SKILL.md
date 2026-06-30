@@ -1,6 +1,9 @@
 ---
 name: okf-schema
-description: CLI and Python library for OKF bundle management
+description: 'Validate, lint, and manage OKF (Open Knowledge Format) bundles using the okf-schema CLI and Python API. Use when the user mentions OKF validation, validate a knowledge bundle, check OKF conformance, lint frontmatter, OKF schema validation, bundle integrity, broken links in OKF, or wants to initialize or manage an OKF bundle structure. Also use for okf-schema CLI commands, JSONSchema validation of OKF concepts, or formatting OKF frontmatter.'
+metadata:
+  keywords: [okf, open-knowledge-format, okf-schema, validator, lint, frontmatter, markdown, jsonschema, knowledge, knowledge-base, knowledge-bundle, bundle-validation]
+  url: https://github.com/gsemet/okf-schema
 ---
 
 # okf-schema
@@ -19,6 +22,22 @@ description: CLI and Python library for OKF bundle management
 - **Bundle management** via CLI and Python API: init, list, show, stats, index
 
 In other words: **all `okf-schema` bundles are OKF bundles, but not all OKF bundles need `okf-schema`.** You can author plain OKF without schemas, then opt into validation later by adding a `_schema/` directory.
+
+## OKF at a Glance
+
+If you are new to OKF, here are the essentials:
+
+- **Bundle** — A directory tree of `.md` files. The unit of distribution.
+- **Concept** — One markdown file = one unit of knowledge. Must have YAML frontmatter with a non-empty `type` field.
+- **Reserved files** — `index.md` (directory listing, no frontmatter except at bundle root) and `log.md` (change history, bundle root only).
+- **Links** — Standard markdown links between concepts. Broken links are permitted by the spec.
+
+The three conformance rules every OKF bundle must satisfy:
+1. Every non-reserved `.md` file has parseable YAML frontmatter.
+2. Every frontmatter has a non-empty `type` field.
+3. Reserved files follow their defined structure when present.
+
+For full spec details, see [OKF v0.1 Specification](./references/okf-v0.1.md).
 
 ## Installation
 
@@ -45,6 +64,28 @@ okf-schema lint --path my-bundle
 
 # Find backlinks to a concept (extension is optional)
 okf-schema backlinks --path my-bundle concepts/react-pattern
+```
+
+## Create a Bundle
+
+Step-by-step workflow to build a conformant bundle from scratch:
+
+```bash
+# 1. Initialize the bundle directory
+okf-schema init my-bundle
+
+# 2. Add concepts
+okf-schema new --path my-bundle --name metrics/mrr --type Metric --title "Monthly Recurring Revenue"
+okf-schema new --path my-bundle --name metrics/churn --type Metric --title "Monthly Churn Rate"
+
+# 3. Edit the generated files, then regenerate indexes
+okf-schema index --path my-bundle
+
+# 4. Lint frontmatter for compactness
+okf-schema lint --path my-bundle
+
+# 5. Validate strictly before shipping
+okf-schema validate --path my-bundle --strict
 ```
 
 ## CLI Reference
@@ -113,23 +154,61 @@ for c in concepts:
 | W6 | Missing schema | No schema found for the concept's `type` |
 | W7 | Block-style lists | Frontmatter lists should use inline notation (e.g. `tags: [a, b]`) to keep frontmatter compact |
 
-## Tips for Agents
+## Recommended Workflows
 
-- **Recommended workflow before shipping a bundle**: Run the three commands in this order — `index` → `lint` → `validate` — and fix all warnings before packaging:
-  ```bash
-  okf-schema index --path <bundle>    # regenerate all index.md files
-  okf-schema lint --path <bundle>     # convert block lists to inline for compact frontmatter
-  okf-schema validate --path <bundle> --strict # check structure, schema, and links; fail on warnings
-  ```
-  Only zip or distribute the bundle once `validate --strict` reports zero errors **and** zero warnings. Warnings such as missing `index.md` (W4), block-style lists (W7), or broken cross-links (W2) signal issues that will degrade the experience for downstream consumers.
-- **Always validate after creating or modifying bundles**: Run `okf-schema validate --path <bundle>` to catch structural issues early.
-- **Use `check` mode before linting**: `okf-schema lint --path <bundle> --check` shows what would change without modifying files.
-- **Preserve comments**: The formatter and linter both use `ruamel.yaml` round-trip mode, so YAML comments and quotes are preserved.
-- **Custom schemas**: Place `.schema.json`, `.schema.json5`, or `.schema.yaml` files in a schema directory and pass `--schema-db` to `validate`. JSON5 allows comments and trailing commas.
-- **Bundle structure**: A standard OKF bundle contains a `bundle/` directory with markdown concept files. Custom JSONSchema definitions go in a `_schema/` directory inside the bundle root; they are auto-discovered by `validate`.
-- **Reserved files**: `index.md` and `log.md` are reserved. `index.md` can exist at any directory level; `log.md` must be at bundle root only.
-- **Link resolution**: Internal links are resolved relative to the source file. Absolute paths (`/path`) are resolved relative to bundle root. External URLs (`https://`, `mailto:`) are ignored during validation.
-- **Backlinks**: Use `backlinks` to discover which concepts reference a given target. This is useful when editing a concept to understand the impact of changes on downstream consumers. Output is one line per backlink in the form `target ← source`.
+### Shipping a bundle
+Run these three commands in order and fix all warnings before packaging:
+```bash
+okf-schema index --path <bundle>    # regenerate all index.md files
+okf-schema lint --path <bundle>     # convert block lists to inline for compact frontmatter
+okf-schema validate --path <bundle> --strict # check structure, schema, and links; fail on warnings
+```
+Only zip or distribute the bundle once `validate --strict` reports zero errors **and** zero warnings.
+
+### Iterative authoring
+1. Create or edit concepts.
+2. Run `okf-schema validate --path <bundle>` to catch structural issues early.
+3. Use `okf-schema lint --path <bundle> --check` to preview changes before applying them.
+4. Use `okf-schema backlinks --path <bundle> <concept>` to see which concepts reference a target before editing it.
+5. Fix errors, then re-validate.
+
+### Schema development
+1. Place `.schema.json`, `.schema.json5`, or `.schema.yaml` files in a `_schema/` directory inside the bundle root.
+2. Run `okf-schema validate --path <bundle>` — schemas are auto-discovered.
+3. Iterate on schema definitions; JSON5 allows comments and trailing commas.
+
+## Guardrails
+
+1. **Never invent schema fields.** If a type lacks a schema, report a W6 warning — do not hallucinate constraints.
+2. **Preserve unknown frontmatter keys.** OKF allows extensions; the linter and validator must not strip them.
+3. **Preserve YAML comments.** The linter uses ruamel.yaml round-trip mode; comments and formatting must survive.
+4. **Broken links are permitted by spec.** Report them as W2 warnings, not errors, unless `--strict` is used.
+5. **Don't impose taxonomy.** Type values are free-form strings; okf-schema validates structure, not semantics.
+6. **Ask before assuming bundle scope.** If the user mentions a bundle but no path, ask for the directory location.
+
+## Output Format
+
+When reporting validation results or presenting a bundle, use this structure:
+
+1. **Directory tree** showing the bundle structure.
+2. **Validation report** with errors and warnings grouped by code.
+3. **Conformance verdict**: "Bundle is OKF conformant ✅" or "Bundle has N errors, M warnings ⚠️".
+
+Example:
+```
+my-bundle/
+├── index.md
+├── _schema/
+│   └── metric.schema.json
+└── metrics/
+    ├── mrr.md
+    └── churn.md
+
+Validation: 2 errors, 1 warning
+- E2: metrics/mrr.md — missing 'type' field
+- E7: root-concept.md — non-reserved file at bundle root
+- W4: metrics/ — directory missing index.md
+```
 
 ## References
 
