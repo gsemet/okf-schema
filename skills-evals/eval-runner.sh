@@ -32,8 +32,8 @@ done
 echo "All checks passed."
 echo ""
 
-# Check for iteration directories
-LATEST_ITERATION=$(find "$EVAL_DIR" -maxdepth 1 -type d -name 'iteration-*' | sort -V | tail -n 1)
+# Check for iteration directories under results/
+LATEST_ITERATION=$(find "$RESULTS_DIR" -maxdepth 1 -type d -name 'iteration-*' | sort -V | tail -n 1)
 
 if [ -n "$LATEST_ITERATION" ]; then
     ITERATION_NAME=$(basename "$LATEST_ITERATION")

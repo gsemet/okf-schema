@@ -102,6 +102,23 @@ eval-okf-schema:
     bash skills-evals/eval-runner.sh
     bash skills-evals/eval-viewer.sh
 
+# Grade all evals in the specified iteration using deterministic automated grader
+[group('eval')]
+eval-grade-okf-schema iteration="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{ iteration }}" ]; then
+        LATEST=$(find skills-evals/results -maxdepth 1 -type d -name 'iteration-*' | sort -V | tail -n 1)
+        if [ -z "$LATEST" ]; then
+            echo "❌ No iteration directories found in skills-evals/results/"
+            exit 1
+        fi
+        echo "Using latest iteration: $(basename "$LATEST")"
+        uv run -- python skills-evals/grade-eval.py --iteration "$LATEST"
+    else
+        uv run -- python skills-evals/grade-eval.py --iteration skills-evals/results/{{ iteration }}
+    fi
+
 # Open okf-schema eval review in browser
 [group('eval')]
 eval-view-okf-schema:

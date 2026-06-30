@@ -1,0 +1,70 @@
+{
+  "eval_id": 4,
+  "eval_name": "custom-schema-validation",
+  "overall": "PARTIAL",
+  "pass_rate": 0.875,
+  "passed": 7,
+  "failed": 1,
+  "total": 8,
+  "assertions": [
+    {
+      "assertion": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+      "check_type": "output_contains",
+      "target": "0 error",
+      "result": "PASS",
+      "justification": "Found: '0 error...'"
+    },
+    {
+      "assertion": "The strict validation output reports zero warnings",
+      "check_type": "output_contains",
+      "target": "0 warning",
+      "result": "PASS",
+      "justification": "Found: '0 warning...'"
+    },
+    {
+      "assertion": "The bundle contains a _schema/ directory with a schema file for the custom type (SKILL.md: auto-discovered schema location)",
+      "check_type": "file_glob_contains",
+      "target": "",
+      "result": "PASS",
+      "justification": "All 1 files contain '\"type\": \"object\"...'"
+    },
+    {
+      "assertion": "The schema file is named api-endpoint.schema.json (or .json5 / .yaml) matching the concept type (SKILL.md naming convention)",
+      "check_type": "file_exists",
+      "target": "skills-evals/fixtures/schema-output/_schema/api-endpoint.schema.json",
+      "result": "PASS",
+      "justification": "File exists: skills-evals/fixtures/schema-output/_schema/api-endpoint.schema.json"
+    },
+    {
+      "assertion": "The concept file declares type 'api-endpoint' in its frontmatter",
+      "check_type": "file_glob_contains",
+      "target": "",
+      "result": "PASS",
+      "justification": "All 3 files contain 'type: api-endpoint...'"
+    },
+    {
+      "assertion": "The concept frontmatter includes a 'method' field",
+      "check_type": "file_glob_contains",
+      "target": "",
+      "result": "PASS",
+      "justification": "All 3 files contain 'method:...'"
+    },
+    {
+      "assertion": "The concept frontmatter includes a 'path' field",
+      "check_type": "file_glob_contains",
+      "target": "",
+      "result": "PASS",
+      "justification": "All 3 files contain 'path:...'"
+    },
+    {
+      "assertion": "The agent did NOT use --schema-db flag, relying on auto-discovery (SKILL.md tip)",
+      "check_type": "output_matches",
+      "target": "^(?!.*--schema-db).*$",
+      "result": "FAIL",
+      "justification": "Pattern not matched: ^(?!.*--schema-db).*$..."
+    }
+  ],
+  "notes": "",
+  "condition": "with_skill",
+  "transcript_path": "skills-evals/results/iteration-30.06.26-13.52/custom-schema-validation/with_skill/transcript.md"
+}

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OKF Schema Skill Eval — A/B Comparison</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --pass: #3fb950;
+            --fail: #f85149;
+            --improved: #2ea043;
+            --regressed: #da3633;
+            --neutral: #8b949e;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 2rem; }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .subtitle { color: var(--text-secondary); }
+        .summary-bar {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .summary-pill {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 140px;
+        }
+        .summary-pill .value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+        .summary-pill .label { font-size: 0.85rem; color: var(--text-secondary); }
+        .eval-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .eval-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .eval-header h3 { font-size: 1.1rem; }
+        .scores { display: flex; gap: 1rem; }
+        .score-box {
+            text-align: center;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            background: var(--bg);
+            min-width: 100px;
+        }
+        .score-label { display: block; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; }
+        .score-value { display: block; font-size: 1.3rem; font-weight: bold; }
+        .score-detail { display: block; font-size: 0.75rem; color: var(--text-secondary); }
+        .delta.positive { color: var(--pass); }
+        .delta.negative { color: var(--fail); }
+        .comparison-table { width: 100%; border-collapse: collapse; }
+        .comparison-table th {
+            text-align: left;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        .comparison-table td {
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        .comparison-table tr:last-child td { border-bottom: none; }
+        .exp-text { max-width: 500px; }
+        .pass-cell.pass { color: var(--pass); font-weight: 600; }
+        .pass-cell.fail { color: var(--fail); font-weight: 600; }
+        .pass-cell.na { color: var(--text-secondary); }
+        tr.improved { background: rgba(46, 160, 67, 0.1); }
+        tr.regressed { background: rgba(218, 54, 51, 0.1); }
+        tr.same { }
+        tr.new { background: rgba(88, 166, 255, 0.05); }
+        .indicator { font-size: 0.8rem; font-weight: 600; }
+        tr.improved .indicator { color: var(--improved); }
+        tr.regressed .indicator { color: var(--regressed); }
+        .skeptical-review {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+        }
+        .skeptical-review h2 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        .skeptical-review h3 {
+            color: var(--text);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        .skeptical-review p {
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .skeptical-review ul {
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .skeptical-review li {
+            margin-bottom: 0.25rem;
+            color: var(--text-secondary);
+        }
+        .skeptical-review blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 1rem;
+            margin: 0.75rem 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 OKF Schema Skill Eval</h1>
+            <p class="subtitle">A/B Comparison: With Skill vs Without Skill — iteration-30.06.26-13.12</p>
+        </header>
+        <div class="summary-bar">
+            <div class="summary-pill">
+                <div class="value">3</div>
+                <div class="label">Evaluations</div>
+            </div>
+            <div class="summary-pill">
+                <div class="value">0%</div>
+                <div class="label">Avg Improvement</div>
+            </div>
+            <div class="summary-pill">
+                <div class="value">0/3</div>
+                <div class="label">Improved</div>
+            </div>
+        </div>
+        <div class="skeptical-review"><h2>🧐 Skeptical Assessment</h2><h1>Skeptical Review: OKF Schema Skill Evaluation — iteration-30.06.26-13.12</h1>
+
+<h2>Executive Summary</h2>
+
+<strong>Verdict: The skill demonstrates ZERO measurable advantage in this iteration.</strong>
+
+<p>Both conditions scored identically across all three evals (22/29 assertions, 75.9% pass rate). The delta is flat. This is either evidence that the skill provides no value, or that the evaluation methodology is flawed. Below is a ruthless critique.</p>
+
+<p>---</p>
+
+<h2>Methodology Flaws</h2>
+
+<h3>1. Assertions Check the Wrong Scope</h3>
+
+<p>Several assertions use `output_matches` regex against the <strong>entire transcript</strong>, not just the final validation output:</p>
+
+<ul>
+<li><strong>E1/E2/E3/W2/W5 checks in Eval 1</strong>: The regex `^(?!.<em>\[E1\]).</em>$` scans the full transcript. Since the transcript includes the <em>initial</em> validation run (which intentionally reports these errors before fixing them), the assertion fails even though the final output is clean. This is a <strong>grader bug</strong>, not an agent failure.</li>
+</ul>
+
+<ul>
+<li><strong>Cross-link check in Eval 2</strong>: The regex `\[.+?\]\(.+?\.md\)` looks for markdown link syntax in the <em>transcript text</em>, not in the actual concept files. The agent described cross-links in prose ("lithium-ion → thermal/cooling-systems.md") rather than embedding raw markdown links in the transcript. The files themselves contain proper cross-links.</li>
+</ul>
+
+<strong>Impact</strong>: 5 false negatives in Eval 1, 1 false negative in Eval 2. These are grading artifacts, not skill gaps.
+
+<h3>2. The Tasks Are Too Easy</h3>
+
+<p>All three evals involve basic OKF operations that any agent with CLI help and the spec can figure out:</p>
+<ul>
+<li>Adding missing frontmatter fields</li>
+<li>Fixing date formats</li>
+<li>Running `lint`, `index`, `validate --strict`</li>
+</ul>
+
+<p>The OKF spec is well-written and self-contained. The CLI commands are intuitive. There is no deep reasoning or edge-case handling required. <strong>A skill cannot demonstrate value when the baseline is already sufficient.</strong></p>
+
+<h3>3. No Negative-Space Testing</h3>
+
+<p>The evals don't test scenarios where the skill would genuinely help:</p>
+<ul>
+<li><strong>Custom schema authoring</strong>: Writing JSONSchema from scratch</li>
+<li><strong>Complex migration</strong>: Handling wikilinks, Obsidian vaults, or CSV imports</li>
+<li><strong>Error interpretation</strong>: Understanding nuanced validator output and choosing the right fix</li>
+<li><strong>Workflow sequencing</strong>: Knowing <em>why</em> index → lint → validate is the right order</li>
+</ul>
+
+<p>The skill's "Tips for Agents" section contains valuable workflow guidance (the three-command pipeline, check mode, comment preservation). None of this is tested.</p>
+
+<p>---</p>
+
+<h2>Results Interpretation</h2>
+
+<h3>Pass/Fail Rates Reflect Grader Limitations, Not Knowledge</h3>
+
+<p>The identical scores are driven by:</p>
+<ul>
+<li><strong>Shared failures</strong>: Both conditions hit the same grader bugs (E1/E2/E3 pattern checks, cross-link transcript check).</li>
+<li><strong>Shared successes</strong>: Both conditions correctly ran the CLI commands and achieved conformant bundles.</li>
+</ul>
+
+<p>The pass/fail rates do <strong>not</strong> reflect whether the with-skill agent had deeper understanding or made fewer mistakes. They reflect whether the transcript text matched regex patterns.</p>
+
+<h3>Where the Skill Provides No Advantage</h3>
+
+<ul>
+<li><strong>Basic CLI usage</strong>: `validate --strict`, `lint`, `index` are discoverable from `--help`.</li>
+<li><strong>Frontmatter syntax</strong>: The OKF spec §4.1 is explicit and short.</li>
+<li><strong>Simple fixes</strong>: Adding `type:`, `timestamp:`, fixing ISO dates — trivial once the error is reported.</li>
+</ul>
+
+<h3>Where the Skill Would Shine (But Is Untested)</h3>
+
+<ul>
+<li><strong>Schema-aware validation</strong>: Understanding that `_schema/` files must match the `type` field case-exactly (e.g., `Concept.schema.json` for `type: Concept`). The without-skill agent would likely stumble here.</li>
+<li><strong>Round-trip YAML preservation</strong>: Knowing that `ruamel.yaml` preserves comments and quotes.</li>
+<li><strong>The index → lint → validate workflow</strong>: The skill explicitly recommends this sequence. Without it, an agent might validate before linting, wasting cycles.</li>
+<li><strong>Custom schema development</strong>: Writing JSONSchema definitions is non-trivial and the skill provides examples.</li>
+</ul>
+
+<p>---</p>
+
+<h2>Bias Detection</h2>
+
+<h3>Assertion Bias</h3>
+
+<ul>
+<li><strong>Eval 1</strong>: The E1/E2/E3/W2/W5 `output_matches` assertions are biased toward a transcript that <em>only</em> contains the final validation output. Any agent that logs their process (as instructed) will fail these. This penalizes transparency.</li>
+<li><strong>Eval 2</strong>: The `okf_version` check expects frontmatter in the root `index.md`. But `okf-schema index` regenerates this file without frontmatter. The init-generated `index.md` (with `okf_version`) gets overwritten. This tests implementation detail, not correctness.</li>
+</ul>
+
+<h3>Grading Strictness</h3>
+
+<p>The grader is appropriately strict for `command_executed` and `file_exists` checks, but the `output_matches` regex checks are brittle and prone to false negatives.</p>
+
+<p>---</p>
+
+<h2>Actionable Recommendations</h2>
+
+<h3>Immediate Fixes</h3>
+
+<ul>
+<li><strong>Fix Eval 1 assertions</strong>: Change E1/E2/E3/W2/W5 checks from `output_matches` on the full transcript to `output_contains` on the <em>final</em> validation output only. Or add a "final validation output" section marker and scope checks to that region.</li>
+</ul>
+
+<ul>
+<li><strong>Fix Eval 2 cross-link check</strong>: Check the actual concept files for markdown links (`file_glob_contains` with regex), not the transcript.</li>
+</ul>
+
+<ul>
+<li><strong>Fix Eval 2 okf_version check</strong>: Either expect `okf_version` in a separate metadata file, or modify `okf-schema index` to preserve frontmatter, or remove this assertion.</li>
+</ul>
+
+<h3>New Evals to Add</h3>
+
+<ul>
+<li><strong>custom-schema-authoring</strong>: Ask the agent to write a JSONSchema for a new concept type and validate it. Tests skill-specific knowledge about schema discovery.</li>
+</ul>
+
+<ul>
+<li><strong>obsidian-migration</strong>: Provide an Obsidian vault with wikilinks, tags, and frontmatter. Test whether the agent knows the conversion workflow from the skill's references.</li>
+</ul>
+
+<ul>
+<li><strong>error-interpretation</strong>: Provide a bundle with subtle errors (e.g., nested lists inside tags, schema type mismatch). Test whether the agent correctly diagnoses and fixes without running validate first.</li>
+</ul>
+
+<ul>
+<li><strong>workflow-sequence</strong>: Give a broken bundle and explicitly ask the agent to follow "the recommended workflow." The with-skill agent should run index → lint → validate; the without-skill agent might run validate first.</li>
+</ul>
+
+<h3>Remove or Modify</h3>
+
+<ul>
+<li><strong>Eval 1 E1/E2/E3/W2/W5 pattern checks</strong>: Replace with scoped checks or remove. They measure transcript formatting, not correctness.</li>
+<li><strong>Eval 2 okf_version</strong>: Remove or redefine. It tests an implementation quirk, not OKF conformance.</li>
+</ul>
+
+<p>---</p>
+
+<h2>Conclusion</h2>
+
+<p>This iteration <strong>does not demonstrate skill value</strong>, but the reason is methodological, not substantive. The evals are too easy, the grader has false-negative bugs, and the skill's unique knowledge (workflow tips, schema conventions, round-trip preservation) is never exercised.</p>
+
+<strong>Recommendation</strong>: Fix the grader bugs, add harder evals that test skill-specific knowledge, and re-run. A well-designed eval should show the skill providing a 20-40% improvement on non-trivial tasks.</div>
+        
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>bootstrap-knowledge-base</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">80%</span>
+                        <span class="score-detail">8/10</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">80%</span>
+                        <span class="score-detail">8/10</span>
+                    </div>
+                    <div class="score-box delta neutral">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The bundle contains at least 8 concept .md files with YAML frontmatter</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The bundle has at least 3 subdirectories with index.md files</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The transcript shows at least 3 cross-links were created between concepts</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The bundle contains a _schema/ directory with at least 2 schema files</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The log.md file uses ISO 8601 date headings (YYYY-MM-DD)</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema lint on the bundle</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema index on the bundle</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The bundle-root index.md declares okf_version in its frontmatter</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>fix-non-conformant-bundle</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">50%</span>
+                        <span class="score-detail">5/10</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">50%</span>
+                        <span class="score-detail">5/10</span>
+                    </div>
+                    <div class="score-box delta neutral">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema lint on the bundle</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema index on the bundle</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The final validation output contains no E1 errors</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The final validation output contains no E2 errors</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The final validation output contains no E3 errors</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The final validation output contains no W2 warnings</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The final validation output contains no W5 warnings</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The final validation states the bundle is conformant</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>migrate-and-validate</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">9/9</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">9/9</span>
+                    </div>
+                    <div class="score-box delta neutral">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">All 5 legacy files were migrated into OKF concepts with frontmatter</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">Every migrated concept has title, description, tags, and timestamp in frontmatter</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The bundle contains an index.md for progressive disclosure</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The bundle contains a log.md at the root</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema lint on the migrated bundle</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The agent ran okf-schema index on the migrated bundle</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                <tr class="same">
+                    <td class="exp-text">The final validation states the bundle is conformant</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+</body>
+</html>

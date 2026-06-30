@@ -2,10 +2,11 @@
 """A/B Comparison viewer for okf-schema skill evals.
 
 Generates a standalone HTML report comparing "with_skill" vs "without_skill"
-results from iteration directories.
+results from iteration directories. Both conditions use the same assertion set
+graded deterministically by grade-eval.py.
 
 Usage:
-    python eval-viewer.py              # Auto-detect iteration-*/ dirs
+    python eval-viewer.py --iteration results/iteration-1 --output results/iteration-1/eval-result.html
     python eval-viewer.py --serve      # Serve on localhost
 """
 
@@ -18,42 +19,90 @@ import webbrowser
 
 
 def load_grading(path: Path) -> dict | None:
+    """Load grading.json in the unified format produced by grade-eval.py."""
     if not path.exists():
         return None
     try:
         data = json.loads(path.read_text())
-        # Normalize
-        if "summary" not in data:
-            def _is_passed(a: dict) -> bool:
-                if "passed" in a:
-                    return bool(a["passed"])
-                if "pass" in a:
-                    return bool(a["pass"])
-                if "result" in a:
-                    return a["result"].upper() == "PASS"
-                return False
-
-            passed = sum(1 for a in data.get("assertions", []) if _is_passed(a))
-            total = len(data.get("assertions", []))
-            data = {
-                "summary": {
-                    "pass_rate": passed / total if total else 0.0,
-                    "passed": passed,
-                    "failed": total - passed,
-                    "total": total,
-                },
-                "expectations": [
-                    {
-                        "text": a.get("assertion", a.get("id", a.get("text", ""))),
-                        "passed": _is_passed(a),
-                        "evidence": a.get("evidence", a.get("justification", "")),
-                    }
-                    for a in data.get("assertions", [])
-                ],
-            }
-        return data
+        # Unified format: always has assertions array with result field
+        passed = sum(1 for a in data.get("assertions", []) if a.get("result") == "PASS")
+        total = len(data.get("assertions", []))
+        return {
+            "summary": {
+                "pass_rate": passed / total if total else 0.0,
+                "passed": passed,
+                "failed": total - passed,
+                "total": total,
+            },
+            "expectations": [
+                {
+                    "text": a.get("assertion", a.get("id", "Unnamed")),
+                    "passed": a.get("result") == "PASS",
+                    "evidence": a.get("justification", ""),
+                }
+                for a in data.get("assertions", [])
+            ],
+        }
     except (json.JSONDecodeError, OSError):
         return None
+
+
+def load_skeptical_review(iteration_dir: Path) -> str | None:
+    """Load skeptical-review.md if present."""
+    path = iteration_dir / "skeptical-review.md"
+    if not path.exists():
+        return None
+    return path.read_text()
+
+
+def md_to_html(md: str) -> str:
+    """Basic markdown-to-HTML for the skeptical review."""
+    import re
+    html = md
+    # Escape HTML
+    html = html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # Headers
+    html = re.sub(r"^#### (.+)$", r"<h4>\1</h4>", html, flags=re.MULTILINE)
+    html = re.sub(r"^### (.+)$", r"<h3>\1</h3>", html, flags=re.MULTILINE)
+    html = re.sub(r"^## (.+)$", r"<h2>\1</h2>", html, flags=re.MULTILINE)
+    html = re.sub(r"^# (.+)$", r"<h1>\1</h1>", html, flags=re.MULTILINE)
+    # Bold
+    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
+    # Italic
+    html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
+    # Blockquotes
+    html = re.sub(r"^> (.+)$", r"<blockquote>\1</blockquote>", html, flags=re.MULTILINE)
+    # Unordered lists
+    html = re.sub(r"^\- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
+    # Ordered lists
+    html = re.sub(r"^(\d+)\. (.+)$", r"<li>\2</li>", html, flags=re.MULTILINE)
+    # Wrap consecutive <li> in <ul>
+    lines = html.splitlines()
+    out = []
+    in_list = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("<li>") and not in_list:
+            out.append("<ul>")
+            in_list = True
+        elif not stripped.startswith("<li>") and in_list:
+            out.append("</ul>")
+            in_list = False
+        out.append(line)
+    if in_list:
+        out.append("</ul>")
+    html = "\n".join(out)
+    # Paragraphs (lines that aren't tags)
+    lines = html.splitlines()
+    out = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("<"):
+            out.append(f"<p>{stripped}</p>")
+        else:
+            out.append(line)
+    html = "\n".join(out)
+    return html
 
 
 def build_comparison(iteration_dir: Path) -> list[dict]:
@@ -72,7 +121,7 @@ def build_comparison(iteration_dir: Path) -> list[dict]:
     return comparisons
 
 
-def generate_html(comparisons: list[dict], iteration_name: str) -> str:
+def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review_html: str | None = None) -> str:
     rows = []
     for comp in comparisons:
         name = comp["name"]
@@ -84,15 +133,12 @@ def generate_html(comparisons: list[dict], iteration_name: str) -> str:
         delta = ws_rate - wos_rate
         delta_class = "positive" if delta > 0 else ("negative" if delta < 0 else "neutral")
 
-        # Build expectation comparison table
+        # Build expectation comparison table — same assertions for both conditions
         exp_rows = []
-        all_texts = set()
-        if ws:
-            all_texts.update(e["text"] for e in ws.get("expectations", []))
-        if wos:
-            all_texts.update(e["text"] for e in wos.get("expectations", []))
+        all_assertions = ws["expectations"] if ws else wos["expectations"]
 
-        for text in sorted(all_texts):
+        for assertion in all_assertions:
+            text = assertion["text"]
             ws_exp = next((e for e in ws.get("expectations", []) if e["text"] == text), None) if ws else None
             wos_exp = next((e for e in wos.get("expectations", []) if e["text"] == text), None) if wos else None
 
@@ -272,6 +318,43 @@ def generate_html(comparisons: list[dict], iteration_name: str) -> str:
         .indicator {{ font-size: 0.8rem; font-weight: 600; }}
         tr.improved .indicator {{ color: var(--improved); }}
         tr.regressed .indicator {{ color: var(--regressed); }}
+        .skeptical-review {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+        }}
+        .skeptical-review h2 {{
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }}
+        .skeptical-review h3 {{
+            color: var(--text);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }}
+        .skeptical-review p {{
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+        }}
+        .skeptical-review ul {{
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }}
+        .skeptical-review li {{
+            margin-bottom: 0.25rem;
+            color: var(--text-secondary);
+        }}
+        .skeptical-review blockquote {{
+            border-left: 3px solid var(--accent);
+            padding-left: 1rem;
+            margin: 0.75rem 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }}
     </style>
 </head>
 <body>
@@ -294,6 +377,7 @@ def generate_html(comparisons: list[dict], iteration_name: str) -> str:
                 <div class="label">Improved</div>
             </div>
         </div>
+        {f'<div class="skeptical-review"><h2>🧐 Skeptical Assessment</h2>{skeptical_review_html}</div>' if skeptical_review_html else ''}
         {''.join(rows)}
     </div>
 </body>
@@ -302,13 +386,27 @@ def generate_html(comparisons: list[dict], iteration_name: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="OKF Schema Skill Eval A/B Viewer")
-    parser.add_argument("--iteration", "-i", type=Path, default=Path("iteration-1"))
-    parser.add_argument("--output", "-o", type=Path, default=Path("eval-report.html"))
+    parser.add_argument("--iteration", "-i", type=Path, default=None)
+    parser.add_argument("--output", "-o", type=Path, default=None)
     parser.add_argument("--serve", "-s", action="store_true", help="Serve on localhost")
     parser.add_argument("--port", "-p", type=int, default=8117)
     args = parser.parse_args()
 
     iteration_dir = args.iteration
+    if iteration_dir is None:
+        # Auto-discover latest date-stamped iteration directory
+        results_dir = Path("results")
+        if results_dir.exists():
+            iterations = sorted(
+                [d for d in results_dir.iterdir() if d.is_dir() and d.name.startswith("iteration-")],
+                key=lambda d: d.name,
+                reverse=True,
+            )
+            if iterations:
+                iteration_dir = iterations[0]
+        if iteration_dir is None:
+            print("Error: No iteration directory found. Specify one with --iteration.", file=sys.stderr)
+            sys.exit(1)
     if not iteration_dir.exists():
         print(f"Error: {iteration_dir} not found", file=sys.stderr)
         sys.exit(1)
@@ -318,9 +416,13 @@ def main():
         print("No eval comparisons found", file=sys.stderr)
         sys.exit(1)
 
-    html = generate_html(comparisons, iteration_dir.name)
-    args.output.write_text(html)
-    print(f"Report written to: {args.output.resolve()}")
+    skeptical_md = load_skeptical_review(iteration_dir)
+    skeptical_html = md_to_html(skeptical_md) if skeptical_md else None
+
+    output_path = args.output or iteration_dir / "eval-result.html"
+    html = generate_html(comparisons, iteration_dir.name, skeptical_html)
+    output_path.write_text(html)
+    print(f"Report written to: {output_path.resolve()}")
 
     if args.serve:
         class Handler(BaseHTTPRequestHandler):
