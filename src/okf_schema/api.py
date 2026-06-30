@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 from okf_schema._internal.models import (
+    BacklinkResult,
     BundleStats,
     ConceptDetail,
     ConceptSummary,
@@ -342,6 +343,60 @@ def graph_bundle(bundle_path: str | Path) -> dict[str, list[str]]:
             graph[rel] = sorted(links)
 
     return graph
+
+
+def backlinks_bundle(
+    bundle_path: str | Path,
+    targets: list[str],
+) -> list[BacklinkResult]:
+    """Find all concepts that link to any of the given target concepts.
+
+    For each target path, scans every concept in the bundle and returns
+    a backlink record for each concept that contains an internal markdown
+    link pointing to that target.  Reserved files (``index.md``,
+    ``log.md``) are excluded as sources.  Self-links are ignored.
+
+    Targets may be given with or without the ``.md`` extension.
+
+    Args:
+        bundle_path: Path to the OKF bundle directory.
+        targets: List of relative concept paths to find backlinks for.
+
+    Returns:
+        Sorted list of :class:`BacklinkResult` records, one per backlink.
+        Results are ordered by ``(target, source)``.
+
+    Raises:
+        FileNotFoundError: When *bundle_path* does not exist.
+        NotADirectoryError: When *bundle_path* is not a directory.
+    """
+    bundle = _resolve_bundle(bundle_path)
+    link_re = re.compile(r"!?\[([^\]]*)\]\(([^)]+)\)")
+    target_set = {t if t.endswith(".md") else f"{t}.md" for t in targets}
+    results: list[BacklinkResult] = []
+
+    for path in collect_markdown_files(bundle):
+        if path.name in RESERVED_FILES:
+            continue
+        source_rel = path.relative_to(bundle).as_posix()
+        text = path.read_text(encoding="utf-8")
+        _fm_text, body = extract_frontmatter(text)
+
+        for _text_part, target in link_re.findall(body):
+            resolved = resolve_link(target, path, bundle)
+            if resolved is None:
+                continue  # external link
+            try:
+                resolved_rel = resolved.relative_to(bundle).as_posix()
+            except ValueError:
+                continue  # link outside bundle
+            if resolved_rel == source_rel:
+                continue  # self-link
+            if resolved_rel in target_set:
+                results.append(BacklinkResult(target=resolved_rel, source=source_rel))
+
+    results.sort(key=lambda r: (r.target, r.source))
+    return results
 
 
 def stats_bundle(bundle_path: str | Path) -> BundleStats:

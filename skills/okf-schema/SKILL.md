@@ -42,6 +42,9 @@ okf-schema validate --path my-bundle --strict
 
 # Lint frontmatter
 okf-schema lint --path my-bundle
+
+# Find backlinks to a concept (extension is optional)
+okf-schema backlinks --path my-bundle concepts/react-pattern
 ```
 
 ## CLI Reference
@@ -57,6 +60,7 @@ okf-schema lint --path my-bundle
 | `show --path <bundle> <concept>` | Show a single concept's frontmatter and body |
 | `index --path <bundle>` | Regenerate all `index.md` files |
 | `stats --path <bundle>` | Show bundle statistics |
+| `backlinks --path <bundle> <target>...` | List concepts that link to the given target(s) |
 
 Global options: `--version`, `--verbose` (`-v`), `--quiet` (`-q`).
 
@@ -125,6 +129,7 @@ for c in concepts:
 - **Bundle structure**: A standard OKF bundle contains a `bundle/` directory with markdown concept files. Custom JSONSchema definitions go in a `_schema/` directory inside the bundle root; they are auto-discovered by `validate`.
 - **Reserved files**: `index.md` and `log.md` are reserved. `index.md` can exist at any directory level; `log.md` must be at bundle root only.
 - **Link resolution**: Internal links are resolved relative to the source file. Absolute paths (`/path`) are resolved relative to bundle root. External URLs (`https://`, `mailto:`) are ignored during validation.
+- **Backlinks**: Use `backlinks` to discover which concepts reference a given target. This is useful when editing a concept to understand the impact of changes on downstream consumers. Output is one line per backlink in the form `target ← source`.
 
 ## References
 

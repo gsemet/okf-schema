@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import datetime
+import sys
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -11,6 +13,7 @@ from okf_schema import __version__
 from okf_schema._internal.models import BundleStats
 from okf_schema._internal.yaml import make_yaml
 from okf_schema.api import (
+    backlinks_bundle,
     index_bundle,
     lint_bundle,
     list_bundle,
@@ -18,6 +21,15 @@ from okf_schema.api import (
     stats_bundle,
     validate_bundle,
 )
+
+# Force UTF-8 output so Unicode characters (e.g. backlink arrows)
+# print correctly on Windows consoles that default to cp1252.
+_stdout: Any = sys.stdout
+if hasattr(_stdout, "reconfigure"):
+    _stdout.reconfigure(encoding="utf-8")
+_stderr: Any = sys.stderr
+if hasattr(_stderr, "reconfigure"):
+    _stderr.reconfigure(encoding="utf-8")
 
 
 @click.group(invoke_without_command=True, context_settings={"help_option_names": ["-h", "--help"]})
@@ -153,7 +165,7 @@ def validate(
     """Validate an OKF bundle."""
     try:
         report = validate_bundle(bundle_path, schema_db=schema_db)
-    except (FileNotFoundError, NotADirectoryError) as exc:
+    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(1)
 
@@ -230,7 +242,7 @@ def lint(
     """
     try:
         results = lint_bundle(bundle_path, check=check, diff=diff)
-    except (FileNotFoundError, NotADirectoryError) as exc:
+    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(1)
 
@@ -277,7 +289,7 @@ def list_cmd(ctx: click.Context, bundle_path: str) -> None:
     """List all concepts in an OKF bundle."""
     try:
         concepts = list_bundle(bundle_path)
-    except (FileNotFoundError, NotADirectoryError) as exc:
+    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(2)
 
@@ -304,7 +316,7 @@ def show(ctx: click.Context, bundle_path: str, concept_path: str) -> None:
     """Show a single concept's frontmatter and body."""
     try:
         detail = show_bundle(bundle_path, concept_path)
-    except (FileNotFoundError, NotADirectoryError) as exc:
+    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(2)
 
@@ -339,7 +351,7 @@ def index(ctx: click.Context, bundle_path: str) -> None:
     """Regenerate all index.md files in an OKF bundle."""
     try:
         updates = index_bundle(bundle_path)
-    except (FileNotFoundError, NotADirectoryError) as exc:
+    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(2)
 
@@ -388,7 +400,7 @@ def stats(ctx: click.Context, bundle_path: str) -> None:
     """Show compact statistics for an OKF bundle."""
     try:
         s = stats_bundle(bundle_path)
-    except (FileNotFoundError, NotADirectoryError) as exc:
+    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(2)
 
@@ -434,3 +446,50 @@ def stats(ctx: click.Context, bundle_path: str) -> None:
         click.echo(f"  Health: {score}% — {', '.join(issues)}")
     else:
         click.echo(f"  Health: {score}% — all clear")
+
+
+# ---------------------------------------------------------------------------
+# backlinks
+# ---------------------------------------------------------------------------
+
+
+@cli.command()
+@click.option(
+    "--path",
+    "bundle_path",
+    required=True,
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    help="Root directory of the OKF bundle.",
+)
+@click.argument("targets", nargs=-1, required=True)
+@click.pass_context
+def backlinks(
+    ctx: click.Context,
+    bundle_path: str,
+    targets: tuple[str, ...],
+) -> None:
+    """List all concepts that link to the given target concept(s).
+
+    One line is printed per backlink in the form ``target ← source``.
+    Multiple target paths may be provided.  The ``.md`` extension is
+    optional and will be added automatically if omitted.
+    """
+    target_list = [t if t.endswith(".md") else f"{t}.md" for t in targets]
+    try:
+        results = backlinks_bundle(bundle_path, target_list)
+    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
+        click.echo(f"Error: {exc}", err=True)
+        ctx.exit(2)
+
+    # Group backlinks by target for ordered output
+    by_target: dict[str, list[str]] = {t: [] for t in target_list}
+    for r in results:
+        by_target[r.target].append(r.source)
+
+    for target in target_list:
+        sources = by_target[target]
+        if sources:
+            for source in sources:
+                click.echo(f"{target} ← {source}")
+        else:
+            click.echo(f"{target} ← ❌")

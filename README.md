@@ -100,6 +100,9 @@ okf-schema validate --path my-bundle/bundle --strict
 
 # List all concepts
 okf-schema list --path my-bundle/bundle
+
+# Find backlinks to a concept (extension is optional)
+okf-schema backlinks --path my-bundle/bundle concepts/react-pattern
 ```
 
 ## CLI Reference
@@ -115,6 +118,7 @@ okf-schema list --path my-bundle/bundle
 | `show --path <bundle> <concept>` | Show a single concept's frontmatter and body |
 | `index --path <bundle>` | Regenerate all `index.md` files |
 | `stats --path <bundle>` | Show bundle statistics |
+| `backlinks --path <bundle> <target>...` | List concepts that link to the given target(s) |
 
 ## Recommended Workflow
 

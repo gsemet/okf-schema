@@ -87,6 +87,7 @@ refresh-examples:
     {{ uv_run }} okf-schema validate --path examples/ai-llm-knowledge-base --strict
     {{ uv_run }} okf-schema stats --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema list --path examples/ai-llm-knowledge-base
+    {{ uv_run }} okf-schema backlinks --path examples/ai-llm-knowledge-base papers/attention-is-all-you-need papers/toolformer
 
 # ── Skill Evals ──────────────────────────────────────────────────────────────
 

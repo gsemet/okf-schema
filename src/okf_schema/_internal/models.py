@@ -92,3 +92,11 @@ class IndexUpdate:
 
     path: str
     action: str
+
+
+@dataclass
+class BacklinkResult:
+    """A single backlink: a source concept that links to a target concept."""
+
+    target: str
+    source: str
