@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from okf_schema._internal.models import (
+    BacklinkResult,
     BundleStats,
     ConceptDetail,
     ConceptSummary,
@@ -15,6 +16,7 @@ from okf_schema._internal.models import (
     SearchResult,
 )
 from okf_schema.api import (
+    backlinks_bundle,
     format_bundle,
     graph_bundle,
     index_bundle,
@@ -564,6 +566,140 @@ class TestGraphBundle:
         )
         graph = graph_bundle(bundle)
         assert graph == {} or "/outside.md" not in str(graph)
+
+
+# ---------------------------------------------------------------------------
+# backlinks_bundle
+# ---------------------------------------------------------------------------
+
+
+class TestBacklinksBundle:
+    """Tests for backlinks_bundle."""
+
+    def test_returns_backlink_results(self, tmp_path: Path) -> None:
+        """Returns BacklinkResult records for linked concepts."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntitle: A\ntype: concept\n---\n\n# A\n\nLink to [B](b.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "b.md").write_text(
+            "---\ntitle: B\ntype: concept\n---\n\n# B\n\nLink to [A](a.md)\n",
+            encoding="utf-8",
+        )
+        results = backlinks_bundle(bundle, ["a.md"])
+        assert len(results) == 1
+        assert isinstance(results[0], BacklinkResult)
+        assert results[0].target == "a.md"
+        assert results[0].source == "b.md"
+
+    def test_multiple_targets(self, tmp_path: Path) -> None:
+        """Can query backlinks for multiple targets at once."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntitle: A\ntype: concept\n---\n\n# A\n\nLink to [B](b.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "b.md").write_text(
+            "---\ntitle: B\ntype: concept\n---\n\n# B\n\nLink to [A](a.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "c.md").write_text(
+            "---\ntitle: C\ntype: concept\n---\n\n# C\n\nLink to [A](a.md) and [B](b.md)\n",
+            encoding="utf-8",
+        )
+        results = backlinks_bundle(bundle, ["a.md", "b.md"])
+        assert len(results) == 4
+        targets = [r.target for r in results]
+        assert targets.count("a.md") == 2  # b.md and c.md
+        assert targets.count("b.md") == 2  # a.md and c.md
+
+    def test_no_backlinks_returns_empty(self, tmp_path: Path) -> None:
+        """Returns empty list when no backlinks exist."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntitle: A\ntype: concept\n---\n\n# A\n",
+            encoding="utf-8",
+        )
+        results = backlinks_bundle(bundle, ["a.md"])
+        assert results == []
+
+    def test_skips_external_links(self, tmp_path: Path) -> None:
+        """External URLs do not produce backlinks."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntitle: A\ntype: concept\n---\n\n# A\n\n[External](https://example.com)\n",
+            encoding="utf-8",
+        )
+        results = backlinks_bundle(bundle, ["https://example.com"])
+        assert results == []
+
+    def test_skips_reserved_files(self, tmp_path: Path) -> None:
+        """Reserved files are not included as backlink sources."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "index.md").write_text(
+            "---\ntitle: Index\ntype: index\n---\n\n# Index\n\n[Link](concept.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "concept.md").write_text(
+            "---\ntitle: C\ntype: concept\n---\n\n# C\n", encoding="utf-8"
+        )
+        results = backlinks_bundle(bundle, ["concept.md"])
+        assert results == []
+
+    def test_self_link_excluded(self, tmp_path: Path) -> None:
+        """Links to self do not produce backlinks."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntitle: A\ntype: concept\n---\n\n# A\n\n[Self](a.md)\n",
+            encoding="utf-8",
+        )
+        results = backlinks_bundle(bundle, ["a.md"])
+        assert results == []
+
+    def test_link_outside_bundle_excluded(self, tmp_path: Path) -> None:
+        """Links outside the bundle do not produce backlinks."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntitle: A\ntype: concept\n---\n\n# A\n\n[Outside](/outside.md)\n",
+            encoding="utf-8",
+        )
+        results = backlinks_bundle(bundle, ["/outside.md"])
+        assert results == []
+
+    def test_sorted_by_target_then_source(self, tmp_path: Path) -> None:
+        """Results are sorted by (target, source)."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntitle: A\ntype: concept\n---\n\n# A\n\nLink to [C](c.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "b.md").write_text(
+            "---\ntitle: B\ntype: concept\n---\n\n# B\n\nLink to [C](c.md)\n",
+            encoding="utf-8",
+        )
+        results = backlinks_bundle(bundle, ["c.md"])
+        assert len(results) == 2
+        assert results[0].source == "a.md"
+        assert results[1].source == "b.md"
+
+    def test_nonexistent_path_raises(self) -> None:
+        """Raises FileNotFoundError for nonexistent bundle path."""
+        with pytest.raises(FileNotFoundError):
+            backlinks_bundle(VALID_BUNDLE / "does-not-exist", ["a.md"])
+
+    def test_not_a_directory_raises(self) -> None:
+        """Raises NotADirectoryError when path is a file."""
+        with pytest.raises(NotADirectoryError):
+            backlinks_bundle(VALID_BUNDLE / "subdir" / "concept-a.md", ["a.md"])
 
 
 # ---------------------------------------------------------------------------

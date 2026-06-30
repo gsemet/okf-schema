@@ -263,3 +263,107 @@ class TestCliIntegration:
         assert result.exit_code == 0
         assert "type:" in result.output
         assert "Body text here" in result.output
+
+    def test_backlinks_cli_output(self, tmp_path: Path) -> None:
+        """CLI backlinks prints one line per backlink."""
+        runner = CliRunner()
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "react-pattern.md").write_text(
+            "---\ntype: concept\ntitle: React Pattern\n---\n\n# React Pattern\n",
+            encoding="utf-8",
+        )
+        (bundle / "chain-of-thought.md").write_text(
+            "---\ntype: paper\ntitle: Chain of Thought\n---\n\n"
+            "See [React Pattern](react-pattern.md).\n",
+            encoding="utf-8",
+        )
+        (bundle / "toolformer.md").write_text(
+            "---\ntype: paper\ntitle: Toolformer\n---\n\nUses [React Pattern](react-pattern.md).\n",
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(
+            cli,
+            ["backlinks", "--path", str(bundle), "react-pattern.md"],
+        )
+        assert result.exit_code == 0
+        lines = [line for line in result.output.strip().split("\n") if line]
+        assert len(lines) == 2
+        assert "react-pattern.md ← chain-of-thought.md" in lines
+        assert "react-pattern.md ← toolformer.md" in lines
+
+    def test_backlinks_cli_multiple_targets(self, tmp_path: Path) -> None:
+        """CLI backlinks accepts multiple target arguments."""
+        runner = CliRunner()
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntype: concept\ntitle: A\n---\n\nLink to [B](b.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "b.md").write_text(
+            "---\ntype: concept\ntitle: B\n---\n\nLink to [A](a.md)\n",
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(
+            cli,
+            ["backlinks", "--path", str(bundle), "a.md", "b.md"],
+        )
+        assert result.exit_code == 0
+        lines = [line for line in result.output.strip().split("\n") if line]
+        assert len(lines) == 2
+        assert "a.md ← b.md" in lines
+        assert "b.md ← a.md" in lines
+
+    def test_backlinks_cli_no_backlinks(self, tmp_path: Path) -> None:
+        """CLI backlinks prints a placeholder when no backlinks exist."""
+        runner = CliRunner()
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "orphan.md").write_text(
+            "---\ntype: concept\ntitle: Orphan\n---\n\n# Orphan\n",
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(
+            cli,
+            ["backlinks", "--path", str(bundle), "orphan.md"],
+        )
+        assert result.exit_code == 0
+        assert "orphan.md ← ❌" in result.output
+
+    def test_backlinks_cli_extensionless_target(self, tmp_path: Path) -> None:
+        """CLI backlinks accepts targets without the .md extension."""
+        runner = CliRunner()
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "react-pattern.md").write_text(
+            "---\ntype: concept\ntitle: React Pattern\n---\n\n# React Pattern\n",
+            encoding="utf-8",
+        )
+        (bundle / "chain-of-thought.md").write_text(
+            "---\ntype: paper\ntitle: Chain of Thought\n---\n\n"
+            "See [React Pattern](react-pattern.md).\n",
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(
+            cli,
+            ["backlinks", "--path", str(bundle), "react-pattern"],
+        )
+        assert result.exit_code == 0
+        assert "react-pattern.md ← chain-of-thought.md" in result.output
+
+    def test_backlinks_cli_nonexistent_bundle(self, tmp_path: Path) -> None:
+        """CLI backlinks exits with error for nonexistent bundle."""
+        runner = CliRunner()
+        missing = tmp_path / "missing"
+
+        result = runner.invoke(
+            cli,
+            ["backlinks", "--path", str(missing), "a.md"],
+        )
+        assert result.exit_code == 2
+        assert "Error:" in result.output

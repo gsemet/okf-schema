@@ -97,6 +97,7 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--cov=okf_schema",
+    "--cov-fail-under=96",
     "--cov-report=term-missing",
     "--cov-report=xml",
     "--cov-report=html",
@@ -108,7 +109,6 @@ source = ["src/okf_schema"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 96
 show_missing = true
 skip_covered = false
 
