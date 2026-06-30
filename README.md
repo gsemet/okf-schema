@@ -260,6 +260,7 @@ Documentation is available at [okf-schema/README.md](https://github.com/gsemet/o
 | `validate-with-yaml-schema-database` | Tests YAML schema file support in schema DB |
 
 Run the eval campaign:
+
 ```bash
 # Trigger eval via Copilot-CLI
 just copilot-cli-eval-okf-schema
@@ -272,6 +273,8 @@ just eval-view-okf-schema
 ```
 
 The eval system supports A/B comparison (`with_skill` vs `without_skill`) across iteration directories. Results are rendered as an interactive HTML dashboard.
+
+**Latest eval result:** [iteration-30.06.26-13.52](https://htmlpreview.github.io/?https://github.com/gsemet/okf-schema/blob/master/skills-evals/results/iteration-30.06.26-13.52/eval-result.html) — [skeptical review](skills-evals/results/iteration-30.06.26-13.52/skeptical-review.md)
 
 ## Contributing
 
