@@ -259,15 +259,11 @@ Documentation is available at [okf-schema/README.md](https://github.com/gsemet/o
 | `validate-with-schema-database` | Tests JSONSchema validation with `--schema-db` |
 | `validate-with-yaml-schema-database` | Tests YAML schema file support in schema DB |
 
-Run the eval campaign:
+Run the eval campaign by asking in Copilot Chat `Execute instructions in skills-evals/eval.prompt.md`, or via Copilot-CLI:
 
 ```bash
 # Trigger eval via Copilot-CLI
 just copilot-cli-eval-okf-schema
-
-# Score eval outputs and generate report
-just eval-okf-schema
-
 # Open eval review in browser
 just eval-view-okf-schema
 ```

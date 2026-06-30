@@ -1,6 +1,6 @@
 """OKF bundle validation engine.
 
-Implements all conformance error (E1-E6) and best-practice warning (W1-W7)
+Implements all conformance error (E1-E7) and best-practice warning (W1-W7)
 rules for validating OKF (Open Knowledge Format) bundles.
 """
 
@@ -327,7 +327,9 @@ def validate_bundle(
     """Run the full validation suite over *bundle*.
 
     Orchestrates all validators and emits W4 (missing index.md) for
-    directories that contain markdown files but no ``index.md``.
+    directories that contain markdown files but no ``index.md``,
+    and E7 (loose root file) for non-reserved ``.md`` files at bundle
+    root.
 
     Args:
         bundle: Path to the OKF bundle directory.
@@ -358,6 +360,14 @@ def validate_bundle(
             _check_reserved_file_naming(path, report, bundle)
         else:
             validate_concept(path, report, bundle, schemas)
+            # E7 — non-reserved .md files at bundle root
+            if path.parent.resolve() == bundle.resolve():
+                report.add_error(
+                    "E7",
+                    f"File '{path.name}' is at bundle root but is not a reserved file "
+                    "(index.md or log.md). Move it into a subdirectory.",
+                    path,
+                )
 
     # W4 — directories missing index.md
     for directory in dirs_with_md:
