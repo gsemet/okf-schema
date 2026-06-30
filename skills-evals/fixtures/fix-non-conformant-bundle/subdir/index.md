@@ -1,3 +1,7 @@
-# subdir
+---
+okf_version: "0.1"
+---
 
-- [Item](item.md) — An item in the subdirectory.  [concept]
+# Sub Index
+
+- [Item](./item.md) - A concept in the subdirectory

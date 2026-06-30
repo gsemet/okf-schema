@@ -1,0 +1,81 @@
+{
+  "eval_id": 5,
+  "eval_name": "workflow-ordering-trap",
+  "overall": "PASS",
+  "pass_rate": 1.0,
+  "primary_pass_rate": 1.0,
+  "primary_passed": 3,
+  "primary_total": 3,
+  "passed": 8,
+  "failed": 0,
+  "total": 8,
+  "assertions": [
+    {
+      "assertion": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+      "check_type": "output_contains",
+      "target": "0 error",
+      "result": "PASS",
+      "justification": "Found: '0 error...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The strict validation output reports zero warnings",
+      "check_type": "output_contains",
+      "target": "0 warning",
+      "result": "PASS",
+      "justification": "Found: '0 warning...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The final validation states the bundle is conformant",
+      "check_type": "output_contains",
+      "target": "conformant",
+      "result": "PASS",
+      "justification": "Found: 'conformant...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The workspace root has an index.md file",
+      "check_type": "file_exists",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/workflow-ordering-trap/with_skill/workspace/index.md",
+      "result": "PASS",
+      "justification": "File exists: skills-evals/results/iteration-30.06.26-22.06/workflow-ordering-trap/with_skill/workspace/index.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The cells/ subdirectory has an index.md file",
+      "check_type": "file_exists",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/workflow-ordering-trap/with_skill/workspace/cells/index.md",
+      "result": "PASS",
+      "justification": "File exists: skills-evals/results/iteration-30.06.26-22.06/workflow-ordering-trap/with_skill/workspace/cells/index.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The thermal/ subdirectory has an index.md file",
+      "check_type": "file_exists",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/workflow-ordering-trap/with_skill/workspace/thermal/index.md",
+      "result": "PASS",
+      "justification": "File exists: skills-evals/results/iteration-30.06.26-22.06/workflow-ordering-trap/with_skill/workspace/thermal/index.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "All concept files have inline tags (not block-style)",
+      "check_type": "file_glob_contains",
+      "target": "",
+      "result": "PASS",
+      "justification": "All 8 files contain 'tags: [...'",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The agent ran okf-schema index",
+      "check_type": "command_executed",
+      "target": "okf-schema index",
+      "result": "PASS",
+      "justification": "Command found: okf-schema index...",
+      "tier": "secondary"
+    }
+  ],
+  "notes": "",
+  "condition": "with_skill",
+  "transcript_path": "skills-evals/results/iteration-30.06.26-22.06/workflow-ordering-trap/with_skill/transcript.md"
+}

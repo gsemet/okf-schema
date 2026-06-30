@@ -1,6 +1,4 @@
-# Directory Update Log
+# Update Log
 
 ## 2026-06-30
-* **Creation**: Initialized EV Battery Management knowledge base.
-* **Added**: 9 concepts across cells/, thermal/, and safety/ directories.
-* **Added**: Custom JSONSchema definitions in _schema/.
+- **Creation**: Created EV Battery Management knowledge base with 9 concepts across 3 subdirectories.

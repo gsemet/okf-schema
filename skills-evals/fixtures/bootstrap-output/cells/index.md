@@ -1,5 +1,5 @@
 # cells
 
-- [Cell Balancing](cell-balancing.md) — Technique to equalize state of charge across cells in a pack.  [Concept]
-- [Lithium-Ion Battery Cell](lithium-ion.md) — Primary electrochemical cell used in EV battery packs.  [Concept]
-- [State of Charge Estimation](soc-estimation.md) — Algorithm to determine remaining battery capacity.  [Concept]
+- [Cell Balancing](cell-balancing.md) — Techniques for equalizing charge across battery cells.  [concept]
+- [Lithium-Ion Cells](lithium-ion.md) — Overview of lithium-ion battery cell chemistry and characteristics.  [concept]
+- [State of Charge Estimation](soc-estimation.md) — Methods for estimating the remaining charge in a battery cell.  [concept]

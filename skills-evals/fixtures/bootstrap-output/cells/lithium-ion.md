@@ -1,22 +1,16 @@
 ---
-type: Concept
-title: Lithium-Ion Battery Cell
-description: Primary electrochemical cell used in EV battery packs.
-tags: [cells, chemistry, lithium]
-timestamp: 2026-06-30T10:00:00Z
+type: concept
+title: Lithium-Ion Cells
+description: Overview of lithium-ion battery cell chemistry and characteristics.
+tags: [battery, cells, chemistry]
+timestamp: 2026-06-30T14:00:00Z
 ---
 
-# Lithium-Ion Battery Cell
+# Lithium-Ion Cells
 
-The lithium-ion cell is the fundamental building block of EV battery packs.
+Lithium-ion cells are the most common type of rechargeable battery used in electric vehicles.
 
-## Characteristics
+## Related Concepts
 
-- High energy density
-- Long cycle life
-- Requires [thermal management](../thermal/cooling-systems.md)
-
-## Safety Considerations
-
-See [safety requirements](../safety/thermal-runaway.md).
-
+- [State of Charge Estimation](soc-estimation.md)
+- [Cell Balancing](cell-balancing.md)

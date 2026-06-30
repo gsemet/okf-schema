@@ -1,22 +1,16 @@
 ---
-type: Concept
+type: concept
 title: Thermal Runaway
-description: Uncontrolled self-heating leading to cell failure.
+description: Cascading thermal failure mechanism in battery packs.
 tags: [safety, thermal, failure]
-timestamp: 2026-06-30T10:30:00Z
+timestamp: 2026-06-30T14:00:00Z
 ---
 
 # Thermal Runaway
 
-Thermal runaway is a catastrophic failure mode where cell temperature rises uncontrollably.
+Thermal runaway is a self-sustaining reaction that can lead to battery fires.
 
-## Triggers
+## Related Concepts
 
-- Internal short circuit
-- Overcharging
-- External heating
-
-## Prevention
-
-See [failure modes](failure-modes.md) and [ASIL ratings](asil-ratings.md) for safety requirements.
-
+- [ASIL Ratings](asil-ratings.md)
+- [Heat Generation](../thermal/heat-generation.md)

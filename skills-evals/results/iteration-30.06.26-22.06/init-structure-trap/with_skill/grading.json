@@ -1,0 +1,81 @@
+{
+  "eval_id": 3,
+  "eval_name": "init-structure-trap",
+  "overall": "PASS",
+  "pass_rate": 1.0,
+  "primary_pass_rate": 1.0,
+  "primary_passed": 3,
+  "primary_total": 3,
+  "passed": 8,
+  "failed": 0,
+  "total": 8,
+  "assertions": [
+    {
+      "assertion": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+      "check_type": "output_contains",
+      "target": "0 error",
+      "result": "PASS",
+      "justification": "Found: '0 error...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The strict validation output reports zero warnings",
+      "check_type": "output_contains",
+      "target": "0 warning",
+      "result": "PASS",
+      "justification": "Found: '0 warning...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The final validation states the bundle is conformant",
+      "check_type": "output_contains",
+      "target": "conformant",
+      "result": "PASS",
+      "justification": "Found: 'conformant...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "Concept files exist directly at workspace root (not inside a bundle/ subdirectory)",
+      "check_type": "file_exists",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/workspace/cells/cell-chemistry.md",
+      "result": "PASS",
+      "justification": "File exists: skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/workspace/cells/cell-chemistry.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The cells/ subdirectory has an index.md file",
+      "check_type": "file_exists",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/workspace/cells/index.md",
+      "result": "PASS",
+      "justification": "File exists: skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/workspace/cells/index.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The thermal/ subdirectory has an index.md file",
+      "check_type": "file_exists",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/workspace/thermal/index.md",
+      "result": "PASS",
+      "justification": "File exists: skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/workspace/thermal/index.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The log.md file uses ISO 8601 date headings (YYYY-MM-DD)",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/workspace/log.md",
+      "result": "PASS",
+      "justification": "Found '## 20...' in skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/workspace/log.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The broken cross-link to nonexistent.md has been fixed or removed",
+      "check_type": "file_glob_min_count",
+      "target": "",
+      "result": "PASS",
+      "justification": "0 files contain 'nonexistent...' (min: 0)",
+      "tier": "secondary"
+    }
+  ],
+  "notes": "",
+  "condition": "with_skill",
+  "transcript_path": "skills-evals/results/iteration-30.06.26-22.06/init-structure-trap/with_skill/transcript.md"
+}

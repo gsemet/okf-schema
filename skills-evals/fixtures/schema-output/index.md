@@ -1,7 +1,3 @@
----
-okf_version: "0.1"
----
+# API Endpoints
 
-# Schema Output Bundle
-
-- [get-user](get-user.md)
+- [Get Battery Status](get-battery-status.md) — Retrieve current battery status including SoC, voltage, and temperature.  [api-endpoint]

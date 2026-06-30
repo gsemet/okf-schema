@@ -1,0 +1,57 @@
+{
+  "eval_id": 1,
+  "eval_name": "fix-non-conformant-bundle",
+  "overall": "PASS",
+  "pass_rate": 1.0,
+  "primary_pass_rate": 1.0,
+  "primary_passed": 3,
+  "primary_total": 3,
+  "passed": 5,
+  "failed": 0,
+  "total": 5,
+  "assertions": [
+    {
+      "assertion": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+      "check_type": "output_contains",
+      "target": "0 error",
+      "result": "PASS",
+      "justification": "Found: '0 error...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The strict validation output reports zero warnings",
+      "check_type": "output_contains",
+      "target": "0 warning",
+      "result": "PASS",
+      "justification": "Found: '0 warning...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The final validation states the bundle is conformant",
+      "check_type": "output_contains",
+      "target": "conformant",
+      "result": "PASS",
+      "justification": "Found: 'conformant...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The file missing-frontmatter.md now has YAML frontmatter with a type field",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/fix-non-conformant-bundle/with_skill/workspace/missing-frontmatter.md",
+      "result": "PASS",
+      "justification": "Found 'type:...' in skills-evals/results/iteration-30.06.26-22.06/fix-non-conformant-bundle/with_skill/workspace/missing-frontmatter.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The file no-type.md now has a type field in its frontmatter",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/fix-non-conformant-bundle/with_skill/workspace/no-type.md",
+      "result": "PASS",
+      "justification": "Found 'type:...' in skills-evals/results/iteration-30.06.26-22.06/fix-non-conformant-bundle/with_skill/workspace/no-type.md",
+      "tier": "secondary"
+    }
+  ],
+  "notes": "",
+  "condition": "with_skill",
+  "transcript_path": "skills-evals/results/iteration-30.06.26-22.06/fix-non-conformant-bundle/with_skill/transcript.md"
+}

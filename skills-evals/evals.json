@@ -2,7 +2,7 @@
   "skill_name": "okf-schema",
   "methodology": {
     "description": "Controlled A/B evaluation with deterministic automated grading. Both conditions (with_skill, without_skill) are evaluated against identical assertion sets to ensure apples-to-apples comparison.",
-    "grading": "Automated via grade-eval.py — no human judgment in the scoring loop",
+    "grading": "Automated via grade-eval.py \u2014 no human judgment in the scoring loop. Outcome-weighted: strict validation pass is the primary metric.",
     "conditions": [
       "with_skill: Agent has access to skills/okf-schema/SKILL.md",
       "without_skill: Agent has no skill access; only okf-schema CLI help and the okf-v0.1.md specification"
@@ -13,8 +13,9 @@
       "id": 1,
       "eval_name": "fix-non-conformant-bundle",
       "category": "repair",
-      "prompt_with_skill": "Fix the OKF bundle at skills-evals/fixtures/fix-non-conformant-bundle/ so it passes `okf-schema validate --strict` (zero errors AND zero warnings). Use the SKILL.md workflow tips. Report every command you run and the final validation output.",
-      "prompt_without_skill": "You have a directory of markdown files at skills-evals/fixtures/fix-non-conformant-bundle/ that should follow the OKF (Open Knowledge Format) specification. The spec is at skills/okf-schema/references/okf-v0.1.md. Use the okf-schema CLI to identify and fix all structural problems, missing metadata, broken links, and formatting issues so the bundle passes strict validation. Report every command you run and the final validation output.",
+      "workspace": "{{iteration_dir}}/fix-non-conformant-bundle/{{condition}}/workspace",
+      "prompt_with_skill": "Fix the OKF bundle at skills-evals/fixtures/fix-non-conformant-bundle/ so it passes okf-schema validate --strict (zero errors AND zero warnings). First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the SKILL.md workflow tips. Report every command you run and the final validation output.",
+      "prompt_without_skill": "You have a directory of markdown files at skills-evals/fixtures/fix-non-conformant-bundle/ that should follow the OKF (Open Knowledge Format) specification. The spec is at skills/okf-schema/references/okf-v0.1.md. First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the okf-schema CLI to identify and fix all structural problems, missing metadata, broken links, and formatting issues so the bundle passes strict validation. Report every command you run and the final validation output.",
       "files": [
         "skills-evals/fixtures/fix-non-conformant-bundle/",
         "skills/okf-schema/references/okf-v0.1.md"
@@ -24,251 +25,215 @@
           "id": "f1_strict_pass",
           "text": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
           "check": "output_contains",
-          "target": "0 error"
+          "target": "0 error",
+          "tier": "primary"
         },
         {
           "id": "f1_strict_pass2",
           "text": "The strict validation output reports zero warnings",
           "check": "output_contains",
-          "target": "0 warning"
-        },
-        {
-          "id": "f1_lint",
-          "text": "The agent ran okf-schema lint on the bundle",
-          "check": "command_executed",
-          "target": "okf-schema lint --path skills-evals/fixtures/fix-non-conformant-bundle"
-        },
-        {
-          "id": "f1_index",
-          "text": "The agent ran okf-schema index on the bundle",
-          "check": "command_executed",
-          "target": "okf-schema index --path skills-evals/fixtures/fix-non-conformant-bundle"
+          "target": "0 warning",
+          "tier": "primary"
         },
         {
           "id": "f1_conformant",
           "text": "The final validation states the bundle is conformant",
           "check": "output_contains",
-          "target": "conformant"
+          "target": "conformant",
+          "tier": "primary"
         },
         {
-          "id": "f1_lint_check",
-          "text": "The agent ran okf-schema lint --check before applying lint changes (SKILL.md tip)",
-          "check": "command_executed",
-          "target": "okf-schema lint --path skills-evals/fixtures/fix-non-conformant-bundle --check"
+          "id": "f1_fixed_frontmatter",
+          "text": "The file missing-frontmatter.md now has YAML frontmatter with a type field",
+          "check": "file_contains",
+          "target": "{{workspace}}/missing-frontmatter.md",
+          "params": {
+            "text": "type:"
+          },
+          "tier": "secondary"
         },
         {
-          "id": "f1_workflow_order",
-          "text": "The agent ran index before lint and lint before validate --strict (SKILL.md recommended workflow)",
-          "check": "output_contains",
-          "target": "okf-schema index"
+          "id": "f1_fixed_no_type",
+          "text": "The file no-type.md now has a type field in its frontmatter",
+          "check": "file_contains",
+          "target": "{{workspace}}/no-type.md",
+          "params": {
+            "text": "type:"
+          },
+          "tier": "secondary"
         }
       ]
     },
     {
       "id": 2,
-      "eval_name": "bootstrap-knowledge-base",
-      "category": "creation",
-      "prompt_with_skill": "Create a complete OKF knowledge base about 'Electric Vehicle Battery Management' from scratch under skills-evals/fixtures/bootstrap-output/. Requirements: at least 8 concepts across 3 subdirectories (e.g., cells/, thermal/, safety/), each with type, title, description, tags, timestamp; at least 3 cross-links between concepts; index.md at root and in each subdirectory; log.md at root with ISO 8601 date headings; a custom _schema/ directory with at least 2 JSONSchema files. Follow the SKILL.md workflow (init → new → index → lint → validate --strict). Report all commands and final validation output.",
-      "prompt_without_skill": "Create a structured knowledge bundle about 'Electric Vehicle Battery Management' under skills-evals/fixtures/bootstrap-output/. Follow the OKF specification at skills/okf-schema/references/okf-v0.1.md. Requirements: at least 8 concepts across 3 subdirectories, each as a markdown file with YAML frontmatter (type, title, description, tags, timestamp); cross-links between related concepts; index.md files for progressive disclosure; log.md with ISO 8601 dates; custom JSONSchema validation in a _schema/ directory. Use okf-schema CLI where available. Report all commands and final validation output.",
+      "eval_name": "repair-knowledge-base",
+      "category": "repair",
+      "workspace": "{{iteration_dir}}/repair-knowledge-base/{{condition}}/workspace",
+      "prompt_with_skill": "Fix the OKF bundle at skills-evals/fixtures/repair-knowledge-base/ so it passes okf-schema validate --strict (zero errors AND zero warnings). First, copy the fixture to {{workspace}} and work ONLY in that directory. The bundle has multiple issues: missing frontmatter, block-style lists, broken cross-links, missing index.md files, non-ISO date headings, and a schema file with wrong case. Use the SKILL.md workflow tips. Report every command you run and the final validation output.",
+      "prompt_without_skill": "You have a directory of markdown files at skills-evals/fixtures/repair-knowledge-base/ that should follow the OKF (Open Knowledge Format) specification. The spec is at skills/okf-schema/references/okf-v0.1.md. First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the okf-schema CLI to identify and fix all structural problems, missing metadata, broken links, and formatting issues so the bundle passes strict validation. Report every command you run and the final validation output.",
       "files": [
+        "skills-evals/fixtures/repair-knowledge-base/",
         "skills/okf-schema/references/okf-v0.1.md"
       ],
       "assertions": [
         {
-          "id": "b2_strict_pass",
+          "id": "r2_strict_pass",
           "text": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
           "check": "output_contains",
-          "target": "0 error"
+          "target": "0 error",
+          "tier": "primary"
         },
         {
-          "id": "b2_strict_pass2",
+          "id": "r2_strict_pass2",
           "text": "The strict validation output reports zero warnings",
           "check": "output_contains",
-          "target": "0 warning"
+          "target": "0 warning",
+          "tier": "primary"
         },
         {
-          "id": "b2_concepts_count",
-          "text": "The bundle contains at least 8 concept .md files with YAML frontmatter",
-          "check": "file_glob_contains",
-          "target": "",
+          "id": "r2_conformant",
+          "text": "The final validation states the bundle is conformant",
+          "check": "output_contains",
+          "target": "conformant",
+          "tier": "primary"
+        },
+        {
+          "id": "r2_fixed_frontmatter",
+          "text": "The file missing-frontmatter.md now has YAML frontmatter with a type field",
+          "check": "file_contains",
+          "target": "{{workspace}}/missing-frontmatter.md",
           "params": {
-            "glob": "skills-evals/fixtures/bootstrap-output/**/*.md",
-            "text": "type:",
-            "exclude": ["index.md", "log.md"]
-          }
+            "text": "type:"
+          },
+          "tier": "secondary"
         },
         {
-          "id": "b2_subdirs",
-          "text": "The bundle has at least 3 subdirectories with index.md files",
+          "id": "r2_index_md_cells",
+          "text": "The cells/ subdirectory has an index.md file",
           "check": "file_exists",
-          "target": "skills-evals/fixtures/bootstrap-output/index.md"
+          "target": "{{workspace}}/cells/index.md",
+          "tier": "secondary"
         },
         {
-          "id": "b2_crosslinks",
-          "text": "At least 3 concept files contain markdown cross-links to other concepts",
+          "id": "r2_index_md_thermal",
+          "text": "The thermal/ subdirectory has an index.md file",
+          "check": "file_exists",
+          "target": "{{workspace}}/thermal/index.md",
+          "tier": "secondary"
+        },
+        {
+          "id": "r2_log_iso",
+          "text": "The log.md file uses ISO 8601 date headings (YYYY-MM-DD)",
+          "check": "file_contains",
+          "target": "{{workspace}}/log.md",
+          "params": {
+            "text": "## 20"
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "r2_broken_link_fixed",
+          "text": "The broken cross-link to nonexistent.md has been fixed or removed",
           "check": "file_glob_min_count",
           "target": "",
           "params": {
-            "glob": "skills-evals/fixtures/bootstrap-output/**/*.md",
-            "text": "](",
-            "min_count": 3,
-            "exclude": ["index.md", "log.md"]
-          }
-        },
-        {
-          "id": "b2_schema_dir",
-          "text": "The bundle contains a _schema/ directory with at least 2 schema files",
-          "check": "file_glob_contains",
-          "target": "",
-          "params": {
-            "glob": "skills-evals/fixtures/bootstrap-output/_schema/*",
-            "text": "{",
+            "glob": "{{workspace}}/**/*.md",
+            "text": "nonexistent",
+            "min_count": 0,
             "exclude": []
-          }
-        },
-        {
-          "id": "b2_log_iso",
-          "text": "The log.md file uses ISO 8601 date headings (YYYY-MM-DD)",
-          "check": "file_contains",
-          "target": "skills-evals/fixtures/bootstrap-output/log.md",
-          "params": {
-            "text": "## 20"
-          }
-        },
-        {
-          "id": "b2_lint",
-          "text": "The agent ran okf-schema lint on the bundle",
-          "check": "command_executed",
-          "target": "okf-schema lint --path skills-evals/fixtures/bootstrap-output"
-        },
-        {
-          "id": "b2_index",
-          "text": "The agent ran okf-schema index on the bundle",
-          "check": "command_executed",
-          "target": "okf-schema index --path skills-evals/fixtures/bootstrap-output"
-        },
-        {
-          "id": "b2_workflow_order",
-          "text": "The agent ran index before lint and lint before validate --strict",
-          "check": "output_contains",
-          "target": "index"
-        },
-        {
-          "id": "b2_init",
-          "text": "The agent used okf-schema init to create the bundle structure (SKILL.md quickstart)",
-          "check": "command_executed",
-          "target": "okf-schema init"
-        },
-        {
-          "id": "b2_new",
-          "text": "The agent used okf-schema new to create at least one concept (SKILL.md quickstart)",
-          "check": "command_executed",
-          "target": "okf-schema new"
-        },
-        {
-          "id": "b2_lint_check",
-          "text": "The agent ran okf-schema lint --check before applying lint changes (SKILL.md tip)",
-          "check": "command_executed",
-          "target": "okf-schema lint --path skills-evals/fixtures/bootstrap-output --check"
+          },
+          "tier": "secondary"
         }
       ]
     },
     {
       "id": 3,
-      "eval_name": "migrate-and-validate",
-      "category": "migration",
-      "prompt_with_skill": "Migrate the legacy markdown documents in skills-evals/fixtures/legacy-docs/ into a conformant OKF bundle under skills-evals/fixtures/migrate-output/. Each legacy file must become a proper OKF concept with frontmatter (type, title, description, tags, timestamp). Infer appropriate concept types. Create proper bundle structure with subdirectories if needed. Fix any broken internal links. Add index.md and log.md. Run the full workflow (index → lint → validate --strict). Report all commands and final validation output.",
-      "prompt_without_skill": "You have a directory of plain markdown files at skills-evals/fixtures/legacy-docs/ with no frontmatter and no structure. Convert them into a conformant OKF bundle under skills-evals/fixtures/migrate-output/ following the OKF specification at skills/okf-schema/references/okf-v0.1.md. Each file must become a markdown concept with YAML frontmatter. Use okf-schema CLI where available. Report all commands and final validation output.",
+      "eval_name": "init-structure-trap",
+      "category": "repair",
+      "workspace": "{{iteration_dir}}/init-structure-trap/{{condition}}/workspace",
+      "prompt_with_skill": "Fix the OKF bundle at skills-evals/fixtures/init-structure-trap/ so it passes okf-schema validate --strict (zero errors AND zero warnings). First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the SKILL.md workflow tips. Report every command you run and the final validation output.",
+      "prompt_without_skill": "You have a directory of markdown files at skills-evals/fixtures/init-structure-trap/ that should follow the OKF (Open Knowledge Format) specification. The spec is at skills/okf-schema/references/okf-v0.1.md. First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the okf-schema CLI to identify and fix all structural problems, missing metadata, broken links, and formatting issues so the bundle passes strict validation. Report every command you run and the final validation output.",
       "files": [
-        "skills-evals/fixtures/legacy-docs/",
+        "skills-evals/fixtures/init-structure-trap/",
         "skills/okf-schema/references/okf-v0.1.md"
       ],
       "assertions": [
         {
-          "id": "m3_strict_pass",
+          "id": "i3_strict_pass",
           "text": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
           "check": "output_contains",
-          "target": "0 error"
+          "target": "0 error",
+          "tier": "primary"
         },
         {
-          "id": "m3_strict_pass2",
+          "id": "i3_strict_pass2",
           "text": "The strict validation output reports zero warnings",
           "check": "output_contains",
-          "target": "0 warning"
+          "target": "0 warning",
+          "tier": "primary"
         },
         {
-          "id": "m3_all_migrated",
-          "text": "All 5 legacy files were migrated into OKF concepts with frontmatter",
-          "check": "file_glob_contains",
-          "target": "",
-          "params": {
-            "glob": "skills-evals/fixtures/migrate-output/**/*.md",
-            "text": "type:",
-            "exclude": ["index.md", "log.md"]
-          }
-        },
-        {
-          "id": "m3_frontmatter_complete",
-          "text": "Every migrated concept has title, description, tags, and timestamp in frontmatter",
-          "check": "file_glob_contains",
-          "target": "",
-          "params": {
-            "glob": "skills-evals/fixtures/migrate-output/**/*.md",
-            "text": "title:",
-            "exclude": ["index.md", "log.md"]
-          }
-        },
-        {
-          "id": "m3_index",
-          "text": "The bundle contains an index.md for progressive disclosure",
-          "check": "file_exists",
-          "target": "skills-evals/fixtures/migrate-output/index.md"
-        },
-        {
-          "id": "m3_log",
-          "text": "The bundle contains a log.md at the root",
-          "check": "file_exists",
-          "target": "skills-evals/fixtures/migrate-output/log.md"
-        },
-        {
-          "id": "m3_lint",
-          "text": "The agent ran okf-schema lint on the migrated bundle",
-          "check": "command_executed",
-          "target": "okf-schema lint --path skills-evals/fixtures/migrate-output"
-        },
-        {
-          "id": "m3_index_cmd",
-          "text": "The agent ran okf-schema index on the migrated bundle",
-          "check": "command_executed",
-          "target": "okf-schema index --path skills-evals/fixtures/migrate-output"
-        },
-        {
-          "id": "m3_conformant",
+          "id": "i3_conformant",
           "text": "The final validation states the bundle is conformant",
           "check": "output_contains",
-          "target": "conformant"
+          "target": "conformant",
+          "tier": "primary"
         },
         {
-          "id": "m3_lint_check",
-          "text": "The agent ran okf-schema lint --check before applying lint changes (SKILL.md tip)",
-          "check": "command_executed",
-          "target": "okf-schema lint --path skills-evals/fixtures/migrate-output --check"
+          "id": "i3_bundle_root_flat",
+          "text": "Concept files exist directly at workspace root (not inside a bundle/ subdirectory)",
+          "check": "file_exists",
+          "target": "{{workspace}}/cells/cell-chemistry.md",
+          "tier": "secondary"
         },
         {
-          "id": "m3_workflow_order",
-          "text": "The agent ran index before lint and lint before validate --strict (SKILL.md recommended workflow)",
-          "check": "output_contains",
-          "target": "okf-schema index"
+          "id": "i3_index_md_cells",
+          "text": "The cells/ subdirectory has an index.md file",
+          "check": "file_exists",
+          "target": "{{workspace}}/cells/index.md",
+          "tier": "secondary"
+        },
+        {
+          "id": "i3_index_md_thermal",
+          "text": "The thermal/ subdirectory has an index.md file",
+          "check": "file_exists",
+          "target": "{{workspace}}/thermal/index.md",
+          "tier": "secondary"
+        },
+        {
+          "id": "i3_log_iso",
+          "text": "The log.md file uses ISO 8601 date headings (YYYY-MM-DD)",
+          "check": "file_contains",
+          "target": "{{workspace}}/log.md",
+          "params": {
+            "text": "## 20"
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "i3_broken_link_fixed",
+          "text": "The broken cross-link to nonexistent.md has been fixed or removed",
+          "check": "file_glob_min_count",
+          "target": "",
+          "params": {
+            "glob": "{{workspace}}/**/*.md",
+            "text": "nonexistent",
+            "min_count": 0,
+            "exclude": []
+          },
+          "tier": "secondary"
         }
       ]
     },
     {
       "id": 4,
-      "eval_name": "custom-schema-validation",
+      "eval_name": "schema-composition-trap",
       "category": "skill-specific",
-      "prompt_with_skill": "Create a minimal OKF bundle at skills-evals/fixtures/schema-output/ with a custom concept type called 'api-endpoint'. The bundle must have: (1) a concept file using type 'api-endpoint' with frontmatter fields 'method' (HTTP verb) and 'path' (URL path); (2) a custom JSONSchema in the correct auto-discovered location that validates both 'method' and 'path' fields are strings; (3) the bundle must pass `okf-schema validate --strict` with zero errors. Use the SKILL.md tips about schema placement and naming. Report all commands and final validation output.",
-      "prompt_without_skill": "Create a minimal OKF bundle at skills-evals/fixtures/schema-output/ with a custom concept type called 'api-endpoint'. The bundle must have: (1) a concept file using type 'api-endpoint' with frontmatter fields 'method' (HTTP verb) and 'path' (URL path); (2) a custom JSONSchema that validates both 'method' and 'path' fields are strings; (3) the bundle must pass `okf-schema validate --strict` with zero errors. Use the okf-schema CLI and the OKF spec at skills/okf-schema/references/okf-v0.1.md. Report all commands and final validation output.",
+      "workspace": "{{iteration_dir}}/schema-composition-trap/{{condition}}/workspace",
+      "prompt_with_skill": "Fix the OKF bundle at skills-evals/fixtures/schema-composition-trap/ so it passes okf-schema validate --strict (zero errors AND zero warnings). The bundle has a vehicle-config concept with powertrain and sensors fields, but the schema is WRONG: it declares both fields as strings instead of their actual types. First, copy the fixture to {{workspace}} and work ONLY in that directory. You must fix the schema files so that: (1) powertrain is validated as an object with type (string) and capacity_kwh (number) fields; (2) sensors is validated as an array of objects, each with id (string) and location (string) fields. Do NOT use --schema-db; rely on auto-discovery. Use SKILL.md tips about schema placement, naming, and auto-discovery. Report all commands and final validation output.",
+      "prompt_without_skill": "Fix the OKF bundle at skills-evals/fixtures/schema-composition-trap/ so it passes okf-schema validate --strict (zero errors AND zero warnings). The bundle has a vehicle-config concept with powertrain and sensors fields, but the schema validation is failing. First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the okf-schema CLI and the OKF spec at skills/okf-schema/references/okf-v0.1.md to diagnose and fix the schema validation errors. Report all commands and final validation output.",
       "files": [
+        "skills-evals/fixtures/schema-composition-trap/",
         "skills/okf-schema/references/okf-v0.1.md"
       ],
       "assertions": [
@@ -276,69 +241,287 @@
           "id": "s4_strict_pass",
           "text": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
           "check": "output_contains",
-          "target": "0 error"
+          "target": "0 error",
+          "tier": "primary"
         },
         {
           "id": "s4_strict_pass2",
           "text": "The strict validation output reports zero warnings",
           "check": "output_contains",
-          "target": "0 warning"
+          "target": "0 warning",
+          "tier": "primary"
         },
         {
-          "id": "s4_schema_dir",
-          "text": "The bundle contains a _schema/ directory with a schema file for the custom type (SKILL.md: auto-discovered schema location)",
-          "check": "file_glob_contains",
-          "target": "",
+          "id": "s4_conformant",
+          "text": "The final validation states the bundle is conformant",
+          "check": "output_contains",
+          "target": "conformant",
+          "tier": "primary"
+        },
+        {
+          "id": "s4_vehicle_schema_fixed",
+          "text": "vehicle-config.schema.json declares powertrain as an object type",
+          "check": "file_contains",
+          "target": "{{workspace}}/_schema/vehicle-config.schema.json",
           "params": {
-            "glob": "skills-evals/fixtures/schema-output/_schema/*",
-            "text": "\"type\": \"object\"",
-            "exclude": []
-          }
+            "text": "\"powertrain\":"
+          },
+          "tier": "secondary"
         },
         {
-          "id": "s4_schema_naming",
-          "text": "The schema file is named api-endpoint.schema.json (or .json5 / .yaml) matching the concept type (SKILL.md naming convention)",
-          "check": "file_exists",
-          "target": "skills-evals/fixtures/schema-output/_schema/api-endpoint.schema.json"
-        },
-        {
-          "id": "s4_concept_type",
-          "text": "The concept file declares type 'api-endpoint' in its frontmatter",
-          "check": "file_glob_contains",
-          "target": "",
+          "id": "s4_vehicle_schema_object",
+          "text": "vehicle-config.schema.json declares powertrain with object properties (type, capacity_kwh)",
+          "check": "file_contains",
+          "target": "{{workspace}}/_schema/vehicle-config.schema.json",
           "params": {
-            "glob": "skills-evals/fixtures/schema-output/**/*.md",
-            "text": "type: api-endpoint",
-            "exclude": ["index.md", "log.md"]
-          }
-        },
-        {
-          "id": "s4_method_field",
-          "text": "The concept frontmatter includes a 'method' field",
-          "check": "file_glob_contains",
-          "target": "",
-          "params": {
-            "glob": "skills-evals/fixtures/schema-output/**/*.md",
-            "text": "method:",
-            "exclude": ["index.md", "log.md"]
-          }
-        },
-        {
-          "id": "s4_path_field",
-          "text": "The concept frontmatter includes a 'path' field",
-          "check": "file_glob_contains",
-          "target": "",
-          "params": {
-            "glob": "skills-evals/fixtures/schema-output/**/*.md",
-            "text": "path:",
-            "exclude": ["index.md", "log.md"]
-          }
+            "text": "\"type\": \"object\""
+          },
+          "tier": "secondary"
         },
         {
           "id": "s4_no_schema_db_flag",
-          "text": "The agent did NOT use --schema-db flag, relying on auto-discovery (SKILL.md tip)",
-          "check": "output_matches",
-          "target": "^(?!.*--schema-db).*$"
+          "text": "The agent did NOT use --schema-db flag, relying on auto-discovery",
+          "check": "command_not_executed",
+          "target": "okf-schema validate --path {{workspace}} --schema-db",
+          "tier": "secondary"
+        },
+        {
+          "id": "s4_sensors_array",
+          "text": "vehicle-config.schema.json declares sensors as an array of objects",
+          "check": "file_contains",
+          "target": "{{workspace}}/_schema/vehicle-config.schema.json",
+          "params": {
+            "text": "\"type\": \"array\""
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "s4_capacity_kwh",
+          "text": "vehicle-config.schema.json validates capacity_kwh as a number",
+          "check": "file_contains",
+          "target": "{{workspace}}/_schema/vehicle-config.schema.json",
+          "params": {
+            "text": "capacity_kwh"
+          },
+          "tier": "secondary"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "eval_name": "workflow-ordering-trap",
+      "category": "skill-specific",
+      "workspace": "{{iteration_dir}}/workflow-ordering-trap/{{condition}}/workspace",
+      "prompt_with_skill": "Fix the OKF bundle at skills-evals/fixtures/workflow-ordering-trap/ so it passes okf-schema validate --strict (zero errors AND zero warnings). First, copy the fixture to {{workspace}} and work ONLY in that directory. The bundle has missing index.md files and block-style lists. Use the SKILL.md workflow tips. Report every command you run and the final validation output.",
+      "prompt_without_skill": "You have a directory of markdown files at skills-evals/fixtures/workflow-ordering-trap/ that should follow the OKF (Open Knowledge Format) specification. The spec is at skills/okf-schema/references/okf-v0.1.md. First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the okf-schema CLI to identify and fix all structural problems, missing metadata, and formatting issues so the bundle passes strict validation. Report every command you run and the final validation output.",
+      "files": [
+        "skills-evals/fixtures/workflow-ordering-trap/",
+        "skills/okf-schema/references/okf-v0.1.md"
+      ],
+      "assertions": [
+        {
+          "id": "w5_strict_pass",
+          "text": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+          "check": "output_contains",
+          "target": "0 error",
+          "tier": "primary"
+        },
+        {
+          "id": "w5_strict_pass2",
+          "text": "The strict validation output reports zero warnings",
+          "check": "output_contains",
+          "target": "0 warning",
+          "tier": "primary"
+        },
+        {
+          "id": "w5_conformant",
+          "text": "The final validation states the bundle is conformant",
+          "check": "output_contains",
+          "target": "conformant",
+          "tier": "primary"
+        },
+        {
+          "id": "w5_index_root",
+          "text": "The workspace root has an index.md file",
+          "check": "file_exists",
+          "target": "{{workspace}}/index.md",
+          "tier": "secondary"
+        },
+        {
+          "id": "w5_index_cells",
+          "text": "The cells/ subdirectory has an index.md file",
+          "check": "file_exists",
+          "target": "{{workspace}}/cells/index.md",
+          "tier": "secondary"
+        },
+        {
+          "id": "w5_index_thermal",
+          "text": "The thermal/ subdirectory has an index.md file",
+          "check": "file_exists",
+          "target": "{{workspace}}/thermal/index.md",
+          "tier": "secondary"
+        },
+        {
+          "id": "w5_inline_tags",
+          "text": "All concept files have inline tags (not block-style)",
+          "check": "file_glob_contains",
+          "target": "",
+          "params": {
+            "glob": "{{workspace}}/**/*.md",
+            "text": "tags: [",
+            "exclude": [
+              "index.md",
+              "log.md"
+            ]
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "w5_ran_index",
+          "text": "The agent ran okf-schema index",
+          "check": "command_executed",
+          "target": "okf-schema index",
+          "tier": "secondary"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "eval_name": "reserved-files-trap",
+      "category": "skill-specific",
+      "workspace": "{{iteration_dir}}/reserved-files-trap/{{condition}}/workspace",
+      "prompt_with_skill": "Fix the OKF bundle at skills-evals/fixtures/reserved-files-trap/ so it passes okf-schema validate --strict (zero errors AND zero warnings). First, copy the fixture to {{workspace}} and work ONLY in that directory. The bundle has reserved file violations. Use the SKILL.md workflow tips. Report every command you run and the final validation output.",
+      "prompt_without_skill": "You have a directory of markdown files at skills-evals/fixtures/reserved-files-trap/ that should follow the OKF (Open Knowledge Format) specification. The spec is at skills/okf-schema/references/okf-v0.1.md. First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the okf-schema CLI to identify and fix all structural problems, missing metadata, and formatting issues so the bundle passes strict validation. Report every command you run and the final validation output.",
+      "files": [
+        "skills-evals/fixtures/reserved-files-trap/",
+        "skills/okf-schema/references/okf-v0.1.md"
+      ],
+      "assertions": [
+        {
+          "id": "rf6_strict_pass",
+          "text": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+          "check": "output_contains",
+          "target": "0 error",
+          "tier": "primary"
+        },
+        {
+          "id": "rf6_strict_pass2",
+          "text": "The strict validation output reports zero warnings",
+          "check": "output_contains",
+          "target": "0 warning",
+          "tier": "primary"
+        },
+        {
+          "id": "rf6_conformant",
+          "text": "The final validation states the bundle is conformant",
+          "check": "output_contains",
+          "target": "conformant",
+          "tier": "primary"
+        },
+        {
+          "id": "rf6_root_index_no_fm",
+          "text": "Root index.md has no YAML frontmatter",
+          "check": "file_contains",
+          "target": "{{workspace}}/index.md",
+          "params": {
+            "text": "# "
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "rf6_cells_log_removed",
+          "text": "cells/log.md was removed or moved to root",
+          "check": "file_glob_max_count",
+          "target": "",
+          "params": {
+            "glob": "{{workspace}}/cells/log.md",
+            "text": "log",
+            "max_count": 0,
+            "exclude": []
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "rf6_thermal_index_no_fm",
+          "text": "thermal/index.md has no YAML frontmatter",
+          "check": "file_contains",
+          "target": "{{workspace}}/thermal/index.md",
+          "params": {
+            "text": "# "
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "rf6_cells_index_no_fm",
+          "text": "cells/index.md has no YAML frontmatter",
+          "check": "file_contains",
+          "target": "{{workspace}}/cells/index.md",
+          "params": {
+            "text": "# "
+          },
+          "tier": "secondary"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "eval_name": "comment-preservation-trap",
+      "category": "skill-specific",
+      "workspace": "{{iteration_dir}}/comment-preservation-trap/{{condition}}/workspace",
+      "prompt_with_skill": "Fix the OKF bundle at skills-evals/fixtures/comment-preservation-trap/ so it passes okf-schema validate --strict (zero errors AND zero warnings). First, copy the fixture to {{workspace}} and work ONLY in that directory. The bundle has block-style lists in frontmatter. IMPORTANT: the concept.md file contains YAML comments that must be preserved. Use the SKILL.md workflow tips. Report every command you run and the final validation output.",
+      "prompt_without_skill": "You have a directory of markdown files at skills-evals/fixtures/comment-preservation-trap/ that should follow the OKF (Open Knowledge Format) specification. The spec is at skills/okf-schema/references/okf-v0.1.md. First, copy the fixture to {{workspace}} and work ONLY in that directory. Use the okf-schema CLI to identify and fix all structural problems, missing metadata, and formatting issues so the bundle passes strict validation. Report every command you run and the final validation output.",
+      "files": [
+        "skills-evals/fixtures/comment-preservation-trap/",
+        "skills/okf-schema/references/okf-v0.1.md"
+      ],
+      "assertions": [
+        {
+          "id": "cp7_strict_pass",
+          "text": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+          "check": "output_contains",
+          "target": "0 error",
+          "tier": "primary"
+        },
+        {
+          "id": "cp7_strict_pass2",
+          "text": "The strict validation output reports zero warnings",
+          "check": "output_contains",
+          "target": "0 warning",
+          "tier": "primary"
+        },
+        {
+          "id": "cp7_conformant",
+          "text": "The final validation states the bundle is conformant",
+          "check": "output_contains",
+          "target": "conformant",
+          "tier": "primary"
+        },
+        {
+          "id": "cp7_comment_preserved",
+          "text": "concept.md still contains the YAML comment 'This is a critical comment that must survive'",
+          "check": "file_contains",
+          "target": "{{workspace}}/concept.md",
+          "params": {
+            "text": "This is a critical comment that must survive"
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "cp7_inline_tags",
+          "text": "concept.md has inline tags (not block-style)",
+          "check": "file_contains",
+          "target": "{{workspace}}/concept.md",
+          "params": {
+            "text": "tags: ["
+          },
+          "tier": "secondary"
+        },
+        {
+          "id": "cp7_ran_lint",
+          "text": "The agent ran okf-schema lint",
+          "check": "command_executed",
+          "target": "okf-schema lint",
+          "tier": "secondary"
         }
       ]
     }

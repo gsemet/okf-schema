@@ -1,9 +1,9 @@
 ---
-type: API Reference
+type: reference
 title: API Reference
 description: REST API endpoints for the EV Battery Management System.
-tags: [bms, ev, api]
-timestamp: 2026-06-30T13:52:00Z
+tags: [api, reference, endpoints]
+timestamp: 2026-06-30T14:00:00Z
 ---
 
 # API Reference
@@ -24,5 +24,5 @@ All endpoints require a valid API key passed in the `X-API-Key` header.
 
 ## Related Documents
 
-- See [System Architecture](./architecture.md) for component overview.
-- See [Troubleshooting](./operations/troubleshooting.md) for common errors.
+- See [System Architecture](architecture.md) for component overview.
+- See [Troubleshooting](troubleshooting.md) for common errors.

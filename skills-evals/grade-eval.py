@@ -58,6 +58,24 @@ def check_command_executed(transcript: str, command: str) -> tuple[bool, str]:
     return False, f"Command not found: {target[:80]}..."
 
 
+def check_command_not_executed(transcript: str, command: str) -> tuple[bool, str]:
+    """Check that a shell command does NOT appear in executed command lines.
+
+    Unlike ``output_matches`` with a negative-lookahead regex, this only
+    inspects lines that look like shell commands (after normalising ``uv run``
+    prefixes).  Help output, quoted documentation, and SKILL.md excerpts are
+    ignored automatically because they do not contain the full normalised
+    command string.
+    """
+    target = _normalize_cmd(command)
+    for line in transcript.splitlines():
+        line_norm = _normalize_cmd(line)
+        if target in line_norm:
+            return False, f"Command was executed: {target[:80]}..."
+    return True, f"Command not found: {target[:80]}..."
+
+
+
 def check_output_contains(transcript: str, text: str) -> tuple[bool, str]:
     """Check if transcript contains specific text (case-insensitive)."""
     if text.lower() in transcript.lower():
@@ -130,17 +148,53 @@ def check_file_glob_min_count(project_dir: Path, glob_pattern: str, text: str, m
     return False, f"Only {count} files contain '{text[:40]}...' (min: {min_count})"
 
 
-def grade_assertion(assertion: dict, transcript: str, project_dir: Path) -> dict:
+def check_file_glob_max_count(project_dir: Path, glob_pattern: str, text: str, max_count: int, exclude: list[str] | None = None) -> tuple[bool, str]:
+    """Check if at most N files matching a glob pattern contain specific text."""
+    matches = list(project_dir.glob(glob_pattern))
+    if not matches:
+        return True, f"No files matched pattern: {glob_pattern}"
+    count = 0
+    exclude_set = set(exclude or [])
+    for fp in matches:
+        if fp.name in exclude_set:
+            continue
+        content = fp.read_text()
+        if text.lower() in content.lower():
+            count += 1
+    if count <= max_count:
+        return True, f"{count} files contain '{text[:40]}...' (max: {max_count})"
+    return False, f"{count} files contain '{text[:40]}...' (exceeds max: {max_count})"
+
+
+def resolve_placeholders(value, workspace_path: Path | None) -> str:
+    """Replace {{workspace}} and {{iteration_dir}} placeholders in strings."""
+    if not isinstance(value, str):
+        return value
+    if workspace_path is None:
+        return value
+    resolved = value.replace("{{workspace}}", str(workspace_path))
+    resolved = resolved.replace("{{iteration_dir}}", str(workspace_path.parent.parent.parent))
+    return resolved
+
+
+def grade_assertion(assertion: dict, transcript: str, project_dir: Path, workspace_path: Path | None = None) -> dict:
     """Grade a single assertion and return result."""
     check_type = assertion.get("check", "output_contains")
-    target = assertion.get("target", "")
+    target = resolve_placeholders(assertion.get("target", ""), workspace_path)
     params = assertion.get("params", {})
+    if params:
+        params = {
+            k: resolve_placeholders(v, workspace_path) if isinstance(v, str) else v
+            for k, v in params.items()
+        }
 
     passed = False
     justification = ""
 
     if check_type == "command_executed":
         passed, justification = check_command_executed(transcript, target)
+    elif check_type == "command_not_executed":
+        passed, justification = check_command_not_executed(transcript, target)
     elif check_type == "output_contains":
         passed, justification = check_output_contains(transcript, target)
     elif check_type == "output_matches":
@@ -161,6 +215,12 @@ def grade_assertion(assertion: dict, transcript: str, project_dir: Path) -> dict
         min_count = params.get("min_count", 1)
         exclude = params.get("exclude", [])
         passed, justification = check_file_glob_min_count(project_dir, glob_pattern, text, min_count, exclude)
+    elif check_type == "file_glob_max_count":
+        glob_pattern = params.get("glob", "")
+        text = params.get("text", "")
+        max_count = params.get("max_count", 0)
+        exclude = params.get("exclude", [])
+        passed, justification = check_file_glob_max_count(project_dir, glob_pattern, text, max_count, exclude)
     else:
         justification = f"Unknown check type: {check_type}"
 
@@ -173,20 +233,29 @@ def grade_assertion(assertion: dict, transcript: str, project_dir: Path) -> dict
     }
 
 
-def grade_eval(eval_def: dict, transcript: str, project_dir: Path) -> dict:
+def grade_eval(eval_def: dict, transcript: str, project_dir: Path, workspace_path: Path | None = None) -> dict:
     """Grade all assertions for a single eval case."""
     results = []
     for assertion in eval_def.get("assertions", []):
-        results.append(grade_assertion(assertion, transcript, project_dir))
+        result = grade_assertion(assertion, transcript, project_dir, workspace_path)
+        result["tier"] = assertion.get("tier", "secondary")
+        results.append(result)
 
     passed = sum(1 for r in results if r["result"] == "PASS")
     total = len(results)
+
+    primary_results = [r for r in results if r.get("tier") == "primary"]
+    primary_passed = sum(1 for r in primary_results if r["result"] == "PASS")
+    primary_total = len(primary_results)
 
     return {
         "eval_id": eval_def.get("id"),
         "eval_name": eval_def.get("eval_name"),
         "overall": "PASS" if passed == total else "PARTIAL" if passed > 0 else "FAIL",
         "pass_rate": passed / total if total else 0.0,
+        "primary_pass_rate": primary_passed / primary_total if primary_total else 0.0,
+        "primary_passed": primary_passed,
+        "primary_total": primary_total,
         "passed": passed,
         "failed": total - passed,
         "total": total,
@@ -213,7 +282,18 @@ def grade_iteration(iteration_dir: Path, evals_path: Path, project_dir: Path) ->
                 print(f"  ⚠️  No transcript for {eval_name}/{condition}, skipping")
                 continue
 
-            result = grade_eval(eval_def, transcript, project_dir)
+            # Resolve workspace path from eval definition
+            workspace_raw = eval_def.get("workspace", "")
+            if workspace_raw:
+                workspace_path = Path(
+                    workspace_raw
+                    .replace("{{iteration_dir}}", str(iteration_dir))
+                    .replace("{{condition}}", condition)
+                )
+            else:
+                workspace_path = None
+
+            result = grade_eval(eval_def, transcript, project_dir, workspace_path)
             result["condition"] = condition
             result["transcript_path"] = str(transcript_path.relative_to(project_dir))
 

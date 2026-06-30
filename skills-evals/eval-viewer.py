@@ -24,23 +24,29 @@ def load_grading(path: Path) -> dict | None:
         return None
     try:
         data = json.loads(path.read_text())
-        # Unified format: always has assertions array with result field
-        passed = sum(1 for a in data.get("assertions", []) if a.get("result") == "PASS")
-        total = len(data.get("assertions", []))
+        assertions = data.get("assertions", [])
+        passed = sum(1 for a in assertions if a.get("result") == "PASS")
+        total = len(assertions)
+        primary_passed = data.get("primary_passed", 0)
+        primary_total = data.get("primary_total", 0)
         return {
             "summary": {
                 "pass_rate": passed / total if total else 0.0,
+                "primary_pass_rate": primary_passed / primary_total if primary_total else 0.0,
                 "passed": passed,
                 "failed": total - passed,
                 "total": total,
+                "primary_passed": primary_passed,
+                "primary_total": primary_total,
             },
             "expectations": [
                 {
                     "text": a.get("assertion", a.get("id", "Unnamed")),
                     "passed": a.get("result") == "PASS",
                     "evidence": a.get("justification", ""),
+                    "tier": a.get("tier", "secondary"),
                 }
-                for a in data.get("assertions", [])
+                for a in assertions
             ],
         }
     except (json.JSONDecodeError, OSError):
@@ -130,7 +136,10 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
 
         ws_rate = ws["summary"]["pass_rate"] * 100 if ws else 0
         wos_rate = wos["summary"]["pass_rate"] * 100 if wos else 0
+        ws_primary = ws["summary"]["primary_pass_rate"] * 100 if ws else 0
+        wos_primary = wos["summary"]["primary_pass_rate"] * 100 if wos else 0
         delta = ws_rate - wos_rate
+        delta_primary = ws_primary - wos_primary
         delta_class = "positive" if delta > 0 else ("negative" if delta < 0 else "neutral")
 
         # Build expectation comparison table — same assertions for both conditions
@@ -139,6 +148,8 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
 
         for assertion in all_assertions:
             text = assertion["text"]
+            tier = assertion.get("tier", "secondary")
+            tier_badge = f'<span class="tier-badge tier-{tier}">{tier}</span>'
             ws_exp = next((e for e in ws.get("expectations", []) if e["text"] == text), None) if ws else None
             wos_exp = next((e for e in wos.get("expectations", []) if e["text"] == text), None) if wos else None
 
@@ -160,7 +171,7 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
 
             exp_rows.append(f"""
                 <tr class="{row_class}">
-                    <td class="exp-text">{text}</td>
+                    <td class="exp-text">{tier_badge} {text}</td>
                     <td class="pass-cell {'pass' if ws_pass else ('fail' if ws_pass is False else 'na')}">{"✅ PASS" if ws_pass else ("❌ FAIL" if ws_pass is False else "—")}</td>
                     <td class="pass-cell {'pass' if wos_pass else ('fail' if wos_pass is False else 'na')}">{"✅ PASS" if wos_pass else ("❌ FAIL" if wos_pass is False else "—")}</td>
                     <td class="indicator">{indicator}</td>
@@ -176,15 +187,18 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
                         <span class="score-label">With Skill</span>
                         <span class="score-value">{ws_rate:.0f}%</span>
                         <span class="score-detail">{ws["summary"]["passed"] if ws else 0}/{ws["summary"]["total"] if ws else 0}</span>
+                        <span class="score-detail primary">Primary: {ws_primary:.0f}%</span>
                     </div>
                     <div class="score-box without-skill">
                         <span class="score-label">Without Skill</span>
                         <span class="score-value">{wos_rate:.0f}%</span>
                         <span class="score-detail">{wos["summary"]["passed"] if wos else 0}/{wos["summary"]["total"] if wos else 0}</span>
+                        <span class="score-detail primary">Primary: {wos_primary:.0f}%</span>
                     </div>
                     <div class="score-box delta {delta_class}">
                         <span class="score-label">Delta</span>
                         <span class="score-value">{'+' if delta > 0 else ''}{delta:.0f}%</span>
+                        <span class="score-detail primary">Primary: {'+' if delta_primary > 0 else ''}{delta_primary:.0f}%</span>
                     </div>
                 </div>
             </div>
@@ -290,8 +304,12 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
         .score-label {{ display: block; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; }}
         .score-value {{ display: block; font-size: 1.3rem; font-weight: bold; }}
         .score-detail {{ display: block; font-size: 0.75rem; color: var(--text-secondary); }}
+        .score-detail.primary {{ color: var(--accent); font-weight: 600; }}
         .delta.positive {{ color: var(--pass); }}
         .delta.negative {{ color: var(--fail); }}
+        .tier-badge {{ font-size: 0.65rem; text-transform: uppercase; padding: 1px 5px; border-radius: 3px; margin-right: 4px; font-weight: 600; }}
+        .tier-badge.tier-primary {{ background: rgba(88, 166, 255, 0.15); color: var(--accent); }}
+        .tier-badge.tier-secondary {{ background: rgba(139, 148, 158, 0.15); color: var(--text-secondary); }}
         .comparison-table {{ width: 100%; border-collapse: collapse; }}
         .comparison-table th {{
             text-align: left;

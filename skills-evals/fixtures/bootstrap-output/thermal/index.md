@@ -1,5 +1,5 @@
 # thermal
 
-- [Battery Cooling Systems](cooling-systems.md) — Thermal management to maintain optimal cell temperature.  [Concept]
-- [Heat Generation in Cells](heat-generation.md) — Sources and modeling of heat generation during charge/discharge.  [Concept]
-- [Thermal Modeling](thermal-modeling.md) — Simulation and prediction of battery thermal behavior.  [Concept]
+- [Cooling Systems](cooling-systems.md) — Active and passive cooling strategies for battery packs.  [concept]
+- [Heat Generation](heat-generation.md) — Sources and mechanisms of heat generation in battery cells.  [concept]
+- [Thermal Modeling](thermal-modeling.md) — Mathematical models for predicting battery temperature behavior.  [concept]

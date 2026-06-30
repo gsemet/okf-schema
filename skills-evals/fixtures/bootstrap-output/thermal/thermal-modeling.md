@@ -1,22 +1,16 @@
 ---
-type: Concept
+type: concept
 title: Thermal Modeling
-description: Simulation and prediction of battery thermal behavior.
-tags: [thermal, simulation, modeling]
-timestamp: 2026-06-30T10:25:00Z
+description: Mathematical models for predicting battery temperature behavior.
+tags: [thermal, modeling, simulation]
+timestamp: 2026-06-30T14:00:00Z
 ---
 
 # Thermal Modeling
 
-Thermal models predict temperature distribution across battery packs.
+Thermal models predict how battery temperature changes under different operating conditions.
 
-## Approaches
+## Related Concepts
 
-- Lumped parameter models
-- CFD simulations
-- Data-driven models
-
-## Applications
-
-Used to design cooling strategies and predict [thermal runaway](../safety/thermal-runaway.md) risk.
-
+- [Heat Generation](heat-generation.md)
+- [Cooling Systems](cooling-systems.md)
