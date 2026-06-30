@@ -85,7 +85,7 @@ for c in concepts:
 
 ## Validation Rules
 
-### Errors (E1–E6)
+### Errors (E1–E7)
 
 | Code | Rule | Description |
 |------|------|-------------|
@@ -95,6 +95,7 @@ for c in concepts:
 | E4 | Schema validation | Frontmatter must validate against its type's JSONSchema |
 | E5 | Flat lists | Frontmatter lists must not be nested (e.g. `tags: [[a], b]`) |
 | E6 | Reserved file location | `log.md` must exist only at bundle root |
+| E7 | Loose root file | Non-reserved `.md` files must not be placed at bundle root; move them into subdirectories |
 
 ### Warnings (W1–W7)
 

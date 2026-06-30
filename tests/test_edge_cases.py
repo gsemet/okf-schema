@@ -113,7 +113,9 @@ class TestConceptEdgeCases:
         """Unicode characters in frontmatter and body are preserved."""
         bundle = tmp_path / "bundle"
         bundle.mkdir()
-        (bundle / "unicode.md").write_text(
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "unicode.md").write_text(
             "---\ntype: concept\ntitle: 日本語\n"
             "description: émojis 🎉\ntags: [中文, العربية]\n"
             "---\n\nÜnicode bødy.\n",
@@ -150,7 +152,9 @@ class TestSchemaDbEdgeCases:
         """Empty schema DB directory loads as empty dict."""
         bundle = tmp_path / "bundle"
         bundle.mkdir()
-        (bundle / "concept.md").write_text(
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
             "---\ntype: concept\ntitle: Test\n---\n\nBody.\n",
             encoding="utf-8",
         )
@@ -164,7 +168,9 @@ class TestSchemaDbEdgeCases:
         """Invalid JSON schema files are skipped gracefully."""
         bundle = tmp_path / "bundle"
         bundle.mkdir()
-        (bundle / "concept.md").write_text(
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
             "---\ntype: concept\ntitle: Test\n---\n\nBody.\n",
             encoding="utf-8",
         )
@@ -179,7 +185,9 @@ class TestSchemaDbEdgeCases:
         """Malformed YAML schema files are skipped gracefully."""
         bundle = tmp_path / "bundle"
         bundle.mkdir()
-        (bundle / "concept.md").write_text(
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
             "---\ntype: concept\ntitle: Test\n---\n\nBody.\n",
             encoding="utf-8",
         )

@@ -31,7 +31,7 @@ class TestEndToEndWorkflow:
         bundle = project / "bundle"
         assert bundle.is_dir()
 
-        # 2. new concept
+        # 2. new concept in a subdirectory
         result = runner.invoke(
             cli,
             [
@@ -39,7 +39,7 @@ class TestEndToEndWorkflow:
                 "--path",
                 str(bundle),
                 "--name",
-                "getting-started",
+                "guides/getting-started",
                 "--type",
                 "guide",
                 "--title",
@@ -47,7 +47,7 @@ class TestEndToEndWorkflow:
             ],
         )
         assert result.exit_code == 0
-        concept = bundle / "getting-started.md"
+        concept = bundle / "guides" / "getting-started.md"
         assert concept.exists()
 
         # 3. validate (should pass)
@@ -86,14 +86,14 @@ class TestEndToEndWorkflow:
         assert result.exit_code == 0
         bundle = project / "bundle"
 
-        # Add concepts via CLI new
+        # Add concepts via CLI new (in subdirectories to comply with E7)
         runner.invoke(
             cli,
-            ["new", "--path", str(bundle), "--name", "alpha", "--type", "concept"],
+            ["new", "--path", str(bundle), "--name", "concepts/alpha", "--type", "concept"],
         )
         runner.invoke(
             cli,
-            ["new", "--path", str(bundle), "--name", "beta", "--type", "concept"],
+            ["new", "--path", str(bundle), "--name", "concepts/beta", "--type", "concept"],
         )
 
         # validate via CLI
@@ -236,7 +236,9 @@ class TestCliIntegration:
             '---\nokf_version: "0.1"\n---\n\n# Bundle\n',
             encoding="utf-8",
         )
-        (bundle / "concept.md").write_text(
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
             "---\ntype: concept\ntitle: Test Concept\n---\n\nBody.\n",
             encoding="utf-8",
         )

@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "type": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "powertrain": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "capacity_kwh": { "type": "number" }
+      },
+      "required": ["type", "capacity_kwh"]
+    },
+    "sensors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "location": { "type": "string" }
+        },
+        "required": ["id", "location"]
+      }
+    }
+  },
+  "required": ["type"]
+}

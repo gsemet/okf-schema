@@ -11,13 +11,13 @@ Result: **3 errors, 0 warnings**
 
 ### Issues Found
 
-1. **E3** — `cells/index.md` has unexpected frontmatter  
+1. **E3** — `cells/index.md` has unexpected frontmatter
    Only the bundle-root `index.md` may have frontmatter. Subdirectory `index.md` files must not have frontmatter.
 
-2. **E3** — `thermal/index.md` has unexpected frontmatter  
+2. **E3** — `thermal/index.md` has unexpected frontmatter
    Same issue as above.
 
-3. **E6** — `cells/log.md` is not at bundle root  
+3. **E6** — `cells/log.md` is not at bundle root
    `log.md` must be at the bundle root only.
 
 ## Fixes Applied
