@@ -1,22 +1,16 @@
 ---
-type: Concept
-title: Battery Failure Modes
-description: Common failure modes and their mitigations in EV batteries.
-tags: [safety, reliability, analysis]
-timestamp: 2026-06-30T10:35:00Z
+type: concept
+title: Failure Modes
+description: Common failure modes in battery management systems.
+tags: [safety, failure, bms]
+timestamp: 2026-06-30T14:00:00Z
 ---
 
-# Battery Failure Modes
+# Failure Modes
 
-Analysis of how EV batteries can fail and how to mitigate each mode.
+Understanding failure modes is essential for designing robust battery management systems.
 
-## Modes
+## Related Concepts
 
-- Capacity fade
-- Internal short circuit
-- Electrolyte decomposition
-
-## Mitigation
-
-Design controls and monitoring per [ASIL ratings](asil-ratings.md).
-
+- [ASIL Ratings](asil-ratings.md)
+- [Cell Balancing](../cells/cell-balancing.md)

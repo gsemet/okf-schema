@@ -1,5 +1,4 @@
 ---
-type: concept
 title: Something
 description: This file has frontmatter but no type field.
 tags: [test]

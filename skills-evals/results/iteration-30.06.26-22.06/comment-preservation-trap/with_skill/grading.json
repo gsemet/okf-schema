@@ -1,0 +1,65 @@
+{
+  "eval_id": 7,
+  "eval_name": "comment-preservation-trap",
+  "overall": "PASS",
+  "pass_rate": 1.0,
+  "primary_pass_rate": 1.0,
+  "primary_passed": 3,
+  "primary_total": 3,
+  "passed": 6,
+  "failed": 0,
+  "total": 6,
+  "assertions": [
+    {
+      "assertion": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+      "check_type": "output_contains",
+      "target": "0 error",
+      "result": "PASS",
+      "justification": "Found: '0 error...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The strict validation output reports zero warnings",
+      "check_type": "output_contains",
+      "target": "0 warning",
+      "result": "PASS",
+      "justification": "Found: '0 warning...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The final validation states the bundle is conformant",
+      "check_type": "output_contains",
+      "target": "conformant",
+      "result": "PASS",
+      "justification": "Found: 'conformant...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "concept.md still contains the YAML comment 'This is a critical comment that must survive'",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/comment-preservation-trap/with_skill/workspace/concept.md",
+      "result": "PASS",
+      "justification": "Found 'This is a critical comment that must sur...' in skills-evals/results/iteration-30.06.26-22.06/comment-preservation-trap/with_skill/workspace/concept.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "concept.md has inline tags (not block-style)",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/comment-preservation-trap/with_skill/workspace/concept.md",
+      "result": "PASS",
+      "justification": "Found 'tags: [...' in skills-evals/results/iteration-30.06.26-22.06/comment-preservation-trap/with_skill/workspace/concept.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The agent ran okf-schema lint",
+      "check_type": "command_executed",
+      "target": "okf-schema lint",
+      "result": "PASS",
+      "justification": "Command found: okf-schema lint...",
+      "tier": "secondary"
+    }
+  ],
+  "notes": "",
+  "condition": "with_skill",
+  "transcript_path": "skills-evals/results/iteration-30.06.26-22.06/comment-preservation-trap/with_skill/transcript.md"
+}

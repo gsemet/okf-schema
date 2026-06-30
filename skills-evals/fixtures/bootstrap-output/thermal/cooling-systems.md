@@ -1,22 +1,16 @@
 ---
-type: Concept
-title: Battery Cooling Systems
-description: Thermal management to maintain optimal cell temperature.
+type: concept
+title: Cooling Systems
+description: Active and passive cooling strategies for battery packs.
 tags: [thermal, cooling, bms]
-timestamp: 2026-06-30T10:15:00Z
+timestamp: 2026-06-30T14:00:00Z
 ---
 
-# Battery Cooling Systems
+# Cooling Systems
 
-Cooling systems regulate battery temperature during operation.
+Cooling systems maintain battery temperature within safe operating limits.
 
-## Technologies
+## Related Concepts
 
-- Liquid cooling
-- Air cooling
-- Phase change materials
-
-## Design
-
-Informed by [thermal modeling](thermal-modeling.md) simulations.
-
+- [Thermal Modeling](thermal-modeling.md)
+- [Heat Generation](heat-generation.md)

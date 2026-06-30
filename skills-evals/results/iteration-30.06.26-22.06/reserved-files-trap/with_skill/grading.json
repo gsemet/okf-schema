@@ -1,0 +1,73 @@
+{
+  "eval_id": 6,
+  "eval_name": "reserved-files-trap",
+  "overall": "PASS",
+  "pass_rate": 1.0,
+  "primary_pass_rate": 1.0,
+  "primary_passed": 3,
+  "primary_total": 3,
+  "passed": 7,
+  "failed": 0,
+  "total": 7,
+  "assertions": [
+    {
+      "assertion": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+      "check_type": "output_contains",
+      "target": "0 error",
+      "result": "PASS",
+      "justification": "Found: '0 error...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The strict validation output reports zero warnings",
+      "check_type": "output_contains",
+      "target": "0 warning",
+      "result": "PASS",
+      "justification": "Found: '0 warning...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The final validation states the bundle is conformant",
+      "check_type": "output_contains",
+      "target": "conformant",
+      "result": "PASS",
+      "justification": "Found: 'conformant...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "Root index.md has no YAML frontmatter",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/reserved-files-trap/with_skill/workspace/index.md",
+      "result": "PASS",
+      "justification": "Found '# ...' in skills-evals/results/iteration-30.06.26-22.06/reserved-files-trap/with_skill/workspace/index.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "cells/log.md was removed or moved to root",
+      "check_type": "file_glob_max_count",
+      "target": "",
+      "result": "PASS",
+      "justification": "No files matched pattern: skills-evals/results/iteration-30.06.26-22.06/reserved-files-trap/with_skill/workspace/cells/log.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "thermal/index.md has no YAML frontmatter",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/reserved-files-trap/with_skill/workspace/thermal/index.md",
+      "result": "PASS",
+      "justification": "Found '# ...' in skills-evals/results/iteration-30.06.26-22.06/reserved-files-trap/with_skill/workspace/thermal/index.md",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "cells/index.md has no YAML frontmatter",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/reserved-files-trap/with_skill/workspace/cells/index.md",
+      "result": "PASS",
+      "justification": "Found '# ...' in skills-evals/results/iteration-30.06.26-22.06/reserved-files-trap/with_skill/workspace/cells/index.md",
+      "tier": "secondary"
+    }
+  ],
+  "notes": "",
+  "condition": "with_skill",
+  "transcript_path": "skills-evals/results/iteration-30.06.26-22.06/reserved-files-trap/with_skill/transcript.md"
+}

@@ -1,22 +1,16 @@
 ---
-type: Concept
+type: concept
 title: State of Charge Estimation
-description: Algorithm to determine remaining battery capacity.
-tags: [cells, algorithms, bms]
-timestamp: 2026-06-30T10:05:00Z
+description: Methods for estimating the remaining charge in a battery cell.
+tags: [battery, soc, estimation]
+timestamp: 2026-06-30T14:00:00Z
 ---
 
 # State of Charge Estimation
 
-SOC estimation determines the remaining charge in a battery pack.
+Accurate SoC estimation is critical for battery management systems.
 
-## Methods
+## Related Concepts
 
-- Coulomb counting
-- Open-circuit voltage
-- Kalman filtering
-
-## Related
-
-Works with [cell balancing](cell-balancing.md) to maintain pack health.
-
+- [Lithium-Ion Cells](lithium-ion.md)
+- [Thermal Modeling](../thermal/thermal-modeling.md)

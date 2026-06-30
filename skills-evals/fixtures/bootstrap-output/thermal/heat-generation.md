@@ -1,22 +1,16 @@
 ---
-type: Concept
-title: Heat Generation in Cells
-description: Sources and modeling of heat generation during charge/discharge.
-tags: [thermal, physics, modeling]
-timestamp: 2026-06-30T10:20:00Z
+type: concept
+title: Heat Generation
+description: Sources and mechanisms of heat generation in battery cells.
+tags: [thermal, heat, cells]
+timestamp: 2026-06-30T14:00:00Z
 ---
 
-# Heat Generation in Cells
+# Heat Generation
 
-Heat is generated during electrochemical reactions in battery cells.
+Heat is generated in batteries due to internal resistance and electrochemical reactions.
 
-## Sources
+## Related Concepts
 
-- Joule heating (I²R losses)
-- Entropic heat
-- Side reactions
-
-## Mitigation
-
-Managed by [battery cooling systems](cooling-systems.md).
-
+- [Thermal Modeling](thermal-modeling.md)
+- [Cooling Systems](cooling-systems.md)

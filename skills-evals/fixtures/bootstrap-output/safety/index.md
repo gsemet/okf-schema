@@ -1,5 +1,5 @@
 # safety
 
-- [ASIL Safety Ratings](asil-ratings.md) — Automotive Safety Integrity Levels for battery management systems.  [Concept]
-- [Battery Failure Modes](failure-modes.md) — Common failure modes and their mitigations in EV batteries.  [Concept]
-- [Thermal Runaway](thermal-runaway.md) — Uncontrolled self-heating leading to cell failure.  [Concept]
+- [ASIL Ratings](asil-ratings.md) — Automotive Safety Integrity Level classifications for battery systems.  [concept]
+- [Failure Modes](failure-modes.md) — Common failure modes in battery management systems.  [concept]
+- [Thermal Runaway](thermal-runaway.md) — Cascading thermal failure mechanism in battery packs.  [concept]

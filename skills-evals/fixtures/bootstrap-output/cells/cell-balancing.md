@@ -1,21 +1,16 @@
 ---
-type: Concept
+type: concept
 title: Cell Balancing
-description: Technique to equalize state of charge across cells in a pack.
-tags: [cells, bms, balancing]
-timestamp: 2026-06-30T10:10:00Z
+description: Techniques for equalizing charge across battery cells.
+tags: [battery, cells, balancing]
+timestamp: 2026-06-30T14:00:00Z
 ---
 
 # Cell Balancing
 
-Cell balancing ensures all cells in a pack maintain similar charge levels.
+Cell balancing ensures all cells in a battery pack maintain similar charge levels.
 
-## Types
+## Related Concepts
 
-- Passive balancing
-- Active balancing
-
-## Importance
-
-Prevents premature degradation and improves pack longevity.
-
+- [Lithium-Ion Cells](lithium-ion.md)
+- [Failure Modes](../safety/failure-modes.md)

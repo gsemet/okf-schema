@@ -5,9 +5,8 @@
     "type": { "type": "string" },
     "title": { "type": "string" },
     "description": { "type": "string" },
-    "resource": { "type": "string", "format": "uri" },
     "tags": { "type": "array", "items": { "type": "string" } },
     "timestamp": { "type": "string", "format": "date-time" }
   },
-  "required": ["type", "resource"]
+  "required": ["type", "title", "description", "tags", "timestamp"]
 }

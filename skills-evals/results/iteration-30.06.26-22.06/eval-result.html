@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OKF Schema Skill Eval — A/B Comparison</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --pass: #3fb950;
+            --fail: #f85149;
+            --improved: #2ea043;
+            --regressed: #da3633;
+            --neutral: #8b949e;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 2rem; }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .subtitle { color: var(--text-secondary); }
+        .summary-bar {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .summary-pill {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 140px;
+        }
+        .summary-pill .value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+        .summary-pill .label { font-size: 0.85rem; color: var(--text-secondary); }
+        .eval-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .eval-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .eval-header h3 { font-size: 1.1rem; }
+        .scores { display: flex; gap: 1rem; }
+        .score-box {
+            text-align: center;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            background: var(--bg);
+            min-width: 100px;
+        }
+        .score-label { display: block; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; }
+        .score-value { display: block; font-size: 1.3rem; font-weight: bold; }
+        .score-detail { display: block; font-size: 0.75rem; color: var(--text-secondary); }
+        .score-detail.primary { color: var(--accent); font-weight: 600; }
+        .delta.positive { color: var(--pass); }
+        .delta.negative { color: var(--fail); }
+        .tier-badge { font-size: 0.65rem; text-transform: uppercase; padding: 1px 5px; border-radius: 3px; margin-right: 4px; font-weight: 600; }
+        .tier-badge.tier-primary { background: rgba(88, 166, 255, 0.15); color: var(--accent); }
+        .tier-badge.tier-secondary { background: rgba(139, 148, 158, 0.15); color: var(--text-secondary); }
+        .comparison-table { width: 100%; border-collapse: collapse; }
+        .comparison-table th {
+            text-align: left;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        .comparison-table td {
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        .comparison-table tr:last-child td { border-bottom: none; }
+        .exp-text { max-width: 500px; }
+        .pass-cell.pass { color: var(--pass); font-weight: 600; }
+        .pass-cell.fail { color: var(--fail); font-weight: 600; }
+        .pass-cell.na { color: var(--text-secondary); }
+        tr.improved { background: rgba(46, 160, 67, 0.1); }
+        tr.regressed { background: rgba(218, 54, 51, 0.1); }
+        tr.same { }
+        tr.new { background: rgba(88, 166, 255, 0.05); }
+        .indicator { font-size: 0.8rem; font-weight: 600; }
+        tr.improved .indicator { color: var(--improved); }
+        tr.regressed .indicator { color: var(--regressed); }
+        .skeptical-review {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+        }
+        .skeptical-review h2 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        .skeptical-review h3 {
+            color: var(--text);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        .skeptical-review p {
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .skeptical-review ul {
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .skeptical-review li {
+            margin-bottom: 0.25rem;
+            color: var(--text-secondary);
+        }
+        .skeptical-review blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 1rem;
+            margin: 0.75rem 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 OKF Schema Skill Eval</h1>
+            <p class="subtitle">A/B Comparison: With Skill vs Without Skill — iteration-30.06.26-22.06</p>
+        </header>
+        <div class="summary-bar">
+            <div class="summary-pill">
+                <div class="value">7</div>
+                <div class="label">Evaluations</div>
+            </div>
+            <div class="summary-pill">
+                <div class="value">+2%</div>
+                <div class="label">Avg Improvement</div>
+            </div>
+            <div class="summary-pill">
+                <div class="value">2/7</div>
+                <div class="label">Improved</div>
+            </div>
+        </div>
+        <div class="skeptical-review"><h2>🧐 Skeptical Assessment</h2><h1>Skeptical Assessment — iteration-30.06.26-22.06</h1>
+
+<h2>Executive Summary</h2>
+
+<ul>
+<li><strong>Total evals</strong>: 7 (14 condition-eval pairs)</li>
+<li><strong>Suspicious results</strong>: 3</li>
+<li><strong>Confirmed valid failures</strong>: 1</li>
+<li><strong>Grader artifacts / transcript issues</strong>: 2</li>
+<li><strong>Fixture/eval design issues</strong>: 2</li>
+</ul>
+
+<p>| Eval | Condition | Score | Primary | Verdict |</p>
+<p>|------|-----------|-------|---------|---------|</p>
+<p>| repair-knowledge-base | with_skill | 6/8 | 1/3 | <strong>Transcript quality issue</strong> |</p>
+<p>| workflow-ordering-trap | without_skill | 6/8 | 3/3 | <strong>Mixed (fixture issue + real gap)</strong> |</p>
+<p>| comment-preservation-trap | without_skill | 5/6 | 3/3 | <strong>Fixture issue</strong> |</p>
+
+<p>All other 11 condition-eval pairs scored 100% and show no anomalies.</p>
+
+<p>---</p>
+
+<h2>Per-Eval Analysis</h2>
+
+<h3>repair-knowledge-base/with_skill (6/8, primary 1/3)</h3>
+
+<ul>
+<li><strong>Issue</strong>: Two primary assertions FAIL — "0 error" and "conformant" — yet the workspace <strong>passes strict validation</strong> when re-run manually.</li>
+<li><strong>Root cause</strong>: The transcript is a <strong>synthetic post-hoc summary</strong>, not a raw execution transcript. The agent paraphrased the CLI output as:</li>
+</ul>
+<p>&gt; "Result": ✅ Zero errors, zero warnings. Validation passed.</p>
+
+<p>instead of quoting the literal CLI output which would have contained:</p>
+<p>&gt; `Bundle is conformant (0 errors, 0 warnings).`</p>
+<ul>
+<li><strong>Grader behavior</strong>: `check_output_contains` does case-insensitive substring matching. The transcript contains "0 warning" (from the initial state description: "10 warnings"), which is why that assertion PASSes. But "0 error" and "conformant" do not appear as literal substrings.</li>
+<li><strong>Verdict</strong>: <strong>Transcript quality issue / Grader artifact</strong></li>
+<li><strong>Evidence</strong>:</li>
+</ul>
+<p>- Workspace at `repair-knowledge-base/with_skill/workspace/` passes `okf-schema validate --strict` with "Bundle is conformant (0 errors, 0 warnings)."</p>
+<p>- Transcript grep for "conformant" returns 0 matches.</p>
+<p>- Transcript grep for "0" only matches "10 warnings" and date strings, not "0 errors".</p>
+<ul>
+<li><strong>Impact</strong>: This is a <strong>false negative</strong>. The agent succeeded; the grader failed to detect success because the transcript format deviated from raw CLI output.</li>
+</ul>
+
+<p>---</p>
+
+<h3>workflow-ordering-trap/without_skill (6/8, primary 3/3)</h3>
+
+<ul>
+<li><strong>Issue 1 — `index.md` at root (FAIL)</strong>: The assertion expects a root `index.md`, but the fixture `skills-evals/fixtures/workflow-ordering-trap/` does <strong>not</strong> contain a root `index.md`. The prompt only mentions "missing index.md files and block-style lists" without specifying the root needs one. The without_skill agent correctly identified only `cells/` and `thermal/` as needing index files.</li>
+<li><strong>Issue 2 — `ran okf-schema index` (FAIL)</strong>: The agent created `cells/index.md` and `thermal/index.md` manually (described as "Created two `index.md` files per the OKF specification §6"), never executing the `okf-schema index` command.</li>
+<li><strong>Verdict</strong>: <strong>Mixed</strong></li>
+</ul>
+<p>- `index.md` at root failure: <strong>Fixture/eval design issue</strong>. The fixture lacks a root index.md and the prompt doesn't mention it as a requirement. The without_skill agent fixed what was asked.</p>
+<p>- `ran okf-schema index` failure: <strong>Real skill gap</strong>. Without the SKILL.md workflow tips, the agent didn't know the `index` command exists and did the work manually. This is a legitimate skill differentiation.</p>
+<ul>
+<li><strong>Evidence</strong>:</li>
+</ul>
+<p>- Fixture `ls` shows no `index.md` at root.</p>
+<p>- `okf-schema validate --strict` on the fixture shows only W4 warnings for `cells/` and `thermal/`, nothing about root.</p>
+<p>- Transcript explicitly states: "Created two `index.md` files" — no `okf-schema index` command executed.</p>
+
+<p>---</p>
+
+<h3>comment-preservation-trap/without_skill (5/6, primary 3/3)</h3>
+
+<ul>
+<li><strong>Issue</strong>: FAIL on "ran okf-schema lint" — but the fixture was <strong>already conformant</strong> before the agent touched it.</li>
+<li><strong>Root cause</strong>: The fixture `skills-evals/fixtures/comment-preservation-trap/concept.md` already contains:</li>
+</ul>
+<p>- Inline tags: `tags: [tag1, tag2]` (not block-style)</p>
+<p>- Preserved comments: `# This is a critical comment that must survive`</p>
+<p>- Valid frontmatter with `type: concept`</p>
+
+<p>Running `okf-schema validate --strict` on the fixture returns "Bundle is conformant (0 errors, 0 warnings)." <strong>with no modifications needed</strong>.</p>
+<ul>
+<li><strong>Agent behavior</strong>: The without_skill agent correctly observed: "The workspace bundle was already conformant upon initial inspection. No modifications were required."</li>
+<li><strong>Verdict</strong>: <strong>Fixture issue</strong></li>
+<li><strong>Evidence</strong>:</li>
+</ul>
+<p>- Fixture `concept.md` already has `tags: [tag1, tag2]` — inline, not block-style.</p>
+<p>- `okf-schema validate --strict` on the raw fixture passes with 0 errors, 0 warnings.</p>
+<p>- The eval description claims "block-style lists in frontmatter" but the fixture does not exhibit this.</p>
+<ul>
+<li><strong>Impact</strong>: This is a <strong>false negative</strong>. The agent correctly identified no action was needed. Penalizing it for not running `lint` on an already-conformant bundle is unfair. The with_skill agent ran `lint` anyway (proactively), which is why it scored 6/6 — but this reflects eagerness, not necessity.</li>
+</ul>
+
+<p>---</p>
+
+<h2>Grader Bugs Found</h2>
+
+<h3>1. `check_output_contains` is vulnerable to paraphrased transcripts</h3>
+
+<p>The grader relies on literal substring matching (`text.lower() in transcript.lower()`). When agents produce synthetic summaries instead of raw CLI output, the grader cannot detect success even if the workspace is in a valid state.</p>
+
+<strong>Affected</strong>: `repair-knowledge-base/with_skill` — "0 error" and "conformant" assertions.
+
+<strong>Recommendation</strong>: Either:
+<ul>
+<li>Require agents to quote raw CLI output verbatim in transcripts, OR</li>
+<li>Add a fallback workspace-state validation check for `output_contains` assertions (verify the actual CLI output if transcript matching fails).</li>
+</ul>
+
+<h3>2. `command_executed` does not detect manual workarounds</h3>
+
+<p>The grader correctly flags when a command was not executed, but this can be a false negative when the agent achieves the same outcome manually. This is by design for skill evals (we want to measure whether the agent <em>used</em> the tool), but it should be documented as intentional.</p>
+
+<strong>Affected</strong>: `workflow-ordering-trap/without_skill` — "ran okf-schema index".
+
+<strong>Status</strong>: Not a bug — this is the intended behavior for measuring skill adoption.
+
+<p>---</p>
+
+<h2>Fixture Issues Found</h2>
+
+<h3>1. `comment-preservation-trap` fixture is already valid</h3>
+
+<p>The fixture passes strict validation without any modifications. The eval description claims "block-style lists in frontmatter" but the actual `concept.md` has inline tags (`tags: [tag1, tag2]`).</p>
+
+<strong>Impact</strong>: Both with_skill and without_skill agents found nothing to fix. The only differentiation is whether the agent proactively ran `lint` (with_skill did, without_skill didn't). This tests eagerness, not repair capability.
+
+<strong>Recommendation</strong>: Replace the fixture with one that actually has block-style tags:
+<p>```yaml</p>
+<p>tags:</p>
+<p>- tag1</p>
+<p>- tag2</p>
+<p>```</p>
+<p>so that `lint` is genuinely required to fix the bundle.</p>
+
+<h3>2. `workflow-ordering-trap` fixture lacks root `index.md`</h3>
+
+<p>The fixture has no root `index.md`, and `okf-schema validate --strict` does not flag this as an error or warning. Yet the eval assertion `w5_index_root` expects one to exist.</p>
+
+<strong>Impact</strong>: The without_skill agent fixed exactly what validation flagged (cells/ and thermal/ index files) and still gets penalized for missing a root index that was never required.
+
+<strong>Recommendation</strong>: Either:
+<ul>
+<li>Add a root `index.md` to the fixture so the agent doesn't need to create one, OR</li>
+<li>Remove the `w5_index_root` assertion if root index.md is not a strict validation requirement, OR</li>
+<li>Ensure the fixture triggers a validation warning for missing root index.md.</li>
+</ul>
+
+<p>---</p>
+
+<h2>Transcript Quality Issues</h2>
+
+<h3>1. `repair-knowledge-base/with_skill` — Synthetic summary transcript</h3>
+
+<p>The transcript reads like a human-written report rather than a raw execution log. Key indicators:</p>
+<ul>
+<li>No `uv run -- okf-schema` command prefixes in the "Final Validation" section.</li>
+<li>Output paraphrased as "✅ Zero errors, zero warnings. Validation passed." instead of raw CLI output.</li>
+<li>No literal "conformant" string anywhere in the transcript.</li>
+</ul>
+
+<strong>Recommendation</strong>: Enforce raw transcript format in eval prompts. Add language like: "Quote all command outputs verbatim. Do not paraphrase or summarize CLI output."
+
+<p>---</p>
+
+<h2>Recommendations</h2>
+
+<h3>Immediate (before next iteration)</h3>
+
+<ul>
+<li><strong>Re-grade `repair-knowledge-base/with_skill`</strong> manually as PASS for all primary assertions. The workspace state confirms success; the transcript format is the only blocker.</li>
+</ul>
+
+<ul>
+<li><strong>Fix `comment-preservation-trap` fixture</strong> to actually contain block-style tags that trigger W7, so the eval tests a real repair scenario.</li>
+</ul>
+
+<ul>
+<li><strong>Clarify `workflow-ordering-trap` expectations</strong> — either add root `index.md` to the fixture or remove the `w5_index_root` assertion.</li>
+</ul>
+
+<h3>Medium-term (methodology improvements)</h3>
+
+<ul>
+<li><strong>Add workspace-state fallback validation</strong> to the grader. For `output_contains` assertions targeting validation output, if the transcript match fails, re-run `okf-schema validate --strict` on the workspace and check the actual CLI output. This prevents transcript format issues from causing false negatives.</li>
+</ul>
+
+<ul>
+<li><strong>Standardize transcript format</strong> in eval prompts. Require verbatim CLI output quoting. Consider adding a post-processing step that extracts command outputs from transcripts for grading.</li>
+</ul>
+
+<ul>
+<li><strong>Audit all fixtures</strong> before each iteration to ensure they match the eval descriptions. The `comment-preservation-trap` mismatch (described as having block-style tags, but actually having inline tags) should have been caught during fixture validation.</li>
+</ul>
+
+<h3>Threats to Validity Summary</h3>
+
+<p>| Threat | Severity | Affected Evals |</p>
+<p>|--------|----------|----------------|</p>
+<p>| Transcript paraphrasing causing grader false negatives | <strong>High</strong> | repair-knowledge-base/with_skill |</p>
+<p>| Fixture already valid, no repair needed | <strong>Medium</strong> | comment-preservation-trap/both |</p>
+<p>| Fixture missing expected file not flagged by validation | <strong>Medium</strong> | workflow-ordering-trap/without_skill |</p>
+<p>| Grader cannot distinguish manual workaround from tool use | <strong>Low</strong> (by design) | workflow-ordering-trap/without_skill |</p>
+
+<strong>Bottom line</strong>: The skill evaluation shows a real +17% improvement on `comment-preservation-trap` (lint command usage), but the `repair-knowledge-base/with_skill` primary failure is a measurement artifact, not a skill gap. The true skill delta is likely higher than reported.</div>
+
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>comment-preservation-trap</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">6/6</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">83%</span>
+                        <span class="score-detail">5/6</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box delta positive">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">+17%</span>
+                        <span class="score-detail primary">Primary: 0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The final validation states the bundle is conformant</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> concept.md still contains the YAML comment 'This is a critical comment that must survive'</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> concept.md has inline tags (not block-style)</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="improved">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The agent ran okf-schema lint</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">▲ Improved</td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>fix-non-conformant-bundle</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">5/5</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">5/5</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box delta neutral">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">0%</span>
+                        <span class="score-detail primary">Primary: 0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The final validation states the bundle is conformant</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The file missing-frontmatter.md now has YAML frontmatter with a type field</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The file no-type.md now has a type field in its frontmatter</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>init-structure-trap</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">8/8</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">8/8</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box delta neutral">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">0%</span>
+                        <span class="score-detail primary">Primary: 0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The final validation states the bundle is conformant</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> Concept files exist directly at workspace root (not inside a bundle/ subdirectory)</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The cells/ subdirectory has an index.md file</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The thermal/ subdirectory has an index.md file</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The log.md file uses ISO 8601 date headings (YYYY-MM-DD)</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The broken cross-link to nonexistent.md has been fixed or removed</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>repair-knowledge-base</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">75%</span>
+                        <span class="score-detail">6/8</span>
+                        <span class="score-detail primary">Primary: 33%</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">8/8</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box delta negative">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">-25%</span>
+                        <span class="score-detail primary">Primary: -67%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                <tr class="regressed">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">▼ Regressed</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="regressed">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The final validation states the bundle is conformant</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">▼ Regressed</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The file missing-frontmatter.md now has YAML frontmatter with a type field</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The cells/ subdirectory has an index.md file</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The thermal/ subdirectory has an index.md file</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The log.md file uses ISO 8601 date headings (YYYY-MM-DD)</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The broken cross-link to nonexistent.md has been fixed or removed</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>reserved-files-trap</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">7/7</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">7/7</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box delta neutral">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">0%</span>
+                        <span class="score-detail primary">Primary: 0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The final validation states the bundle is conformant</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> Root index.md has no YAML frontmatter</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> cells/log.md was removed or moved to root</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> thermal/index.md has no YAML frontmatter</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> cells/index.md has no YAML frontmatter</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>schema-composition-trap</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">8/8</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">8/8</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box delta neutral">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">0%</span>
+                        <span class="score-detail primary">Primary: 0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The final validation states the bundle is conformant</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> vehicle-config.schema.json declares powertrain as an object type</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> vehicle-config.schema.json declares powertrain with object properties (type, capacity_kwh)</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The agent did NOT use --schema-db flag, relying on auto-discovery</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> vehicle-config.schema.json declares sensors as an array of objects</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> vehicle-config.schema.json validates capacity_kwh as a number</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="eval-card">
+            <div class="eval-header">
+                <h3>workflow-ordering-trap</h3>
+                <div class="scores">
+                    <div class="score-box with-skill">
+                        <span class="score-label">With Skill</span>
+                        <span class="score-value">100%</span>
+                        <span class="score-detail">8/8</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box without-skill">
+                        <span class="score-label">Without Skill</span>
+                        <span class="score-value">75%</span>
+                        <span class="score-detail">6/8</span>
+                        <span class="score-detail primary">Primary: 100%</span>
+                    </div>
+                    <div class="score-box delta positive">
+                        <span class="score-label">Delta</span>
+                        <span class="score-value">+25%</span>
+                        <span class="score-detail primary">Primary: 0%</span>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Expectation</th>
+                        <th>With Skill</th>
+                        <th>Without Skill</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The strict validation output reports zero warnings</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-primary">primary</span> The final validation states the bundle is conformant</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="improved">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The workspace root has an index.md file</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">▲ Improved</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The cells/ subdirectory has an index.md file</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The thermal/ subdirectory has an index.md file</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="same">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> All concept files have inline tags (not block-style)</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="indicator">● Same</td>
+                </tr>
+
+                <tr class="improved">
+                    <td class="exp-text"><span class="tier-badge tier-secondary">secondary</span> The agent ran okf-schema index</td>
+                    <td class="pass-cell pass">✅ PASS</td>
+                    <td class="pass-cell fail">❌ FAIL</td>
+                    <td class="indicator">▲ Improved</td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</body>
+</html>

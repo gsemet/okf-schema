@@ -1,9 +1,9 @@
 ---
-type: Reference
+type: concept
 title: System Architecture
 description: High-level architecture of the EV Battery Management System.
-tags: [bms, ev, architecture]
-timestamp: 2026-06-30T13:52:00Z
+tags: [architecture, components, bms]
+timestamp: 2026-06-30T14:00:00Z
 ---
 
 # System Architecture
@@ -24,5 +24,5 @@ Sensor data flows from the Battery Controller to the SoC Estimator, then to the 
 
 ## Related Documents
 
-- See [API Reference](./api-reference.md) for interface definitions.
-- See [Deployment Guide](./operations/deployment-guide.md) for installation steps.
+- See [API Reference](api-reference.md) for interface definitions.
+- See [Deployment Guide](deployment-guide.md) for installation steps.

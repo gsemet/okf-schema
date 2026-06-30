@@ -1,0 +1,81 @@
+{
+  "eval_id": 4,
+  "eval_name": "schema-composition-trap",
+  "overall": "PASS",
+  "pass_rate": 1.0,
+  "primary_pass_rate": 1.0,
+  "primary_passed": 3,
+  "primary_total": 3,
+  "passed": 8,
+  "failed": 0,
+  "total": 8,
+  "assertions": [
+    {
+      "assertion": "The agent ran okf-schema validate --strict and it reported 0 errors, 0 warnings",
+      "check_type": "output_contains",
+      "target": "0 error",
+      "result": "PASS",
+      "justification": "Found: '0 error...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The strict validation output reports zero warnings",
+      "check_type": "output_contains",
+      "target": "0 warning",
+      "result": "PASS",
+      "justification": "Found: '0 warning...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "The final validation states the bundle is conformant",
+      "check_type": "output_contains",
+      "target": "conformant",
+      "result": "PASS",
+      "justification": "Found: 'conformant...'",
+      "tier": "primary"
+    },
+    {
+      "assertion": "vehicle-config.schema.json declares powertrain as an object type",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace/_schema/vehicle-config.schema.json",
+      "result": "PASS",
+      "justification": "Found '\"powertrain\":...' in skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace/_schema/vehicle-config.schema.json",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "vehicle-config.schema.json declares powertrain with object properties (type, capacity_kwh)",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace/_schema/vehicle-config.schema.json",
+      "result": "PASS",
+      "justification": "Found '\"type\": \"object\"...' in skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace/_schema/vehicle-config.schema.json",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "The agent did NOT use --schema-db flag, relying on auto-discovery",
+      "check_type": "command_not_executed",
+      "target": "okf-schema validate --path skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace --schema-db",
+      "result": "PASS",
+      "justification": "Command not found: okf-schema validate --path skills-evals/results/iteration-30.06.26-22.06/schema-...",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "vehicle-config.schema.json declares sensors as an array of objects",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace/_schema/vehicle-config.schema.json",
+      "result": "PASS",
+      "justification": "Found '\"type\": \"array\"...' in skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace/_schema/vehicle-config.schema.json",
+      "tier": "secondary"
+    },
+    {
+      "assertion": "vehicle-config.schema.json validates capacity_kwh as a number",
+      "check_type": "file_contains",
+      "target": "skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace/_schema/vehicle-config.schema.json",
+      "result": "PASS",
+      "justification": "Found 'capacity_kwh...' in skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/workspace/_schema/vehicle-config.schema.json",
+      "tier": "secondary"
+    }
+  ],
+  "notes": "",
+  "condition": "without_skill",
+  "transcript_path": "skills-evals/results/iteration-30.06.26-22.06/schema-composition-trap/without_skill/transcript.md"
+}
