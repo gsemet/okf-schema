@@ -1,5 +1,7 @@
 ## Unreleased
 
+## v0.4.0 (2026-07-02)
+
 ### Feat
 
 - add $ref support and default base schema

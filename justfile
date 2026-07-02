@@ -67,6 +67,19 @@ docs:
 docs-serve: docs
     {{ uv_run }} python -m http.server 8000 --directory docs/_build/html
 
+# Open documentation locally
+[group("docs")]
+[macos]
+docs-open:
+    open docs/_build/html/index.html
+
+# Open documentation locally
+[group("docs")]
+[linux]
+docs-open:
+    xdg-open docs/_build/html/index.html
+
+
 # Clean build artifacts
 [group("clean")]
 clean:
