@@ -30,7 +30,7 @@ okf-schema = "okf_schema.cli:cli"
 
 [project.urls]
 Homepage = "https://github.com/gsemet/okf-schema"
-Documentation = "https://okf-schema.readthedocs.io"
+Documentation = "https://okf-schema.readthedocs.io/en/stable/"
 Repository = "https://github.com/gsemet/okf-schema"
 Issues = "https://github.com/gsemet/okf-schema/issues"
 

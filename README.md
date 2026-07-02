@@ -7,12 +7,15 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type checked](https://img.shields.io/badge/type%20checked-mypy%2Fty-blue.svg)](./)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://img.shields.io/badge/docs-readthedocs-blue)](https://okf-schema.readthedocs.io/en/stable/)
 
 **okf-schema** is a CLI tool and Python library for working with **OKF (Open Knowledge Format)** bundles
 with JSONSchema validation of the frontmatter metadata, and formatting capabilities while preserving comments.
 
 OKF is a markdown-based knowledge format where each concept is a markdown file with YAML frontmatter.
 See the [OKF specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) for the full format definition.
+
+📖 **Full documentation**: [okf-schema.readthedocs.io](https://okf-schema.readthedocs.io/en/stable/)
 
 > [!IMPORTANT]
 > OKF-schema is opinionated. It delivers a valid OKF bundle but is adds a structure on the frontmatter that
