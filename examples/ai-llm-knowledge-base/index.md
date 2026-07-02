@@ -5,7 +5,7 @@ timestamp: "2026-06-29"
 
 # ai-llm-knowledge-base
 
-- [concepts](./concepts/) — Auto-generated index for concepts in `concepts`.
-- [papers](./papers/) — Auto-generated index for concepts in `papers`.
-- [some](./some/) — Auto-generated index for concepts in `some`.
-- [tools](./tools/) — Auto-generated index for concepts in `tools`.
+- [concepts](./concepts/) — AI/LLM concepts such as techniques, patterns, or architectural ideas.
+- [papers](./papers/) — Research papers, preprints, and technical reports.
+- [some](./some/) — AI/LLM concepts such as techniques, patterns, or architectural ideas.
+- [tools](./tools/) — Developer tools, frameworks, and libraries.

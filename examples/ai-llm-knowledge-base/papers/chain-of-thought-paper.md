@@ -4,7 +4,7 @@ title: "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
 description: >
   Demonstrates that prompting LLMs with step-by-step reasoning examples
   significantly improves performance on arithmetic and symbolic tasks.
-authors: [Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, 
+authors: [Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter,
     Fei Xia, Ed Chi, Quoc Le, Denny Zhou]
 year: 2022
 venue: NeurIPS

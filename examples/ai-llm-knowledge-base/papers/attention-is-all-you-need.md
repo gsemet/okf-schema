@@ -4,7 +4,7 @@ title: "Attention Is All You Need"
 description: >
   Introduces the Transformer architecture, replacing recurrent and
   convolutional layers with self-attention mechanisms.
-authors: [Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion 
+authors: [Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion
     Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin]
 year: 2017
 venue: NeurIPS

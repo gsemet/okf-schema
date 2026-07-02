@@ -2,6 +2,8 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 $ref: "_base.schema.yml"
 type: object
+title: "Concept"
+x-okf-summary: "AI/LLM concepts such as techniques, patterns, or architectural ideas."
 description: >
   Schema for AI/LLM concepts such as techniques, patterns, or architectural ideas.
   The `type` field must be exactly `concept` so the validator loads this schema.

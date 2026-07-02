@@ -4,7 +4,7 @@ title: "Toolformer: Language Models Can Teach Themselves to Use Tools"
 description: >
   Presents a self-supervised method for teaching LLMs to decide which
   external tools to call, when, and with what arguments.
-authors: [Timo Schick, Jane Dwivedi-Yu, Roberto Dessì, Roberta Raileanu, Maria 
+authors: [Timo Schick, Jane Dwivedi-Yu, Roberto Dessì, Roberta Raileanu, Maria
     Lomeli, Luke Zettlemoyer, Nicola Cancedda, Thomas Scialom]
 year: 2023
 venue: arXiv

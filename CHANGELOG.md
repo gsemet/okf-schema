@@ -1,5 +1,11 @@
 ## Unreleased
 
+### Feat
+
+- define x-okd-summary to contain schema one-line description
+
+## v0.4.1 (2026-07-02)
+
 ## v0.4.0 (2026-07-02)
 
 ### Feat

@@ -5,6 +5,8 @@
   $schema: "http://json-schema.org/draft-07/schema#",
   $ref: "_base.schema.yml",
   type: "object",
+  title: "Paper",
+  "x-okf-summary": "Research papers, preprints, and technical reports.",
   description: "Schema for research papers, preprints, and technical reports. The `type` field must be exactly `paper` so the validator loads this schema.",
   properties: {
     type: {

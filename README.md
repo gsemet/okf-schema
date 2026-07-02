@@ -242,6 +242,32 @@ properties:
 }
 ```
 
+### Schema-aware index generation
+
+Schemas can declare a `title` and an `x-okf-summary` extension field. When a
+subdirectory contains concepts of a single type, `okf-schema index` uses these
+values to produce richer `index.md` files:
+
+| Field | Purpose | Used in |
+|-------|---------|---------|
+| `title` | Short heading for the concept type | Subdirectory `index.md` H1 |
+| `x-okf-summary` | One-line description of the type | Subdirectory intro + root listing |
+| `description` | Fallback when `x-okf-summary` is absent | Same places as above |
+
+For example, `concept.schema.yaml` declares:
+
+```yaml
+title: "Concept"
+x-okf-summary: "AI/LLM concepts such as techniques, patterns, or architectural ideas."
+description: "Schema for AI/LLM concepts ..."
+```
+
+Running `okf-schema index` turns this into:
+
+- A root `index.md` entry: `[concepts](./concepts/) — AI/LLM concepts such as...`
+- A subdirectory `index.md` with `# Concept` as the heading and the summary as
+  the first paragraph.
+
 ### Concept file example (`concepts/rag.md`)
 
 ```markdown
