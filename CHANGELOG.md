@@ -1,5 +1,11 @@
 ## Unreleased
 
+### Fix
+
+- fix example schema $ref
+
+## v0.5.0 (2026-07-02)
+
 ### Feat
 
 - links and backlinks appears in frontmatters

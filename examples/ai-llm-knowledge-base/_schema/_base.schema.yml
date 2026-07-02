@@ -34,6 +34,16 @@ properties:
     type: string
     format: date
     description: "ISO 8601 datetime of last meaningful change."
+  links:
+    type: array
+    items:
+      type: string
+    description: "Bundle-relative paths this concept links to"
+  backlinks:
+    type: array
+    items:
+      type: string
+    description: "Bundle-relative paths of concepts that link to this one"
 required:
   - type
   - title
