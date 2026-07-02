@@ -48,6 +48,7 @@ dev = [
     "sphinx-click",
     "furo",
     "myst-parser",
+    "commitizen",
 ]
 
 [build-system]
@@ -90,6 +91,13 @@ convention = "google"
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "scm"
+tag_format = "v$version"
+changelog_file = "CHANGELOG.md"
+update_changelog_on_bump = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
