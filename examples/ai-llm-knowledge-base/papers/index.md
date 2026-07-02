@@ -1,4 +1,6 @@
-# papers
+# Paper
+
+Schema for research papers, preprints, and technical reports. The `type` field must be exactly `paper` so the validator loads this schema.
 
 - [Attention Is All You Need](attention-is-all-you-need.md) — Introduces the Transformer architecture, replacing recurrent and convolutional layers with self-attention mechanisms.  [paper]
 - [Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](chain-of-thought-paper.md) — Demonstrates that prompting LLMs with step-by-step reasoning examples significantly improves performance on arithmetic and symbolic tasks.  [paper]

@@ -82,6 +82,12 @@ def format_frontmatter(text: str) -> str | None:
     return f"---\n{new_fm}\n---\n{body}"
 
 
+def _fix_whitespace(text: str) -> str:
+    """Strip trailing whitespace and ensure exactly one final newline."""
+    lines = [line.rstrip() for line in text.splitlines()]
+    return "\n".join(lines) + "\n"
+
+
 def lint_frontmatter(text: str) -> str | None:
     """Extract frontmatter, flatten nested lists, and convert to inline.
 
@@ -119,12 +125,12 @@ def lint_frontmatter(text: str) -> str | None:
             changed = True
 
     if not changed:
-        return text
+        return _fix_whitespace(text)
 
     buf = io.StringIO()
     y.dump(data, buf)
     new_fm = buf.getvalue().rstrip("\n")
-    return f"---\n{new_fm}\n---\n{body}"
+    return _fix_whitespace(f"---\n{new_fm}\n---\n{body}")
 
 
 def format_file(path: Path, check: bool = False, diff: bool = False) -> bool:

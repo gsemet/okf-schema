@@ -1,4 +1,7 @@
-# concepts
+# Concept
+
+Schema for AI/LLM concepts such as techniques, patterns, or architectural ideas. The `type` field must be exactly `concept` so the validator loads this schema.
+
 
 - [Function Calling](function-calling.md) — A capability that allows LLMs to output structured tool calls instead of free-form text, enabling reliable integration with external APIs.  [concept]
 - [ReAct Pattern](react-pattern.md) — A reasoning and acting paradigm where an LLM interleaves thought traces with tool calls to solve complex multi-step problems.  [concept]

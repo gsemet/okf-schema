@@ -99,7 +99,7 @@ okf-schema validate --path my-bundle --strict
 | `lint --path <bundle>` | Lint frontmatter: flatten nested lists and convert block-style to inline |
 | `list --path <bundle>` | List all concepts in a bundle |
 | `show --path <bundle> <concept>` | Show a single concept's frontmatter and body |
-| `index --path <bundle>` | Regenerate all `index.md` files |
+| `index --path <bundle>` | Regenerate all `index.md` files. Uses schema `title` and `x-okf-summary` for richer headings and descriptions when a directory contains a single concept type |
 | `stats --path <bundle>` | Show bundle statistics |
 | `backlinks --path <bundle> <target>...` | List concepts that link to the given target(s) |
 
@@ -174,8 +174,9 @@ Only zip or distribute the bundle once `validate --strict` reports zero errors *
 
 ### Schema development
 1. Place `.schema.json`, `.schema.json5`, or `.schema.yaml` files in a `_schema/` directory inside the bundle root.
-2. Run `okf-schema validate --path <bundle>` — schemas are auto-discovered.
-3. Iterate on schema definitions; JSON5 allows comments and trailing commas.
+2. Add `title` and `x-okf-summary` to each schema for richer `index.md` generation.
+3. Run `okf-schema validate --path <bundle>` — schemas are auto-discovered.
+4. Iterate on schema definitions; JSON5 allows comments and trailing commas.
 
 ## Guardrails
 

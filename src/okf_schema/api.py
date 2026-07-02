@@ -202,6 +202,18 @@ def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:
     bundle = _resolve_bundle(bundle_path)
     updates: list[IndexUpdate] = []
 
+    # Load schema database if available
+    schema_db_path = bundle / "_schema"
+    schema_info: dict[str, dict] = {}
+    if schema_db_path.is_dir():
+        raw_schemas = load_schema_database(schema_db_path)
+        for type_key, schema in raw_schemas.items():
+            schema_info[type_key] = {
+                "title": schema.get("title", ""),
+                "description": schema.get("description", ""),
+                "x-okf-summary": schema.get("x-okf-summary", ""),
+            }
+
     # Collect all directories that contain markdown files
     dirs_with_md: set[Path] = set()
     for md_file in collect_markdown_files(bundle):
@@ -217,6 +229,7 @@ def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:
 
         index_path = dir_path / "index.md"
         preserved_descriptions: dict[str, str] = {}
+        preserved_intro: str = ""
         preserve_frontmatter: str | None = None
 
         if index_path.exists():
@@ -224,10 +237,17 @@ def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:
             fm_text, _body = extract_frontmatter(text)
             if dir_path == bundle and fm_text is not None:
                 preserve_frontmatter = fm_text.strip()
-            preserved_descriptions = _parse_existing_index(text).get("descriptions", {})
+            parsed = _parse_existing_index(text)
+            preserved_descriptions = parsed.get("descriptions", {})
+            preserved_intro = parsed.get("intro", "")
 
         new_content = _generate_index_content(
-            dir_path, bundle, preserve_frontmatter, preserved_descriptions
+            dir_path,
+            bundle,
+            preserve_frontmatter,
+            preserved_descriptions,
+            schema_info,
+            preserved_intro,
         )
 
         if index_path.exists():
@@ -496,8 +516,43 @@ def _get_immediate_subdirs_with_content(dir_path: Path) -> list[Path]:
     return subdirs
 
 
-def _get_subdir_description(subdir: Path) -> str:
-    """Extract a description from a subdirectory's index.md."""
+def _get_subdir_description(
+    subdir: Path,
+    schema_info: dict[str, dict] | None = None,
+) -> str:
+    """Extract a description for a subdirectory.
+
+    Prefers schema ``x-okf-summary`` (or ``description`` as fallback) when
+    all concepts in the subdirectory share the same type and a matching
+    schema is available. Otherwise falls back to the subdirectory's
+    existing ``index.md`` body or a generic placeholder.
+    """
+    schema_info = schema_info or {}
+
+    # Determine the dominant type in the subdirectory
+    concept_files = _get_concept_files(subdir)
+    types_found: set[str] = set()
+    for concept in concept_files:
+        info = get_concept_info(concept)
+        if info.type:
+            types_found.add(info.type)
+
+    # If all concepts share a single type and we have schema info, use it
+    if len(types_found) == 1:
+        type_key = next(iter(types_found))
+        if type_key in schema_info:
+            info_map: dict[str, str] = schema_info[type_key]
+            summary = info_map.get("x-okf-summary", "")
+            if summary:
+                return summary
+            desc = info_map.get("description", "")
+            if desc:
+                # Truncate long descriptions
+                if len(desc) > 120:
+                    desc = desc[:117] + "..."
+                return desc
+
+    # Fallback: extract from existing index.md body
     index_path = subdir / "index.md"
     if not index_path.exists():
         return f"Auto-generated index for concepts in `{subdir.name}`."
@@ -568,10 +623,13 @@ def _generate_index_content(
     bundle_root: Path,
     preserve_frontmatter: str | None = None,
     preserved_descriptions: dict[str, str] | None = None,
+    schema_info: dict[str, dict] | None = None,
+    preserved_intro: str = "",
 ) -> str:
     """Generate the full content for an index.md file."""
     lines: list[str] = []
     preserved = preserved_descriptions or {}
+    schema_info = schema_info or {}
 
     if preserve_frontmatter is not None:
         lines.append("---")
@@ -579,9 +637,42 @@ def _generate_index_content(
         lines.append("---")
         lines.append("")
 
-    title = bundle_root.name if dir_path == bundle_root else dir_path.name
-    lines.append(f"# {title}")
+    # Determine heading and intro for non-root directories
+    heading = bundle_root.name if dir_path == bundle_root else dir_path.name
+    intro = ""
+    has_schema_info = False
+
+    if dir_path != bundle_root:
+        # Determine the dominant type in this directory
+        concept_files = _get_concept_files(dir_path)
+        types_found: set[str] = set()
+        for concept in concept_files:
+            info = get_concept_info(concept)
+            if info.type:
+                types_found.add(info.type)
+
+        # If all concepts share a single type and we have schema info, use it
+        if len(types_found) == 1:
+            type_key = next(iter(types_found))
+            if type_key in schema_info:
+                has_schema_info = True
+                schema_title = schema_info[type_key].get("title", "")
+                schema_desc = schema_info[type_key].get("description", "")
+                if schema_title:
+                    heading = schema_title
+                if schema_desc:
+                    intro = schema_desc
+
+        # If no schema info available, preserve existing intro text
+        if not has_schema_info and preserved_intro:
+            intro = preserved_intro
+
+    lines.append(f"# {heading}")
     lines.append("")
+
+    if intro:
+        lines.append(intro)
+        lines.append("")
 
     concepts = _get_concept_files(dir_path)
     subdirs = _get_immediate_subdirs_with_content(dir_path)
@@ -606,7 +697,29 @@ def _generate_index_content(
 
     for subdir in subdirs:
         subdir_rel = f"./{subdir.name}/"
-        desc = preserved.get(subdir_rel, _get_subdir_description(subdir))
+        # Determine if schema info applies to this subdir
+        subdir_concepts = _get_concept_files(subdir)
+        subdir_types: set[str] = set()
+        for sc in subdir_concepts:
+            s_info = get_concept_info(sc)
+            if s_info.type:
+                subdir_types.add(s_info.type)
+
+        if len(subdir_types) == 1:
+            type_key = next(iter(subdir_types))
+            if type_key in schema_info:
+                # Schema info available: use it directly (replaces existing text)
+                summary = schema_info[type_key].get("x-okf-summary", "")
+                if summary:
+                    desc = summary
+                else:
+                    desc = schema_info[type_key].get("description", "")
+                    if len(desc) > 120:
+                        desc = desc[:117] + "..."
+            else:
+                desc = preserved.get(subdir_rel, _get_subdir_description(subdir, schema_info))
+        else:
+            desc = preserved.get(subdir_rel, _get_subdir_description(subdir, schema_info))
         entries.append((subdir.name.lower(), f"- [{subdir.name}]({subdir_rel}) — {desc}"))
 
     entries.sort(key=lambda x: x[0])

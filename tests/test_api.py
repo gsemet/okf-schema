@@ -16,6 +16,7 @@ from okf_schema._internal.models import (
     SearchResult,
 )
 from okf_schema.api import (
+    _get_subdir_description,
     backlinks_bundle,
     format_bundle,
     graph_bundle,
@@ -392,6 +393,207 @@ class TestIndexBundle:
         result = _parse_existing_index(text)
         assert result["title"] == "Title"
         assert result["intro"] == "Intro paragraph."
+
+    def test_schema_aware_subdir_heading(self, tmp_path: Path) -> None:
+        """Subdirectory index uses schema title as heading."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+        (schema_dir / "myconcept.schema.json").write_text(
+            '{"title": "MyConcept", "x-okf-summary": "Short summary."}',
+            encoding="utf-8",
+        )
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
+            "---\ntitle: C\ntype: myconcept\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        index_bundle(bundle)
+        subdir_index = subdir / "index.md"
+        content = subdir_index.read_text(encoding="utf-8")
+        assert "# MyConcept" in content
+
+    def test_schema_aware_subdir_intro(self, tmp_path: Path) -> None:
+        """Subdirectory index includes schema description as intro."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+        (schema_dir / "myconcept.schema.json").write_text(
+            '{"title": "MyConcept", "description": "Full description here.",'
+            ' "x-okf-summary": "Short summary."}',
+            encoding="utf-8",
+        )
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
+            "---\ntitle: C\ntype: myconcept\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        index_bundle(bundle)
+        subdir_index = subdir / "index.md"
+        content = subdir_index.read_text(encoding="utf-8")
+        assert "Full description here." in content
+
+    def test_schema_aware_root_descriptions(self, tmp_path: Path) -> None:
+        """Root index uses x-okf-summary for folder descriptions."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+        (schema_dir / "myconcept.schema.json").write_text(
+            '{"title": "MyConcept", "x-okf-summary": "Short summary."}',
+            encoding="utf-8",
+        )
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
+            "---\ntitle: C\ntype: myconcept\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        index_bundle(bundle)
+        root_index = bundle / "index.md"
+        content = root_index.read_text(encoding="utf-8")
+        assert "Short summary." in content
+        assert "Auto-generated index" not in content
+
+    def test_schema_aware_fallback_to_description(self, tmp_path: Path) -> None:
+        """When x-okf-summary is missing, falls back to description."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+        (schema_dir / "myconcept.schema.json").write_text(
+            '{"title": "MyConcept", "description": "Fallback description."}',
+            encoding="utf-8",
+        )
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
+            "---\ntitle: C\ntype: myconcept\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        index_bundle(bundle)
+        root_index = bundle / "index.md"
+        content = root_index.read_text(encoding="utf-8")
+        assert "Fallback description." in content
+
+    def test_mixed_types_use_generic_fallback(self, tmp_path: Path) -> None:
+        """Mixed-type folders keep generic fallback."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+        (schema_dir / "typea.schema.json").write_text(
+            '{"title": "TypeA", "x-okf-summary": "Summary A."}',
+            encoding="utf-8",
+        )
+        (schema_dir / "typeb.schema.json").write_text(
+            '{"title": "TypeB", "x-okf-summary": "Summary B."}',
+            encoding="utf-8",
+        )
+        subdir = bundle / "mixed"
+        subdir.mkdir()
+        (subdir / "a.md").write_text(
+            "---\ntitle: A\ntype: typea\n---\n\n# A\n",
+            encoding="utf-8",
+        )
+        (subdir / "b.md").write_text(
+            "---\ntitle: B\ntype: typeb\n---\n\n# B\n",
+            encoding="utf-8",
+        )
+        index_bundle(bundle)
+        root_index = bundle / "index.md"
+        content = root_index.read_text(encoding="utf-8")
+        assert "Auto-generated index for concepts in `mixed`." in content
+
+    def test_no_schema_info_preserves_existing(self, tmp_path: Path) -> None:
+        """When no schema info available, existing custom text is preserved."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
+            "---\ntitle: C\ntype: myconcept\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        # Create existing index with custom intro
+        (subdir / "index.md").write_text(
+            "# concepts\n\nCustom intro text.\n\n- [C](concept.md) — desc\n",
+            encoding="utf-8",
+        )
+        index_bundle(bundle)
+        subdir_index = subdir / "index.md"
+        content = subdir_index.read_text(encoding="utf-8")
+        assert "Custom intro text." in content
+
+    def test_schema_aware_long_description_truncated(self, tmp_path: Path) -> None:
+        """Long descriptions are truncated to 120 characters."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+        long_desc = "A" * 150
+        (schema_dir / "myconcept.schema.json").write_text(
+            f'{{"title": "MyConcept", "description": "{long_desc}"}}',
+            encoding="utf-8",
+        )
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
+            "---\ntitle: C\ntype: myconcept\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        index_bundle(bundle)
+        root_index = bundle / "index.md"
+        content = root_index.read_text(encoding="utf-8")
+        assert "A" * 117 + "..." in content
+        assert "A" * 118 not in content
+
+    def test_schema_aware_subdir_long_description_full(self, tmp_path: Path) -> None:
+        """Subdirectory index keeps full schema description (not truncated)."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+        long_desc = "B" * 150
+        (schema_dir / "myconcept.schema.json").write_text(
+            f'{{"title": "MyConcept", "description": "{long_desc}"}}',
+            encoding="utf-8",
+        )
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
+            "---\ntitle: C\ntype: myconcept\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        index_bundle(bundle)
+        subdir_index = subdir / "index.md"
+        content = subdir_index.read_text(encoding="utf-8")
+        assert "B" * 150 in content
+
+    def test_get_subdir_description_truncates_long_desc(self, tmp_path: Path) -> None:
+        """_get_subdir_description truncates descriptions over 120 chars."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+        long_desc = "C" * 150
+        (schema_dir / "myconcept.schema.json").write_text(
+            f'{{"title": "MyConcept", "description": "{long_desc}"}}',
+            encoding="utf-8",
+        )
+        subdir = bundle / "concepts"
+        subdir.mkdir()
+        (subdir / "concept.md").write_text(
+            "---\ntitle: C\ntype: myconcept\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        schema_info = {"myconcept": {"description": long_desc}}
+        result = _get_subdir_description(subdir, schema_info)
+        assert result == "C" * 117 + "..."
 
 
 # ---------------------------------------------------------------------------
