@@ -14,7 +14,7 @@ update:
     rm -rf uv.lock
     {{ uv }} sync
 
-# Run the full preflight check: style-check, lint, typecheck, test
+# Run the full preflight check: style-check, lint, typecheck, test, refresh-examples
 preflight:
     just style-check
     just lint
