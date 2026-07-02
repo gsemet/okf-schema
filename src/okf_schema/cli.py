@@ -79,6 +79,50 @@ def init(ctx: click.Context, name: str) -> None:
     today = datetime.date.today().isoformat()
     log_path.write_text(f"## {today}\n\n", encoding="utf-8")
 
+    base_schema_path = schema_dir / "_base.schema.yaml"
+    base_schema_path.write_text(
+        '$schema: "https://json-schema.org/draft/2020-12/schema"\n'
+        "type: object\n"
+        "properties:\n"
+        "  type:\n"
+        "    type: string\n"
+        "    description: >-\n"
+        "      A short string identifying the kind of concept.\n"
+        "      Consumers use this for routing, filtering, and presentation.\n"
+        "  title:\n"
+        "    type: string\n"
+        "    description: >-\n"
+        "      Human-readable display name. If omitted, consumers MAY\n"
+        "      derive a title from the filename.\n"
+        "  description:\n"
+        "    type: string\n"
+        "    description: >-\n"
+        "      A single sentence summarizing the concept. Used by\n"
+        "      index.md generators, search snippets, and previews.\n"
+        "  resource:\n"
+        "    type: string\n"
+        "    description: >-\n"
+        "      A URI that uniquely identifies the underlying asset the\n"
+        "      concept describes. Absent for concepts that describe\n"
+        "      abstract ideas rather than physical resources.\n"
+        "  tags:\n"
+        "    type: array\n"
+        "    items:\n"
+        "      type: string\n"
+        "    description: >-\n"
+        "      A YAML list of short strings for cross-cutting\n"
+        "      categorization.\n"
+        "  timestamp:\n"
+        "    type: string\n"
+        "    format: date-time\n"
+        "    description: >-\n"
+        "      ISO 8601 datetime of last meaningful change.\n"
+        "required:\n"
+        "  - type\n"
+        "additionalProperties: true\n",
+        encoding="utf-8",
+    )
+
     _echo(ctx, f"Created OKF bundle '{name}'.")
 
 

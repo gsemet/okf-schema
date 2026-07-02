@@ -36,6 +36,12 @@ Lint frontmatter (flatten nested lists and convert block-style to inline):
 okf-schema lint --path my-bundle/bundle
 ```
 
+## Schema features
+
+- **Auto-discovered schemas** — `_schema/*.schema.{yaml,json,json5}` are loaded automatically.
+- **`$ref` resolution** — External schema files can be referenced with `$ref` paths relative to `_schema/`.
+- **Default `_base.schema.yaml`** — Created automatically by `init`, documenting standard OKF fields.
+
 ## Contents
 
 ```{toctree}

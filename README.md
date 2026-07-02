@@ -75,6 +75,47 @@ Schema extensions supported:
 - `.schema.json` — JSON (strict syntax, widely supported by editors)
 - `.schema.json5` — JSON5 (JSON with comments, trailing commas, and unquoted keys)
 
+### `$ref` support
+
+Schemas can reference external files with `$ref`. The path is resolved relative to the `_schema/` directory:
+
+```yaml
+# _base.schema.yaml
+$schema: "https://json-schema.org/draft/2020-12/schema"
+type: object
+properties:
+  type:
+    type: string
+  title:
+    type: string
+required:
+  - type
+additionalProperties: true
+```
+
+```yaml
+# concept.schema.yaml
+$ref: _base.schema.yaml
+properties:
+  category:
+    enum: [LLM, AI Agent, Coding Agent]
+```
+
+`$ref` works at any nesting level (top-level, inside `properties`, inside `items`, etc.). If the referenced file cannot be found, the `$ref` is preserved as-is and validation proceeds with the remaining schema content.
+
+### Default `_base.schema.yaml`
+
+When you run `okf-schema init`, a `_base.schema.yaml` is automatically created in `_schema/`. It documents the standard OKF frontmatter fields and can be used as a `$ref` target for your own schemas:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `type` | **Yes** | A short string identifying the kind of concept. |
+| `title` | No | Human-readable display name. |
+| `description` | No | One-line summary of the concept. |
+| `resource` | No | URI of the underlying asset. |
+| `tags` | No | List of short categorization strings. |
+| `timestamp` | No | ISO 8601 datetime of last change. |
+
 ## Installation
 
 ```bash

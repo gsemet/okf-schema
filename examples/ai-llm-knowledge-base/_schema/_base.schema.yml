@@ -1,0 +1,40 @@
+---
+$schema: "http://json-schema.org/draft-07/schema#"
+type: object
+description: >
+  Base schema with OKF default fields shared across all concept types.
+  Reference this file via $ref and override the type const as needed.
+properties:
+  type:
+    type: string
+    description: "A short string identifying the kind of concept."
+  title:
+    type: string
+    description: >-
+      Human-readable display name. If omitted, consumers MAY
+      derive a title from the filename.
+  description:
+    type: string
+    description: >-
+      A single sentence summarizing the concept. Used by
+      index.md generators, search snippets, and previews.
+  resource:
+    type: string
+    description: >-
+      A URI that uniquely identifies the underlying asset the
+      concept describes. Absent for concepts that describe abstract
+      ideas rather than physical resources.
+  tags:
+    type: array
+    items:
+      type: string
+      pattern: "^[a-z0-9-]+$"
+    description: "A YAML list of short strings for cross-cutting categorization."
+  timestamp:
+    type: string
+    format: date
+    description: "ISO 8601 datetime of last meaningful change."
+required:
+  - type
+  - title
+additionalProperties: true
