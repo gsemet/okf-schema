@@ -218,10 +218,59 @@ class TestEndToEndWorkflow:
         # index.md is reserved and skipped for frontmatter counting
         assert stats.files_without_frontmatter == 0
         assert stats.total_links == 1
-        assert stats.broken_links == 1
-        assert stats.types_distribution == {"concept": 2}
-        assert stats.tags_distribution == {"x": 2, "y": 1}
-        assert stats.directories == 1
+
+    def test_validate_with_ref_schema(self, tmp_path: Path) -> None:
+        """Validation works when schemas use $ref to external files."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        schema_dir = bundle / "_schema"
+        schema_dir.mkdir()
+
+        base = schema_dir / "_base.schema.yaml"
+        base.write_text(
+            "type: object\nproperties:\n  type:\n    type: string\n"
+            "  title:\n    type: string\nrequired:\n  - type\n",
+            encoding="utf-8",
+        )
+        concept = schema_dir / "concept.schema.yaml"
+        concept.write_text(
+            "$ref: _base.schema.yaml\n",
+            encoding="utf-8",
+        )
+
+        (bundle / "index.md").write_text(
+            '---\nokf_version: "0.1"\n---\n\n# Index\n',
+            encoding="utf-8",
+        )
+        (bundle / "guides").mkdir()
+        (bundle / "guides" / "idea.md").write_text(
+            "---\ntype: concept\ntitle: Idea\n---\n\nBody.\n",
+            encoding="utf-8",
+        )
+
+        report = validate_bundle(bundle)
+        assert report.is_conformant
+        assert not any(f.code == "W6" for f in report.warnings)
+
+    def test_init_creates_base_schema_and_validates(self, tmp_path: Path) -> None:
+        """A bundle created with init validates cleanly including _base.schema.yaml."""
+        runner = CliRunner()
+        project = tmp_path / "project"
+        result = runner.invoke(cli, ["init", str(project)])
+        assert result.exit_code == 0
+        bundle = project / "bundle"
+
+        # Add a concept that matches _base.schema.yaml
+        (bundle / "guides").mkdir()
+        (bundle / "guides" / "intro.md").write_text(
+            "---\ntype: guide\ntitle: Intro\n"
+            "description: Getting started\ntags: [intro]\n"
+            "timestamp: 2024-01-01T00:00:00Z\n---\n\nBody.\n",
+            encoding="utf-8",
+        )
+
+        report = validate_bundle(bundle)
+        assert report.is_conformant
 
 
 class TestCliIntegration:

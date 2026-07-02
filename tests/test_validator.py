@@ -87,6 +87,102 @@ class TestLoadSchemaDatabase:
         schemas = load_schema_database(tmp_path)
         assert schemas == {}
 
+    def test_resolves_json_ref(self, tmp_path: Path) -> None:
+        """Inlines a $ref pointing to a JSON file."""
+        base = tmp_path / "base.json"
+        base.write_text('{"type": "object", "properties": {"name": {"type": "string"}}}')
+        schema_file = tmp_path / "concept.schema.json"
+        schema_file.write_text('{"$ref": "base.json", "required": ["name"]}')
+        schemas = load_schema_database(tmp_path)
+        assert "concept" in schemas
+        assert schemas["concept"]["type"] == "object"
+        assert "properties" in schemas["concept"]
+        assert "required" in schemas["concept"]
+
+    def test_resolves_yaml_ref(self, tmp_path: Path) -> None:
+        """Inlines a $ref pointing to a YAML file."""
+        base = tmp_path / "common.yaml"
+        base.write_text("type: object\nproperties:\n  id:\n    type: integer\n")
+        schema_file = tmp_path / "item.schema.yaml"
+        schema_file.write_text("$ref: common.yaml\n")
+        schemas = load_schema_database(tmp_path)
+        assert "item" in schemas
+        assert schemas["item"]["type"] == "object"
+        assert "properties" in schemas["item"]
+
+    def test_resolves_nested_ref(self, tmp_path: Path) -> None:
+        """Inlines $ref nested inside properties."""
+        base = tmp_path / "defs.json"
+        base.write_text('{"type": "string", "minLength": 1}')
+        schema_file = tmp_path / "doc.schema.json"
+        schema_file.write_text('{"type": "object", "properties": {"title": {"$ref": "defs.json"}}}')
+        schemas = load_schema_database(tmp_path)
+        assert "doc" in schemas
+        assert schemas["doc"]["properties"]["title"]["type"] == "string"
+
+    def test_keeps_unresolvable_ref(self, tmp_path: Path) -> None:
+        """Preserves $ref when the target file does not exist."""
+        schema_file = tmp_path / "concept.schema.json"
+        schema_file.write_text('{"$ref": "missing.json"}')
+        schemas = load_schema_database(tmp_path)
+        assert "concept" in schemas
+        assert schemas["concept"]["$ref"] == "missing.json"
+
+    def test_resolves_ref_in_array_items(self, tmp_path: Path) -> None:
+        """Inlines $ref inside array items."""
+        base = tmp_path / "tag.yaml"
+        base.write_text("type: string\nminLength: 1\n")
+        schema_file = tmp_path / "doc.schema.yaml"
+        schema_file.write_text(
+            "type: object\nproperties:\n  tags:\n    type: array\n"
+            "    items:\n      $ref: tag.yaml\n"
+        )
+        schemas = load_schema_database(tmp_path)
+        assert "doc" in schemas
+        assert schemas["doc"]["properties"]["tags"]["items"]["type"] == "string"
+
+    def test_resolves_extensionless_ref(self, tmp_path: Path) -> None:
+        """Discovers $ref target when no extension is given."""
+        base = tmp_path / "common.yaml"
+        base.write_text("type: object\nproperties:\n  name:\n    type: string\n")
+        schema_file = tmp_path / "doc.schema.json"
+        schema_file.write_text('{"$ref": "common", "required": ["name"]}')
+        schemas = load_schema_database(tmp_path)
+        assert "doc" in schemas
+        assert schemas["doc"]["type"] == "object"
+        assert "required" in schemas["doc"]
+
+    def test_resolves_extensionless_ref_json5(self, tmp_path: Path) -> None:
+        """Discovers $ref target as .json5 when no extension is given."""
+        base = tmp_path / "defs.json5"
+        base.write_text('{type: "string", minLength: 1}')
+        schema_file = tmp_path / "doc.schema.json"
+        schema_file.write_text('{"$ref": "defs", "required": ["id"]}')
+        schemas = load_schema_database(tmp_path)
+        assert "doc" in schemas
+        assert schemas["doc"]["type"] == "string"
+        assert "required" in schemas["doc"]
+
+    def test_resolves_extensionless_ref_yml(self, tmp_path: Path) -> None:
+        """Discovers $ref target as .yml when no extension is given."""
+        base = tmp_path / "common.yml"
+        base.write_text("type: object\nproperties:\n  id:\n    type: integer\n")
+        schema_file = tmp_path / "doc.schema.json"
+        schema_file.write_text('{"$ref": "common", "required": ["id"]}')
+        schemas = load_schema_database(tmp_path)
+        assert "doc" in schemas
+        assert schemas["doc"]["type"] == "object"
+        assert "required" in schemas["doc"]
+
+    def test_loads_schema_yml_extension(self, tmp_path: Path) -> None:
+        """Loads .schema.yml files alongside .schema.yaml."""
+        (tmp_path / "item.schema.yml").write_text(
+            "type: object\nproperties:\n  id:\n    type: integer\n"
+        )
+        schemas = load_schema_database(tmp_path)
+        assert "item" in schemas
+        assert schemas["item"]["type"] == "object"
+
 
 # ---------------------------------------------------------------------------
 # validate_against_schema

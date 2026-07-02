@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "_base.schema.yml",
   "type": "object",
   "description": "Schema for developer tools, frameworks, and libraries. The `type` field must be exactly `tool` so the validator loads this schema.",
   "properties": {
@@ -8,16 +9,6 @@
       "const": "tool",
       "description": "Concept type — must match the schema file name in _schema/",
       "examples": ["tool"]
-    },
-    "title": {
-      "type": "string",
-      "description": "Official name of the tool or framework",
-      "examples": ["LangChain", "Ollama", "Pytest"]
-    },
-    "description": {
-      "type": "string",
-      "description": "What the tool does, its main purpose, and the problems it solves",
-      "examples": ["A Python framework for building applications with LLMs through composable chains and agents."]
     },
     "vendor": {
       "type": "string",
@@ -47,21 +38,6 @@
       "format": "uri",
       "description": "Official project homepage or repository URL",
       "examples": ["https://www.langchain.com", "https://ollama.com"]
-    },
-    "tags": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^[a-z0-9-]+$"
-      },
-      "description": "Lower-case kebab-case tags for categorization and search",
-      "examples": [["framework", "agents", "chains", "rag"], ["testing", "python", "automation"]]
-    },
-    "timestamp": {
-      "type": "string",
-      "format": "date",
-      "description": "Date the tool entry was created or last updated (ISO 8601)",
-      "examples": ["2026-06-29"]
     }
   },
   "required": ["type", "title", "vendor", "license", "maturity"],

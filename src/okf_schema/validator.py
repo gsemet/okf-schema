@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import pyjson5
 from jsonschema import Draft202012Validator
@@ -23,12 +24,109 @@ from okf_schema._internal.utils import (
 from okf_schema._internal.yaml import extract_frontmatter, make_yaml, parse_yaml
 
 
+def _resolve_ref(ref_path: str, schema_db: Path, y: Any) -> dict | None:
+    """Load a schema fragment referenced by *ref_path*.
+
+    The *ref_path* is resolved relative to *schema_db*.  Supported
+    extensions are ``.json``, ``.json5``, ``.yaml``, and ``.yml``.
+    If *ref_path* has no recognised extension, each extension is tried
+    in turn (``.json``, ``.json5``, ``.yaml``, ``.yml``) until a file
+    is found and parsed successfully.
+
+    Args:
+        ref_path: Relative path to the referenced schema file.
+        schema_db: Base directory for relative resolution.
+        y: Configured ruamel.yaml instance.
+
+    Returns:
+        The loaded schema dict, or ``None`` if the file cannot be read
+        or parsed.
+    """
+    target = schema_db / ref_path
+    candidates = [target]
+    if not any(ref_path.endswith(ext) for ext in (".json", ".json5", ".yaml", ".yml")):
+        candidates.extend(target.with_suffix(ext) for ext in (".json", ".json5", ".yaml", ".yml"))
+
+    for candidate in candidates:
+        try:
+            text = candidate.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        name = candidate.name
+        try:
+            if name.endswith(".json"):
+                return cast(dict, json.loads(text))
+            if name.endswith(".json5"):
+                return cast(dict, pyjson5.loads(text))
+            if name.endswith(".yaml") or name.endswith(".yml"):
+                data = y.load(text)
+                if isinstance(data, dict):
+                    return dict(data)
+        except (json.JSONDecodeError, pyjson5.Json5DecoderException, YAMLError):
+            continue
+    return None
+
+
+def _resolve_refs_in_schema(schema: dict, schema_db: Path, y: Any) -> dict:
+    """Recursively inline all ``$ref`` references inside *schema*.
+
+    When a ``$ref`` appears alongside other keys, the referenced dict is
+    merged with the remaining keys (siblings override the referenced
+    content).
+
+    Args:
+        schema: Schema dict potentially containing ``$ref`` keys.
+        schema_db: Base directory for relative path resolution.
+        y: Configured ruamel.yaml instance.
+
+    Returns:
+        A new dict with all ``$ref`` nodes replaced by the loaded
+        referenced content.
+    """
+    ref_value = schema.get("$ref")
+    if isinstance(ref_value, str):
+        resolved = _resolve_ref(ref_value, schema_db, y)
+        if resolved is not None:
+            base = _resolve_refs_in_schema(resolved, schema_db, y)
+            # Merge remaining keys on top of the referenced content
+            merged = dict(base)
+            for key, value in schema.items():
+                if key == "$ref":
+                    continue
+                if isinstance(value, dict) and key in merged and isinstance(merged[key], dict):
+                    merged[key] = {**merged[key], **_resolve_refs_in_schema(value, schema_db, y)}
+                else:
+                    merged[key] = (
+                        _resolve_refs_in_schema(value, schema_db, y)
+                        if isinstance(value, dict)
+                        else value
+                    )
+            return merged
+
+    result: dict = {}
+    for key, value in schema.items():
+        if isinstance(value, dict):
+            result[key] = _resolve_refs_in_schema(value, schema_db, y)
+        elif isinstance(value, list):
+            result[key] = [
+                _resolve_refs_in_schema(item, schema_db, y) if isinstance(item, dict) else item
+                for item in value
+            ]
+        else:
+            result[key] = value
+    return result
+
+
 def load_schema_database(schema_db: Path) -> dict[str, dict]:
     """Load all JSON/YAML schema files from *schema_db* into a type→schema map.
 
     Files are expected to be named ``<type>.schema.json``,
     ``<type>.schema.json5``, or ``<type>.schema.yaml``.  The *type* key
     is the stem before ``.schema``.
+
+    ``$ref`` references to external files are resolved relative to
+    *schema_db* and inlined into the loaded schema.
 
     Args:
         schema_db: Directory containing schema files.
@@ -45,26 +143,34 @@ def load_schema_database(schema_db: Path) -> dict[str, dict]:
         if not path.is_file():
             continue
         name = path.name
+        raw_schema: dict | None = None
         if name.endswith(".schema.json"):
             type_key = name[: -len(".schema.json")]
             try:
-                schemas[type_key] = json.loads(path.read_text(encoding="utf-8"))
+                raw_schema = json.loads(path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError):
                 continue
         elif name.endswith(".schema.json5"):
             type_key = name[: -len(".schema.json5")]
             try:
-                schemas[type_key] = pyjson5.loads(path.read_text(encoding="utf-8"))
+                raw_schema = pyjson5.loads(path.read_text(encoding="utf-8"))
             except (pyjson5.Json5DecoderException, OSError):
                 continue
-        elif name.endswith(".schema.yaml"):
-            type_key = name[: -len(".schema.yaml")]
+        elif name.endswith(".schema.yaml") or name.endswith(".schema.yml"):
+            type_key = (
+                name[: -len(".schema.yaml")]
+                if name.endswith(".schema.yaml")
+                else name[: -len(".schema.yml")]
+            )
             try:
                 data = y.load(path.read_text(encoding="utf-8"))
                 if isinstance(data, dict):
-                    schemas[type_key] = dict(data)
+                    raw_schema = dict(data)
             except YAMLError:
                 continue
+
+        if raw_schema is not None:
+            schemas[type_key] = _resolve_refs_in_schema(raw_schema, schema_db, y)
 
     return schemas
 

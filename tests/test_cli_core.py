@@ -94,6 +94,25 @@ class TestInit:
         assert result.exit_code == 1
         assert "already exists" in result.output.lower() or "exists" in result.output.lower()
 
+    def test_creates_base_schema(self, tmp_path: Path) -> None:
+        """init creates _base.schema.yaml with OKF fields."""
+        runner = CliRunner()
+        name = tmp_path / "mybundle"
+        result = runner.invoke(cli, ["init", str(name)])
+        assert result.exit_code == 0
+        base_schema = name / "bundle" / "_schema" / "_base.schema.yaml"
+        assert base_schema.exists()
+        text = base_schema.read_text(encoding="utf-8")
+        assert "type:" in text
+        assert "title:" in text
+        assert "description:" in text
+        assert "resource:" in text
+        assert "tags:" in text
+        assert "timestamp:" in text
+        assert "required:" in text
+        assert "- type" in text
+        assert "additionalProperties: true" in text
+
 
 # ---------------------------------------------------------------------------
 # new
