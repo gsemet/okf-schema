@@ -31,6 +31,14 @@ How to install `okf-schema`.
 Create your first bundle and learn the core workflow in under 10 minutes.
 :::
 
+:::{grid-item-card} 🕸️ Tutorials
+:link: tutorials/index
+:link-type: doc
+
+Build a fictional data-platform knowledge base, see how cross-links form a
+navigable graph, and query it from the CLI and Python API.
+:::
+
 :::{grid-item-card} 📖 How-To Guides
 :link: how-to/index
 :link-type: doc
@@ -62,7 +70,7 @@ and how it relates to the OKF specification.
 :hidden:
 
 Installation <installation>
-Tutorials <tutorials/getting-started>
+Tutorials <tutorials/index>
 How-To <how-to/index>
 Reference <reference/index>
 Design Principles <explanation/design-principles>

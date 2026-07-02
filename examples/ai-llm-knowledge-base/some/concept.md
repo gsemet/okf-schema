@@ -11,6 +11,8 @@ complexity: intermediate
 tags: [prompting, reasoning, llm]
 related_tools: [OpenAI-API, LangChain]
 timestamp: "2026-06-29"
+links: []
+backlinks: []
 ---
 
 # Chain-of-Thought Prompting

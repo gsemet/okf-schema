@@ -44,7 +44,7 @@ Plain OKF only defines a folder of markdown files. `okf-schema` turns those file
 | **Schema-driven frontmatter validation** | Every concept's YAML frontmatter is checked against a JSONSchema. Invalid fields, missing required keys, or wrong types are reported as structured errors. |
 | **Auto-discovered schemas** | Schemas live inside the bundle under `_schema/` (e.g. `_schema/concept.schema.yaml`). The `type` field in a concept's frontmatter tells `okf-schema` which schema file to load. A concept with `type: concept` is validated against `_schema/concept.schema.yaml`. Schemas can be written in **YAML**, **JSON**, or **JSON5** (JSON with comments and trailing commas). |
 | **Bundle integrity checks** | Detects broken internal links, missing `index.md` files, malformed `log.md` entries, and reserved-file violations. |
-| **Safe linting** | Normalizes YAML frontmatter by flattening nested lists and converting block-style to inline notation while preserving comments and custom quotes via `ruamel.yaml`. |
+| **Safe linting** | Normalizes YAML frontmatter by flattening nested lists and converting block-style to inline notation while preserving comments and custom quotes via `ruamel.yaml`. Also auto-updates `links` and `backlinks` fields from markdown body content. |
 | **Analytics** | Bundle statistics. |
 
 See a real schema definition in [`examples/ai-llm-knowledge-base/_schema/concept.schema.yaml`](examples/ai-llm-knowledge-base/_schema/concept.schema.yaml).
@@ -135,8 +135,11 @@ okf-schema init my-bundle
 # Update index.md files for all directories
 okf-schema index --path my-bundle/bundle
 
-# Lint frontmatter (flatten nested lists and convert block-style to inline)
+# Lint frontmatter (flatten nested lists, inline block-style, auto-update links/backlinks)
 okf-schema lint --path my-bundle/bundle
+
+# Lint without updating links/backlinks
+okf-schema lint --path my-bundle/bundle --no-links
 
 # Validate a bundle
 okf-schema validate --path my-bundle/bundle
@@ -158,7 +161,7 @@ okf-schema backlinks --path my-bundle/bundle concepts/react-pattern
 | `new --path <dir> --name <name>` | Create a new concept file with frontmatter template |
 | `validate --path <bundle>` | Validate bundle structure and frontmatter |
 | `validate --path <bundle> --strict` | Validate and fail on warnings |
-| `lint --path <bundle>` | Lint frontmatter: flatten nested lists and convert block-style to inline |
+| `lint --path <bundle>` | Lint frontmatter: flatten nested lists, convert block-style to inline, and auto-update `links`/`backlinks` from markdown body |
 | `list --path <bundle>` | List all concepts in a bundle |
 | `show --path <bundle> <concept>` | Show a single concept's frontmatter and body |
 | `index --path <bundle>` | Regenerate all `index.md` files |
@@ -171,7 +174,7 @@ Before packaging or distributing a bundle, run these three commands in order and
 
 ```bash
 okf-schema index --path my-bundle/bundle    # regenerate index.md files
-okf-schema lint --path my-bundle/bundle     # flatten nested lists and convert block lists to inline
+okf-schema lint --path my-bundle/bundle     # flatten nested lists, inline block lists, update links/backlinks
 okf-schema validate --path my-bundle/bundle --strict # check structure, schema, and links; fail on warnings
 ```
 

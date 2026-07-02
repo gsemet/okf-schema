@@ -91,3 +91,68 @@ def get_concept_info(path: Path) -> ConceptInfo:
                 info.type = str(frontmatter["type"]).strip()
 
     return info
+
+
+def extract_outgoing_links(body: str, source: Path, bundle_root: Path) -> list[str]:
+    """Extract internal markdown links from *body* as bundle-relative paths.
+
+    Skips external URLs, self-links, and links that resolve outside the
+    bundle.  Returns sorted, deduplicated relative paths.
+    """
+    links: list[str] = []
+    source_rel = source.relative_to(bundle_root).as_posix()
+
+    for _text_part, target in MARKDOWN_LINK_RE.findall(body):
+        resolved = resolve_link(target, source, bundle_root)
+        if resolved is None:
+            continue  # external link
+        try:
+            resolved_rel = resolved.relative_to(bundle_root).as_posix()
+        except ValueError:
+            continue  # link outside bundle
+        if resolved_rel == source_rel:
+            continue  # self-link
+        if resolved_rel not in links:
+            links.append(resolved_rel)
+
+    links.sort()
+    return links
+
+
+def build_link_graph(bundle: Path) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    """Build outgoing and incoming link graphs for an OKF bundle.
+
+    Returns a tuple ``(outgoing, incoming)`` where:
+
+    - *outgoing* maps each concept's relative path to the list of
+      concept paths it links to.
+    - *incoming* maps each concept's relative path to the list of
+      concept paths that link to it.
+
+    Reserved files (``index.md``, ``log.md``) are excluded.
+    """
+    outgoing: dict[str, list[str]] = {}
+
+    for path in collect_markdown_files(bundle):
+        if path.name in RESERVED_FILES:
+            continue
+        rel = path.relative_to(bundle).as_posix()
+        text = path.read_text(encoding="utf-8")
+        _fm_text, body = extract_frontmatter(text)
+        links = extract_outgoing_links(body, path, bundle)
+        if links:
+            outgoing[rel] = links
+
+    # Build reverse mapping (backlinks)
+    incoming: dict[str, list[str]] = {}
+    for source_rel, targets in outgoing.items():
+        for target_rel in targets:
+            if target_rel not in incoming:
+                incoming[target_rel] = []
+            if source_rel not in incoming[target_rel]:
+                incoming[target_rel].append(source_rel)
+
+    for target_rel in incoming:
+        incoming[target_rel].sort()
+
+    return outgoing, incoming

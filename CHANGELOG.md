@@ -2,6 +2,7 @@
 
 ### Feat
 
+- links and backlinks appears in frontmatters
 - define x-okd-summary to contain schema one-line description
 
 ## v0.4.1 (2026-07-02)

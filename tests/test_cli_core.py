@@ -302,10 +302,27 @@ class TestLint:
             "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n",
             encoding="utf-8",
         )
+        result = runner.invoke(cli, ["lint", "--path", str(bundle), "--no-links"])
+        assert result.exit_code == 0
+        text = concept.read_text(encoding="utf-8")
+        assert "tags: [a, b]" in text
+
+    def test_modifies_files_with_links_default(self, tmp_path: Path) -> None:
+        """lint with default --links adds links/backlinks fields."""
+        runner = CliRunner()
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        concept = bundle / "concept.md"
+        concept.write_text(
+            "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
         result = runner.invoke(cli, ["lint", "--path", str(bundle)])
         assert result.exit_code == 0
         text = concept.read_text(encoding="utf-8")
         assert "tags: [a, b]" in text
+        assert "links: []" in text
+        assert "backlinks: []" in text
 
     def test_check_exits_1_when_changes_needed(self, tmp_path: Path) -> None:
         """lint --check exits 1 when block lists are found."""
@@ -317,7 +334,7 @@ class TestLint:
             "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n",
             encoding="utf-8",
         )
-        result = runner.invoke(cli, ["lint", "--path", str(bundle), "--check"])
+        result = runner.invoke(cli, ["lint", "--path", str(bundle), "--check", "--no-links"])
         assert result.exit_code == 1
         assert "would lint" in result.output.lower()
 
@@ -331,6 +348,20 @@ class TestLint:
             "---\ntype: concept\ntitle: Test\ntags: [a, b]\n---\n\n# Test\n",
             encoding="utf-8",
         )
+        result = runner.invoke(cli, ["lint", "--path", str(bundle), "--check", "--no-links"])
+        assert result.exit_code == 0
+
+    def test_check_exits_0_with_links_when_already_linted(self, tmp_path: Path) -> None:
+        """lint --check exits 0 when links are already present and inline."""
+        runner = CliRunner()
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        concept = bundle / "concept.md"
+        concept.write_text(
+            "---\ntype: concept\ntitle: Test\ntags: [a, b]\n"
+            "links: []\nbacklinks: []\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
         result = runner.invoke(cli, ["lint", "--path", str(bundle), "--check"])
         assert result.exit_code == 0
 
@@ -342,7 +373,7 @@ class TestLint:
         concept = bundle / "concept.md"
         original = "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n"
         concept.write_text(original, encoding="utf-8")
-        result = runner.invoke(cli, ["lint", "--path", str(bundle), "--diff"])
+        result = runner.invoke(cli, ["lint", "--path", str(bundle), "--diff", "--no-links"])
         assert result.exit_code == 0
         assert "---" in result.output
         assert concept.read_text(encoding="utf-8") == original

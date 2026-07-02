@@ -103,6 +103,7 @@ def lint_bundle(
     bundle_path: str | Path,
     check: bool = False,
     diff: bool = False,
+    links: bool = False,
 ) -> list[FormattedResult]:
     """Lint frontmatter in all concept files of an OKF bundle.
 
@@ -114,6 +115,8 @@ def lint_bundle(
         bundle_path: Path to the OKF bundle directory.
         check: If ``True``, do not modify files; only report changes needed.
         diff: If ``True``, include unified diff in results without modifying.
+        links: If ``True``, also update ``links`` and ``backlinks``
+            frontmatter fields based on markdown body content.
 
     Returns:
         List of :class:`FormattedResult`, one per markdown file.
@@ -123,7 +126,7 @@ def lint_bundle(
         NotADirectoryError: When *bundle_path* is not a directory.
     """
     bundle = _resolve_bundle(bundle_path)
-    return _lint_bundle(bundle, check=check, diff=diff)
+    return _lint_bundle(bundle, check=check, diff=diff, links=links)
 
 
 def list_bundle(bundle_path: str | Path) -> list[ConceptSummary]:

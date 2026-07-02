@@ -114,11 +114,13 @@ okf-schema validate --path my-knowledge-base/bundle --strict
 ```
 
 Normalize frontmatter formatting (flatten nested lists, inline block
-style):
+style, and auto-update `links`/`backlinks`):
 
 ```bash
 okf-schema lint --path my-knowledge-base/bundle
 ```
+
+Use `--no-links` to skip updating link metadata.
 
 Run both in sequence before every commit to keep the bundle clean.
 

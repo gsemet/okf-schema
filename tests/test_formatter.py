@@ -369,3 +369,153 @@ class TestLintBundle:
         results = lint_bundle(bundle)
         assert len(results) == 1
         assert results[0].changed is False
+
+
+class TestUpdateFrontmatterLinks:
+    """Tests for _update_frontmatter_links."""
+
+    def test_adds_links_and_backlinks(self) -> None:
+        """Injects links and backlinks into frontmatter."""
+        from okf_schema.formatter import _update_frontmatter_links
+
+        text = "---\ntype: concept\n---\n\n# Body\n"
+        result = _update_frontmatter_links(text, ["b.md", "c.md"], ["d.md"])
+        assert result is not None
+        assert "links: [b.md, c.md]" in result
+        assert "backlinks: [d.md]" in result
+
+    def test_updates_existing_links(self) -> None:
+        """Replaces stale links with current ones."""
+        from okf_schema.formatter import _update_frontmatter_links
+
+        text = "---\ntype: concept\nlinks: [old.md]\nbacklinks: [stale.md]\n---\n\n# Body\n"
+        result = _update_frontmatter_links(text, ["new.md"], ["fresh.md"])
+        assert result is not None
+        assert "links: [new.md]" in result
+        assert "backlinks: [fresh.md]" in result
+        assert "old.md" not in result
+        assert "stale.md" not in result
+
+    def test_empty_lists_written(self) -> None:
+        """Empty lists are still written to reflect current state."""
+        from okf_schema.formatter import _update_frontmatter_links
+
+        text = "---\ntype: concept\n---\n\n# Body\n"
+        result = _update_frontmatter_links(text, [], [])
+        assert result is not None
+        assert "links: []" in result
+        assert "backlinks: []" in result
+
+    def test_no_frontmatter_returns_none(self) -> None:
+        """Returns None when no frontmatter is present."""
+        from okf_schema.formatter import _update_frontmatter_links
+
+        text = "# No frontmatter\n"
+        result = _update_frontmatter_links(text, ["a.md"], ["b.md"])
+        assert result is None
+
+    def test_no_change_when_values_match(self) -> None:
+        """Returns original text when links already match."""
+        from okf_schema.formatter import _update_frontmatter_links
+
+        text = "---\ntype: concept\nlinks: [a.md]\nbacklinks: [b.md]\n---\n\n# Body\n"
+        result = _update_frontmatter_links(text, ["a.md"], ["b.md"])
+        assert result == text
+
+
+class TestLintBundleLinks:
+    """Tests for lint_bundle with links=True."""
+
+    def test_adds_links_from_body(self, tmp_path: Path) -> None:
+        """lint_bundle --links adds outgoing links from markdown body."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntype: concept\n---\n\n# A\n\nLink to [B](b.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "b.md").write_text(
+            "---\ntype: concept\n---\n\n# B\n\nLink to [A](a.md)\n",
+            encoding="utf-8",
+        )
+        results = lint_bundle(bundle, links=True)
+        assert len(results) == 2
+        a_text = (bundle / "a.md").read_text(encoding="utf-8")
+        b_text = (bundle / "b.md").read_text(encoding="utf-8")
+        assert "links: [b.md]" in a_text
+        assert "backlinks: [b.md]" in a_text
+        assert "links: [a.md]" in b_text
+        assert "backlinks: [a.md]" in b_text
+
+    def test_links_mode_with_check(self, tmp_path: Path) -> None:
+        """links=True with check=True does not modify files."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        original = "---\ntype: concept\n---\n\n# A\n\nLink to [B](b.md)\n"
+        (bundle / "a.md").write_text(original, encoding="utf-8")
+        (bundle / "b.md").write_text(
+            "---\ntype: concept\n---\n\n# B\n\nLink to [A](a.md)\n",
+            encoding="utf-8",
+        )
+        results = lint_bundle(bundle, check=True, links=True)
+        assert any(r.changed for r in results)
+        assert (bundle / "a.md").read_text(encoding="utf-8") == original
+
+    def test_links_mode_no_changes_when_correct(self, tmp_path: Path) -> None:
+        """links=True returns changed=False when links already match."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntype: concept\nlinks: [b.md]\nbacklinks: [b.md]\n---\n\n"
+            "# A\n\nLink to [B](b.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "b.md").write_text(
+            "---\ntype: concept\nlinks: [a.md]\nbacklinks: [a.md]\n---\n\n"
+            "# B\n\nLink to [A](a.md)\n",
+            encoding="utf-8",
+        )
+        lint_bundle(bundle, links=True)
+        assert all(not r.changed for r in lint_bundle(bundle, links=True))
+
+    def test_skips_external_links(self, tmp_path: Path) -> None:
+        """External URLs are not included in links."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntype: concept\n---\n\n# A\n\n[External](https://example.com)\n",
+            encoding="utf-8",
+        )
+        lint_bundle(bundle, links=True)
+        a_text = (bundle / "a.md").read_text(encoding="utf-8")
+        assert "links: []" in a_text
+        assert "backlinks: []" in a_text
+
+    def test_skips_self_links(self, tmp_path: Path) -> None:
+        """Self-links are not included in links."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntype: concept\n---\n\n# A\n\n[Self](a.md)\n",
+            encoding="utf-8",
+        )
+        lint_bundle(bundle, links=True)
+        a_text = (bundle / "a.md").read_text(encoding="utf-8")
+        assert "links: []" in a_text
+        assert "backlinks: []" in a_text
+
+    def test_skips_reserved_files(self, tmp_path: Path) -> None:
+        """Reserved files are excluded from link graph."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "index.md").write_text(
+            "---\ntype: index\n---\n\n# Index\n\n[Link](concept.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "concept.md").write_text(
+            "---\ntype: concept\n---\n\n# Concept\n",
+            encoding="utf-8",
+        )
+        lint_bundle(bundle, links=True)
+        concept_text = (bundle / "concept.md").read_text(encoding="utf-8")
+        assert "backlinks: []" in concept_text

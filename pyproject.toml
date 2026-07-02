@@ -51,6 +51,7 @@ dev = [
     "commitizen",
     "sphinx-design>=0.6.1",
     "sphinx-copybutton>=0.5.2",
+    "sphinxcontrib-mermaid>=1.0.0",
 ]
 
 [build-system]

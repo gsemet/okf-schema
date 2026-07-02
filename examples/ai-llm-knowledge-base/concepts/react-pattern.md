@@ -11,6 +11,9 @@ complexity: advanced
 tags: [agents, reasoning, tool-use, react]
 related_tools: [LangChain, AutoGPT]
 timestamp: "2026-06-29"
+links: [concepts/function-calling.md, papers/toolformer.md]
+backlinks: [concepts/function-calling.md, papers/chain-of-thought-paper.md,
+    papers/toolformer.md, tools/langchain.md]
 ---
 
 # ReAct Pattern

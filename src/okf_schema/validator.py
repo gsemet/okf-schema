@@ -243,7 +243,11 @@ def _has_block_lists(fm_text: str) -> bool:
         return False
 
     for value in data.values():
-        if hasattr(value, "fa") and hasattr(value.fa, "flow_style") and not value.fa.flow_style():
+        if (
+            hasattr(value, "fa")
+            and hasattr(value.fa, "flow_style")
+            and value.fa.flow_style() is False
+        ):
             return True
     return False
 

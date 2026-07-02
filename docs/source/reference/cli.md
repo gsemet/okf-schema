@@ -64,16 +64,19 @@ okf-schema validate --path BUNDLE [--schema-db DIR] [--strict]
 
 ## `okf-schema lint`
 
-Lint frontmatter: flatten nested lists and convert block-style to inline.
+Lint frontmatter: flatten nested lists, convert block-style to inline, and
+auto-update `links` and `backlinks` fields from markdown body content.
 
 ```bash
-okf-schema lint --path BUNDLE [--check] [--diff]
+okf-schema lint --path BUNDLE [--check] [--diff] [--links|--no-links]
 ```
 
 | Option | Description |
 |--------|-------------|
 | `--check` | Report files that would change without modifying. |
 | `--diff` | Show unified diff without modifying. |
+| `--links` | Update `links` and `backlinks` from markdown body (default). |
+| `--no-links` | Skip updating `links` and `backlinks`. |
 
 ---
 

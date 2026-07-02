@@ -12,6 +12,8 @@ url: https://arxiv.org/abs/2201.11903
 tags: [chain-of-thought, reasoning, prompting]
 bibtex_key: wei-2022-cot
 timestamp: "2026-06-29"
+links: [concepts/react-pattern.md]
+backlinks: []
 ---
 
 # Chain-of-Thought Prompting Elicits Reasoning in Large Language Models
