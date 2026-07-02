@@ -1,58 +1,70 @@
-# okf-schema Documentation
+# okf-schema
 
-**okf-schema** is a CLI tool and Python library for working with **OKF (Open Knowledge Format)** bundles.
+**okf-schema** is a CLI tool and Python library for working with
+[OKF (Open Knowledge Format) bundles](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md).
 
-OKF is a markdown-based knowledge format where each concept is a markdown file with YAML frontmatter. This package provides validation against JSONSchema, formatting while preserving comments, and a rich set of bundle management utilities.
+OKF is a markdown-based knowledge format where each concept is a markdown file with YAML
+frontmatter. This package provides validation against JSONSchema, formatting while preserving
+comments, and bundle management utilities. See this official, draft
+[spec](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md).
 
-## Quickstart
+OKF-Schema is highly opinionated: it enforces a stricter model than the spec, and it is not
+guaranteed that every valid OKF bundle will pass `okf-schema` validation.
 
-Install from PyPI:
+However, OKF-Schema bundles are OKF-compliant. See
+[OKF-Schema vs. OKF Spec](reference/okf-schema-vs-spec) for details.
 
-```bash
-pip install okf-schema
-```
+::::{grid} 1 1 2 2
+:gutter: 3
 
-Initialize a new bundle:
+:::{grid-item-card} 📦 Installation
+:link: installation
+:link-type: doc
 
-```bash
-okf-schema init my-bundle
-```
+How to install `okf-schema`.
+:::
 
-Validate an existing bundle:
+:::{grid-item-card} 🚀 Getting Started
+:link: tutorials/getting-started
+:link-type: doc
 
-```bash
-okf-schema validate --path my-bundle/bundle
-```
+Create your first bundle and learn the core workflow in under 10 minutes.
+:::
 
-Validate strictly (fail on warnings):
+:::{grid-item-card} 📖 How-To Guides
+:link: how-to/index
+:link-type: doc
 
-```bash
-okf-schema validate --path my-bundle/bundle --strict
-```
+Task-oriented recipes: validate in CI, write custom schemas,
+migrate existing docs, and more.
+:::
 
-Lint frontmatter (flatten nested lists and convert block-style to inline):
+:::{grid-item-card} 📚 Reference
+:link: reference/index
+:link-type: doc
 
-```bash
-okf-schema lint --path my-bundle/bundle
-```
+Complete API and CLI documentation.
+Look up commands, functions, and data models.
+:::
 
-## Schema features
+:::{grid-item-card} 💡 Design Principles
+:link: explanation/design-principles
+:link-type: doc
 
-- **Auto-discovered schemas** — `_schema/*.schema.{yaml,json,json5}` are loaded automatically.
-- **`$ref` resolution** — External schema files can be referenced with `$ref` paths relative to `_schema/`.
-- **Default `_base.schema.yaml`** — Created automatically by `init`, documenting standard OKF fields.
+Understand the design philosophy behind OKF-Schema
+and how it relates to the OKF specification.
+:::
 
-## Contents
+::::
 
 ```{toctree}
 :maxdepth: 2
+:hidden:
 
-api
-cli
+Installation <installation>
+Tutorials <tutorials/getting-started>
+How-To <how-to/index>
+Reference <reference/index>
+Design Principles <explanation/design-principles>
+Changelog <changelog>
 ```
-
-## Indices and tables
-
-- {ref}`genindex`
-- {ref}`modindex`
-- {ref}`search`

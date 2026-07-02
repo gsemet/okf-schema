@@ -1,0 +1,162 @@
+/* Custom styles for okf-schema documentation */
+
+/* ── Changelog ── */
+#changelog h2 {
+    font-size: 1.4em;
+    font-weight: 600;
+    margin-top: 2.5em;
+    padding-bottom: 0.4em;
+    border-bottom: 1px solid var(--color-background-border);
+}
+
+#changelog h2:first-of-type {
+    margin-top: 0.5em;
+}
+
+#changelog h2#unreleased {
+    color: var(--color-brand-primary);
+}
+
+#changelog h3 {
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 1.5em 0 0.6em;
+    padding: 0.3rem 0.6rem;
+    display: inline-block;
+}
+
+/* Features */
+#changelog section[id="feat"] > h3,
+#changelog section[id="id1"] > h3,
+#changelog section[id="id4"] > h3,
+#changelog section[id="id6"] > h3,
+#changelog section[id="id8"] > h3,
+#changelog section[id="id10"] > h3 {
+    font-size: 0;
+    color: transparent;
+    background: rgba(26, 127, 55, 0.08);
+}
+
+#changelog section[id="feat"] > h3::before,
+#changelog section[id="id1"] > h3::before,
+#changelog section[id="id4"] > h3::before,
+#changelog section[id="id6"] > h3::before,
+#changelog section[id="id8"] > h3::before,
+#changelog section[id="id10"] > h3::before {
+    content: "✨ Features";
+    font-size: 0.8rem;
+    color: #1a7f37;
+}
+
+#changelog section[id="feat"] > h3 a.headerlink,
+#changelog section[id="id1"] > h3 a.headerlink,
+#changelog section[id="id4"] > h3 a.headerlink,
+#changelog section[id="id6"] > h3 a.headerlink,
+#changelog section[id="id8"] > h3 a.headerlink,
+#changelog section[id="id10"] > h3 a.headerlink {
+    font-size: 1rem;
+    color: var(--color-brand-primary);
+}
+
+/* Bug Fixes */
+#changelog section[id="fix"] > h3,
+#changelog section[id="id2"] > h3,
+#changelog section[id="id3"] > h3,
+#changelog section[id="id5"] > h3,
+#changelog section[id="id7"] > h3,
+#changelog section[id="id9"] > h3 {
+    font-size: 0;
+    color: transparent;
+    background: rgba(154, 103, 0, 0.08);
+}
+
+#changelog section[id="fix"] > h3::before,
+#changelog section[id="id2"] > h3::before,
+#changelog section[id="id3"] > h3::before,
+#changelog section[id="id5"] > h3::before,
+#changelog section[id="id7"] > h3::before,
+#changelog section[id="id9"] > h3::before {
+    content: "🔧 Bug Fixes";
+    font-size: 0.8rem;
+    color: #9a6700;
+}
+
+#changelog section[id="fix"] > h3 a.headerlink,
+#changelog section[id="id2"] > h3 a.headerlink,
+#changelog section[id="id3"] > h3 a.headerlink,
+#changelog section[id="id5"] > h3 a.headerlink,
+#changelog section[id="id7"] > h3 a.headerlink,
+#changelog section[id="id9"] > h3 a.headerlink {
+    font-size: 1rem;
+    color: var(--color-brand-primary);
+}
+
+#changelog ul {
+    margin-top: 0.5em;
+    padding-left: 1.2em;
+}
+
+#changelog li {
+    margin-bottom: 0.35em;
+    line-height: 1.6;
+}
+
+/* ── Landing page cards ── */
+.sd-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sd-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Copy button ── */
+button.copybtn {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+button.copybtn:hover {
+    opacity: 1;
+}
+
+/* ── CLI tables ── */
+table.docutils {
+    font-size: 0.95em;
+}
+
+table.docutils th {
+    background: var(--color-background-secondary);
+}
+
+/* ── API signatures ── */
+dl.py.function,
+dl.py.class,
+dl.py.method {
+    margin: 1.5em 0;
+}
+
+dl.py.function > dd,
+dl.py.class > dd,
+dl.py.method > dd {
+    margin-left: 0;
+    padding-left: 1em;
+}
+
+dt.sig.sig-object.py {
+    background: var(--color-background-secondary);
+    border-left: 3px solid var(--color-brand-primary);
+    border-radius: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0.6em 0.8em;
+    line-height: 1.6;
+    text-indent: 0;
+}
+
+dl.py.class > dt.sig.sig-object.py {
+    border-left-color: var(--color-brand-content);
+}

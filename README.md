@@ -12,6 +12,7 @@
 with JSONSchema validation of the frontmatter metadata, and formatting capabilities while preserving comments.
 
 OKF is a markdown-based knowledge format where each concept is a markdown file with YAML frontmatter.
+See the [OKF specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) for the full format definition.
 
 > [!IMPORTANT]
 > OKF-schema is opinionated. It delivers a valid OKF bundle but is adds a structure on the frontmatter that
