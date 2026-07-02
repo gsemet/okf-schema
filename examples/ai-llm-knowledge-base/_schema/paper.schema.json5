@@ -52,6 +52,16 @@
       description: "Unique citation key for reference management tools (BibTeX, Zotero, etc.)",
       examples: ["vaswani-2017-attention", "wei-2022-cot"],
     },
+    links: {
+      type: "array",
+      items: { type: "string" },
+      description: "Bundle-relative paths this paper links to",
+    },
+    backlinks: {
+      type: "array",
+      items: { type: "string" },
+      description: "Bundle-relative paths of concepts that link to this paper",
+    },
   },
   required: ["type", "title", "authors", "year", "venue"],
   additionalProperties: false,

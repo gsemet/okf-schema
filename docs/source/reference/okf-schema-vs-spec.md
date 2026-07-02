@@ -140,6 +140,7 @@ specific reason to anchor to the bundle root.
 | Extra / unknown keys | Always tolerated | Controlled by `additionalProperties` |
 | Root `.md` files | Allowed | Forbidden (E7); only `index.md` and `log.md` |
 | Internal link style | Relative or bundle-relative | Both supported; **relative preferred** |
+| Link metadata | Implicit (only in body) | Explicit `links` / `backlinks` frontmatter |
 | Schema location | None (spec does not use schemas) | `_schema/*.schema.{yaml,json,json5}` |
 
 ---
@@ -191,6 +192,16 @@ edits. It uses `ruamel.yaml` in round-trip mode, which preserves:
    This keeps frontmatter compact, which matters for coding agents that often
    load only the first *n* lines of a file.
 
+3. **Auto-update `links` and `backlinks`**
+
+   By default, `lint` scans each concept's markdown body for internal links
+   and updates two frontmatter fields:
+
+   - `links` — bundle-relative paths this concept links **to**
+   - `backlinks` — bundle-relative paths of concepts that link **here**
+
+   Use `--no-links` to skip this step.
+
 ### Safety
 
 The linter modifies files in place. Use `--check` to see which files would
@@ -203,3 +214,165 @@ okf-schema lint --path my-bundle/bundle --diff
 
 Run `lint` before every commit to keep frontmatter formatting consistent across
 the bundle.
+
+---
+
+## 5. `links` and `backlinks` — managed link metadata
+
+### What the spec says
+
+The OKF specification defines cross-linking in §5 as standard markdown links
+between concept bodies. The relationship is *implicit*: a link from concept A
+to concept B exists only in the prose of A. There is no prescribed way to
+enumerate outgoing links from a concept's metadata, nor to discover which
+concepts point to a given target without scanning every file.
+
+> A link from concept A to concept B asserts a *relationship*. The specific
+> kind of relationship is conveyed by the surrounding prose, not by the link
+> itself.
+
+### What OKF-Schema does
+
+`okf-schema` treats the link graph as **first-class metadata**. The `lint`
+command (with `--links`, the default) parses every concept's markdown body,
+extracts internal links, and materialises them into two frontmatter fields:
+
+| Field | Direction | Maintained by | Example value |
+|-------|-----------|---------------|---------------|
+| `links` | Outgoing | `lint --links` | `[tables/customers.md, playbooks/oncall.md]` |
+| `backlinks` | Incoming | `lint --links` | `[tables/orders.md, metrics/revenue.md]` |
+
+Both fields are **bundle-relative paths** (e.g. `tables/orders.md`), stored as
+inline YAML lists and sorted alphabetically for stable diffs.
+
+#### How it works
+
+When you run `okf-schema lint --path my-bundle/bundle`:
+
+1. **Scan** — Every `.md` file (except `index.md` and `log.md`) is read.
+2. **Extract** — The markdown body is parsed with a link regex. External URLs,
+   self-links, and paths that resolve outside the bundle are skipped.
+3. **Resolve** — Relative paths (`../tables/orders.md`) are resolved to
+   bundle-relative form (`tables/orders.md`).
+4. **Build the graph** — An adjacency list is built: `outgoing[source] = [targets…]`.
+5. **Invert** — A reverse map is built: `incoming[target] = [sources…]`.
+6. **Write** — Each concept's frontmatter is updated. Empty lists are written
+   explicitly so the frontmatter always reflects the current state.
+
+#### Example: before and after lint
+
+Consider `tables/orders.md`:
+
+```markdown
+---
+type: BigQuery Table
+title: Customer Orders
+tags: [sales]
+---
+
+# Schema
+
+| Column        | Type   | Description                              |
+|---------------|--------|------------------------------------------|
+| `customer_id` | STRING | Foreign key into [customers](customers.md). |
+
+# Joins
+
+Joined with [customers](customers.md) on `customer_id`.
+```
+
+After `okf-schema lint`:
+
+```markdown
+---
+type: BigQuery Table
+title: Customer Orders
+tags: [sales]
+links: [tables/customers.md]
+backlinks: []
+---
+
+# Schema
+
+| Column        | Type   | Description                              |
+|---------------|--------|------------------------------------------|
+| `customer_id` | STRING | Foreign key into [customers](customers.md). |
+
+# Joins
+
+Joined with [customers](customers.md) on `customer_id`.
+```
+
+Now consider `tables/customers.md`:
+
+```markdown
+---
+type: BigQuery Table
+title: Customers
+tags: [sales]
+---
+
+# Overview
+
+One row per customer. Referenced by [orders](orders.md).
+```
+
+After `okf-schema lint`:
+
+```markdown
+---
+type: BigQuery Table
+title: Customers
+tags: [sales]
+links: [tables/orders.md]
+backlinks: [tables/orders.md]
+---
+
+# Overview
+
+One row per customer. Referenced by [orders](orders.md).
+```
+
+Notice that `customers.md` has `backlinks: [tables/orders.md]` because
+`orders.md` links to it. The `links` field on `customers.md` is
+`[tables/orders.md]` because `customers.md` also links back to `orders.md`.
+
+#### Why this matters
+
+* **Agent consumption** — An agent can read only the frontmatter of a concept
+  and immediately know its neighbourhood in the graph, without parsing the
+  full body.
+* **Stable diffs** — Because `links` and `backlinks` are sorted and inline,
+  adding or removing a single link produces a minimal, readable diff.
+* **Discoverability** — The `okf-schema backlinks` CLI command uses this
+  metadata to answer "what points here?" in O(1) frontmatter reads rather
+  than O(n) body scans.
+* **Validation** — The validator can check that every path in `links` and
+  `backlinks` resolves to an actual file, surfacing stale references early.
+
+#### API access
+
+The same graph is available programmatically:
+
+```python
+from okf_schema import graph_bundle, backlinks_bundle
+
+# Full adjacency list
+graph = graph_bundle("my-bundle/bundle")
+# {"tables/orders.md": ["tables/customers.md"], ...}
+
+# Backlinks for specific targets
+results = backlinks_bundle("my-bundle/bundle", ["tables/orders.md"])
+# [BacklinkResult(target="tables/orders.md", source="tables/customers.md", ...)]
+```
+
+#### Opting out
+
+If you prefer to manage link metadata manually, or if your bundle is large
+enough that frontmatter size matters, pass `--no-links`:
+
+```bash
+okf-schema lint --path my-bundle/bundle --no-links
+```
+
+This skips steps 1–6 above and leaves `links`/`backlinks` untouched.

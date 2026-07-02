@@ -64,6 +64,16 @@ properties:
     examples:
       - [LangChain, OpenAI-API]
       - [LlamaIndex]
+  links:
+    type: array
+    items:
+      type: string
+    description: "Bundle-relative paths this concept links to"
+  backlinks:
+    type: array
+    items:
+      type: string
+    description: "Bundle-relative paths of concepts that link to this one"
 required:
   - type
   - title

@@ -12,7 +12,9 @@ from okf_schema._internal.models import (
     SearchResult,
 )
 from okf_schema._internal.utils import (
+    build_link_graph,
     collect_markdown_files,
+    extract_outgoing_links,
     find_broken_links,
     get_concept_info,
     has_markdown_files,
@@ -482,3 +484,103 @@ class TestBuiltinSchema:
         validator = Draft202012Validator(schema)
         errors = list(validator.iter_errors({"type": "concept"}))
         assert errors == []
+
+
+# ---------------------------------------------------------------------------
+# extract_outgoing_links
+# ---------------------------------------------------------------------------
+
+
+class TestExtractOutgoingLinks:
+    """Tests for extract_outgoing_links."""
+
+    def test_extracts_internal_links(self, tmp_path: Path) -> None:
+        """Extracts internal markdown links as relative paths."""
+        source = tmp_path / "a.md"
+        body = "[Link](b.md) [Another](sub/c.md)"
+        result = extract_outgoing_links(body, source, tmp_path)
+        assert result == ["b.md", "sub/c.md"]
+
+    def test_skips_external_links(self, tmp_path: Path) -> None:
+        """External URLs are excluded."""
+        source = tmp_path / "a.md"
+        body = "[External](https://example.com) [Local](b.md)"
+        result = extract_outgoing_links(body, source, tmp_path)
+        assert result == ["b.md"]
+
+    def test_skips_self_links(self, tmp_path: Path) -> None:
+        """Links to self are excluded."""
+        source = tmp_path / "a.md"
+        body = "[Self](a.md) [Other](b.md)"
+        result = extract_outgoing_links(body, source, tmp_path)
+        assert result == ["b.md"]
+
+    def test_deduplicates_links(self, tmp_path: Path) -> None:
+        """Duplicate links appear only once."""
+        source = tmp_path / "a.md"
+        body = "[First](b.md) [Second](b.md)"
+        result = extract_outgoing_links(body, source, tmp_path)
+        assert result == ["b.md"]
+
+    def test_skips_links_outside_bundle(self, tmp_path: Path) -> None:
+        """Links resolving outside bundle are excluded."""
+        source = tmp_path / "sub" / "a.md"
+        source.parent.mkdir(parents=True)
+        body = "[Outside](../../outside.md) [Local](b.md)"
+        result = extract_outgoing_links(body, source, tmp_path)
+        assert result == ["sub/b.md"]
+
+    def test_sorts_results(self, tmp_path: Path) -> None:
+        """Results are sorted alphabetically."""
+        source = tmp_path / "src.md"
+        body = "[Z](z.md) [A](a.md) [M](m.md)"
+        result = extract_outgoing_links(body, source, tmp_path)
+        assert result == ["a.md", "m.md", "z.md"]
+
+
+# ---------------------------------------------------------------------------
+# build_link_graph
+# ---------------------------------------------------------------------------
+
+
+class TestBuildLinkGraph:
+    """Tests for build_link_graph."""
+
+    def test_builds_outgoing_and_incoming(self, tmp_path: Path) -> None:
+        """Builds both outgoing and incoming link graphs."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text("---\ntype: concept\n---\n\n# A\n\nLink to [B](b.md)\n")
+        (bundle / "b.md").write_text("---\ntype: concept\n---\n\n# B\n\nLink to [A](a.md)\n")
+        outgoing, incoming = build_link_graph(bundle)
+        assert outgoing == {"a.md": ["b.md"], "b.md": ["a.md"]}
+        assert incoming == {"a.md": ["b.md"], "b.md": ["a.md"]}
+
+    def test_skips_reserved_files(self, tmp_path: Path) -> None:
+        """Reserved files are excluded from the graph."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "index.md").write_text("---\ntype: index\n---\n\n# Index\n\n[Link](concept.md)\n")
+        (bundle / "concept.md").write_text("---\ntype: concept\n---\n\n# Concept\n")
+        outgoing, incoming = build_link_graph(bundle)
+        assert "index.md" not in outgoing
+        assert "concept.md" not in incoming
+
+    def test_multiple_backlinks(self, tmp_path: Path) -> None:
+        """A concept can have multiple backlinks."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text("---\ntype: concept\n---\n\n# A\n\nLink to [C](c.md)\n")
+        (bundle / "b.md").write_text("---\ntype: concept\n---\n\n# B\n\nLink to [C](c.md)\n")
+        (bundle / "c.md").write_text("---\ntype: concept\n---\n\n# C\n")
+        outgoing, incoming = build_link_graph(bundle)
+        assert incoming["c.md"] == ["a.md", "b.md"]
+
+    def test_no_links(self, tmp_path: Path) -> None:
+        """Concepts with no links produce empty graphs."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text("---\ntype: concept\n---\n\n# A\n")
+        outgoing, incoming = build_link_graph(bundle)
+        assert outgoing == {}
+        assert incoming == {}

@@ -11,6 +11,9 @@ complexity: intermediate
 tags: [rag, retrieval, llm, knowledge-base]
 related_tools: [LangChain, LlamaIndex, OpenAI-API]
 timestamp: "2026-06-29"
+links: [tools/langchain.md]
+backlinks: [papers/attention-is-all-you-need.md, tools/langchain.md,
+    tools/ollama.md]
 ---
 
 # Retrieval-Augmented Generation

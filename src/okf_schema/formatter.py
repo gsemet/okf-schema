@@ -7,7 +7,10 @@ import io
 from dataclasses import dataclass
 from pathlib import Path
 
-from okf_schema._internal.utils import collect_markdown_files
+from okf_schema._internal.utils import (
+    build_link_graph,
+    collect_markdown_files,
+)
 from okf_schema._internal.yaml import extract_frontmatter, make_yaml
 
 
@@ -133,6 +136,67 @@ def lint_frontmatter(text: str) -> str | None:
     return _fix_whitespace(f"---\n{new_fm}\n---\n{body}")
 
 
+def _update_frontmatter_links(
+    text: str,
+    outgoing: list[str],
+    incoming: list[str],
+) -> str | None:
+    """Update frontmatter with ``links`` and ``backlinks`` fields.
+
+    Injects or updates the ``links`` (outgoing) and ``backlinks``
+    (incoming) fields in the frontmatter based on the provided lists.
+    Empty lists are still written so that the frontmatter accurately
+    reflects the current state.
+
+    Args:
+        text: Full markdown file content.
+        outgoing: List of bundle-relative paths this concept links to.
+        incoming: List of bundle-relative paths that link to this concept.
+
+    Returns:
+        The full text with updated link fields, or ``None`` when no
+        frontmatter block is present.
+    """
+    fm_text, body = extract_frontmatter(text)
+    if fm_text is None:
+        return None
+
+    y = make_yaml()
+    data = y.load(fm_text)
+    if data is None or not isinstance(data, dict):
+        return text
+
+    changed = False
+
+    # Update links (outgoing)
+    existing_links = data.get("links")
+    if existing_links != outgoing:
+        from ruamel.yaml.comments import CommentedSeq
+
+        links_seq = CommentedSeq(outgoing)
+        links_seq.fa.set_flow_style()
+        data["links"] = links_seq
+        changed = True
+
+    # Update backlinks (incoming)
+    existing_backlinks = data.get("backlinks")
+    if existing_backlinks != incoming:
+        from ruamel.yaml.comments import CommentedSeq
+
+        backlinks_seq = CommentedSeq(incoming)
+        backlinks_seq.fa.set_flow_style()
+        data["backlinks"] = backlinks_seq
+        changed = True
+
+    if not changed:
+        return _fix_whitespace(text)
+
+    buf = io.StringIO()
+    y.dump(data, buf)
+    new_fm = buf.getvalue().rstrip("\n")
+    return _fix_whitespace(f"---\n{new_fm}\n---\n{body}")
+
+
 def format_file(path: Path, check: bool = False, diff: bool = False) -> bool:
     """Format a single OKF concept file.
 
@@ -199,7 +263,12 @@ def format_bundle(bundle: Path, check: bool = False, diff: bool = False) -> list
     return results
 
 
-def lint_bundle(bundle: Path, check: bool = False, diff: bool = False) -> list[FormattedResult]:
+def lint_bundle(
+    bundle: Path,
+    check: bool = False,
+    diff: bool = False,
+    links: bool = False,
+) -> list[FormattedResult]:
     """Lint all concept files in an OKF bundle (convert block lists to inline).
 
     Args:
@@ -207,15 +276,32 @@ def lint_bundle(bundle: Path, check: bool = False, diff: bool = False) -> list[F
         check: If ``True``, do not modify any files.
         diff: If ``True``, include a unified diff string in each
             :class:`FormattedResult` without modifying files.
+        links: If ``True``, also update ``links`` and ``backlinks``
+            frontmatter fields based on markdown body content.
 
     Returns:
         A list of results, one per markdown file found in the bundle.
     """
+    # Pre-compute link graph when links mode is enabled
+    outgoing_graph: dict[str, list[str]] = {}
+    incoming_graph: dict[str, list[str]] = {}
+    if links:
+        outgoing_graph, incoming_graph = build_link_graph(bundle)
+
     results: list[FormattedResult] = []
     for path in collect_markdown_files(bundle):
         text = path.read_text(encoding="utf-8")
         original = text
         linted = lint_frontmatter(text)
+
+        # Apply link updates if requested
+        if links and linted is not None:
+            rel = path.relative_to(bundle).as_posix()
+            outgoing = outgoing_graph.get(rel, [])
+            incoming = incoming_graph.get(rel, [])
+            link_updated = _update_frontmatter_links(linted, outgoing, incoming)
+            if link_updated is not None:
+                linted = link_updated
 
         if linted is None or linted == original:
             results.append(FormattedResult(path=path, changed=False))

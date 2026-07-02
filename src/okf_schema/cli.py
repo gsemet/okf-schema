@@ -117,6 +117,20 @@ def init(ctx: click.Context, name: str) -> None:
         "    format: date-time\n"
         "    description: >-\n"
         "      ISO 8601 datetime of last meaningful change.\n"
+        "  links:\n"
+        "    type: array\n"
+        "    items:\n"
+        "      type: string\n"
+        "    description: >-\n"
+        "      Bundle-relative paths of concepts this file links to.\n"
+        "      Automatically maintained by ``okf-schema lint --links``.\n"
+        "  backlinks:\n"
+        "    type: array\n"
+        "    items:\n"
+        "      type: string\n"
+        "    description: >-\n"
+        "      Bundle-relative paths of concepts that link to this file.\n"
+        "      Automatically maintained by ``okf-schema lint --links``.\n"
         "required:\n"
         "  - type\n"
         "additionalProperties: true\n",
@@ -270,12 +284,19 @@ def validate(
 )
 @click.option("--check", is_flag=True, help="Check if files would change; do not modify.")
 @click.option("--diff", is_flag=True, help="Show unified diff without modifying files.")
+@click.option(
+    "--links/--no-links",
+    is_flag=True,
+    default=True,
+    help="Update links and backlinks frontmatter fields from markdown body.",
+)
 @click.pass_context
 def lint(
     ctx: click.Context,
     bundle_path: str,
     check: bool,
     diff: bool,
+    links: bool,
 ) -> None:
     """Lint frontmatter: flatten nested lists and convert block-style to inline.
 
@@ -283,9 +304,13 @@ def lint(
     block-style (multi-line) lists to inline notation.  This keeps
     frontmatter compact, which is important for coding agents that load
     only the first *n* lines of a file.
+
+    With ``--links/--no-links`` (default: ``--links``), also updates ``links``
+    (outgoing) and ``backlinks`` (incoming) frontmatter fields
+    based on internal markdown links found in each concept's body.
     """
     try:
-        results = lint_bundle(bundle_path, check=check, diff=diff)
+        results = lint_bundle(bundle_path, check=check, diff=diff, links=links)
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(1)

@@ -40,6 +40,16 @@
       "format": "uri",
       "description": "Official project homepage or repository URL",
       "examples": ["https://www.langchain.com", "https://ollama.com"]
+    },
+    "links": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Bundle-relative paths this tool links to"
+    },
+    "backlinks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Bundle-relative paths of concepts that link to this tool"
     }
   },
   "required": ["type", "title", "vendor", "license", "maturity"],
