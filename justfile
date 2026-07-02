@@ -18,6 +18,7 @@ update:
 preflight:
     just style-check
     just lint
+    just changelog
     just typecheck
     just test
     just refresh-examples
@@ -55,9 +56,10 @@ typecheck:
     {{ uv_run }} ty check src
     {{ uv_run }} mypy src
 
-# Build Sphinx documentation
+# Build Sphinx documentation (regenerates CHANGELOG first)
 [group("docs")]
 docs:
+    just changelog
     {{ uv_run }} sphinx-build -b html docs/source docs/_build/html
 
 # Serve documentation locally
@@ -74,6 +76,11 @@ clean:
     find . -name '.mypy_cache' -exec rm -rf {} + 2>/dev/null || true
     find . -name '.ruff_cache' -exec rm -rf {} + 2>/dev/null || true
     rm -rf build dist docs/_build htmlcov .coverage coverage.xml 2>/dev/null || true
+
+# Regenerate CHANGELOG.md from conventional commits
+[group("build")]
+changelog:
+    {{ uv_run }} cz changelog
 
 # Build package distributions
 [group("build")]
