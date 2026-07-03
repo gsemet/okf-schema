@@ -1,5 +1,7 @@
 # okf-schema
 
+[![GitHub](https://img.shields.io/badge/GitHub-okf--schema-181717?logo=github)](https://github.com/gsemet/okf-schema)
+
 **okf-schema** is a CLI tool and Python library for working with
 [OKF (Open Knowledge Format) bundles](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md).
 
@@ -13,6 +15,8 @@ guaranteed that every valid OKF bundle will pass `okf-schema` validation.
 
 However, OKF-Schema bundles are OKF-compliant. See
 [OKF-Schema vs. OKF Spec](reference/okf-schema-vs-spec) for details.
+
+Links to source code: [gsemet/okf-schema](https://github.com/gsemet/okf-schema)
 
 ::::{grid} 1 1 2 2
 :gutter: 3
