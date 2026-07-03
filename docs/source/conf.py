@@ -33,6 +33,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = "furo"
+html_theme_options = {
+    "source_repository": "https://github.com/gsemet/okf-schema",
+    "source_branch": "main",
+    "source_directory": "docs/source/",
+}
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 html_js_files = ["changelog.js"]
