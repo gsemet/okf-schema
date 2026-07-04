@@ -46,3 +46,10 @@ validate-okf:
 | `--strict` | Warnings become errors | Main branch, releases |
 
 Use `--strict` in CI for your default branch to guarantee a clean bundle.
+
+## See also
+
+- [Lint Before Commit](lint-before-commit) — pair validation with frontmatter linting.
+- [Bootstrap a Knowledge Base](bootstrap-knowledge-base) — setting up a KB that passes validation.
+- [CLI Reference](../reference/cli.md) — full `validate` command options.
+- [Design Principles](../explanation/design-principles) — the "validation as a gate" principle.

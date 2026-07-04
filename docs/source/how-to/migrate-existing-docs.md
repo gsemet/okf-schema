@@ -74,3 +74,10 @@ okf-schema index --path my-docs/bundle
 ```
 
 This creates `index.md` files in every directory, giving you a navigable table of contents.
+
+## See also
+
+- [Write a Custom Schema](write-custom-schema) — defining schemas for your migrated types.
+- [Bootstrap a Knowledge Base](bootstrap-knowledge-base) — starting fresh with the opinionated KB layout.
+- [Validate in CI](validate-in-ci) — keeping the migrated bundle clean over time.
+- [Getting Started](../tutorials/getting-started) — broader tutorial on OKF bundle creation.

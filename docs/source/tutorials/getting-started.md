@@ -190,6 +190,14 @@ OKF is designed for agentic workflows. Use agents to:
 The CLI is built for automation — every command exits with a non-zero
 status on failure and produces machine-parseable output.
 
+## See also
+
+- [CLI Reference](../reference/cli.md) — complete command reference.
+- [Building a Knowledge Graph](knowledge-graph) — advanced tutorial on cross-linking concepts.
+- [Bootstrap a Knowledge Base](../how-to/bootstrap-knowledge-base) — setting up the opinionated KB variant.
+- [Validate in CI](../how-to/validate-in-ci) — automating checks in your pipeline.
+- [Design Principles](../explanation/design-principles) — the ideas behind OKF-Schema.
+
 ### Challenge and confirm data
 
 Treat the knowledge base as a living document, not a static archive:

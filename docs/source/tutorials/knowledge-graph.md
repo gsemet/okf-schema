@@ -158,6 +158,14 @@ Notice:
 Both lists are sorted alphabetically so diffs stay minimal when a single
 link is added or removed.
 
+## See also
+
+- [Getting Started](getting-started) — foundational tutorial on creating and navigating bundles.
+- [Lint Before Commit](../how-to/lint-before-commit) — automating frontmatter consistency.
+- [Design Principles](../explanation/design-principles) — why OKF-Schema treats knowledge as a graph.
+- [Why an Opinionated Knowledge Base?](../explanation/opinionated-knowledge-base) — how links and backlinks work in the KB model.
+- [CLI Reference](../reference/cli.md) — `lint`, `index`, `backlinks`, and `graph` commands.
+
 ---
 
 ## Navigating the graph from the CLI

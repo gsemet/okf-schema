@@ -16,6 +16,12 @@ _schema/
 
 The `type` field selects the schema: `type: table` → `table.schema.yaml`.
 
+## Supported file extensions
+
+You can use YAML (`.yaml`, `.yml`), JSON (`.json`), or JSON5 (`.json5`)
+for schema files. The `_base.schema.yaml` file is applied to all concepts
+by default (`$ref`).
+
 ## Minimal schema example
 
 ```yaml
@@ -106,3 +112,10 @@ Running `okf-schema index` on a bundle with this schema produces:
 * Start with `additionalProperties: true` while iterating, then lock down to `false` when stable.
 * Use `enum` for fields with a fixed set of values (e.g., `status: [draft, review, published]`).
 * Add `description` to every property: it becomes documentation for bundle authors.
+
+## See also
+
+- [OKF-Schema vs. OKF Specification](../reference/okf-schema-vs-spec) — how schema validation differs from the base spec.
+- [Migrate Existing Documentation](migrate-existing-docs) — applying custom schemas to an existing docs folder.
+- [Design Principles](../explanation/design-principles) — why self-describing bundles matter.
+- [CLI Reference](../reference/cli.md) — `validate` command options.

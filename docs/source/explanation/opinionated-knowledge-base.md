@@ -1,8 +1,10 @@
 # Why an Opinionated Knowledge Base?
 
-`okfkb` bundles an *opinionated* subset of OKF — a fixed folder structure, a
-specific set of document types, and conventions about how files are named and
-linked. This article explains the reasoning behind those choices.
+`okf-schema` provides `okfkb` entrypoint (alias to `okf-schema kb`)
+that bundles an *opinionated* instantiation of an OKF folder structure
+with a specific set of document types,
+and conventions about how files are named and linked.
+This article explains the reasoning behind those choices.
 
 **Goal**: provide a ready-to-use knowledge base structure that that is directly
 applicable to agent-driven experimental findings traceability, and that can be
@@ -143,7 +145,8 @@ knowledge lifecycle:
 | `concepts/` | Stable, well-understood ideas promoted from findings |
 | `structures/` | Cross-cutting patterns that span multiple concepts |
 | `principles/` | Durable, high-confidence conclusions |
-| `ideas/` | Unvetted hypotheses, not yet findings |
+| `hypotheses/` | Testable propositions to validate through experimentation |
+| `outcomes/` | Planned deliverables and projects to build from knowledge |
 | `reference/` | External sources, papers, links |
 | `guides/` | Operational how-to notes |
 
@@ -190,9 +193,14 @@ log.md         ← what changed recently
 findings/ ↓    ← raw evidence, most recent first
   2026.07.04-*.md
   2026.07.03-*.md
+hypotheses/ ↓  ← testable ideas
+experiments/ ↓ ← planned investigations
 concepts/ ↓    ← stable, promoted knowledge
   cache-behaviour.md
   ...
+structures/ ↓  ← system composition
+principles/ ↓  ← team standards
+outcomes/ ↓    ← planned deliverables
 ```
 
 At each step, the `links` and `backlinks` arrays guide the agent to related
@@ -206,3 +214,6 @@ a local graph from frontmatter alone — no special tooling required.
 - [KB Commands reference](../reference/kb-commands) — CLI reference for `okfkb`.
 - [Bootstrap a knowledge base](../how-to/bootstrap-knowledge-base) — step-by-step setup guide.
 - [Design Principles](design-principles) — broader OKF-Schema design philosophy.
+- [Building a Knowledge Graph](../tutorials/knowledge-graph) — hands-on tutorial for cross-linking concepts.
+- [Lint Before Commit](../how-to/lint-before-commit) — keeping frontmatter consistent.
+- [Write a Custom Schema](../how-to/write-custom-schema) — extending the bundled schemas.

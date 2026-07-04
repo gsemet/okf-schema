@@ -53,3 +53,10 @@ Coding agents often load only the first 20–50 lines of a file. Compact,
 inline frontmatter ensures the `type`, `title`, and `tags` fields are
 visible in the agent's context window, improving routing and search
 accuracy.
+
+## See also
+
+- [Validate in CI](validate-in-ci) — pair linting with validation in your pipeline.
+- [Building a Knowledge Graph](../tutorials/knowledge-graph) — how `lint` materialises links into frontmatter.
+- [CLI Reference](../reference/cli.md) — full `lint` command options.
+- [Design Principles](../explanation/design-principles) — why compact frontmatter and human-edit preservation matter.

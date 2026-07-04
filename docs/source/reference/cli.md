@@ -152,3 +152,11 @@ okf-schema search --path BUNDLE QUERY
 | `0` | Success. |
 | `1` | Validation or lint failure. |
 | `2` | Runtime error (file not found, etc.). |
+
+## See also
+
+- [KB Commands](kb-commands) — knowledge-base specific commands (`okfkb`).
+- [Python API](api) — programmatic interface to the same operations.
+- [Getting Started](../tutorials/getting-started) — tutorial using these commands.
+- [Validate in CI](../how-to/validate-in-ci) — CI examples for `validate --strict`.
+- [Lint Before Commit](../how-to/lint-before-commit) — pre-commit hook for `lint`.

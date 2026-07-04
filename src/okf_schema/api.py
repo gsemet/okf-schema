@@ -8,6 +8,7 @@ statistics, and index regeneration.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from okf_schema._internal.models import (
@@ -32,6 +33,14 @@ from okf_schema.formatter import format_bundle as _format_bundle
 from okf_schema.formatter import lint_bundle as _lint_bundle
 from okf_schema.validator import load_schema_database
 from okf_schema.validator import validate_bundle as _validate_bundle
+
+
+@dataclass
+class UpdateResult:
+    """Result of updating an OKF bundle (index + lint)."""
+
+    index_updates: list[IndexUpdate]
+    lint_results: list[FormattedResult]
 
 
 def _resolve_bundle(bundle_path: str | Path) -> Path:
@@ -266,6 +275,38 @@ def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:
         updates.append(IndexUpdate(path=rel, action=action))
 
     return updates
+
+
+def update_bundle(
+    bundle_path: str | Path,
+    check: bool = False,
+    diff: bool = False,
+    links: bool = True,
+) -> UpdateResult:
+    """Regenerate indexes and lint frontmatter in an OKF bundle.
+
+    Combines :func:`index_bundle` and :func:`lint_bundle` into a single
+    operation.  This is the recommended command for keeping a knowledge
+    base up to date after edits.
+
+    Args:
+        bundle_path: Path to the OKF bundle directory.
+        check: If ``True``, do not modify files; only report changes needed.
+        diff: If ``True``, include unified diff in results without modifying.
+        links: If ``True``, also update ``links`` and ``backlinks``
+            frontmatter fields based on markdown body content.
+
+    Returns:
+        An :class:`UpdateResult` with index and lint results.
+
+    Raises:
+        FileNotFoundError: When *bundle_path* does not exist.
+        NotADirectoryError: When *bundle_path* is not a directory.
+    """
+    bundle = _resolve_bundle(bundle_path)
+    index_updates = index_bundle(bundle)
+    lint_results = lint_bundle(bundle, check=check, diff=diff, links=links)
+    return UpdateResult(index_updates=index_updates, lint_results=lint_results)
 
 
 def search_bundle(bundle_path: str | Path, query: str) -> list[SearchResult]:

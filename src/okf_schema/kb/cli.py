@@ -1,8 +1,8 @@
 """Click command group for KB (knowledge-base) subcommands.
 
-Provides the ``kb`` group and its ``init``, ``install-skills``, and
-``new-finding`` subcommands, exposed as ``okf-schema kb`` and the standalone
-``okfkb`` entry point.
+Provides the ``kb`` group and its ``init``, ``install-skills``,
+``new-finding``, and ``update`` subcommands, exposed as
+``okf-schema kb`` and the standalone ``okfkb`` entry point.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from pathlib import Path
 
 import click
 
+from okf_schema.api import update_bundle, validate_bundle
 from okf_schema.kb.finding import new_finding as _new_finding
 from okf_schema.kb.install import install_kb
 from okf_schema.kb.scaffold import scaffold_kb
@@ -112,3 +113,118 @@ def new_finding(
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
     click.echo(f"Created {filepath}")
+
+
+@kb.command()
+@click.argument("path", default=".", type=click.Path())
+@click.option("--check", is_flag=True, help="Check if files would change; do not modify.")
+@click.option("--diff", is_flag=True, help="Show unified diff without modifying files.")
+@click.option(
+    "--links/--no-links",
+    is_flag=True,
+    default=True,
+    help="Update links and backlinks frontmatter fields from markdown body.",
+)
+def update(
+    path: str,
+    check: bool,
+    diff: bool,
+    links: bool,
+) -> None:
+    """Regenerate indexes and lint frontmatter in a knowledge base.
+
+    This is equivalent to running ``okf-schema index`` followed by
+    ``okf-schema lint`` — the recommended workflow after editing
+    concepts in a knowledge base.
+    """
+    target = Path(path)
+    try:
+        result = update_bundle(target, check=check, diff=diff, links=links)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    # Report index updates
+    updated = sum(1 for u in result.index_updates if u.action == "updated")
+    created = sum(1 for u in result.index_updates if u.action == "created")
+    unchanged = sum(1 for u in result.index_updates if u.action == "unchanged")
+    skipped = sum(1 for u in result.index_updates if u.action == "skipped")
+    click.echo(
+        f"Index: {updated} updated, {created} created, {unchanged} unchanged, {skipped} skipped"
+    )
+
+    # Report lint results
+    changed = [r for r in result.lint_results if r.changed]
+
+    if diff:
+        for r in changed:
+            if r.diff:
+                click.echo(r.diff)
+        return
+
+    if check:
+        if changed:
+            for r in changed:
+                click.echo(f"Would lint: {r.path}")
+            sys.exit(1)
+        click.echo("All files are properly linted.")
+        return
+
+    if changed:
+        for r in changed:
+            click.echo(f"Linted: {r.path}")
+        click.echo(f"Linted {len(changed)} file(s).")
+    else:
+        click.echo("All files are already linted.")
+
+
+@kb.command()
+@click.argument("path", default=".", type=click.Path())
+def validate(path: str) -> None:
+    """Validate a knowledge base with strict mode (warnings as errors).
+
+    This is equivalent to running ``okf-schema validate --strict``.
+    """
+    target = Path(path)
+    try:
+        report = validate_bundle(target)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if report.is_conformant and not report.warnings:
+        click.echo("Bundle is conformant (0 errors, 0 warnings).")
+        return
+
+    by_file: dict[str, dict[str, list[str]]] = {}
+    for finding in report.errors:
+        path_str = str(finding.path) if finding.path else "<bundle>"
+        by_file.setdefault(path_str, {"errors": [], "warnings": []})
+        by_file[path_str]["errors"].append(f"[{finding.code}] {finding.message}")
+    for finding in report.warnings:
+        path_str = str(finding.path) if finding.path else "<bundle>"
+        by_file.setdefault(path_str, {"errors": [], "warnings": []})
+        by_file[path_str]["warnings"].append(f"[{finding.code}] {finding.message}")
+
+    for path_str in sorted(by_file):
+        click.echo(f"\n{path_str}")
+        for msg in by_file[path_str]["errors"]:
+            click.echo(f"  ERROR   {msg}", err=True)
+        for msg in by_file[path_str]["warnings"]:
+            click.echo(f"  WARNING {msg}", err=True)
+
+    error_count = len(report.errors)
+    warning_count = len(report.warnings)
+    if error_count:
+        click.echo(
+            f"\nValidation failed: {error_count} error(s), {warning_count} warning(s).",
+            err=True,
+        )
+        sys.exit(1)
+    elif warning_count:
+        click.echo(
+            f"\nValidation failed: {error_count} error(s), "
+            f"{warning_count} warning(s) (strict mode).",
+            err=True,
+        )
+        sys.exit(1)

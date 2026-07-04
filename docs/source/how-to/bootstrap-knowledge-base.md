@@ -1,15 +1,16 @@
 # Bootstrap an Opinionated Knowledge Base
 
-`okfkb` scaffolds and manages a specific kind of OKF bundle: an **opinionated
-knowledge base** designed for agent-driven findings traceability. This guide
-walks through creating, populating, and integrating one into a project.
+`okf-schema` provides `okfkb` CLI entry point (alias to `okf-schema kb`) that scaffolds and manages a specific kind of OKF bundle: an **opinionated
+knowledge base** designed for agent-driven findings traceability.
+This guide walks through creating, populating,
+and integrating one into a project.
 
 ## Prerequisites
 
 Install `okf-schema`:
 
 ```bash
-pip install okf-schema
+uv tool install okf-schema
 ```
 
 Verify the `okfkb` entry point is available:
@@ -30,12 +31,13 @@ This creates the canonical layout inside `my-project/knowledge/`:
 
 ```
 knowledge/
-├── _schema/          # 8 bundled JSONSchema files
+├── _schema/          # 10 bundled JSONSchema files
 ├── concepts/
 ├── experiments/
 ├── findings/         # ← where new-finding writes files
 ├── guides/
-├── ideas/
+├── hypotheses/
+├── outcomes/
 ├── principles/
 ├── reference/
 ├── structures/
@@ -60,7 +62,7 @@ a schema-valid file:
 okfkb new-finding my-project/knowledge/ \
   --title "Redis eviction rate spikes under load" \
   --confidence medium \
-  --context "Observed on 2026-07-04 during load test at 800 RPS; eviction_ratio hit 0.94."
+  --context "Observed during load test at 800 RPS; eviction_ratio hit 0.94."
 ```
 
 This writes `findings/2026.07.04-14.30-redis-eviction-rate-spikes-under-load.md`
@@ -84,13 +86,12 @@ okfkb new-finding my-project/knowledge/ \
 After adding files, update the cross-link index and check conformance:
 
 ```bash
-okf-schema index   --path my-project/knowledge/
-okf-schema lint    --path my-project/knowledge/
+okf-schema update --path my-project/knowledge/
 okf-schema validate --strict --path my-project/knowledge/
 ```
 
-- **`index`** scans all markdown files, computes backlinks, and updates `index.md`.
-- **`lint`** normalises YAML frontmatter without changing values.
+- **`update`** (alias to `okf-schema index` + `okf-schema lint`) scans all markdown files, computes backlinks, updates `index.md`, and normalises YAML frontmatter.
+
 - **`validate --strict`** checks all files against the bundled schemas.
 
 ---
@@ -118,7 +119,7 @@ Add a validation step so schema drift is caught before merge:
 # .github/workflows/validate.yml
 - name: Validate knowledge base
   run: |
-    pip install okf-schema
+    uv tool install okf-schema
     okf-schema validate --strict --path knowledge/
 ```
 
@@ -130,8 +131,8 @@ Add a validation step so schema drift is caught before merge:
 day 1   okfkb init knowledge/
 day 2+  okfkb new-finding knowledge/ --title "..." --confidence medium --context "..."
         # edit the generated file to fill in Observation / Evidence / Implications
-        okf-schema index --path knowledge/
-        okf-schema validate --strict --path knowledge/
+        okfkb update --path knowledge/
+        okfkb validate --strict --path knowledge/
         git add knowledge/ && git commit -m "docs: record finding ..."
 ```
 
@@ -143,3 +144,5 @@ day 2+  okfkb new-finding knowledge/ --title "..." --confidence medium --context
 - [Why an opinionated KB?](../explanation/opinionated-knowledge-base) — design rationale and
   how agents traverse the graph.
 - [Validate in CI](validate-in-ci) — automate schema checks in your pipeline.
+- [Lint Before Commit](lint-before-commit) — keep frontmatter formatting consistent.
+- [Building a Knowledge Graph](../tutorials/knowledge-graph) — tutorial on linking concepts into a graph.

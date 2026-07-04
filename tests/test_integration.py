@@ -457,3 +457,51 @@ class TestKbEndToEndWorkflow:
         agents_md = project_path / "AGENTS.md"
         assert agents_md.is_file()
         assert "knowledge-base.guidelines.md" in agents_md.read_text(encoding="utf-8")
+
+    def test_kb_update(self, tmp_path: Path) -> None:
+        """okfkb update regenerates indexes and lints a knowledge base."""
+        runner = CliRunner()
+        kb_path = tmp_path / "mykb"
+
+        # Step 1 — init a KB
+        result = runner.invoke(cli, ["kb", "init", str(kb_path)])
+        assert result.exit_code == 0, f"kb init failed: {result.output}"
+
+        # Step 2 — add a concept with block-style tags
+        concept = kb_path / "concepts" / "test.md"
+        concept.parent.mkdir(parents=True, exist_ok=True)
+        concept.write_text(
+            "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        # Step 3 — run update
+        result = runner.invoke(cli, ["kb", "update", str(kb_path)])
+        assert result.exit_code == 0, f"kb update failed: {result.output}"
+        assert "Index:" in result.output
+        assert "Linted:" in result.output
+
+        # Verify index was created for concepts/
+        assert (kb_path / "concepts" / "index.md").is_file()
+
+        # Verify frontmatter was linted
+        text = concept.read_text(encoding="utf-8")
+        assert "tags: [a, b]" in text
+
+    def test_kb_update_check_mode(self, tmp_path: Path) -> None:
+        """okfkb update --check reports changes without modifying files."""
+        runner = CliRunner()
+        kb_path = tmp_path / "mykb"
+
+        result = runner.invoke(cli, ["kb", "init", str(kb_path)])
+        assert result.exit_code == 0
+
+        concept = kb_path / "concepts" / "test.md"
+        concept.parent.mkdir(parents=True, exist_ok=True)
+        original = "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n"
+        concept.write_text(original, encoding="utf-8")
+
+        result = runner.invoke(cli, ["kb", "update", str(kb_path), "--check"])
+        assert result.exit_code == 1, f"Expected exit 1 in check mode: {result.output}"
+        assert "Would lint:" in result.output
+        assert concept.read_text(encoding="utf-8") == original

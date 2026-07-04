@@ -18,7 +18,8 @@ CONTENT_DIRS = {
     "experiments",
     "findings",
     "guides",
-    "ideas",
+    "hypotheses",
+    "outcomes",
     "principles",
     "reference",
     "structures",
@@ -54,6 +55,13 @@ class TestKbHelp:
         result = runner.invoke(kb, ["install-skills", "--help"])
         assert result.exit_code == 0
         assert "--force" in result.output
+
+    def test_kb_validate_help(self) -> None:
+        """kb validate --help shows PATH argument."""
+        runner = CliRunner()
+        result = runner.invoke(kb, ["validate", "--help"])
+        assert result.exit_code == 0
+        assert "PATH" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -197,6 +205,121 @@ class TestKbInstall:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# kb validate
+# ---------------------------------------------------------------------------
+
+
+class TestKbValidate:
+    """kb validate runs strict validation on a knowledge base."""
+
+    def test_kb_validate_valid_bundle(self, tmp_path: Path) -> None:
+        """kb validate exits 0 on a valid KB bundle."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        runner.invoke(kb, ["init", str(target)])
+        result = runner.invoke(kb, ["validate", str(target)])
+        assert result.exit_code == 0, result.output
+        assert "conformant" in result.output
+
+    def test_kb_validate_invalid_bundle(self, tmp_path: Path) -> None:
+        """kb validate exits 1 on an invalid bundle (strict mode treats warnings as errors)."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        target.mkdir()
+        (target / "index.md").write_text("# Index\n", encoding="utf-8")
+        (target / "concepts").mkdir()
+        (target / "concepts" / "test.md").write_text("# Test\n", encoding="utf-8")
+        result = runner.invoke(kb, ["validate", str(target)])
+        assert result.exit_code == 1, result.output
+        assert "Validation failed" in result.output
+
+    def test_kb_validate_missing_path(self, tmp_path: Path) -> None:
+        """kb validate exits 1 when PATH does not exist."""
+        runner = CliRunner()
+        missing = tmp_path / "does-not-exist"
+        result = runner.invoke(kb, ["validate", str(missing)])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+
+
+# ---------------------------------------------------------------------------
+# kb update
+# ---------------------------------------------------------------------------
+
+
+class TestKbUpdate:
+    """kb update regenerates indexes and lints frontmatter."""
+
+    def test_kb_update_on_valid_bundle(self, tmp_path: Path) -> None:
+        """kb update exits 0 on a valid KB bundle and reports index/lint status."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        runner.invoke(kb, ["init", str(target)])
+        result = runner.invoke(kb, ["update", str(target)])
+        assert result.exit_code == 0, result.output
+        assert "Index:" in result.output
+        assert "unchanged" in result.output
+
+    def test_kb_update_check_no_changes(self, tmp_path: Path) -> None:
+        """kb update --check exits 0 when no files would change."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        runner.invoke(kb, ["init", str(target)])
+        result = runner.invoke(kb, ["update", str(target), "--check"])
+        assert result.exit_code == 0, result.output
+        assert "All files are properly linted." in result.output
+
+    def test_kb_update_check_would_change(self, tmp_path: Path) -> None:
+        """kb update --check exits 1 when files would change."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        runner.invoke(kb, ["init", str(target)])
+        # Create a finding with nested list that would be flattened by lint
+        findings_dir = target / "findings"
+        findings_dir.mkdir(exist_ok=True)
+        (findings_dir / "test.md").write_text(
+            "---\ntype: Finding\ntags:\n  - [[nested]]\n---\n# Test\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(kb, ["update", str(target), "--check"])
+        assert result.exit_code == 1, result.output
+        assert "Would lint" in result.output
+
+    def test_kb_update_diff_shows_diff(self, tmp_path: Path) -> None:
+        """kb update --diff shows unified diff without modifying files."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        runner.invoke(kb, ["init", str(target)])
+        findings_dir = target / "findings"
+        findings_dir.mkdir(exist_ok=True)
+        (findings_dir / "test.md").write_text("# Test\n", encoding="utf-8")
+        result = runner.invoke(kb, ["update", str(target), "--diff"])
+        assert result.exit_code == 0, result.output
+
+    def test_kb_update_no_links(self, tmp_path: Path) -> None:
+        """kb update --no-links runs without updating backlinks."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        runner.invoke(kb, ["init", str(target)])
+        result = runner.invoke(kb, ["update", str(target), "--no-links"])
+        assert result.exit_code == 0, result.output
+        assert "Index:" in result.output
+
+    def test_kb_update_missing_path(self, tmp_path: Path) -> None:
+        """kb update exits 1 when PATH does not exist."""
+        runner = CliRunner()
+        missing = tmp_path / "does-not-exist"
+        result = runner.invoke(kb, ["update", str(missing)])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+
+
+# ---------------------------------------------------------------------------
+# okfkb alias
+# ---------------------------------------------------------------------------
+
+
 class TestOkfkbAlias:
     """The okfkb entry point resolves to the kb Click group."""
 
@@ -214,6 +337,8 @@ class TestOkfkbAlias:
         commands = list(okfkb.commands.keys())
         assert "init" in commands
         assert "install-skills" in commands
+        assert "validate" in commands
+        assert "validate" in commands
 
     def test_okfkb_alias_invokable_via_runner(self, tmp_path: Path) -> None:
         """okfkb install-skills can be invoked directly through the kb group."""

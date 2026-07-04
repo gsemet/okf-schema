@@ -85,7 +85,6 @@ Installation <installation>
 Tutorials <tutorials/index>
 How-To <how-to/index>
 Reference <reference/index>
-Design Principles <explanation/design-principles>
-Opinionated KB <explanation/opinionated-knowledge-base>
+Explanations <explanation>
 Changelog <changelog>
 ```

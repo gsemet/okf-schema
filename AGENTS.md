@@ -17,6 +17,41 @@ When instructions conflict, this order applies (highest wins):
 
 ---
 
+## Knowledge Base
+
+`okf-schema` bundles an opinionated knowledge base (`okfkb`) with a stratified
+model for agent-driven experimental findings traceability.
+
+### Stratified Layers
+
+| Layer | Purpose | Schemas |
+|-------|---------|---------|
+| Storage | Raw, immutable observations | Finding |
+| Testing | Testable ideas and procedures | Hypothesis, Experiment |
+| Semantic | Stable understanding | Concept, Structure |
+| Governance | Human-agreed standards | Principle |
+| Operational | Reproducible workflows | Playbook |
+| Planning | Planned deliverables | Outcome |
+| Lookup | External sources | Reference |
+
+### Agent Reading Path
+
+```
+index.md       ← table of contents
+log.md         ← recent changes
+findings/ ↓    ← raw evidence, most recent first
+hypotheses/ ↓  ← testable ideas
+experiments/ ↓ ← planned investigations
+concepts/ ↓    ← stable knowledge
+structures/ ↓  ← system composition
+principles/ ↓  ← team standards
+outcomes/ ↓    ← planned deliverables
+```
+
+For full guidelines, see `.agents/guidelines/knowledge-base.guidelines.md`.
+
+---
+
 OKF Specification
 
 This tool is an opinionated implementation of the Open Knowledge Format (OKF) specification. The spec is at `skills/okf-schema/references/okf-v0.1.md`.

@@ -1,0 +1,45 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Hypothesis
+description: >-
+  A testable proposition or educated guess derived from observations, intended
+  to be validated or falsified through experimentation.
+
+  Use Hypothesis when you have an idea that needs testing before it can be
+  treated as stable knowledge. Do NOT use Hypothesis for already-confirmed
+  truths (use Concept or Structure) or for planned deliverables (use Outcome).
+
+  Mutable until tested. Once tested, its status becomes `confirmed` or
+  `falsified`. A confirmed Hypothesis is promoted to Concept or Structure
+  (human decision). A falsified Hypothesis remains in the knowledge base with
+  `status: falsified` to preserve the record of what was tried.
+
+  Belongs to the Testing layer. Derived from Findings or direct observation.
+  Promoted to Concept or Structure when confirmed. Produces Experiments.
+allOf:
+  - $ref: "Base.schema.yaml"
+  - type: object
+    properties:
+      type:
+        description: Document type — must be "Hypothesis".
+        type: string
+        const: Hypothesis
+      derived_from:
+        description: IDs of Findings or Concepts that motivated this hypothesis.
+        type: array
+        items: { type: string }
+      status:
+        description: Lifecycle state of the hypothesis.
+        type: string
+        enum: [proposed, under_test, confirmed, falsified]
+      confirmed_by:
+        description: IDs of Findings that confirm this hypothesis.
+        type: array
+        items: { type: string }
+      falsified_by:
+        description: IDs of Findings that falsify this hypothesis.
+        type: array
+        items: { type: string }
+      promoted_to:
+        description: ID of the Concept or Structure this hypothesis was promoted into.
+        type: string
+    required: [type, status]

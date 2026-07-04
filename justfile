@@ -14,14 +14,13 @@ update:
     rm -rf uv.lock
     {{ uv }} sync
 
-# Run the full preflight check: style-check, lint, typecheck, test, refresh-examples
+# Run the full preflight check: style-check, lint, typecheck, test
 preflight:
     just style-check
     just lint
     just changelog
     just typecheck
     just test
-    just refresh-examples
 
 # Run tests with coverage
 [group("test")]
@@ -110,9 +109,11 @@ refresh-examples:
     {{ uv_run }} okf-schema backlinks --path examples/ai-llm-knowledge-base papers/attention-is-all-you-need papers/toolformer
     rm -rf examples/specific-hw-knowledge-base/
     {{ uv_run }} okfkb init examples/specific-hw-knowledge-base/
-    {{ uv_run }} okfkb new-finding examples/specific-hw-knowledge-base/ --title "HW Failure investigation" --confidence low --context "Hardware failure pattern observed in production logs during stress testing."
-    {{ uv_run }} okf-schema index --path examples/specific-hw-knowledge-base/
-    {{ uv_run }} okf-schema lint --path examples/specific-hw-knowledge-base/
+    {{ uv_run }} okfkb new-finding examples/specific-hw-knowledge-base/ \
+        --title "HW Failure investigation" \
+        --confidence low \
+        --context "Hardware failure pattern observed in production logs during stress testing."
+    {{ uv_run }} okfkb update examples/specific-hw-knowledge-base/
     {{ uv_run }} okf-schema validate --strict --path examples/specific-hw-knowledge-base/
 
 

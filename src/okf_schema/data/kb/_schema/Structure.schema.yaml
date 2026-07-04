@@ -2,8 +2,19 @@ $schema: "http://json-schema.org/draft-07/schema#"
 title: Structure
 description: >-
   A description of how an object, system, or artifact is composed and how its
-  parts relate — the "how it works" view. Distinct from a Concept (an idea) and
-  from a Playbook (a procedure to perform).
+  parts relate — the "how it works" view.
+
+  Use Structure when documenting system architecture, component relationships,
+  or mechanical composition. Do NOT use Structure for abstract ideas (use
+  Concept), operational procedures (use Playbook), or human-agreed standards
+  (use Principle).
+
+  Mutable. Updated as the system evolves. Like Concepts, Structures are never
+  deleted; obsolete Structures are marked `status: deprecated` and linked to
+  replacements.
+
+  Belongs to the Semantic layer. Promoted from confirmed Hypotheses or
+  converged Findings. Cross-cuts multiple Concepts.
 allOf:
   - $ref: "Base.schema.yaml"
   - type: object
@@ -12,6 +23,14 @@ allOf:
         description: Document type — must be "Structure".
         type: string
         const: Structure
+      status:
+        description: Lifecycle state of the structure.
+        type: string
+        enum: [active, deprecated]
+      derived_from:
+        description: IDs of Findings or Hypotheses that support this Structure.
+        type: array
+        items: { type: string }
       subject:
         description: The object or system whose structure is described.
         type: string

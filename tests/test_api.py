@@ -1058,3 +1058,69 @@ class TestLintBundleAPI:
         results = lint_bundle(bundle)
         assert len(results) == 1
         assert results[0].changed is False
+
+
+# ---------------------------------------------------------------------------
+# update_bundle
+# ---------------------------------------------------------------------------
+
+
+class TestUpdateBundle:
+    """Tests for update_bundle (index + lint)."""
+
+    def test_returns_update_result(self, tmp_path: Path) -> None:
+        """update_bundle returns an UpdateResult with index and lint data."""
+        from okf_schema.api import UpdateResult, update_bundle
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "concept.md").write_text(
+            "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
+        result = update_bundle(bundle)
+        assert isinstance(result, UpdateResult)
+        assert len(result.index_updates) >= 1
+        assert len(result.lint_results) >= 1
+        assert any(r.changed for r in result.lint_results)
+
+    def test_creates_index_and_lints(self, tmp_path: Path) -> None:
+        """update_bundle creates index.md and lints frontmatter."""
+        from okf_schema.api import update_bundle
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "concept.md").write_text(
+            "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
+        update_bundle(bundle)
+        assert (bundle / "index.md").exists()
+        text = (bundle / "concept.md").read_text(encoding="utf-8")
+        assert "tags: [a, b]" in text
+
+    def test_check_mode_no_changes(self, tmp_path: Path) -> None:
+        """update_bundle with check=True does not modify files."""
+        from okf_schema.api import update_bundle
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        original = "---\ntype: concept\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n"
+        (bundle / "concept.md").write_text(original, encoding="utf-8")
+        result = update_bundle(bundle, check=True)
+        assert (bundle / "concept.md").read_text(encoding="utf-8") == original
+        assert result.lint_results[0].changed is True
+
+    def test_nonexistent_path_raises(self) -> None:
+        """Raises FileNotFoundError for nonexistent bundle path."""
+        from okf_schema.api import update_bundle
+
+        with pytest.raises(FileNotFoundError):
+            update_bundle(VALID_BUNDLE / "does-not-exist")
+
+    def test_not_a_directory_raises(self) -> None:
+        """Raises NotADirectoryError when path is a file."""
+        from okf_schema.api import update_bundle
+
+        with pytest.raises(NotADirectoryError):
+            update_bundle(VALID_BUNDLE / "subdir" / "concept-a.md")
