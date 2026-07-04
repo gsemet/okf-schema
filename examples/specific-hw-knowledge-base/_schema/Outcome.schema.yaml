@@ -1,0 +1,40 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Outcome
+description: >-
+  A planned deliverable, project, or artifact to be built from the knowledge
+  base — "what I want to build."
+
+  Use Outcome when defining a concrete goal, feature, or deliverable that
+  emerges from stable knowledge. Do NOT use Outcome for procedures (use
+  Playbook), observations (use Finding), or testable guesses (use Hypothesis).
+
+  Mutable. Tracks progress from `planned` → `in_progress` → `done` or
+  `cancelled`. May reference Playbooks as execution paths and Concepts/
+  Structures as foundational knowledge.
+
+  Belongs to the Planning layer. Derived from Concepts, Structures, and
+  Principles. References Playbooks for execution.
+allOf:
+  - $ref: "Base.schema.yaml"
+  - type: object
+    properties:
+      type:
+        description: Document type — must be "Outcome".
+        type: string
+        const: Outcome
+      status:
+        description: Progress state of the outcome.
+        type: string
+        enum: [planned, in_progress, done, cancelled]
+      deliverable:
+        description: Description of the concrete artifact or result to be produced.
+        type: string
+      derived_from:
+        description: IDs of Concepts, Structures, or Principles that motivate this outcome.
+        type: array
+        items: { type: string }
+      execution_playbooks:
+        description: IDs of Playbooks that describe how to achieve this outcome.
+        type: array
+        items: { type: string }
+    required: [type, status]

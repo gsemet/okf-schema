@@ -331,6 +331,8 @@ The `okfkb` binary is a standalone alias for `okf-schema kb` — both are equiva
 |---------|-------------|
 | `okfkb init [PATH]` | Scaffold KB layout with 8 dirs, 8 schemas, `index.md`, `log.md` |
 | `okfkb install-skills [PATH]` | Deploy bundled skills and guideline into a project; patch `AGENTS.md` |
+| `okfkb update [PATH]` | Regenerate indexes and lint frontmatter (index + lint in one step) |
+| `okfkb validate [PATH]` | Validate bundle with strict mode (warnings as errors) |
 | `okf-schema init NAME --pattern kb` | Same scaffold as `okfkb init` via the pattern registry |
 
 See the [full documentation](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html)

@@ -8,6 +8,8 @@ agent-facing experimental findings.
 okfkb init [PATH]              # Scaffold a new knowledge base
 okfkb install-skills [PATH]    # Install skills and guidelines
 okfkb new-finding [PATH]       # Record a new Finding
+okfkb update [PATH]            # Regenerate indexes and lint frontmatter
+okfkb validate [PATH]          # Validate bundle (strict mode)
 ```
 
 `okfkb` is a standalone alias; `okf-schema kb <cmd>` and `okfkb <cmd>` are strictly equivalent.
@@ -43,12 +45,15 @@ okfkb init [PATH]
 │   ├── Playbook.schema.yaml
 │   ├── Principle.schema.yaml
 │   ├── Reference.schema.yaml
-│   └── Structure.schema.yaml
+│   ├── Structure.schema.yaml
+│   ├── Hypothesis.schema.yaml
+│   └── Outcome.schema.yaml
 ├── concepts/
 ├── experiments/
 ├── findings/
 ├── guides/
-├── ideas/
+├── hypotheses/
+├── outcomes/
 ├── principles/
 ├── reference/
 ├── structures/
@@ -163,6 +168,79 @@ runs with `-`, and truncating at 60 characters. The timestamp uses the current U
 
 ---
 
+## `okfkb update`
+
+Regenerate all `index.md` files and lint frontmatter in a knowledge base.
+This is equivalent to running `okf-schema index` followed by `okf-schema lint`
+— the recommended workflow after editing concepts.
+
+```bash
+okfkb update [PATH]
+```
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH` | — | `.` (current directory) | KB root directory. |
+
+| Option | Description |
+|--------|-------------|
+| `--check` | Report what would change without modifying files. |
+| `--diff` | Show unified diff for lint changes without modifying files. |
+| `--links` / `--no-links` | Update `links` and `backlinks` frontmatter fields (default: `--links`). |
+
+**Example:**
+
+```bash
+okfkb update my-kb/
+okfkb update my-kb/ --check
+```
+
+**Output:**
+
+```
+Index: 2 updated, 1 created, 5 unchanged, 0 skipped
+Linted: concepts/test.md
+Linted 1 file(s).
+```
+
+---
+
+## `okfkb validate`
+
+Validate a knowledge base bundle with strict mode (warnings treated as errors).
+This is equivalent to running ``okf-schema validate --strict``.
+
+```bash
+okfkb validate [PATH]
+```
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH` | — | `.` (current directory) | KB root directory. |
+
+**Example:**
+
+```bash
+okfkb validate my-kb/
+```
+
+**Output (valid):**
+
+```
+Bundle is conformant (0 errors, 0 warnings).
+```
+
+**Output (invalid):**
+
+```
+my-kb/concepts/missing-frontmatter.md
+  WARNING [W1] Missing frontmatter
+
+Validation failed: 0 error(s), 1 warning(s) (strict mode).
+```
+
+---
+
 ## `okf-schema kb`
 
 The `kb` subcommand group is also registered directly on the top-level `okf-schema` CLI:
@@ -172,6 +250,15 @@ okf-schema kb --help
 okf-schema kb init [PATH]
 okf-schema kb install-skills [PATH]
 okf-schema kb new-finding [PATH] --title TEXT
+okf-schema kb update [PATH]
+okf-schema kb validate [PATH]
 ```
 
 This is identical to `okfkb`; use whichever form is more convenient.
+
+## See also
+
+- [Bootstrap a Knowledge Base](../how-to/bootstrap-knowledge-base) — step-by-step guide to setting up a KB.
+- [Why an Opinionated Knowledge Base?](../explanation/opinionated-knowledge-base) — design rationale behind the KB structure.
+- [CLI Reference](cli) — full reference for all `okf-schema` commands.
+- [Getting Started](../tutorials/getting-started) — broader tutorial on OKF bundles.

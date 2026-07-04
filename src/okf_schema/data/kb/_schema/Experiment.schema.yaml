@@ -1,9 +1,20 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Experiment
 description: >-
-  A reusable, prepared procedure that can be executed one or two times to test a
-  hypothesis. Each execution produces one Finding. The Experiment is a template;
-  its recorded outcomes live as Finding documents.
+  A reusable, prepared procedure designed to test a Hypothesis and produce
+  empirical Findings. Each execution yields one or more Finding documents.
+
+  Use Experiment when you need a reproducible test procedure. Do NOT use
+  Experiment for ad-hoc observations (write a Finding directly) or for
+  operational workflows (use Playbook).
+
+  The Experiment template itself is mutable while in `proposed` or `active`
+  status. Once `retired` or `superseded`, it should not be modified.
+  Outcomes are recorded as separate Finding documents, not by editing the
+  Experiment.
+
+  Belongs to the Testing layer. Tests Hypotheses. Produces Findings. May be
+  superseded by improved experimental designs.
 allOf:
   - $ref: "Base.schema.yaml"
   - type: object

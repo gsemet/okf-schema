@@ -11,24 +11,35 @@ document is the strict minimal rule set for maintaining it correctly.
 
 ## 1. Choose the right type
 
-| You want to record… | type | Folder | Nature |
-|---------------------|------|--------|--------|
-| A stable idea / "what is this?" | `Concept` | `concepts/` | Explanatory |
-| How an object is composed / works | `Structure` | `structures/` | Descriptive |
-| A standard or convention (agreed with humans) | `Principle` | `principles/` | Normative |
-| A step-by-step procedure to perform | `Playbook` | `guides/` | Procedural |
-| Exact values, fields, or lookup tables | `Reference` | `reference/` | Lookup |
-| What you observed/believed at time T | `Finding` | `findings/` | Empirical, dated |
-| A reusable procedure to test a claim | `Experiment` | `experiments/` | Template, run 1–2× |
+| You want to record… | type | Folder | Layer | Nature |
+|---------------------|------|--------|-------|--------|
+| A raw observation at time T | `Finding` | `findings/` | Storage | Empirical, immutable |
+| A testable idea to validate | `Hypothesis` | `hypotheses/` | Testing | Testable, mutable |
+| A reusable test procedure | `Experiment` | `experiments/` | Testing | Template, run 1–2× |
+| A stable idea / "what is this?" | `Concept` | `concepts/` | Semantic | Explanatory, mutable |
+| How an object is composed / works | `Structure` | `structures/` | Semantic | Descriptive, mutable |
+| A human-agreed standard | `Principle` | `principles/` | Governance | Normative, stable |
+| A reproducible workflow | `Playbook` | `guides/` | Operational | Procedural, mutable |
+| A planned deliverable | `Outcome` | `outcomes/` | Planning | Goal-oriented, mutable |
+| External papers, lookup tables | `Reference` | `reference/` | Lookup | Lookup, immutable |
 
 Rules of thumb:
 
 - Document only what is **non-trivial** for coding agents. Do not paraphrase code
   or existing docs — link instead.
 - Keep each file focused and concise, important information first.
-- Findings and Experiments are the empirical layer; the other five are the stable
-  layer. Agents dump Findings freely; stable docs are promoted deliberately by the
+- Findings are the empirical layer; Hypotheses and Experiments are the testing
+  layer; Concepts and Structures are the semantic layer; Principles are the
+  governance layer; Playbooks are the operational layer; Outcomes are the
+  planning layer; References are the lookup layer.
+- Agents dump Findings freely; stable docs are promoted deliberately by the
   `consolidate-knowledge-base` skill — never dumped ad hoc.
+- Hypotheses are promoted to Concept or Structure by human decision, never
+  automatically.
+- Falsified Hypotheses remain in the knowledge base with `status: falsified`.
+- Playbooks are experienced until proven false; use `superseded_by` when a
+  better workflow emerges.
+- Outcomes track progress and may reference Playbooks for execution.
 
 ## 2. Required frontmatter
 

@@ -2,7 +2,12 @@
 
 ### Feat
 
+- okfkb new-finding command
 - **kb**: add okfkb CLI and knowledge-base subcommands
+
+### Fix
+
+- rework kb structure
 
 ## v0.5.1 (2026-07-03)
 

@@ -1,7 +1,7 @@
 """Scaffold a KB (knowledge-base) bundle directory layout.
 
-The canonical KB layout contains 8 content directories, a ``_schema/``
-directory with 8 bundled YAML schema files, ``index.md``, and ``log.md``.
+The canonical KB layout contains 9 content directories, a ``_schema/``
+directory with 9 bundled YAML schema files, ``index.md``, and ``log.md``.
 """
 
 from __future__ import annotations
@@ -22,7 +22,8 @@ CONTENT_DIRS: tuple[str, ...] = (
     "experiments",
     "findings",
     "guides",
-    "ideas",
+    "hypotheses",
+    "outcomes",
     "principles",
     "reference",
     "structures",
@@ -34,6 +35,8 @@ SCHEMA_FILES: tuple[str, ...] = (
     "Concept.schema.yaml",
     "Experiment.schema.yaml",
     "Finding.schema.yaml",
+    "Hypothesis.schema.yaml",
+    "Outcome.schema.yaml",
     "Playbook.schema.yaml",
     "Principle.schema.yaml",
     "Reference.schema.yaml",

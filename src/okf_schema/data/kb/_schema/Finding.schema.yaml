@@ -1,10 +1,22 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Finding
 description: >-
-  An empirical, dated, falsifiable record of what an agent or human truthfully
-  observed and believed at a point in time. The body is immutable once written;
-  only lifecycle frontmatter (status, contradicted_by, superseded_by) may be
-  appended later.
+  A raw, dated, falsifiable observation recorded by an agent or human at a
+  specific point in time. Findings are the atomic unit of empirical knowledge.
+
+  Use Finding when you have observed something non-trivial during debugging,
+  investigation, or experimentation and want to preserve that observation for
+  future agents. Do NOT use Finding for stable truths (use Concept), procedures
+  (use Playbook), or human-agreed standards (use Principle).
+
+  The body and claim are immutable once written. To correct a Finding, write a
+  new Finding with `contradicts` or `supersedes` pointing to the old one. The
+  only permitted edits to an existing Finding are lifecycle frontmatter:
+  `status` (active, contradicted, superseded), `contradicted_by`, and
+  `superseded_by`, appended by review.
+
+  Belongs to the Storage layer. Findings are promoted into Concepts or
+  Structures when they converge and stabilize. They may also support Principles.
 allOf:
   - $ref: "Base.schema.yaml"
   - type: object
