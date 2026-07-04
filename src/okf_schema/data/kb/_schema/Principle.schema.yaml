@@ -1,0 +1,25 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Principle
+description: >-
+  A standard or convention, usually defined with humans. Principles are stable,
+  normative statements ("we always…", "never…") — not dated observations. They
+  may be supported by Findings but are agreed, not merely observed.
+allOf:
+  - $ref: "Base.schema.yaml"
+  - type: object
+    properties:
+      type:
+        description: Document type — must be "Principle".
+        type: string
+        const: Principle
+      rationale:
+        description: Why this principle exists and what it protects against.
+        type: string
+      authority:
+        description: Who agreed this principle (e.g. "team", "human-reviewed").
+        type: string
+      supported_by:
+        description: IDs of Findings that provide empirical support for this principle.
+        type: array
+        items: { type: string }
+    required: [type]

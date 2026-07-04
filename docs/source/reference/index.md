@@ -8,5 +8,6 @@ Complete documentation of the okf-schema Python API, CLI, and data models.
 api
 models
 cli
+kb-commands
 okf-schema-vs-spec
 ```

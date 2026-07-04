@@ -113,6 +113,33 @@ class TestInit:
         assert "- type" in text
         assert "additionalProperties: true" in text
 
+    def test_init_with_pattern_kb_scaffolds_kb(self, tmp_path: Path) -> None:
+        """init --pattern kb creates KB structure."""
+        runner = CliRunner()
+        name = tmp_path / "mykb"
+        result = runner.invoke(cli, ["init", str(name), "--pattern", "kb"])
+        assert result.exit_code == 0
+        assert (name / "concepts").is_dir()
+        assert (name / "_schema" / "Base.schema.yaml").exists()
+
+    def test_init_unknown_pattern_errors(self, tmp_path: Path) -> None:
+        """init --pattern unknown exits with error."""
+        runner = CliRunner()
+        name = tmp_path / "mybundle"
+        result = runner.invoke(cli, ["init", str(name), "--pattern", "unknown"])
+        assert result.exit_code == 1
+        assert "unknown" in result.output.lower()
+        assert "available patterns" in result.output.lower()
+
+    def test_init_without_pattern_is_unchanged(self, tmp_path: Path) -> None:
+        """init without --pattern still creates standard bundle."""
+        runner = CliRunner()
+        name = tmp_path / "mybundle"
+        result = runner.invoke(cli, ["init", str(name)])
+        assert result.exit_code == 0
+        assert (name / "bundle").is_dir()
+        assert (name / "bundle" / "_schema" / "_base.schema.yaml").exists()
+
 
 # ---------------------------------------------------------------------------
 # new
@@ -384,3 +411,27 @@ class TestLint:
         result = runner.invoke(cli, ["lint", "--path", str(VALID_BUNDLE / "does-not-exist")])
         assert result.exit_code == 2
         assert "does not exist" in result.output.lower() or "not found" in result.output.lower()
+
+
+# ---------------------------------------------------------------------------
+# kb group
+# ---------------------------------------------------------------------------
+
+
+class TestKbGroup:
+    """Tests for kb subcommand group registration."""
+
+    def test_kb_group_is_available(self) -> None:
+        """kb group appears in top-level help."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--help"])
+        assert result.exit_code == 0
+        assert "kb" in result.output
+
+    def test_kb_help_lists_subcommands(self) -> None:
+        """kb --help lists init and install."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["kb", "--help"])
+        assert result.exit_code == 0
+        assert "init" in result.output
+        assert "install" in result.output

@@ -1,0 +1,35 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Base
+description: Common frontmatter fields shared by all knowledge-base documents.
+type: object
+required: [type, title, description]
+properties:
+  type:
+    description: Document type discriminator.
+    type: string
+  title:
+    description: Human-readable title of the document.
+    type: string
+    minLength: 1
+  description:
+    description: Short summary of what the document covers.
+    type: string
+    minLength: 1
+  tags:
+    description: Keywords for categorization and search.
+    type: array
+    items: { type: string }
+  timestamp:
+    description: ISO 8601 creation or last-updated timestamp.
+    type: string
+    format: date-time
+  links:
+    type: array
+    items:
+      type: string
+    description: "Bundle-relative paths this concept links to"
+  backlinks:
+    type: array
+    items:
+      type: string
+    description: "Bundle-relative paths of concepts that link to this one"

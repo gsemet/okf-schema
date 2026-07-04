@@ -1,0 +1,26 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Structure
+description: >-
+  A description of how an object, system, or artifact is composed and how its
+  parts relate — the "how it works" view. Distinct from a Concept (an idea) and
+  from a Playbook (a procedure to perform).
+allOf:
+  - $ref: "Base.schema.yaml"
+  - type: object
+    properties:
+      type:
+        description: Document type — must be "Structure".
+        type: string
+        const: Structure
+      subject:
+        description: The object or system whose structure is described.
+        type: string
+      parts:
+        description: The components, fields, or sub-parts that make up the subject.
+        type: array
+        items: { type: string }
+      related_concepts:
+        description: IDs of Concept documents that explain the ideas behind this structure.
+        type: array
+        items: { type: string }
+    required: [type]

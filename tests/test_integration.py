@@ -416,3 +416,44 @@ class TestCliIntegration:
         )
         assert result.exit_code == 2
         assert "Error:" in result.output
+
+
+# ---------------------------------------------------------------------------
+# KB subcommand end-to-end workflow
+# ---------------------------------------------------------------------------
+
+
+class TestKbEndToEndWorkflow:
+    """End-to-end: okfkb init then okfkb install on a project directory."""
+
+    def test_kb_init_then_install(self, tmp_path: Path) -> None:
+        """Full KB workflow: init a KB bundle, then install skills into a project."""
+        runner = CliRunner()
+        kb_path = tmp_path / "mykb"
+        project_path = tmp_path / "project"
+        project_path.mkdir()
+
+        # Step 1 — init a KB at kb_path
+        result = runner.invoke(cli, ["kb", "init", str(kb_path)])
+        assert result.exit_code == 0, f"kb init failed: {result.output}"
+        assert (kb_path / "concepts").is_dir()
+        assert (kb_path / "index.md").is_file()
+        assert (kb_path / "log.md").is_file()
+
+        # Step 2 — install KB skills into project_path
+        result = runner.invoke(cli, ["kb", "install", str(project_path)])
+        assert result.exit_code == 0, f"kb install failed: {result.output}"
+
+        # Verify skills were deployed
+        agents_dir = project_path / ".agents"
+        assert agents_dir.is_dir()
+        assert (agents_dir / "skills" / "record-finding" / "SKILL.md").is_file()
+        assert (agents_dir / "skills" / "consolidate-knowledge-base" / "SKILL.md").is_file()
+
+        # Verify guideline was deployed
+        assert (agents_dir / "guidelines" / "knowledge-base.guidelines.md").is_file()
+
+        # Verify AGENTS.md was created and references the guideline
+        agents_md = project_path / "AGENTS.md"
+        assert agents_md.is_file()
+        assert "knowledge-base.guidelines.md" in agents_md.read_text(encoding="utf-8")
