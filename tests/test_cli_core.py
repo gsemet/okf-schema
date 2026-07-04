@@ -434,4 +434,4 @@ class TestKbGroup:
         result = runner.invoke(cli, ["kb", "--help"])
         assert result.exit_code == 0
         assert "init" in result.output
-        assert "install" in result.output
+        assert "install-skills" in result.output

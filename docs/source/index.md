@@ -67,6 +67,14 @@ Understand the design philosophy behind OKF-Schema
 and how it relates to the OKF specification.
 :::
 
+:::{grid-item-card} 🗄️ Opinionated Knowledge Base
+:link: explanation/opinionated-knowledge-base
+:link-type: doc
+
+Learn why the `okfkb` KB format exists, how agents read frontmatter-first
+markdown, and how links and backlinks keep the graph navigable.
+:::
+
 ::::
 
 ```{toctree}
@@ -78,5 +86,6 @@ Tutorials <tutorials/index>
 How-To <how-to/index>
 Reference <reference/index>
 Design Principles <explanation/design-principles>
+Opinionated KB <explanation/opinionated-knowledge-base>
 Changelog <changelog>
 ```

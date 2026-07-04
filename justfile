@@ -108,7 +108,12 @@ refresh-examples:
     {{ uv_run }} okf-schema stats --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema list --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema backlinks --path examples/ai-llm-knowledge-base papers/attention-is-all-you-need papers/toolformer
-    {{ uv_run }} okfkb init examples/specific-hw-knowledge-base/s
+    rm -rf examples/specific-hw-knowledge-base/
+    {{ uv_run }} okfkb init examples/specific-hw-knowledge-base/
+    {{ uv_run }} okfkb new-finding examples/specific-hw-knowledge-base/ --title "HW Failure investigation" --confidence low --context "Hardware failure pattern observed in production logs during stress testing."
+    {{ uv_run }} okf-schema index --path examples/specific-hw-knowledge-base/
+    {{ uv_run }} okf-schema lint --path examples/specific-hw-knowledge-base/
+    {{ uv_run }} okf-schema validate --strict --path examples/specific-hw-knowledge-base/
 
 
 # ── Skill Evals ──────────────────────────────────────────────────────────────
