@@ -1,0 +1,125 @@
+{
+  "plan_agent_version": "??.??",
+  "status": "complete",
+  "generated_at": "2026-07-03T21:24:33.500922+00:00",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Phase 1 \u2014 Bundled Assets and Package Data",
+      "tasks": [
+        {
+          "id": "01",
+          "file": "05-task-01-copy-kb-schemas.md",
+          "dependencies": []
+        },
+        {
+          "id": "02",
+          "file": "05-task-02-copy-skills-guideline.md",
+          "dependencies": [
+            "01"
+          ]
+        },
+        {
+          "id": "03",
+          "file": "05-task-03-update-pyproject-toml.md",
+          "dependencies": [
+            "01",
+            "02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Phase 2 \u2014 kb Subpackage Core Logic",
+      "tasks": [
+        {
+          "id": "04",
+          "file": "05-task-04-scaffold-py.md",
+          "dependencies": [
+            "01",
+            "02",
+            "03"
+          ]
+        },
+        {
+          "id": "05",
+          "file": "05-task-05-install-py.md",
+          "dependencies": [
+            "01",
+            "02",
+            "03"
+          ]
+        },
+        {
+          "id": "06",
+          "file": "05-task-06-patterns-py.md",
+          "dependencies": [
+            "04"
+          ]
+        },
+        {
+          "id": "07",
+          "file": "05-task-07-kb-cli-py.md",
+          "dependencies": [
+            "04",
+            "05",
+            "06"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Phase 3 \u2014 CLI Integration and --pattern kb",
+      "tasks": [
+        {
+          "id": "08",
+          "file": "05-task-08-register-kb-group.md",
+          "dependencies": [
+            "07"
+          ]
+        },
+        {
+          "id": "09",
+          "file": "05-task-09-init-pattern-flag.md",
+          "dependencies": [
+            "06",
+            "08"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Phase 4 \u2014 Tests, Documentation, and Quality Gate",
+      "tasks": [
+        {
+          "id": "10",
+          "file": "05-task-10-unit-tests-scaffold-init.md",
+          "dependencies": [
+            "04",
+            "06",
+            "09"
+          ]
+        },
+        {
+          "id": "11",
+          "file": "05-task-11-unit-tests-install.md",
+          "dependencies": [
+            "05",
+            "07"
+          ]
+        },
+        {
+          "id": "12",
+          "file": "05-task-12-docs-coverage-final.md",
+          "dependencies": [
+            "10",
+            "11"
+          ]
+        }
+      ]
+    }
+  ]
+}

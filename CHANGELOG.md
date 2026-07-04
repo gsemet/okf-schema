@@ -1,5 +1,11 @@
 ## Unreleased
 
+### Feat
+
+- **kb**: add okfkb CLI and knowledge-base subcommands
+
+## v0.5.1 (2026-07-03)
+
 ### Fix
 
 - fix example schema $ref

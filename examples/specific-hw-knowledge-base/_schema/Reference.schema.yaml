@@ -1,0 +1,19 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Reference
+description: A reference document with structured data, schemas, or lookup tables.
+allOf:
+  - $ref: "Base.schema.yaml"
+  - type: object
+    properties:
+      type:
+        description: Document type — must be "Reference" for reference documents.
+        type: string
+        const: Reference
+      schema_version:
+        description: Version of the data schema or API documented here (e.g., "v2.1").
+        type: string
+      authoritative_source:
+        description: URL or identifier of the canonical upstream specification this reference mirrors.
+        type: string
+        format: uri
+    required: [type]

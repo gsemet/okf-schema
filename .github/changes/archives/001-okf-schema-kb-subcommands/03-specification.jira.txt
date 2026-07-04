@@ -1,0 +1,237 @@
+h1. Specification: OKF Knowledge Base Subcommand Group ({{okf-schema kb}} / {{okfkb}})
+
+*JIRA*: none
+
+h2. Overview
+
+This change adds a dedicated {{kb}} subcommand group to the {{okf-schema}} CLI, together with
+a standalone {{okfkb}} alias, to manage OKF bundles of the specialised "knowledge base" type.
+A knowledge base is an opinionated OKF bundle designed for agents: it holds experimental
+findings that can be recorded, analysed, synthesised (promoted to Concepts, Structures,
+or Principles), and rejected — while maintaining full traceability at every step.
+
+The feature ships two primary commands under {{okfkb}}:
+
+* {{okfkb init [PATH]}} — scaffolds the canonical KB folder layout (derived from the
+  {{copilot-session-usage}} reference implementation), including 8 domain-specific YAML
+  schemas and 8 content-type directories.
+* {{okfkb install [PATH]}} — deploys the bundled {{record-finding}} and
+  {{consolidate-knowledge-base}} skills, plus the {{knowledge-base.guidelines.md}} guideline,
+  into a target project; optionally creates or patches {{AGENTS.md}} to reference the
+  guideline.
+
+The existing {{okf-schema init}} command is extended with a {{--pattern <name>}} flag (backed
+by an extensible registry dict) so that {{--pattern kb}} delegates to the same scaffold
+logic as {{okfkb init}}. The bundled skills and guideline are stored as package data inside
+the wheel and loaded via {{importlib.resources}}.
+
+h2. StRS Impact Analysis
+
+| Aspect | Details |
+|--------|---------|
+| *Impacted existing requirements* | None |
+| *New requirements proposed* | None |
+| *Severity* | none |
+
+No StRS impact detected.
+
+h2. Functional Requirements
+
+h3. 1 — {{okf-schema kb}} Click Group and {{okfkb}} Alias
+
+* A new Click command group {{kb}} is registered on the top-level {{okf-schema}} CLI.
+* A new {{console_scripts}} entry point {{okfkb = "okf_schema.kb.cli:kb"}} is added to
+  {{pyproject.toml}}; invoking {{okfkb <cmd>}} is strictly equivalent to
+  {{okf-schema kb <cmd>}}.
+
+h3. 2 — {{okfkb init [PATH]}}
+
+* Accepts an optional {{PATH}} argument (defaults to current working directory).
+* Scaffolds the following layout inside {{PATH}}:
+
+  {code}
+  <PATH>/
+  ├── _schema/
+  │   ├── Base.schema.yaml
+  │   ├── Concept.schema.yaml
+  │   ├── Experiment.schema.yaml
+  │   ├── Finding.schema.yaml
+  │   ├── Playbook.schema.yaml
+  │   ├── Principle.schema.yaml
+  │   ├── Reference.schema.yaml
+  │   └── Structure.schema.yaml
+  ├── concepts/
+  ├── experiments/
+  ├── findings/
+  ├── guides/
+  ├── ideas/
+  ├── principles/
+  ├── reference/
+  ├── structures/
+  ├── index.md
+  └── log.md
+  {code}
+
+* The scaffold is completely independent of the base {{okf-schema init}} scaffold; it owns
+  its own schema files (not the generic OKF base schemas).
+* Schema files are loaded from {{importlib.resources}} ({{okf_schema.data.kb}}).
+* {{index.md}} and {{log.md}} are minimal valid OKF files (frontmatter with {{okf_version}}).
+* If {{PATH}} already exists and is non-empty, the command errors unless {{--force}} is passed.
+* Prints a confirmation summary of what was created.
+
+h3. 3 — {{okf-schema init --pattern kb}}
+
+* The existing {{init}} command gains an optional {{--pattern <name>}} flag.
+* When {{--pattern kb}} is supplied, execution delegates entirely to the {{okfkb init}}
+  scaffold function; the positional {{<name>}} argument to {{init}} is used as {{PATH}}.
+* Pattern dispatch uses a module-level registry dict:
+  {{INIT_PATTERNS: dict[str, Callable[[Path, bool], None]]}}.
+* Unknown pattern names produce a clear error listing available patterns.
+* Default behaviour (no {{--pattern}}) is unchanged.
+
+h3. 4 — Bundled Assets
+
+* Skills and guidelines are stored under {{src/okf_schema/data/kb/}}:
+
+  {code}
+  src/okf_schema/data/kb/
+  ├── _schema/           ← KB schema YAML files (8 files)
+  ├── skills/
+  │   ├── consolidate-knowledge-base/
+  │   │   └── SKILL.md
+  │   └── record-finding/
+  │       └── SKILL.md
+  └── guidelines/
+      └── knowledge-base.guidelines.md
+  {code}
+
+* All files are packaged via {{hatchling}} ({{tool.hatch.build.targets.wheel.include}}).
+* Loading uses {{importlib.resources.files("okf_schema.data.kb")}} (Python 3.9+ API).
+* The data directory contains an {{*init*.py}} (empty) so it is a valid package for
+  {{importlib.resources}}.
+
+h3. 5 — {{okfkb install [PATH]}}
+
+* Accepts an optional {{PATH}} argument (defaults to current working directory).
+* Detects whether {{PATH/.agents/}} or {{PATH/.github/}} exists; prefers {{.agents/}};
+  falls back to {{.github/}}; creates {{.agents/}} if neither exists.
+* Copies skills to {{<base>/skills/}} and guideline to {{<base>/guidelines/}}.
+* Conflict resolution: *skip existing files* and print a warning for each skip.
+  Pass {{--force}} to overwrite.
+* AGENTS.md patching:
+** If {{AGENTS.md}} exists at {{PATH/AGENTS.md}}: appends a reference line for the
+    installed guideline (idempotent — skips if reference already present).
+** If {{AGENTS.md}} does not exist: creates a minimal {{AGENTS.md}} with the guideline
+    reference and a one-line project stub.
+* Prints a summary of all installed / skipped files.
+
+h3. Edge Cases
+
+* {{okfkb init PATH}} where {{PATH}} is an existing non-empty directory: error with
+  "Directory already exists and is not empty. Use --force to overwrite.".
+* {{okfkb install PATH}} where {{PATH}} does not exist: error with clear message.
+* {{okfkb install PATH}} with {{--force}}: existing skills/guidelines are overwritten; AGENTS.md
+  patching remains idempotent (does not duplicate the reference).
+* Guideline reference already present in {{AGENTS.md}}: silently skip the append.
+
+h2. Non-Functional Requirements
+
+* *Maintainability*: all scaffold logic lives in {{src/okf_schema/kb/}} as a separate
+  subpackage; it does not modify any existing command module.
+* *Test coverage*: all new code must maintain the project-wide 96% coverage threshold.
+* *Type safety*: all new functions must carry full type annotations; mypy strict mode
+  must pass without new errors.
+* *Code style*: ruff line-length 100, Google docstring convention.
+* *Packaging*: bundled assets must be accessible after {{pip install okf-schema}}
+  (no external data files needed at runtime).
+* *Backward compatibility*: the existing {{okf-schema init <name>}} command must behave
+  identically to before when {{--pattern}} is omitted.
+
+h2. Integration Points
+
+* *{{src/okf_schema/cli.py}}*: registers the {{kb}} group on the top-level {{cli}} Click
+  group.
+* *{{pyproject.toml}}*: adds {{okfkb}} console-script entry point; updates hatchling
+  {{include}} to cover {{src/okf_schema/data/kb/}}.
+* *{{src/okf_schema/commands/init.py}}* (or wherever {{init}} lives): adds {{--pattern}}
+  option and delegates to the registry.
+* *{{src/okf_schema/kb/}}*: new subpackage containing {{cli.py}}, {{scaffold.py}},
+  {{install.py}}, and {{patterns.py}} (registry).
+
+h2. Constraints and Assumptions
+
+h3. Constraints
+
+* The KB scaffold is derived from {{copilot-session-usage/knowledge/}} structure; its
+  schema files are the canonical source for initial content — they must be copied
+  verbatim into the bundled data directory.
+* {{importlib.resources.files()}} (Python 3.9+) is the required API; no fallback to
+  {{pkg_resources}} or {{*file*}}-based path manipulation.
+* No new runtime dependencies may be added (all capabilities are achievable with
+  stdlib + existing dependencies).
+
+h3. Assumptions
+
+* The target project for {{okfkb install}} is always a local filesystem path.
+* Skills are installed as directories (with their full subdirectory tree), not as
+  archive files.
+* AGENTS.md patching uses a simple append; no structured YAML/TOML parsing is needed.
+
+h2. Out of Scope
+
+* A {{okfkb validate}} or {{okfkb lint}} command specific to KB bundles (use
+  {{okf-schema validate --path <kb-path>}} for this).
+* Remote installation from a URL.
+* Versioned skill bundles / update detection.
+* GUI or web interface.
+* Automatic git commit after install.
+
+h2. Implementation Effort Estimation
+
+<!-- Agent: estimate task counts from scope above; compute GU costs automatically. -->
+
+<details>
+<summary>Click to expand cost estimation details</summary>
+
+*Modes*
+* *Fast*: Fewer review gates, higher risk.
+* *Safe*: More review gates (Task Inspector + Phase Inspector), lower risk.
+
+*Sizes*
+* *Small*: 1–2 tasks per phase.
+* *Middle*: 3–5 tasks per phase.
+* *Large*: 6+ tasks per phase.
+
+*Cost unit*: *GU* = Generic Units (rough relative metric, not monetary).
+
+| Parameter       | Fast-Middle | Safe-Middle |
+|-----------------|-------------|-------------|
+| Estimated tasks | ~14         | ~14         |
+| Accuracy mod    | 1.0         | ~1.5        |
+| Estimated cost  | ~14 GU      | ~21 GU      |
+
+*Recommended mode*: Safe-Middle
+*Rationale*: The feature introduces a new CLI subpackage ({{kb/}}), a new entry-point alias,
+a bundled-data pipeline (importlib.resources), filesystem mutations (install command),
+and AGENTS.md patching — all greenfield in this project. Safe mode's extra review gates
+reduce integration risk given the 96% coverage bar and the fact that the project has no
+prior pattern for bundled assets or multi-level command groups.
+
+</details>
+
+h2. Success Criteria
+
+* {{okf-schema kb --help}} lists {{init}} and {{install}} subcommands.
+* {{okfkb --help}} produces identical output to {{okf-schema kb --help}}.
+* {{okfkb init /tmp/my-kb}} scaffolds all 8 schemas + 8 content dirs + {{index.md}} +
+  {{log.md}} in {{/tmp/my-kb/}}.
+* {{okf-schema init my-kb --pattern kb}} produces the same scaffold as {{okfkb init my-kb}}.
+* {{okfkb install /tmp/target-project}} copies skills and guideline under
+  {{/tmp/target-project/.agents/}} (or {{.github/}}) and creates/patches {{AGENTS.md}}.
+* {{pip install okf-schema && okfkb init my-kb}} works without any source tree present
+  (bundled assets are accessible from the installed wheel).
+* {{just preflight}} passes with ≥ 96% coverage and no type errors.
+
+h2. Open Questions
+
+* None remaining after the interview.

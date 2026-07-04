@@ -1,0 +1,44 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Experiment
+description: >-
+  A reusable, prepared procedure that can be executed one or two times to test a
+  hypothesis. Each execution produces one Finding. The Experiment is a template;
+  its recorded outcomes live as Finding documents.
+allOf:
+  - $ref: "Base.schema.yaml"
+  - type: object
+    properties:
+      type:
+        description: Document type — must be "Experiment".
+        type: string
+        const: Experiment
+      hypothesis:
+        description: The claim the experiment is designed to confirm or falsify.
+        type: string
+        minLength: 1
+      steps:
+        description: Ordered procedure to run the experiment reproducibly.
+        type: array
+        items: { type: string }
+        minItems: 1
+      expected_signals:
+        description: Observable signals that indicate the hypothesis holds or fails.
+        type: array
+        items: { type: string }
+      max_runs:
+        description: How many times this experiment is meant to be run (typically 1–2).
+        type: integer
+        minimum: 1
+      status:
+        description: Lifecycle state of the experiment template.
+        type: string
+        enum: [proposed, active, retired, superseded]
+      derived_findings:
+        description: IDs of Findings produced by running this experiment.
+        type: array
+        items: { type: string }
+      superseded_by:
+        description: IDs of documents that supersede this experiment.
+        type: array
+        items: { type: string }
+    required: [type, hypothesis, steps]

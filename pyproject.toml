@@ -27,6 +27,7 @@ dependencies = [
 
 [project.scripts]
 okf-schema = "okf_schema.cli:cli"
+okfkb = "okf_schema.kb.cli:kb"
 
 [project.urls]
 Homepage = "https://github.com/gsemet/okf-schema"

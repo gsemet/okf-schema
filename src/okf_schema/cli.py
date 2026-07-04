@@ -21,6 +21,8 @@ from okf_schema.api import (
     stats_bundle,
     validate_bundle,
 )
+from okf_schema.kb.cli import kb
+from okf_schema.kb.patterns import INIT_PATTERNS, list_patterns
 
 # Force UTF-8 output so Unicode characters (e.g. backlink arrows)
 # print correctly on Windows consoles that default to cp1252.
@@ -59,9 +61,23 @@ def _echo(ctx: click.Context, message: str) -> None:
 
 @cli.command()
 @click.argument("name")
+@click.option("--pattern", default=None, help="Init pattern to use (e.g. 'kb').")
 @click.pass_context
-def init(ctx: click.Context, name: str) -> None:
+def init(ctx: click.Context, name: str, pattern: str | None) -> None:
     """Create a new OKF bundle directory structure."""
+    if pattern is not None:
+        if pattern not in INIT_PATTERNS:
+            available = ", ".join(list_patterns()) or "none"
+            click.echo(
+                f"Error: Unknown pattern '{pattern}'. Available patterns: {available}.",
+                err=True,
+            )
+            ctx.exit(1)
+            return
+        INIT_PATTERNS[pattern](Path(name), False)
+        _echo(ctx, f"Created OKF bundle '{name}' using pattern '{pattern}'.")
+        return
+
     path = Path(name)
     if path.exists():
         click.echo(f"Error: '{name}' already exists.", err=True)
@@ -562,3 +578,7 @@ def backlinks(
                 click.echo(f"{target} ← {source}")
         else:
             click.echo(f"{target} ← ❌")
+
+
+# Register the kb subcommand group
+cli.add_command(kb)
