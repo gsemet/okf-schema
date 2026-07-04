@@ -441,8 +441,8 @@ class TestKbEndToEndWorkflow:
         assert (kb_path / "log.md").is_file()
 
         # Step 2 — install KB skills into project_path
-        result = runner.invoke(cli, ["kb", "install", str(project_path)])
-        assert result.exit_code == 0, f"kb install failed: {result.output}"
+        result = runner.invoke(cli, ["kb", "install-skills", str(project_path)])
+        assert result.exit_code == 0, f"kb install-skills failed: {result.output}"
 
         # Verify skills were deployed
         agents_dir = project_path / ".agents"

@@ -307,7 +307,7 @@ okf-schema validate --path examples/ai-llm-knowledge-base
 okf-schema stats --path examples/ai-llm-knowledge-base
 ```
 
-## Knowledge Base
+## Opinionated Knowledge Base
 
 `okf-schema` includes a dedicated knowledge-base subcommand group (`okfkb`) for managing OKF
 bundles designed for agent-facing experimental findings.
@@ -319,7 +319,7 @@ findings, guides, ideas, principles, reference, structures) and 8 matching YAML 
 okfkb init my-kb
 
 # Install KB skills and guidelines into a project
-okfkb install /path/to/project
+okfkb install-skills /path/to/project
 
 # Alternatively, use the okf-schema init --pattern flag
 okf-schema init my-kb --pattern kb
@@ -330,7 +330,7 @@ The `okfkb` binary is a standalone alias for `okf-schema kb` — both are equiva
 | Command | Description |
 |---------|-------------|
 | `okfkb init [PATH]` | Scaffold KB layout with 8 dirs, 8 schemas, `index.md`, `log.md` |
-| `okfkb install [PATH]` | Deploy bundled skills and guideline into a project; patch `AGENTS.md` |
+| `okfkb install-skills [PATH]` | Deploy bundled skills and guideline into a project; patch `AGENTS.md` |
 | `okf-schema init NAME --pattern kb` | Same scaffold as `okfkb init` via the pattern registry |
 
 See the [full documentation](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html)

@@ -34,12 +34,12 @@ class TestKbHelp:
     """The kb group help output lists all subcommands."""
 
     def test_kb_help_lists_init_and_install(self) -> None:
-        """kb --help lists both init and install subcommands."""
+        """kb --help lists both init and install-skills subcommands."""
         runner = CliRunner()
         result = runner.invoke(kb, ["--help"])
         assert result.exit_code == 0
         assert "init" in result.output
-        assert "install" in result.output
+        assert "install-skills" in result.output
 
     def test_kb_init_help(self) -> None:
         """kb init --help shows PATH argument and --force flag."""
@@ -49,9 +49,9 @@ class TestKbHelp:
         assert "--force" in result.output
 
     def test_kb_install_help(self) -> None:
-        """kb install --help shows PATH argument and --force flag."""
+        """kb install-skills --help shows PATH argument and --force flag."""
         runner = CliRunner()
-        result = runner.invoke(kb, ["install", "--help"])
+        result = runner.invoke(kb, ["install-skills", "--help"])
         assert result.exit_code == 0
         assert "--force" in result.output
 
@@ -133,12 +133,12 @@ class TestKbInit:
 
 
 class TestKbInstall:
-    """kb install deploys KB skills and guidelines into a project."""
+    """kb install-skills deploys KB skills and guidelines into a project."""
 
     def test_kb_install_creates_files(self, tmp_path: Path) -> None:
-        """kb install PATH creates skills and guideline files."""
+        """kb install-skills PATH creates skills and guideline files."""
         runner = CliRunner()
-        result = runner.invoke(kb, ["install", str(tmp_path)])
+        result = runner.invoke(kb, ["install-skills", str(tmp_path)])
         assert result.exit_code == 0, result.output
         # Should create .agents/ or .github/ with skills and guidelines
         agents_dir = tmp_path / ".agents"
@@ -146,41 +146,41 @@ class TestKbInstall:
         assert (agents_dir / "guidelines" / "knowledge-base.guidelines.md").is_file()
 
     def test_kb_install_prints_confirmation(self, tmp_path: Path) -> None:
-        """kb install prints a success confirmation containing the target path."""
+        """kb install-skills prints a success confirmation containing the target path."""
         runner = CliRunner()
-        result = runner.invoke(kb, ["install", str(tmp_path)])
+        result = runner.invoke(kb, ["install-skills", str(tmp_path)])
         assert result.exit_code == 0
         assert str(tmp_path) in result.output
 
     def test_kb_install_default_path_is_cwd(self, tmp_path: Path) -> None:
-        """kb install with no PATH argument defaults to current directory."""
+        """kb install-skills with no PATH argument defaults to current directory."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-            result = runner.invoke(kb, ["install"])
+            result = runner.invoke(kb, ["install-skills"])
             assert result.exit_code == 0, result.output
             assert (Path(td) / ".agents").exists()
 
     def test_kb_install_errors_when_target_missing(self, tmp_path: Path) -> None:
-        """kb install exits with code 1 when PATH does not exist."""
+        """kb install-skills exits with code 1 when PATH does not exist."""
         runner = CliRunner()
         missing = tmp_path / "does-not-exist"
-        result = runner.invoke(kb, ["install", str(missing)])
+        result = runner.invoke(kb, ["install-skills", str(missing)])
         assert result.exit_code == 1
         assert "Error" in result.output or "does not exist" in result.output
 
     def test_kb_install_force_overwrites(self, tmp_path: Path) -> None:
-        """kb install --force overwrites existing files."""
+        """kb install-skills --force overwrites existing files."""
         runner = CliRunner()
         # First install
-        runner.invoke(kb, ["install", str(tmp_path)])
+        runner.invoke(kb, ["install-skills", str(tmp_path)])
         # Second install with --force should succeed
-        result = runner.invoke(kb, ["install", str(tmp_path), "--force"])
+        result = runner.invoke(kb, ["install-skills", str(tmp_path), "--force"])
         assert result.exit_code == 0, result.output
 
     def test_kb_install_exits_1_on_unexpected_error(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """kb install exits with code 1 when install_kb raises an unexpected error."""
+        """kb install-skills exits with code 1 when install_kb raises an unexpected error."""
         import okf_schema.kb.cli as cli_module
 
         def broken_install(path: Path, force: bool = False) -> None:
@@ -188,7 +188,7 @@ class TestKbInstall:
 
         monkeypatch.setattr(cli_module, "install_kb", broken_install)
         runner = CliRunner()
-        result = runner.invoke(kb, ["install", str(tmp_path)])
+        result = runner.invoke(kb, ["install-skills", str(tmp_path)])
         assert result.exit_code == 1
 
 
@@ -208,17 +208,17 @@ class TestOkfkbAlias:
         assert okfkb.name == "kb"
 
     def test_okfkb_alias_has_init_and_install(self) -> None:
-        """The kb group (okfkb alias) exposes both init and install subcommands."""
+        """The kb group (okfkb alias) exposes both init and install-skills subcommands."""
         from okf_schema.kb.cli import kb as okfkb
 
         commands = list(okfkb.commands.keys())
         assert "init" in commands
-        assert "install" in commands
+        assert "install-skills" in commands
 
     def test_okfkb_alias_invokable_via_runner(self, tmp_path: Path) -> None:
-        """okfkb install can be invoked directly through the kb group."""
+        """okfkb install-skills can be invoked directly through the kb group."""
         from okf_schema.kb.cli import kb as okfkb
 
         runner = CliRunner()
-        result = runner.invoke(okfkb, ["install", str(tmp_path)])
+        result = runner.invoke(okfkb, ["install-skills", str(tmp_path)])
         assert result.exit_code == 0, result.output
