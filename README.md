@@ -15,7 +15,7 @@ with JSONSchema validation of the frontmatter metadata, and formatting capabilit
 OKF is a markdown-based knowledge format where each concept is a markdown file with YAML frontmatter.
 See the [OKF specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) for the full format definition.
 
-📖 **Full documentation**: [okf-schema.readthedocs.io](https://okf-schema.readthedocs.io/en/stable/)
+📚 **Full documentation**: [okf-schema.readthedocs.io](https://okf-schema.readthedocs.io/en/stable/)
 
 > [!IMPORTANT]
 > OKF-schema is opinionated. It delivers a valid OKF bundle but is adds a structure on the frontmatter that
@@ -81,7 +81,18 @@ Schema extensions supported:
 
 For detailed information on `$ref` support and schema composition, see the [full documentation](https://okf-schema.readthedocs.io/en/stable/).
 
+## Why Python ?
+
+`okf-schema` is implemented in Python for several reasons:
+
+- **Cross-platform**: Python runs on Windows, macOS, and Linux without modification.
+- **Easily installable**: Python packages can be installed via `uv`, making setup straightforward.
+- **Default scripting language for Skill**: Writing skills arround `okf-schema` is straighforward
+  and portable to every agent and coding environment.
+
 ## Installation
+
+Use UV to install this tool, or to use in your skill:
 
 ```bash
 uv tool install okf-schema
@@ -387,6 +398,22 @@ see [`skills/okf-schema/SKILL.md`](skills/okf-schema/SKILL.md).
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/gsemet/okf-schema/blob/main/CONTRIBUTING.md) for development setup and guidelines.
+
+## Known Alternative
+
+Here is some alternative OKF tooling that may interest you as well:
+
+- [IWE](https://github.com/iwe-org/iwe): Full-features, rust based OKF bundle manager. It does
+  not provide schema validation, but provide Query, indexing, MCP server, VS Code extension and more.
+
+Tons of other resources just limit to apply OKF to LLM-Wiki
+(ex: [okf-harness](https://github.com/pumblus/okf-harness) or
+[openknowledge](https://github.com/openknowledge-sh/openknowledge)).
+
+OKF-Schema is deliberately more opinionated, focussed on frontmatter validation and prepare
+the bundle for direct agentic consumption (I do not plan to build a MCP server, I prepare my agent
+to read files directly). `okfkb` is even more opitionated with a strict but-ready to use
+knowledge base structure and schema.
 
 ## License
 
