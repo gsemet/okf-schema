@@ -12,7 +12,7 @@ okf-schema init my-docs
 
 OKF-Schema requires concepts to live in subdirectories. Reorganize:
 
-```
+```text
 # Before
 my-docs/
   README.md

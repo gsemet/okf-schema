@@ -8,8 +8,6 @@ Quick reference for initializing and using an OKF-KB.
 > **Want to understand the design philosophy?**
 > See [OKF-KB Design Choices](../explanation/okfkb-choices.md).
 
----
-
 ## Quick Start (5 Minutes)
 
 ### 1. Initialize
@@ -50,8 +48,6 @@ okf-schema lint --path .
 ```
 
 Checks required fields, timestamps, link validity.
-
----
 
 ## Schema Reference
 
@@ -169,8 +165,6 @@ status: active
 links: []
 ```
 
----
-
 ## Linking Your Documents
 
 Add `links:` entries to connect documents:
@@ -183,8 +177,6 @@ links:
 ```
 
 Run `okf-schema index --path .` to auto-compute backlinks.
-
----
 
 ## Frontmatter Validation
 
@@ -199,8 +191,6 @@ Verifies:
 - All `links:` point to existing files
 - `status:` values match schema
 
----
-
 ## Tips for Success
 
 1. **Findings are immutable** — once created, only update lifecycle fields (`status`, `contradicted_by`)
@@ -210,8 +200,6 @@ Verifies:
 5. **Review `log.md` regularly** — keep it human-readable; summarize weekly changes
 6. **Principles are rare** — only for team consensus decisions
 7. **Promotion requires convergence** — wait for 2+ findings before creating a concept
-
----
 
 ## Further Reading
 

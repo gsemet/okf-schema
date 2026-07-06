@@ -167,6 +167,7 @@ The `validate-md` command checks the following (unless noted as bundle-only):
 | **W7** | Lists use inline notation, not block style | Use `tags: [a, b]` not `tags:\n  - a\n  - b` |
 
 **Not checked in `validate-md`** (bundle-only):
+
 - W2: Broken cross-links (no common bundle root)
 - W4: Missing `index.md` in directories
 - E3, E6, E7: Bundle structure rules

@@ -4,8 +4,6 @@ This guide walks you through creating, navigating, and maintaining an
 OKF knowledge bundle. It assumes you have already installed `okf-schema`;
 see the [CLI Reference](../reference/cli.md) for installation instructions.
 
----
-
 ## Create a new bundle
 
 Use the `init` command to scaffold a bundle with the required directory
@@ -29,8 +27,6 @@ my-knowledge-base/
 The `_base.schema.yaml` enforces the minimum OKF contract: every concept
 must have a `type` field. You can extend it or add domain-specific schemas
 in `_schema/`: they are auto-discovered at validation time.
-
----
 
 ## Add your first concept
 
@@ -59,8 +55,6 @@ tags: []
 Fill in the body with structured content: a schema section, examples,
 citations, or free-form prose. Keep each concept focused on a single
 unit of truth.
-
----
 
 ## Navigate the bundle
 
@@ -99,8 +93,6 @@ each directory. Generate them automatically:
 okf-schema index --path my-knowledge-base/bundle
 ```
 
----
-
 ## Validate and lint
 
 Before committing changes, ensure the bundle is conformant:
@@ -123,8 +115,6 @@ okf-schema lint --path my-knowledge-base/bundle
 Use `--no-links` to skip updating link metadata.
 
 Run both in sequence before every commit to keep the bundle clean.
-
----
 
 ## Maintain the bundle
 
@@ -158,8 +148,6 @@ okf-schema validate --path my-knowledge-base/bundle --strict
 
 This prevents malformed or incomplete concepts from reaching the main
 branch.
-
----
 
 ## Design principles for a healthy knowledge base
 

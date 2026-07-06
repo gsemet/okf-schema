@@ -9,8 +9,6 @@ beyond the spec.
 This page documents those differences so you can decide whether `okf-schema`'s
 stricter model fits your use case.
 
----
-
 ## 1. Frontmatter is validated against JSONSchema
 
 ### What the spec says
@@ -41,8 +39,6 @@ The spec also permits any additional frontmatter keys beyond the standard fields
 
 This makes `okf-schema` bundles self-describing and machine-enforceable. The
 trade-off is that you must maintain a schema for every concept type you use.
-
----
 
 ## 2. No root concepts
 
@@ -87,8 +83,6 @@ This rule encourages a namespaced structure from the start and prevents
 - [Getting Started](../tutorials/getting-started) — tutorial covering bundle creation and validation.
 root-level clutter as the bundle grows.
 
----
-
 ## 3. Additional properties are schema-controlled
 
 ### What the spec says
@@ -109,8 +103,6 @@ keyword:
 This gives bundle authors explicit control over frontmatter strictness. A tightly
 governed bundle (e.g., a production data catalog) can lock down fields; an
 experimental bundle can remain open.
-
----
 
 ## 4. Relative paths are preferred over bundle-relative paths
 
@@ -136,8 +128,6 @@ Bundle-relative paths (starting with `/`) are still fully supported and
 validated, but authors should default to relative paths unless there is a
 specific reason to anchor to the bundle root.
 
----
-
 ## Summary of differences
 
 | Aspect | OKF Spec | OKF-Schema |
@@ -149,8 +139,6 @@ specific reason to anchor to the bundle root.
 | Internal link style | Relative or bundle-relative | Both supported; **relative preferred** |
 | Link metadata | Implicit (only in body) | Explicit `links` / `backlinks` frontmatter |
 | Schema location | None (spec does not use schemas) | `_schema/*.schema.{yaml,json,json5}` |
-
----
 
 ## What the linter does
 
@@ -221,8 +209,6 @@ okf-schema lint --path my-bundle/bundle --diff
 
 Run `lint` before every commit to keep frontmatter formatting consistent across
 the bundle.
-
----
 
 ## 5. `links` and `backlinks` — managed link metadata
 

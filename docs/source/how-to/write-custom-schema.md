@@ -7,7 +7,7 @@ This guide shows how to write schemas for your own concept types.
 
 Place schema files in `bundle/_schema/` with the naming convention:
 
-```
+```text
 _schema/
   _base.schema.yaml      # Applied to all concepts
   table.schema.yaml      # Applied when type: table
