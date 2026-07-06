@@ -2,7 +2,7 @@
 
 [![GitHub](https://img.shields.io/badge/GitHub-okf--schema-181717?logo=github)](https://github.com/gsemet/okf-schema)
 
-**okf-schema** is a CLI tool and Python library for working with
+**okf-schema** is a CLI tool and Python library for bringing structure and validation to
 [OKF (Open Knowledge Format) bundles](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md).
 
 OKF is a markdown-based knowledge format where each concept is a markdown file with YAML
@@ -13,7 +13,7 @@ comments, and bundle management utilities. See this official, draft
 OKF-Schema is highly opinionated: it enforces a stricter model than the spec, and it is not
 guaranteed that every valid OKF bundle will pass `okf-schema` validation.
 
-However, OKF-Schema bundles are OKF-compliant. See
+OKF-Schema bundles are OKF-compliant. See
 [OKF-Schema vs. OKF Spec](reference/okf-schema-vs-spec) for details.
 
 Links to source code: [gsemet/okf-schema](https://github.com/gsemet/okf-schema)
@@ -60,7 +60,7 @@ Look up commands, functions, and data models.
 :::
 
 :::{grid-item-card} 💡 Design Principles
-:link: explanation/design-principles
+:link: explanation/index
 :link-type: doc
 
 Understand the design philosophy behind OKF-Schema
@@ -68,7 +68,7 @@ and how it relates to the OKF specification.
 :::
 
 :::{grid-item-card} 🗄️ Opinionated Knowledge Base
-:link: explanation/opinionated-knowledge-base
+:link: explanation/okfkb-choices
 :link-type: doc
 
 Learn why the `okfkb` KB format exists, how agents read frontmatter-first
@@ -85,6 +85,6 @@ Installation <installation>
 Tutorials <tutorials/index>
 How-To <how-to/index>
 Reference <reference/index>
-Explanations <explanation>
+Explanations <explanation/index>
 Changelog <changelog>
 ```

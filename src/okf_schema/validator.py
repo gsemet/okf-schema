@@ -492,3 +492,99 @@ def validate_bundle(
             )
 
     return report
+
+
+def validate_markdown_files(
+    file_paths: list[Path],
+    schemas: dict[str, dict] | None = None,
+) -> Report:
+    """Validate standalone markdown files (not part of an OKF bundle).
+
+    Validates each file using E1-E5 and W1-W3, W6-W7 rules.
+    Bundle-specific constraints (E7, W4, E6, W5) are not applied.
+    Links are not validated since there is no common root.
+
+    Args:
+        file_paths: List of markdown file paths to validate.
+        schemas: Optional schema database mapping type→schema.
+
+    Returns:
+        A :class:`Report` containing all errors and warnings.
+    """
+    report = Report()
+
+    for path in sorted(file_paths):
+        if not path.is_file():
+            report.add_warning("W0", f"Path is not a file: {path}", path)
+            continue
+
+        text = path.read_text(encoding="utf-8")
+        fm_text, body = extract_frontmatter(text)
+
+        # E1 — parseable frontmatter
+        if fm_text is None:
+            report.add_error("E1", f"File '{path}' has no YAML frontmatter", path)
+            continue
+
+        frontmatter = parse_yaml(fm_text)
+        if frontmatter is None:
+            report.add_error("E1", f"File '{path}' has unparseable YAML frontmatter", path)
+            continue
+
+        # E2 — non-empty type field
+        type_val = frontmatter.get("type")
+        if not type_val or not str(type_val).strip():
+            report.add_error("E2", f"File '{path}' has frontmatter but no 'type' field", path)
+        else:
+            type_str = str(type_val).strip()
+            # Schema validation (E4 / W6)
+            if schemas is not None:
+                if type_str in schemas:
+                    schema_errors = validate_against_schema(
+                        frontmatter, schemas[type_str], type_str
+                    )
+                    for err_msg in schema_errors:
+                        report.add_error(
+                            "E4",
+                            f"Schema validation failed for '{path}': {err_msg}",
+                            path,
+                        )
+                else:
+                    report.add_warning(
+                        "W6",
+                        f"No schema found for type '{type_str}' in '{path}'",
+                        path,
+                    )
+
+        # E5 — unflatten lists in frontmatter
+        if _has_nested_lists(frontmatter):
+            report.add_error(
+                "E5",
+                f"File '{path}' has nested list structures in frontmatter",
+                path,
+            )
+
+        # W7 — block-style (multi-line) lists in frontmatter
+        if _has_block_lists(fm_text):
+            report.add_warning(
+                "W7",
+                f"File '{path}' has block-style lists in frontmatter. "
+                "Use inline notation (e.g. 'tags: [a, b]') to keep frontmatter compact. "
+                "Run 'okf-schema lint --path <bundle>' to auto-fix.",
+                path,
+            )
+
+        # W1 — missing recommended fields
+        for field_name in ("title", "description"):
+            if field_name not in frontmatter or not frontmatter[field_name]:
+                report.add_warning(
+                    "W1",
+                    f"Missing recommended field '{field_name}' in '{path}'",
+                    path,
+                )
+
+        # W3 — missing timestamp
+        if "timestamp" not in frontmatter:
+            report.add_warning("W3", f"No 'timestamp (ISO 8601)' field in '{path}'", path)
+
+    return report

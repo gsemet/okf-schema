@@ -73,7 +73,7 @@ the links.
 
 ## See also
 
-- [Why an Opinionated Knowledge Base?](opinionated-knowledge-base) — how these principles map to the KB bundle type.
+- [Why an Opinionated Knowledge Base?](okfkb-choices) — how these principles map to the KB bundle type.
 - [Building a Knowledge Graph](../tutorials/knowledge-graph) — tutorial on dense cross-linking.
 - [Lint Before Commit](../how-to/lint-before-commit) — preserving human edits while automating formatting.
 - [Validate in CI](../how-to/validate-in-ci) — putting validation-as-a-gate into practice.

@@ -27,6 +27,7 @@ from okf_schema.api import (
     show_bundle,
     stats_bundle,
     validate_bundle,
+    validate_markdown_files,
 )
 from okf_schema.formatter import FormattedResult
 
@@ -85,6 +86,308 @@ class TestValidateBundle:
         report = validate_bundle(bundle)
         assert isinstance(report, Report)
         assert report.is_conformant is True
+
+
+# ---------------------------------------------------------------------------
+# validate_markdown_files
+# ---------------------------------------------------------------------------
+
+
+class TestValidateMarkdownFiles:
+    """Tests for validate_markdown_files."""
+
+    def test_returns_report_for_valid_files(self, tmp_path: Path) -> None:
+        """Returns a Report for valid markdown files."""
+
+        # Create test file with valid frontmatter
+        test_file = tmp_path / "test.md"
+        test_file.write_text(
+            "---\ntype: concept\ntitle: Test\n---\n\n# Test Content\n",
+            encoding="utf-8",
+        )
+
+        report = validate_markdown_files([str(test_file)])
+        assert isinstance(report, Report)
+
+    def test_single_input_pattern(self, tmp_path: Path) -> None:
+        """Accepts single input pattern as string."""
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text(
+            "---\ntype: concept\ntitle: Test\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        report = validate_markdown_files(str(test_file))
+        assert isinstance(report, Report)
+
+    def test_multiple_input_patterns(self, tmp_path: Path) -> None:
+        """Accepts multiple input patterns."""
+
+        file1 = tmp_path / "file1.md"
+        file1.write_text("---\ntype: concept\ntitle: Test1\n---\n\nContent\n", encoding="utf-8")
+        file2 = tmp_path / "file2.md"
+        file2.write_text("---\ntype: concept\ntitle: Test2\n---\n\nContent\n", encoding="utf-8")
+
+        report = validate_markdown_files([str(file1), str(file2)])
+        assert isinstance(report, Report)
+
+    def test_glob_pattern_support(self, tmp_path: Path) -> None:
+        """Supports glob patterns including **."""
+
+        subdir = tmp_path / "subdir"
+        subdir.mkdir()
+        file1 = tmp_path / "file1.md"
+        file1.write_text("---\ntype: concept\ntitle: Test1\n---\n\nContent\n", encoding="utf-8")
+        file2 = subdir / "file2.md"
+        file2.write_text("---\ntype: concept\ntitle: Test2\n---\n\nContent\n", encoding="utf-8")
+
+        pattern = str(tmp_path / "**" / "*.md")
+        report = validate_markdown_files([pattern], schemas_dir=None)
+        assert isinstance(report, Report)
+
+    def test_error_detection_no_frontmatter(self, tmp_path: Path) -> None:
+        """Detects missing frontmatter (E1 error)."""
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text("# No Frontmatter\n\nContent without YAML.\n", encoding="utf-8")
+
+        report = validate_markdown_files([str(test_file)])
+        assert isinstance(report, Report)
+        assert any(f.code == "E1" for f in report.errors)
+
+    def test_error_detection_missing_type(self, tmp_path: Path) -> None:
+        """Detects missing type field (E2 error)."""
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntitle: Test\n---\n\n# Test\n", encoding="utf-8")
+
+        report = validate_markdown_files([str(test_file)])
+        assert isinstance(report, Report)
+        assert any(f.code == "E2" for f in report.errors)
+
+    def test_no_files_found_returns_empty_report(self) -> None:
+        """Returns empty report when no files match patterns."""
+
+        report = validate_markdown_files(["nonexistent_dir_xyz/**/*.md"])
+        assert isinstance(report, Report)
+        assert len(report.errors) == 0
+        assert len(report.warnings) == 0
+
+    def test_unparseable_yaml_frontmatter(self, tmp_path: Path) -> None:
+        """Detects unparseable YAML frontmatter (E1 error)."""
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ninvalid: [yaml: content\n---\n\n# Test\n", encoding="utf-8")
+
+        report = validate_markdown_files([str(test_file)])
+        assert isinstance(report, Report)
+        assert any(f.code == "E1" for f in report.errors)
+
+    def test_missing_title_and_description_warnings(self, tmp_path: Path) -> None:
+        """Detects missing title and description (W1 warnings)."""
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\n---\n\n# Test\n", encoding="utf-8")
+
+        report = validate_markdown_files([str(test_file)])
+        assert isinstance(report, Report)
+        assert sum(1 for f in report.warnings if f.code == "W1") >= 2
+
+    def test_missing_timestamp_warning(self, tmp_path: Path) -> None:
+        """Detects missing timestamp (W3 warning)."""
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text(
+            "---\ntype: concept\ntitle: Test\ndescription: Test\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        report = validate_markdown_files([str(test_file)])
+        assert isinstance(report, Report)
+        assert any(f.code == "W3" for f in report.warnings)
+
+    def test_block_style_lists_warning(self, tmp_path: Path) -> None:
+        """Detects block-style lists (W7 warning)."""
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text(
+            "---\ntype: concept\ntitle: Test\ntags:\n  - tag1\n  - tag2\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        report = validate_markdown_files([str(test_file)])
+        assert isinstance(report, Report)
+        assert any(f.code == "W7" for f in report.warnings)
+
+    def test_schema_validation_error(self, tmp_path: Path) -> None:
+        """Detects schema validation errors (E4 error)."""
+        from okf_schema.api import validate_markdown_files
+
+        # Create schemas directory with a schema requiring specific field
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+        schema_file = schemas_dir / "concept.schema.json"
+        schema_text = (
+            '{"type": "object", '
+            '"properties": {'
+            '"type": {"type": "string"}, '
+            '"title": {"type": "string"}}, '
+            '"required": ["type", "title"]}'
+        )
+        schema_file.write_text(schema_text, encoding="utf-8")
+
+        # File with missing required title
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\n---\n\n# Test\n", encoding="utf-8")
+
+        report = validate_markdown_files([str(test_file)], schemas_dir=str(schemas_dir))
+        assert isinstance(report, Report)
+        assert any(f.code == "E4" for f in report.errors)
+
+    def test_no_schema_warning(self, tmp_path: Path) -> None:
+        """Detects when no schema is found for type (W6 warning)."""
+        from okf_schema.api import validate_markdown_files
+
+        # Create schemas directory
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+        schema_file = schemas_dir / "concept.schema.json"
+        schema_text = (
+            '{"type": "object", "properties": {"type": {"type": "string"}}, "required": ["type"]}'
+        )
+        schema_file.write_text(schema_text, encoding="utf-8")
+
+        # File with unknown type
+        test_file = tmp_path / "test.md"
+        test_file.write_text(
+            "---\ntype: unknown_type\ntitle: Test\n---\n\n# Test\n", encoding="utf-8"
+        )
+
+        report = validate_markdown_files([str(test_file)], schemas_dir=str(schemas_dir))
+        assert isinstance(report, Report)
+        assert any(f.code == "W6" for f in report.warnings)
+
+    def test_accepts_path_objects(self, tmp_path: Path) -> None:
+        """Accepts Path objects as well as strings."""
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\ntitle: Test\n---\n\n# Test\n", encoding="utf-8")
+
+        report = validate_markdown_files([test_file])
+        assert isinstance(report, Report)
+
+    def test_with_schemas_dir(self, tmp_path: Path) -> None:
+        """Accepts schemas_dir parameter for schema validation."""
+        from okf_schema.api import validate_markdown_files
+
+        # Create schemas directory
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+        schema_file = schemas_dir / "concept.schema.json"
+        schema_text = (
+            '{"type": "object", '
+            '"properties": {'
+            '"type": {"type": "string"}, '
+            '"title": {"type": "string"}}, '
+            '"required": ["type"]}'
+        )
+        schema_file.write_text(schema_text, encoding="utf-8")
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\ntitle: Test\n---\n\n# Test\n", encoding="utf-8")
+
+        report = validate_markdown_files([str(test_file)], schemas_dir=str(schemas_dir))
+        assert isinstance(report, Report)
+
+    def test_nonexistent_schemas_dir_raises(self, tmp_path: Path) -> None:
+        """Raises FileNotFoundError when schemas_dir does not exist."""
+        from okf_schema.api import validate_markdown_files
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\ntitle: Test\n---\n\n# Test\n", encoding="utf-8")
+
+        nonexistent_schemas = tmp_path / "nonexistent" / "schemas"
+        with pytest.raises(FileNotFoundError):
+            validate_markdown_files([str(test_file)], schemas_dir=str(nonexistent_schemas))
+
+    def test_schemas_dir_is_file_raises(self, tmp_path: Path) -> None:
+        """Raises NotADirectoryError when schemas_dir is a file."""
+        from okf_schema.api import validate_markdown_files
+
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\ntitle: Test\n---\n\n# Test\n", encoding="utf-8")
+
+        file_as_dir = tmp_path / "file.txt"
+        file_as_dir.write_text("not a directory", encoding="utf-8")
+
+        with pytest.raises(NotADirectoryError):
+            validate_markdown_files([str(test_file)], schemas_dir=str(file_as_dir))
+
+    def test_nested_glob_patterns(self, tmp_path: Path) -> None:
+        """Handles nested directory glob patterns correctly."""
+        from okf_schema.api import validate_markdown_files
+
+        # Create nested structure
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "api").mkdir()
+        (tmp_path / "docs" / "guides").mkdir()
+
+        file1 = tmp_path / "docs" / "api" / "overview.md"
+        file1.write_text("---\ntype: concept\ntitle: API\n---\n# API", encoding="utf-8")
+
+        file2 = tmp_path / "docs" / "guides" / "tutorial.md"
+        file2.write_text("---\ntype: concept\ntitle: Tutorial\n---\n# Tutorial", encoding="utf-8")
+
+        # Use nested glob pattern
+        report = validate_markdown_files([f"{tmp_path}/docs/**/*.md"])
+        assert len(report.errors) == 0
+        assert len(report.warnings) <= 4  # Could have W1, W3 warnings
+
+    def test_pattern_with_no_matches(self, tmp_path: Path) -> None:
+        """Returns empty report when pattern matches no files."""
+        from okf_schema.api import validate_markdown_files
+
+        report = validate_markdown_files([str(tmp_path / "nonexistent" / "*.md")])
+        assert len(report.errors) == 0
+        assert len(report.warnings) == 0
+
+    def test_absolute_path_with_wildcard(self, tmp_path: Path) -> None:
+        """Handles absolute paths with wildcard patterns."""
+        from okf_schema.api import validate_markdown_files
+
+        # Create files in tmp_path
+        file1 = tmp_path / "test1.md"
+        file1.write_text("---\ntype: concept\ntitle: Test\n---\n# Test\n", encoding="utf-8")
+
+        file2 = tmp_path / "test2.md"
+        file2.write_text(
+            "---\ntype: concept\ntitle: Test\ndescription: Test\n---\n# Test\n",
+            encoding="utf-8",
+        )
+
+        # Use absolute pattern with wildcard
+        pattern = str(tmp_path / "test*.md")
+        report = validate_markdown_files([pattern])
+        assert len(report.errors) == 0
+
+    def test_absolute_directory_path(self, tmp_path: Path) -> None:
+        """Handles absolute directory paths with recursive glob."""
+        from okf_schema.api import validate_markdown_files
+
+        # Create nested directory structure
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "api").mkdir()
+
+        file1 = tmp_path / "docs" / "api" / "test.md"
+        file1.write_text(
+            "---\ntype: concept\ntitle: Test\ndescription: Test\n---\n# Test\n",
+            encoding="utf-8",
+        )
+
+        # Use absolute directory path
+        report = validate_markdown_files([str(tmp_path / "docs")])
+        assert len(report.errors) == 0
 
 
 # ---------------------------------------------------------------------------

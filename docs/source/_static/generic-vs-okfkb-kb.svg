@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <!-- ============ DEFS ============ -->
+  <defs>
+    <marker id="arrow-tangle-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#B8B8C8"/>
+    </marker>
+    <marker id="arrow-tangle-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="#B8B8C8"/>
+    </marker>
+    <marker id="arrow-promote" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF9999"/>
+    </marker>
+  </defs>
+
+  <!-- ============ BACKGROUND ============ -->
+  <rect width="1200" height="600" fill="#FDFDFB"/>
+
+  <!-- ============ VERTICAL DIVIDER ============ -->
+  <line x1="600" y1="40" x2="600" y2="560" stroke="#C8C8D0" stroke-width="1.5" stroke-dasharray="6,6"/>
+
+  <!-- =========================================================
+       LEFT COLUMN: Generic Knowledge Base (chaotic graph)
+       15 pastel circles, 60px diameter (r=30), scattered randomly
+       ========================================================= -->
+  <text x="300" y="45" text-anchor="middle" font-size="16" font-weight="bold" fill="#2C2C3A">Generic KB: Graph Structure</text>
+
+  <!-- Tangled bidirectional arrows (drawn first so nodes sit above) -->
+  <g stroke="#B8B8C8" stroke-width="1.4" fill="none" opacity="0.75"
+     marker-start="url(#arrow-tangle-start)" marker-end="url(#arrow-tangle-end)">
+    <path d="M 90,130 Q 200,80 330,150"/>
+    <path d="M 330,150 Q 400,230 250,265"/>
+    <path d="M 250,265 Q 130,290 100,340"/>
+    <path d="M 100,340 Q 200,400 330,360"/>
+    <path d="M 330,360 Q 440,320 480,275"/>
+    <path d="M 480,275 Q 520,180 440,110"/>
+    <path d="M 440,110 Q 310,80 210,180"/>
+    <path d="M 210,180 Q 280,320 370,250"/>
+    <path d="M 370,250 Q 460,290 450,370"/>
+    <path d="M 450,370 Q 350,460 170,440"/>
+    <path d="M 170,440 Q 90,410 100,340"/>
+    <path d="M 510,175 Q 470,240 460,270"/>
+    <path d="M 140,230 Q 190,220 210,180"/>
+    <path d="M 350,240 Q 290,320 220,340"/>
+    <path d="M 450,370 Q 490,320 510,240"/>
+    <path d="M 220,340 Q 280,360 330,360"/>
+    <path d="M 90,130 Q 50,200 130,220"/>
+    <path d="M 330,460 Q 400,430 450,370"/>
+    <path d="M 170,440 Q 250,470 330,460"/>
+  </g>
+
+  <!-- Nodes (15) with pastel palette, uniform 60px diameter -->
+  <g font-size="10" font-weight="600" fill="#2C2C3A" text-anchor="middle">
+    <g><circle cx="90"  cy="130" r="30" fill="#FFB3BA" stroke="#E89AA0" stroke-width="1"/><text x="90"  y="134">cache</text></g>
+    <g><circle cx="210" cy="180" r="30" fill="#BAE1FF" stroke="#9CC5E5" stroke-width="1"/><text x="210" y="184">rag</text></g>
+    <g><circle cx="330" cy="150" r="30" fill="#FFCCCB" stroke="#E8B0AF" stroke-width="1"/><text x="330" y="154">tool</text></g>
+    <g><circle cx="440" cy="110" r="30" fill="#FFFFBA" stroke="#E0E09A" stroke-width="1"/><text x="440" y="114">idea</text></g>
+    <g><circle cx="510" cy="175" r="30" fill="#BAC7FF" stroke="#9CA9E0" stroke-width="1"/><text x="510" y="179">obs</text></g>
+    <g><circle cx="140" cy="230" r="30" fill="#E0BBE4" stroke="#C29DC7" stroke-width="1"/><text x="140" y="234">graph</text></g>
+    <g><circle cx="250" cy="265" r="30" fill="#D4F1F4" stroke="#B4D3D6" stroke-width="1"/><text x="250" y="269">node</text></g>
+    <g><circle cx="370" cy="250" r="30" fill="#FFDAB9" stroke="#E0BC9B" stroke-width="1"/><text x="370" y="254">link</text></g>
+    <g><circle cx="480" cy="275" r="30" fill="#BAFFC9" stroke="#9CE0AB" stroke-width="1"/><text x="480" y="279">note</text></g>
+    <g><circle cx="100" cy="340" r="30" fill="#FFB3BA" stroke="#E89AA0" stroke-width="1"/><text x="100" y="344">log</text></g>
+    <g><circle cx="220" cy="340" r="30" fill="#FFFFBA" stroke="#E0E09A" stroke-width="1"/><text x="220" y="344">tag</text></g>
+    <g><circle cx="330" cy="360" r="30" fill="#BAE1FF" stroke="#9CC5E5" stroke-width="1"/><text x="330" y="364">query</text></g>
+    <g><circle cx="450" cy="370" r="30" fill="#E0BBE4" stroke="#C29DC7" stroke-width="1"/><text x="450" y="374">agent</text></g>
+    <g><circle cx="170" cy="440" r="30" fill="#FFCCCB" stroke="#E8B0AF" stroke-width="1"/><text x="170" y="444">draft</text></g>
+    <g><circle cx="330" cy="460" r="30" fill="#D4F1F4" stroke="#B4D3D6" stroke-width="1"/><text x="330" y="464">eval</text></g>
+  </g>
+
+  <!-- Left annotation -->
+  <text x="300" y="540" text-anchor="middle" font-size="12" fill="#5A5A6A" font-style="italic">Unstructured graph</text>
+
+  <!-- =========================================================
+       RIGHT COLUMN: OKF-KB stratified horizontal layers (DAG)
+       SAME 15 circles, SAME pastel palette, stacked top-to-bottom
+       Rows (y-centers, 90px pitch):
+         Row 1  y=100  Principles   (1 circle)
+         Row 2  y=190  Concepts     (2 circles)
+         Row 3  y=280  Experiments  (3 circles)
+         Row 4  y=370  Hypotheses   (4 circles)
+         Row 5  y=460  Findings     (6 circles)
+       ========================================================= -->
+  <text x="900" y="45" text-anchor="middle" font-size="16" font-weight="bold" fill="#2C2C3A">OKF-KB: Stratified Layers</text>
+
+  <!-- Faint horizontal band guides showing the layer structure -->
+  <g fill="none" stroke="#D8D8E0" stroke-width="1" stroke-dasharray="3,4" opacity="0.7">
+    <line x1="700"  y1="100" x2="1100" y2="100"/>
+    <line x1="700"  y1="190" x2="1100" y2="190"/>
+    <line x1="700"  y1="280" x2="1100" y2="280"/>
+    <line x1="700"  y1="370" x2="1100" y2="370"/>
+    <line x1="700"  y1="460" x2="1100" y2="460"/>
+  </g>
+
+  <!-- Layer labels aligned to each row -->
+  <g font-weight="600" text-anchor="end" fill="#5A5A6A" font-size="10">
+    <text x="695" y="103">Principles</text>
+    <text x="695" y="193">Concepts</text>
+    <text x="695" y="283">Experiments</text>
+    <text x="695" y="373">Hypotheses</text>
+    <text x="695" y="463">Findings</text>
+  </g>
+
+  <!-- Promotion / derivation arrows: upper layers → lower layers (soft coral) -->
+  <g stroke="#FF9999" stroke-width="1.6" fill="none" marker-end="url(#arrow-promote)" opacity="0.9">
+    <!-- Principles → Concepts -->
+    <line x1="890" y1="128" x2="862" y2="162"/>
+    <line x1="910" y1="128" x2="938" y2="162"/>
+    <!-- Concepts → Experiments -->
+    <line x1="850" y1="218" x2="817" y2="252"/>
+    <line x1="950" y1="218" x2="983" y2="252"/>
+    <line x1="860" y1="220" x2="895" y2="252"/>
+    <!-- Experiments → Hypotheses -->
+    <line x1="810" y1="308" x2="785" y2="342"/>
+    <line x1="820" y1="308" x2="855" y2="342"/>
+    <line x1="900" y1="310" x2="935" y2="342"/>
+    <line x1="990" y1="308" x2="1017" y2="342"/>
+    <!-- Hypotheses → Findings -->
+    <line x1="780" y1="398" x2="735" y2="432"/>
+    <line x1="785" y1="400" x2="800" y2="432"/>
+    <line x1="860" y1="400" x2="870" y2="432"/>
+    <line x1="940" y1="400" x2="940" y2="432"/>
+    <line x1="1015" y1="400" x2="1010" y2="432"/>
+    <line x1="1020" y1="398" x2="1075" y2="432"/>
+  </g>
+
+  <!-- Nodes: 15 circles arranged in horizontal layers, SAME palette as left -->
+  <g font-size="8.5" font-weight="600" fill="#2C2C3A" text-anchor="middle">
+
+    <!-- ===== Row 1 (TOP) — Principles (1 circle) ===== -->
+    <g><circle cx="900"  cy="100" r="30" fill="#FFCCCB" stroke="#E8B0AF" stroke-width="1.2"/><text x="900"  y="104">policy</text></g>
+
+    <!-- ===== Row 2 — Concepts (2 circles) ===== -->
+    <g><circle cx="850"  cy="190" r="30" fill="#FFDAB9" stroke="#E0BC9B" stroke-width="1"/><text x="850"  y="194">subsystem</text></g>
+    <g><circle cx="950"  cy="190" r="30" fill="#E0BBE4" stroke="#C29DC7" stroke-width="1"/><text x="950"  y="194">pattern</text></g>
+
+    <!-- ===== Row 3 — Experiments (3 circles) ===== -->
+    <g><circle cx="810"  cy="280" r="30" fill="#FFFFBA" stroke="#E0E09A" stroke-width="1"/><text x="810"  y="284">test-pool</text></g>
+    <g><circle cx="900"  cy="280" r="30" fill="#BAE1FF" stroke="#9CC5E5" stroke-width="1"/><text x="900"  y="284">validate</text></g>
+    <g><circle cx="990"  cy="280" r="30" fill="#D4F1F4" stroke="#B4D3D6" stroke-width="1"/><text x="990"  y="284">measure</text></g>
+
+    <!-- ===== Row 4 — Hypotheses (4 circles) ===== -->
+    <g><circle cx="780"  cy="370" r="30" fill="#E0BBE4" stroke="#C29DC7" stroke-width="1"/><text x="780"  y="374">theory</text></g>
+    <g><circle cx="860"  cy="370" r="30" fill="#D4F1F4" stroke="#B4D3D6" stroke-width="1"/><text x="860"  y="374">root-cause</text></g>
+    <g><circle cx="940"  cy="370" r="30" fill="#FFDAB9" stroke="#E0BC9B" stroke-width="1"/><text x="940"  y="374">eviction</text></g>
+    <g><circle cx="1020" cy="370" r="30" fill="#FFB3BA" stroke="#E89AA0" stroke-width="1"/><text x="1020" y="374">behavior</text></g>
+
+    <!-- ===== Row 5 (BOTTOM) — Findings (6 circles) ===== -->
+    <g><circle cx="725"  cy="460" r="30" fill="#FFB3BA" stroke="#E89AA0" stroke-width="1"/><text x="725"  y="464">cache</text></g>
+    <g><circle cx="795"  cy="460" r="30" fill="#BAE1FF" stroke="#9CC5E5" stroke-width="1"/><text x="795"  y="464">timing</text></g>
+    <g><circle cx="865"  cy="460" r="30" fill="#FFCCCB" stroke="#E8B0AF" stroke-width="1"/><text x="865"  y="464">observation</text></g>
+    <g><circle cx="935"  cy="460" r="30" fill="#FFFFBA" stroke="#E0E09A" stroke-width="1"/><text x="935"  y="464">measurement</text></g>
+    <g><circle cx="1005" cy="460" r="30" fill="#BAC7FF" stroke="#9CA9E0" stroke-width="1"/><text x="1005" y="464">log</text></g>
+    <g><circle cx="1075" cy="460" r="30" fill="#BAFFC9" stroke="#9CE0AB" stroke-width="1"/><text x="1075" y="464">note</text></g>
+  </g>
+
+  <!-- Right annotation -->
+  <text x="900" y="540" text-anchor="middle" font-size="12" fill="#5A5A6A" font-style="italic">Findings rise through layers to principles</text>
+</svg>

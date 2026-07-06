@@ -7,4 +7,5 @@ Step-by-step guides that teach OKF-Schema by example.
 
 getting-started
 knowledge-graph
+okfkb-hw-debugging-workflow.md
 ```

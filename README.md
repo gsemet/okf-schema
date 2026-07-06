@@ -79,46 +79,7 @@ Schema extensions supported:
 - `.schema.json` — JSON (strict syntax, widely supported by editors)
 - `.schema.json5` — JSON5 (JSON with comments, trailing commas, and unquoted keys)
 
-### `$ref` support
-
-Schemas can reference external files with `$ref`. The path is resolved relative to the `_schema/` directory:
-
-```yaml
-# _base.schema.yaml
-$schema: "https://json-schema.org/draft/2020-12/schema"
-type: object
-properties:
-  type:
-    type: string
-  title:
-    type: string
-required:
-  - type
-additionalProperties: true
-```
-
-```yaml
-# concept.schema.yaml
-$ref: _base.schema.yaml
-properties:
-  category:
-    enum: [LLM, AI Agent, Coding Agent]
-```
-
-`$ref` works at any nesting level (top-level, inside `properties`, inside `items`, etc.). If the referenced file cannot be found, the `$ref` is preserved as-is and validation proceeds with the remaining schema content.
-
-### Default `_base.schema.yaml`
-
-When you run `okf-schema init`, a `_base.schema.yaml` is automatically created in `_schema/`. It documents the standard OKF frontmatter fields and can be used as a `$ref` target for your own schemas:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `type` | **Yes** | A short string identifying the kind of concept. |
-| `title` | No | Human-readable display name. |
-| `description` | No | One-line summary of the concept. |
-| `resource` | No | URI of the underlying asset. |
-| `tags` | No | List of short categorization strings. |
-| `timestamp` | No | ISO 8601 datetime of last change. |
+For detailed information on `$ref` support and schema composition, see the [full documentation](https://okf-schema.readthedocs.io/en/stable/).
 
 ## Installation
 
@@ -126,7 +87,19 @@ When you run `okf-schema init`, a `_base.schema.yaml` is automatically created i
 uv tool install okf-schema
 ```
 
-## Quickstart
+## Use Cases
+
+`okf-schema` serves **three primary use cases**:
+
+- **Use Case 1**: Build, Maintain & Validate OKF Bundles, with JSON Schema.
+- **Use Case 2**: Opinionated Knowledge Base (KB) for empirical findings, hypotheses, and concepts.
+- **Use Case 3**: Validate Standalone Markdown Files against JSON Schemas without a full OKF bundle.
+
+### Use Case 1: Build, Maintain & Validate OKF Bundles
+
+Create and manage complete OKF bundles with folder structure, schemas, index files, and integrity checks.
+
+**Quick Start:**
 
 ```bash
 # Initialize a new OKF bundle
@@ -138,35 +111,88 @@ okf-schema index --path my-bundle/bundle
 # Lint frontmatter (flatten nested lists, inline block-style, auto-update links/backlinks)
 okf-schema lint --path my-bundle/bundle
 
-# Lint without updating links/backlinks
-okf-schema lint --path my-bundle/bundle --no-links
-
-# Validate a bundle
-okf-schema validate --path my-bundle/bundle
-# or enforce strict validation (fail on warnings)
+# Validate bundle structure and frontmatter
 okf-schema validate --path my-bundle/bundle --strict
 
 # List all concepts
 okf-schema list --path my-bundle/bundle
 
-# Find backlinks to a concept (extension is optional)
+# Find backlinks to a concept
 okf-schema backlinks --path my-bundle/bundle concepts/react-pattern
 ```
 
-## CLI Reference
+**Key Commands:**
 
-| Subcommand | Description |
-|-----------|-------------|
-| `init <name>` | Create a new OKF bundle directory structure |
-| `new --path <dir> --name <name>` | Create a new concept file with frontmatter template |
-| `validate --path <bundle>` | Validate bundle structure and frontmatter |
-| `validate --path <bundle> --strict` | Validate and fail on warnings |
-| `lint --path <bundle>` | Lint frontmatter: flatten nested lists, convert block-style to inline, and auto-update `links`/`backlinks` from markdown body |
-| `list --path <bundle>` | List all concepts in a bundle |
-| `show --path <bundle> <concept>` | Show a single concept's frontmatter and body |
-| `index --path <bundle>` | Regenerate all `index.md` files |
+| Command | Purpose |
+|---------|---------|
+| `init <name>` | Create new bundle directory structure |
+| `new --path <dir> --name <name>` | Create new concept file with frontmatter template |
+| `validate --path <bundle>` | Validate bundle structure, frontmatter, and schemas |
+| `validate --path <bundle> --strict` | Fail on warnings in addition to errors |
+| `lint --path <bundle>` | Flatten lists, inline block styles, auto-update links |
+| `index --path <bundle>` | Regenerate `index.md` files for all directories |
+| `list --path <bundle>` | List all concepts in bundle |
+| `show --path <bundle> <concept>` | Display frontmatter + body of a concept |
 | `stats --path <bundle>` | Show bundle statistics |
-| `backlinks --path <bundle> <target>...` | List concepts that link to the given target(s) |
+| `backlinks --path <bundle> <target>...` | Find concepts linking to target(s) |
+
+### Use Case 2: Opinionated Knowledge Base (KB)
+
+Record empirical findings, hypotheses, and concepts using a stratified knowledge model with structured types and validation.
+
+![generic-vs-okfkb-kb](docs/source/_static/generic-vs-okfkb-kb.svg)
+
+**Quick Start:**
+
+```bash
+# Initialize a new KB bundle
+okfkb init my-knowledge-base
+
+# Record a finding
+okfkb new-finding \
+  --title "AI agents improve coding speed" \
+  --confidence confirmed
+
+# Explore KB structure
+okf-schema list --path my-knowledge-base/findings
+```
+
+**For full KB documentation**, see the [OKF-KB Design Choices](https://okf-schema.readthedocs.io/en/stable/explanation/okfkb-choices.html) and [HW Debugging Workflow Tutorial](https://okf-schema.readthedocs.io/en/stable/tutorials/okfkb-hw-debugging-workflow.html).
+
+### Use Case 3: Validate Standalone Markdown Files
+
+Validate individual markdown files (or collections) against JSON schemas without needing a full OKF bundle.
+
+**Quick Start:**
+
+```bash
+# Validate all markdown files in a directory
+okf-schema validate-md \
+  --input 'docs/**/*.md' \
+  --schemas-dir ./schemas
+
+# Validate multiple patterns with strict mode
+okf-schema validate-md \
+  --input '*.md' \
+  --input 'docs/**/*.md' \
+  --schemas-dir ./schemas \
+  --strict
+```
+
+**Key Commands:**
+
+| Command | Purpose |
+|---------|---------|
+| `validate-md --input PATTERNS --schemas-dir DIR` | Validate standalone files against schemas |
+| `--input 'pattern'` | Glob pattern for files (supports `**` for recursion); can be used multiple times |
+| `--schemas-dir DIR` | Directory containing schema files (`<type>.schema.{json\|yaml\|json5}`) |
+| `--strict` | Treat warnings as errors (exit 1) |
+
+**For examples and troubleshooting**, see the [Standalone File Validation Guide](https://okf-schema.readthedocs.io/en/stable/how-to/validate-standalone-files.html) and [Validation Error & Warning Codes Reference](https://okf-schema.readthedocs.io/en/stable/reference/validation-codes.html).
+
+### Validation Reference
+
+
 
 ## Recommended Workflow
 
@@ -335,8 +361,7 @@ The `okfkb` binary is a standalone alias for `okf-schema kb` — both are equiva
 | `okfkb validate [PATH]` | Validate bundle with strict mode (warnings as errors) |
 | `okf-schema init NAME --pattern kb` | Same scaffold as `okfkb init` via the pattern registry |
 
-See the [full documentation](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html)
-for details.
+**For full KB documentation and commands**, see the [OKF Knowledge Base reference](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html).
 
 ## Python API
 
@@ -352,34 +377,12 @@ for finding in report.findings:
 # report = validate_bundle("path/to/bundle", schema_db="path/to/schemas")
 ```
 
-## Documentation
+## Copilot Skill
 
-Documentation is available at [okf-schema/README.md](https://github.com/gsemet/okf-schema/blob/main/README.md).
+`okf-schema` also provides a **Copilot skill**.
 
-## Evaluation
-
-`okf-schema` includes an automated skill evaluation campaign in `skills-evals/` that validates the tool against a suite of fixture bundles. These evals verify that the validator correctly identifies conformant bundles, catches structural errors (E1–E6), reports warnings (W1–W7), and handles JSONSchema validation with both JSON and YAML schema databases.
-
-| Eval | Description |
-|------|-------------|
-| `validate-conformant-bundle` | Validates a fully conformant OKF bundle (0 errors, 0 warnings) |
-| `validate-non-conformant-bundle` | Validates a bundle with known errors (E1–E3) and warnings (W1–W7) |
-| `create-okf-bundle` | Creates a new OKF bundle from scratch and validates it |
-| `validate-with-schema-database` | Tests JSONSchema validation with `--schema-db` |
-| `validate-with-yaml-schema-database` | Tests YAML schema file support in schema DB |
-
-Run the eval campaign by asking in Copilot Chat `Execute instructions in skills-evals/eval.prompt.md`, or via Copilot-CLI:
-
-```bash
-# Trigger eval via Copilot-CLI
-just copilot-cli-eval-okf-schema
-# Open eval review in browser
-just eval-view-okf-schema
-```
-
-The eval system supports A/B comparison (`with_skill` vs `without_skill`) across iteration directories. Results are rendered as an interactive HTML dashboard.
-
-**Latest eval result:** [iteration-30.06.26-22.06](https://htmlpreview.github.io/?https://github.com/gsemet/okf-schema/blob/master/skills-evals/results/iteration-30.06.26-22.06/eval-result.html) — [skeptical review](skills-evals/results/iteration-30.06.26-22.06/skeptical-review.md)
+For documentation on skill usage, automation workflows, and agentic knowledge base management,
+see [`skills/okf-schema/SKILL.md`](skills/okf-schema/SKILL.md).
 
 ## Contributing
 

@@ -259,6 +259,6 @@ This is identical to `okfkb`; use whichever form is more convenient.
 ## See also
 
 - [Bootstrap a Knowledge Base](../how-to/bootstrap-knowledge-base) — step-by-step guide to setting up a KB.
-- [Why an Opinionated Knowledge Base?](../explanation/opinionated-knowledge-base) — design rationale behind the KB structure.
+- [Why an Opinionated Knowledge Base?](../explanation/okfkb-choices) — design rationale behind the KB structure.
 - [CLI Reference](cli) — full reference for all `okf-schema` commands.
 - [Getting Started](../tutorials/getting-started) — broader tutorial on OKF bundles.

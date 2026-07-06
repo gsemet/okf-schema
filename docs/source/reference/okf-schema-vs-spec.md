@@ -82,7 +82,7 @@ This rule encourages a namespaced structure from the start and prevents
 ## See also
 
 - [Design Principles](../explanation/design-principles) — the principles that motivate these differences.
-- [Why an Opinionated Knowledge Base?](../explanation/opinionated-knowledge-base) — how opinionation works in practice.
+- [Why an Opinionated Knowledge Base?](../explanation/okfkb-choices) — how opinionation works in practice.
 - [Write a Custom Schema](../how-to/write-custom-schema) — authoring schemas that enforce these constraints.
 - [Getting Started](../tutorials/getting-started) — tutorial covering bundle creation and validation.
 root-level clutter as the bundle grows.
