@@ -1,17 +1,17 @@
 # OKF-KB in Practice: HW Debugging Workflow
 
 **Real-world scenario**: Debugging a boot timing issue on an automotive SoC (MCU) board.
-This tutorial shows how a team uses OKF-KB to capture observations, investigate contradictions,
+This tutorial shows how a team uses [OKF-KB](../explanation/okfkb-choices.md)
+to capture observations, investigate contradictions,
 and build stable knowledge over a multi-week debugging campaign.
 
 > This example demonstrates **agent-driven findings creation**, **knowledge promotion**,
 > and **team consensus** in a realistic HW debugging context.
 
----
-
 ## Scenario: Boot Initialization Timeout on Automotive MCU
 
 **Context**:
+
 - Target: AURIX TC3xx automotive microcontroller
 - Board: Renault Ampere development board
 - Issue: Boot initialization sometimes hangs after ~500ms
@@ -19,11 +19,10 @@ and build stable knowledge over a multi-week debugging campaign.
 - Impact: Vehicle startup reliability affected in cold weather
 
 **Team**:
+
 - 2 HW engineers (debugging)
 - 1 firmware architect (oversight)
 - GitHub Copilot (agent, running inference on local debug logs)
-
----
 
 ## Week 1: Initial Observations (Findings Accumulation)
 
@@ -37,6 +36,7 @@ okfkb new-finding "Boot initialization hangs ~500ms, sometimes recovers"
 ```
 
 **Finding: 2026.07.01-09.30-boot-hangs-500ms.md**
+
 ```yaml
 ---
 type: Finding
@@ -57,6 +57,7 @@ status: active
 ```
 
 **Agent narrative**:
+
 ```
 Boot trace shows expected sequence:
 1. CPU release → PLL lock → memory init (all OK)
@@ -78,6 +79,7 @@ okfkb new-finding "Boot timeout occurs more frequently at 0°C"
 ```
 
 **Finding: 2026.07.02-11.00-temperature-sensitivity.md**
+
 ```yaml
 ---
 type: Finding
@@ -99,6 +101,7 @@ status: active
 ```
 
 **Agent narrative**:
+
 ```
 Strong correlation with temperature.
 At 0°C, failure rate jumps to 40%. This suggests either:
@@ -118,6 +121,7 @@ okfkb new-finding "PLL lock time increases from 200µs to 800µs at low temperat
 ```
 
 **Finding: 2026.07.03-14.20-pll-temp-drift.md**
+
 ```yaml
 ---
 type: Finding
@@ -158,6 +162,7 @@ okfkb new-finding "Bootloader has hardcoded PLL wait timeout of 400µs, not poll
 ```
 
 **Finding: 2026.07.05-10.15-bootloader-timeout-hardcoded.md**
+
 ```yaml
 ---
 type: Finding
@@ -182,6 +187,7 @@ status: active
 ```
 
 **Agent narrative**:
+
 ```
 ROOT CAUSE FOUND:
 Bootloader timeout (400µs) is too short for low-temperature conditions.
@@ -195,8 +201,6 @@ Watchdog then resets MCU. On reboot, if PLL happens to lock faster
 This is a DESIGN BUG, not a hardware defect.
 Confidence: high — source code proof + measurements validate.
 ```
-
----
 
 ## Week 2: Knowledge Consolidation (Promotion to Concepts)
 
@@ -259,6 +263,7 @@ okfkb update concepts/boot-pll-startup-margin.md
 ### Architect Creates Supporting Documents
 
 **Structure Document** (system composition):
+
 ```bash
 cat > structures/boot-sequence-architecture.md << 'EOF'
 ---
@@ -306,6 +311,7 @@ okfkb update structures/boot-sequence-architecture.md
 ```
 
 **Principle Document** (team decision):
+
 ```bash
 cat > principles/firmware-timeouts-must-be-polled.md << 'EOF'
 ---
@@ -343,6 +349,7 @@ okfkb update principles/firmware-timeouts-must-be-polled.md
 ```
 
 **Outcome Document** (planned deliverable):
+
 ```bash
 cat > outcomes/fix-bootloader-pll-polling.md << 'EOF'
 ---
@@ -391,8 +398,6 @@ okf-schema lint --path .
 cat log.md
 ```
 
----
-
 ## Week 3: Implementation & Validation
 
 ### Tuesday, 2026-07-15 — Implementation Complete
@@ -404,6 +409,7 @@ okfkb new-finding "Bootloader fix validated: 100 boot cycles at -10°C, 0 failur
 ```
 
 **Finding: 2026.07.15-16.45-fix-validation.md**
+
 ```yaml
 ---
 type: Finding
@@ -440,12 +446,11 @@ mv temp.md outcomes/fix-bootloader-pll-polling.md
 okf-schema index --path .
 ```
 
----
-
 ## What Happened in the KB
 
 ### Findings Layer (Raw Evidence)
-```
+
+```text
 findings/
 ├── 2026.07.01-09.30-boot-hangs-500ms.md              ← Initial observation
 ├── 2026.07.02-11.00-temperature-sensitivity.md       ← Correlation identified
@@ -455,35 +460,38 @@ findings/
 ```
 
 ### Concepts Layer (Consolidated Understanding)
-```
+
+```text
 concepts/
 └── boot-pll-startup-margin.md  ← Promoted from 4 converged findings
                                    (status: resolved after fix)
 ```
 
 ### Structures Layer (System Knowledge)
-```
+
+```text
 structures/
 └── boot-sequence-architecture.md  ← Reusable blueprint for future debugging
 ```
 
 ### Principles Layer (Team Standards)
-```
+
+```text
 principles/
 └── firmware-timeouts-must-be-polled.md  ← Inviolable rule going forward
 ```
 
 ### Outcomes Layer (Deliverables)
-```
+
+```text
 outcomes/
 └── fix-bootloader-pll-polling.md  ← Tracked from plan → complete
 ```
 
----
-
 ## Key Workflow Patterns Demonstrated
 
 ### 1. **Findings Accumulate Incrementally**
+
 - Day 1: Observation (low confidence)
 - Day 2: Correlation identified (medium confidence)
 - Day 3: Root cause measurement (high confidence)
@@ -492,27 +500,31 @@ outcomes/
 **Agent benefits**: Fresh timestamps, exact context, confidence progression visible.
 
 ### 2. **Promotion Triggers When Convergence Occurs**
+
 After 4 findings align, team **decides** (human decision) to promote.
 Not automatic; requires judgment about stability.
 
 **Structure enables**: Clear promotion criteria; decisions leave audit trail.
 
 ### 3. **Contradictions Don't Break the Process**
+
 If Day 6 brought contradictory evidence, the old findings would be marked:
+
 ```yaml
 status: contradicted
 contradicted_by: [findings/2026.07.06-new-finding.md]
 ```
+
 Both remain immutable; agents can trace the evolution of understanding.
 
 ### 4. **Principles Capture Team Consensus**
+
 After root cause found, architect + team agreed: **"No more hardcoded firmware timeouts."**
 This becomes an inviolable rule (`principles/`), shaping future architecture decisions.
 
 ### 5. **Outcomes Track What We'll Build**
-Fix is planned, executed, and marked complete — all linked to the KB concepts that justified it.
 
----
+Fix is planned, executed, and marked complete — all linked to the KB concepts that justified it.
 
 ## Navigation Over Time
 
@@ -524,6 +536,7 @@ Fix is planned, executed, and marked complete — all linked to the KB concepts 
 - **"What are we building?"** → Read `outcomes/`, sorted by status
 
 **One week later**, a new engineer joins. They read:
+
 1. `log.md` — recent decisions
 2. `index.md` — KB structure
 3. `concepts/boot-pll-startup-margin.md` — the stable understanding
@@ -531,12 +544,11 @@ Fix is planned, executed, and marked complete — all linked to the KB concepts 
 
 No need to re-investigate. The KB preserved context, confidence, and reasoning.
 
----
-
 ## Scaling This Workflow
 
 **One month, multiple features**:
-```
+
+```text
 findings/ → 40+ raw observations
 hypotheses/ → 8 testable propositions
 experiments/ → 3 active investigations
@@ -548,11 +560,10 @@ outcomes/ → 4 planned features (2 in-progress, 1 complete)
 **Log.md** becomes essential: team reads it every Monday to see what shifted.
 **Backlinks** help agents jump from "Does DDR init depend on PLL?" directly to the answer.
 
----
-
 ## Next Steps
 
 For hands-on practice:
+
 1. Clone or create an empty KB: `okfkb init my-project-kb`
 2. Record one real debugging session as findings
 3. Ask agent to suggest concept promotion

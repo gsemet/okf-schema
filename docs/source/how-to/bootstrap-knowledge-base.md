@@ -19,8 +19,6 @@ Verify the `okfkb` entry point is available:
 okfkb --help
 ```
 
----
-
 ## Step 1 — Scaffold the KB
 
 ```bash
@@ -51,8 +49,6 @@ If the directory already exists and is non-empty, use `--force`:
 okfkb init my-project/knowledge/ --force
 ```
 
----
-
 ## Step 2 — Record your first Finding
 
 A **Finding** is an immutable, dated observation. Use `new-finding` to generate
@@ -79,8 +75,6 @@ okfkb new-finding my-project/knowledge/ \
   --tags "tls,network,timeout"
 ```
 
----
-
 ## Step 3 — Refresh index and validate
 
 After adding files, update the cross-link index and check conformance:
@@ -93,8 +87,6 @@ okf-schema validate --strict --path my-project/knowledge/
 - **`update`** (alias to `okf-schema index` + `okf-schema lint`) scans all markdown files, computes backlinks, updates `index.md`, and normalises YAML frontmatter.
 
 - **`validate --strict`** checks all files against the bundled schemas.
-
----
 
 ## Step 4 — Install KB tooling into your project
 
@@ -109,8 +101,6 @@ okfkb install-skills my-project/
 It also creates or patches `my-project/AGENTS.md` with a reference to the
 installed guideline, so coding agents pick it up automatically.
 
----
-
 ## Step 5 — Add to CI (recommended)
 
 Add a validation step so schema drift is caught before merge:
@@ -123,8 +113,6 @@ Add a validation step so schema drift is caught before merge:
     okf-schema validate --strict --path knowledge/
 ```
 
----
-
 ## Typical workflow
 
 ```
@@ -135,8 +123,6 @@ day 2+  okfkb new-finding knowledge/ --title "..." --confidence medium --context
         okfkb validate --strict --path knowledge/
         git add knowledge/ && git commit -m "docs: record finding ..."
 ```
-
----
 
 ## Next steps
 

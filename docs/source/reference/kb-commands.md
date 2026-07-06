@@ -14,8 +14,6 @@ okfkb validate [PATH]          # Validate bundle (strict mode)
 
 `okfkb` is a standalone alias; `okf-schema kb <cmd>` and `okfkb <cmd>` are strictly equivalent.
 
----
-
 ## `okfkb init`
 
 Scaffold a canonical knowledge-base folder layout with 8 content directories,
@@ -67,8 +65,6 @@ The same scaffold is available through the `--pattern` flag on `okf-schema init`
 okf-schema init my-kb --pattern kb
 ```
 
----
-
 ## `okfkb install-skills`
 
 Deploy the bundled `record-finding` and `consolidate-knowledge-base` skills, plus the
@@ -94,8 +90,6 @@ okfkb install-skills [PATH]
 - Copies skills to `<base>/skills/` and the guideline to `<base>/guidelines/`.
 - Existing files are skipped (with a warning) unless `--force` is passed.
 - `AGENTS.md` patching is always idempotent — the guideline reference is never duplicated.
-
----
 
 ## `okfkb new-finding`
 
@@ -166,8 +160,6 @@ status: active
 **Filename convention:** The slug is derived from the title by lower-casing, replacing non-alphanumeric
 runs with `-`, and truncating at 60 characters. The timestamp uses the current UTC time.
 
----
-
 ## `okfkb update`
 
 Regenerate all `index.md` files and lint frontmatter in a knowledge base.
@@ -203,8 +195,6 @@ Linted: concepts/test.md
 Linted 1 file(s).
 ```
 
----
-
 ## `okfkb validate`
 
 Validate a knowledge base bundle with strict mode (warnings treated as errors).
@@ -238,8 +228,6 @@ my-kb/concepts/missing-frontmatter.md
 
 Validation failed: 0 error(s), 1 warning(s) (strict mode).
 ```
-
----
 
 ## `okf-schema kb`
 

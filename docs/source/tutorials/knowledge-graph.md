@@ -6,9 +6,7 @@ knowledge graph, how `okf-schema lint` materialises those links into
 frontmatter metadata, and how to query the graph from both the CLI and the
 Python API.
 
----
-
-## The scenario
+## Scenario
 
 Imagine you are the data-platform team at *Acme Corp*. Your knowledge base
 covers tables, datasets, ingestion jobs, metrics, and runbooks. Concepts are
@@ -17,7 +15,7 @@ linked.
 
 Here is the bundle layout:
 
-```
+```text
 acme-knowledge/
 ├── index.md
 ├── log.md
@@ -42,8 +40,6 @@ acme-knowledge/
     └── freshness-alert.md
 ```
 
----
-
 ## Concept bodies: where links live
 
 Links are ordinary markdown links in the body. The surrounding prose gives
@@ -65,7 +61,7 @@ tags:
   - core
 ---
 
-# Schema
+## Schema
 
 | Column        | Type   | Description                              |
 |---------------|--------|------------------------------------------|
@@ -73,12 +69,12 @@ tags:
 | `customer_id` | STRING | Foreign key into [customers](customers.md). |
 | `product_id`  | STRING | Foreign key into [products](products.md). |
 
-# Joins
+## Joins
 
 Joined with [customers](customers.md) on `customer_id`.
 Joined with [products](products.md) on `product_id`.
 
-# Downstream
+## Downstream
 
 Part of the [sales-dwh](datasets/sales-dwh.md) dataset.
 ```
@@ -101,8 +97,6 @@ FROM `orders`
 GROUP BY 1
 ```
 ````
-
----
 
 ## Running `lint` to materialise the graph
 
@@ -129,7 +123,7 @@ backlinks:
    metrics/daily-revenue.md, tables/customers.md, tables/products.md]
 ---
 
-# Schema
+## Schema
 
 | Column        | Type   | Description                              |
 |---------------|--------|------------------------------------------|
@@ -137,12 +131,12 @@ backlinks:
 | `customer_id` | STRING | Foreign key into [customers](customers.md). |
 | `product_id`  | STRING | Foreign key into [products](products.md). |
 
-# Joins
+## Joins
 
 Joined with [customers](customers.md) on `customer_id`.
 Joined with [products](products.md) on `product_id`.
 
-# Downstream
+## Downstream
 
 Part of the [sales-dwh](datasets/sales-dwh.md) dataset.
 ```
@@ -166,8 +160,6 @@ link is added or removed.
 - [Why an Opinionated Knowledge Base?](../explanation/okfkb-choices) — how links and backlinks work in the KB model.
 - [CLI Reference](../reference/cli.md) — `lint`, `index`, `backlinks`, and `graph` commands.
 
----
-
 ## Navigating the graph from the CLI
 
 ### Show all outgoing links
@@ -187,7 +179,7 @@ okf-schema backlinks --path acme-knowledge/bundle tables/orders
 
 Output:
 
-```
+```text
 tables/orders.md ← datasets/sales-dwh.md
 tables/orders.md ← jobs/ingest-orders.md
 tables/orders.md ← metrics/customer-lifetime-value.md
@@ -231,8 +223,6 @@ Output (excerpt):
   ]
 }
 ```
-
----
 
 ## Querying the graph from Python
 
@@ -283,8 +273,6 @@ hub = max(in_degree, key=in_degree.get)
 print(f"Most referenced: {hub} ({in_degree[hub]} backlinks)")
 ```
 
----
-
 ## Graph statistics at a glance
 
 Running `okf-schema stats` on the bundle produces a summary that includes
@@ -296,7 +284,7 @@ okf-schema stats --path acme-knowledge/bundle
 
 Typical output:
 
-```
+```text
 Concepts:        10
 Directories:      5
 Links:           18
@@ -307,8 +295,6 @@ Avg links/concept: 1.8
 A healthy knowledge graph has an average link count well above 1.0. If the
 average is close to zero, the bundle is a collection of isolated documents
 rather than a connected graph.
-
----
 
 ## Design tips for a navigable graph
 
