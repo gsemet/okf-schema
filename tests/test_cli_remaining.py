@@ -276,3 +276,258 @@ class TestDefensiveErrorHandling:
             result = runner.invoke(cli, ["stats", "--path", str(bundle)])
         assert result.exit_code == 2
         assert "boom" in result.output
+
+
+# ---------------------------------------------------------------------------
+# validate-md
+# ---------------------------------------------------------------------------
+
+
+class TestValidateMd:
+    """Tests for the validate-md subcommand."""
+
+    def test_validate_md_exits_0_for_valid_files(self, tmp_path: Path) -> None:
+        """validate-md exits 0 for valid markdown files."""
+        test_file = tmp_path / "test.md"
+        content = (
+            "---\ntype: concept\ntitle: Test\ndescription: Test\n"
+            "timestamp: 2024-01-01T00:00:00Z\n---\n\n# Test\n"
+        )
+        test_file.write_text(content, encoding="utf-8")
+
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+        schema_file = schemas_dir / "concept.schema.json"
+        schema_text = (
+            '{"type": "object", "properties": {"type": {"type": "string"}}, "required": ["type"]}'
+        )
+        schema_file.write_text(schema_text, encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(test_file),
+                "--schemas-dir",
+                str(schemas_dir),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "All files validated successfully" in result.output
+
+    def test_validate_md_exits_1_for_invalid_files(self, tmp_path: Path) -> None:
+        """validate-md exits 1 for files with errors."""
+        test_file = tmp_path / "test.md"
+        test_file.write_text("# No Frontmatter\n\nContent\n", encoding="utf-8")
+
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(test_file),
+                "--schemas-dir",
+                str(schemas_dir),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "E1" in result.output or "error" in result.output.lower()
+
+    def test_validate_md_multiple_inputs(self, tmp_path: Path) -> None:
+        """validate-md accepts multiple --input flags."""
+        file1 = tmp_path / "file1.md"
+        content1 = (
+            "---\ntype: concept\ntitle: Test1\ndescription: Desc\n"
+            "timestamp: 2024-01-01T00:00:00Z\n---\n\nContent\n"
+        )
+        file1.write_text(content1, encoding="utf-8")
+        file2 = tmp_path / "file2.md"
+        content2 = (
+            "---\ntype: concept\ntitle: Test2\ndescription: Desc\n"
+            "timestamp: 2024-01-01T00:00:00Z\n---\n\nContent\n"
+        )
+        file2.write_text(content2, encoding="utf-8")
+
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+        schema_file = schemas_dir / "concept.schema.json"
+        schema_text = (
+            '{"type": "object", "properties": {"type": {"type": "string"}}, "required": ["type"]}'
+        )
+        schema_file.write_text(schema_text, encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(file1),
+                "--input",
+                str(file2),
+                "--schemas-dir",
+                str(schemas_dir),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "All files validated successfully" in result.output
+
+    def test_validate_md_strict_mode(self, tmp_path: Path) -> None:
+        """validate-md --strict exits 1 for warnings."""
+        test_file = tmp_path / "test.md"
+        test_file.write_text(
+            "---\ntype: concept\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(test_file),
+                "--schemas-dir",
+                str(schemas_dir),
+                "--strict",
+            ],
+        )
+        assert result.exit_code == 1
+
+    def test_validate_md_glob_pattern(self, tmp_path: Path) -> None:
+        """validate-md supports glob patterns."""
+        subdir = tmp_path / "subdir"
+        subdir.mkdir()
+        file1 = tmp_path / "file1.md"
+        content1 = (
+            "---\ntype: concept\ntitle: Test1\ndescription: Desc\n"
+            "timestamp: 2024-01-01T00:00:00Z\n---\n\nContent\n"
+        )
+        file1.write_text(content1, encoding="utf-8")
+        file2 = subdir / "file2.md"
+        content2 = (
+            "---\ntype: concept\ntitle: Test2\ndescription: Desc\n"
+            "timestamp: 2024-01-01T00:00:00Z\n---\n\nContent\n"
+        )
+        file2.write_text(content2, encoding="utf-8")
+
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+        schema_file = schemas_dir / "concept.schema.json"
+        schema_text = (
+            '{"type": "object", "properties": {"type": {"type": "string"}}, "required": ["type"]}'
+        )
+        schema_file.write_text(schema_text, encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(tmp_path / "**" / "*.md"),
+                "--schemas-dir",
+                str(schemas_dir),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "All files validated successfully" in result.output
+
+    def test_validate_md_schema_validation(self, tmp_path: Path) -> None:
+        """validate-md validates against schemas."""
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+        schema_file = schemas_dir / "concept.schema.json"
+        schema_text = (
+            '{"type": "object", '
+            '"properties": {'
+            '"type": {"type": "string"}, '
+            '"title": {"type": "string"}}, '
+            '"required": ["type", "title"]}'
+        )
+        schema_file.write_text(schema_text, encoding="utf-8")
+
+        # File missing required title
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\n---\n\n# Test\n", encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(test_file),
+                "--schemas-dir",
+                str(schemas_dir),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "E4" in result.output or "error" in result.output.lower()
+
+    def test_validate_md_nonexistent_schemas_dir(self, tmp_path: Path) -> None:
+        """validate-md exits with error for nonexistent schemas directory."""
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\ntitle: Test\n---\n# Test\n", encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(test_file),
+                "--schemas-dir",
+                str(tmp_path / "nonexistent"),
+            ],
+        )
+        assert result.exit_code != 0
+
+    def test_validate_md_schemas_dir_is_file(self, tmp_path: Path) -> None:
+        """validate-md exits with error when schemas-dir is a file."""
+        test_file = tmp_path / "test.md"
+        test_file.write_text("---\ntype: concept\ntitle: Test\n---\n# Test\n", encoding="utf-8")
+
+        file_as_dir = tmp_path / "file.txt"
+        file_as_dir.write_text("not a directory", encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(test_file),
+                "--schemas-dir",
+                str(file_as_dir),
+            ],
+        )
+        assert result.exit_code != 0
+
+    def test_validate_md_no_files_matched(self, tmp_path: Path) -> None:
+        """validate-md handles pattern with no matches gracefully."""
+        schemas_dir = tmp_path / "schemas"
+        schemas_dir.mkdir()
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-md",
+                "--input",
+                str(tmp_path / "nonexistent" / "*.md"),
+                "--schemas-dir",
+                str(schemas_dir),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "All files validated successfully" in result.output

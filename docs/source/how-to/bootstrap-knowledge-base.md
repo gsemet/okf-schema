@@ -141,7 +141,7 @@ day 2+  okfkb new-finding knowledge/ --title "..." --confidence medium --context
 ## Next steps
 
 - [KB Commands reference](../reference/kb-commands) — full option reference for every command.
-- [Why an opinionated KB?](../explanation/opinionated-knowledge-base) — design rationale and
+- [Why an opinionated KB?](../explanation/okfkb-choices) — design rationale and
   how agents traverse the graph.
 - [Validate in CI](validate-in-ci) — automate schema checks in your pipeline.
 - [Lint Before Commit](lint-before-commit) — keep frontmatter formatting consistent.

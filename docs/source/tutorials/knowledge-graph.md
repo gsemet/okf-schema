@@ -1,4 +1,4 @@
-# Building a Knowledge Graph
+# Building your first Knowledge Graph
 
 This tutorial walks through a **fictional** OKF bundle for a data-platform
 team. You will see how cross-links between concepts create a navigable
@@ -163,7 +163,7 @@ link is added or removed.
 - [Getting Started](getting-started) — foundational tutorial on creating and navigating bundles.
 - [Lint Before Commit](../how-to/lint-before-commit) — automating frontmatter consistency.
 - [Design Principles](../explanation/design-principles) — why OKF-Schema treats knowledge as a graph.
-- [Why an Opinionated Knowledge Base?](../explanation/opinionated-knowledge-base) — how links and backlinks work in the KB model.
+- [Why an Opinionated Knowledge Base?](../explanation/okfkb-choices) — how links and backlinks work in the KB model.
 - [CLI Reference](../reference/cli.md) — `lint`, `index`, `backlinks`, and `graph` commands.
 
 ---

@@ -20,6 +20,7 @@ from okf_schema.api import (
     show_bundle,
     stats_bundle,
     validate_bundle,
+    validate_markdown_files,
 )
 from okf_schema.kb.cli import kb
 from okf_schema.kb.patterns import INIT_PATTERNS, list_patterns
@@ -282,6 +283,95 @@ def validate(
         ctx.exit(1)
     else:
         _echo(ctx, f"\nBundle is conformant ({warning_count} warning(s)).")
+        ctx.exit(0)
+
+
+# ---------------------------------------------------------------------------
+# validate-md
+# ---------------------------------------------------------------------------
+
+
+@cli.command("validate-md")
+@click.option(
+    "--input",
+    "input_patterns",
+    multiple=True,
+    required=True,
+    help="Glob pattern(s) for markdown files to validate (e.g., '**/*.md'). "
+    "Supports ** for recursive matching. Can be specified multiple times.",
+)
+@click.option(
+    "--schemas-dir",
+    required=True,
+    help="Directory containing JSON/YAML schema files (named <type>.schema.{json|json5|yaml|yml}).",
+)
+@click.option(
+    "--strict",
+    is_flag=True,
+    default=False,
+    help="Treat warnings as errors (exit 1 if any warning is present).",
+)
+@click.pass_context
+def validate_md(
+    ctx: click.Context,
+    input_patterns: tuple[str, ...],
+    schemas_dir: str,
+    strict: bool,
+) -> None:
+    """Validate standalone markdown files against JSON schemas.
+
+    Validates one or more markdown files with frontmatter against provided schemas.
+    This is useful for validating markdown outside of a full OKF bundle.
+
+    Examples:
+        okf-schema validate-md --input 'notes/**/*.md' --schemas-dir ./schemas
+        okf-schema validate-md --input '*.md' --input 'docs/**/*.md' --schemas-dir ./schemas
+    """
+    try:
+        report = validate_markdown_files(list(input_patterns), schemas_dir)
+    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
+        click.echo(f"Error: {exc}", err=True)
+        ctx.exit(1)
+
+    if report.is_conformant and not report.warnings:
+        _echo(ctx, "All files validated successfully (0 errors, 0 warnings).")
+        ctx.exit(0)
+
+    # Group findings by file
+    by_file: dict[str, dict[str, list[str]]] = {}
+    for finding in report.errors:
+        path_str = str(finding.path) if finding.path else "<unknown>"
+        by_file.setdefault(path_str, {"errors": [], "warnings": []})
+        by_file[path_str]["errors"].append(f"[{finding.code}] {finding.message}")
+    for finding in report.warnings:
+        path_str = str(finding.path) if finding.path else "<unknown>"
+        by_file.setdefault(path_str, {"errors": [], "warnings": []})
+        by_file[path_str]["warnings"].append(f"[{finding.code}] {finding.message}")
+
+    for path_str in sorted(by_file):
+        _echo(ctx, f"\n{path_str}")
+        for msg in by_file[path_str]["errors"]:
+            click.echo(f"  ERROR   {msg}", err=True)
+        for msg in by_file[path_str]["warnings"]:
+            click.echo(f"  WARNING {msg}", err=True)
+
+    error_count = len(report.errors)
+    warning_count = len(report.warnings)
+    if error_count:
+        click.echo(
+            f"\nValidation failed: {error_count} error(s), {warning_count} warning(s).",
+            err=True,
+        )
+        ctx.exit(1)
+    elif strict and warning_count:
+        msg = (
+            f"\nValidation failed: {error_count} error(s), "
+            f"{warning_count} warning(s) (strict mode)."
+        )
+        click.echo(msg, err=True)
+        ctx.exit(1)
+    else:
+        _echo(ctx, f"\nValidation passed: {warning_count} warning(s).")
         ctx.exit(0)
 
 

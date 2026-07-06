@@ -14,13 +14,14 @@ update:
     rm -rf uv.lock
     {{ uv }} sync
 
-# Run the full preflight check: style-check, lint, typecheck, test
+# Run the full preflight check: style-check, lint, typecheck, test, docs
 preflight:
     just style-check
     just lint
     just changelog
     just typecheck
     just test
+    just docs
 
 # Run tests with coverage
 [group("test")]
@@ -55,11 +56,11 @@ typecheck:
     {{ uv_run }} ty check src
     {{ uv_run }} mypy src
 
-# Build Sphinx documentation (regenerates CHANGELOG first)
+# Build Sphinx documentation (regenerates CHANGELOG first, treats warnings as errors)
 [group("docs")]
 docs:
     just changelog
-    {{ uv_run }} sphinx-build -b html docs/source docs/_build/html
+    {{ uv_run }} sphinx-build -W -b html docs/source docs/_build/html
 
 # Serve documentation locally
 [group("docs")]

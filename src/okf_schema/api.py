@@ -33,6 +33,7 @@ from okf_schema.formatter import format_bundle as _format_bundle
 from okf_schema.formatter import lint_bundle as _lint_bundle
 from okf_schema.validator import load_schema_database
 from okf_schema.validator import validate_bundle as _validate_bundle
+from okf_schema.validator import validate_markdown_files as _validate_markdown_files
 
 
 @dataclass
@@ -83,6 +84,80 @@ def validate_bundle(
     elif (bundle / "_schema").is_dir():
         schemas = load_schema_database(bundle / "_schema")
     return _validate_bundle(bundle, schemas)
+
+
+def validate_markdown_files(
+    input_patterns: list[str] | str,
+    schemas_dir: str | Path | None = None,
+) -> Report:
+    """Validate standalone markdown files against JSON schemas.
+
+    This is useful for validating markdown files with frontmatter that are
+    not part of a full OKF bundle. Each pattern is resolved using pathlib's
+    glob syntax (supports ``**`` for recursive matching).
+
+    Args:
+        input_patterns: One or more glob patterns (e.g., ``'docs/**/*.md'``).
+            Can be a single string or a list of strings. Patterns are resolved
+            relative to the current working directory. Absolute paths are also
+            supported.
+        schemas_dir: Optional directory containing JSON/YAML schema files.
+            If not provided, schema validation is skipped (W6 warnings emitted).
+            Schema files should be named ``<type>.schema.{json|json5|yaml|yml}``.
+
+    Returns:
+        A :class:`Report` with all errors and warnings.
+
+    Raises:
+        FileNotFoundError: When *schemas_dir* does not exist (if provided).
+        NotADirectoryError: When *schemas_dir* is not a directory (if provided).
+    """
+    # Normalize input_patterns to list
+    patterns = [input_patterns] if isinstance(input_patterns, str) else input_patterns
+
+    # Collect all files matching any pattern
+    collected_files: set[Path] = set()
+    root = Path.cwd()
+
+    for pattern in patterns:
+        pattern_path = Path(pattern)
+
+        # Handle absolute paths
+        if pattern_path.is_absolute():
+            # For absolute paths, check if they directly match a file
+            if pattern_path.is_file() and pattern_path.suffix == ".md":
+                collected_files.add(pattern_path)
+            elif pattern_path.is_dir():
+                # If it's a directory, glob within it
+                for file_path in pattern_path.glob("**/*.md"):
+                    if file_path.is_file():
+                        collected_files.add(file_path)
+            else:
+                # Try globbing with the absolute path
+                # For absolute patterns like /path/to/*.md, split into parent and pattern
+                parent = pattern_path.parent
+                glob_pattern = pattern_path.name
+                if parent.exists() and parent.is_dir():
+                    for file_path in parent.glob(glob_pattern):
+                        if file_path.is_file() and file_path.suffix == ".md":
+                            collected_files.add(file_path)
+        else:
+            # Relative paths: glob from current working directory
+            for file_path in root.glob(pattern):
+                if file_path.is_file() and file_path.suffix == ".md":
+                    collected_files.add(file_path)
+
+    # Load schemas if provided
+    schemas = None
+    if schemas_dir is not None:
+        schemas_path = Path(schemas_dir).expanduser().resolve()
+        if not schemas_path.exists():
+            raise FileNotFoundError(f"Schemas directory does not exist: {schemas_path}")
+        if not schemas_path.is_dir():
+            raise NotADirectoryError(f"Schemas path is not a directory: {schemas_path}")
+        schemas = load_schema_database(schemas_path)
+
+    return _validate_markdown_files(sorted(collected_files), schemas)
 
 
 def format_bundle(

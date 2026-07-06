@@ -2,6 +2,12 @@
 
 ### Feat
 
+- add validate-md command and restructure README with 3 use cases
+
+## v0.6.0 (2026-07-04)
+
+### Feat
+
 - okfkb new-finding command
 - **kb**: add okfkb CLI and knowledge-base subcommands
 
