@@ -49,6 +49,33 @@ okf-schema lint --path .
 
 Checks required fields, timestamps, link validity.
 
+## Navigating the KB
+
+Four commands expose the KB as agent-native **navigation tools** — pull the right granularity
+instead of loading whole folders:
+
+```bash
+# Coarse ranked search across titles, context, tags, body
+okfkb search "pll lock time" --tier findings
+
+# Exact fetch of a single node
+okfkb get findings/2026.07.03-14.20-pll-temp-drift.md
+
+# Read a whole stable tier (top-down entry point)
+okfkb read concepts --status active
+
+# Structured query: filter DSL (flat frontmatter)
+okfkb query "type:finding confidence:>=high tag:pll status:active"
+
+# Structured query: arrow traversal over the link/promotion graph
+#   ->  follows links   <-  follows backlinks   ^  follows promotion
+okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
+```
+
+**When to use which:** `read` a stable tier for the big picture, `query`/`search` to locate
+relevant nodes by criteria, then `get` a specific node for evidence-level detail. See the
+[KB Commands Reference](../reference/kb-commands.md) for the full `query` grammar.
+
 ## Schema Reference
 
 ### Findings: `findings/YYYY.MM.DD-HH.MM-<slug>.md`

@@ -105,6 +105,49 @@ okf-schema validate --path my-bundle --strict
 
 Global options: `--version`, `--verbose` (`-v`), `--quiet` (`-q`).
 
+## Knowledge Base Navigation (`okfkb`)
+
+For opinionated knowledge-base bundles (created with `okfkb init`), four extra
+commands expose the KB as agent-native **navigation tools** — pull the right
+granularity instead of loading whole tier folders. `okfkb <cmd>` and
+`okf-schema kb <cmd>` are equivalent.
+
+| Command | Description |
+|---------|-------------|
+| `okfkb search TEXT [PATH]` | Ranked keyword search (titles, tags, type, context, body). Options: `--tier` (repeatable), `--limit`, `--format table\|json\|paths`. |
+| `okfkb get ID [PATH]` | Exact fetch of one node by id/path/stem. Options: `--format md\|json\|frontmatter`. |
+| `okfkb read TIER [PATH]` | Read a whole stable tier at once. Options: `--status`, `--format md\|frontmatter\|titles`. |
+| `okfkb query EXPR [PATH]` | Structured query (filter DSL + graph traversal). Options: `--limit`, `--format table\|json\|paths`. |
+
+**`query` — filter DSL** (flat frontmatter, space-separated terms, ANDed):
+
+```bash
+# key:value (equals) or key:<op>value where <op> is >= <= > < != ~
+okfkb query "type:finding confidence:>=high tag:pll status:active"
+okfkb query "type:concept title:~boot since:2026-07-01"
+```
+
+Confidence is ordinal (`low` < `medium` < `high` < `confirmed`) so `>=high` works.
+Special keys: `type`/`tier`, `tag`, `since`/`until` (timestamp bounds).
+
+**`query` — arrow traversal** (pocket-Cypher over `links`/`backlinks`/`promoted_from`):
+
+```bash
+# ->  follows links   <-  follows backlinks   ^  follows promotion
+okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
+okfkb query "concept[title~boot] <- finding"
+okfkb query "finding[status=active] ^ concept"
+```
+
+**Navigation convention — stop when sufficient.** Start at the highest tier that can
+answer (`read principles` / `read concepts`), descend to `findings` only when the
+higher tiers are insufficient, and stop once you have enough evidence. Do not load
+whole tier folders when a `query` or `get` would do.
+
+KB authoring commands: `okfkb init`, `okfkb install-skills`, `okfkb new-finding`,
+`okfkb update`, `okfkb validate`. See the
+[KB Commands Reference](../../docs/source/reference/kb-commands.md) for full details.
+
 ## Python API
 
 ```python

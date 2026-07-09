@@ -10,6 +10,10 @@ okfkb install-skills [PATH]    # Install skills and guidelines
 okfkb new-finding [PATH]       # Record a new Finding
 okfkb update [PATH]            # Regenerate indexes and lint frontmatter
 okfkb validate [PATH]          # Validate bundle (strict mode)
+okfkb search TEXT [PATH]       # Ranked keyword/fuzzy search
+okfkb get ID [PATH]            # Exact fetch of one node by id/path
+okfkb read TIER [PATH]         # Read a whole stable tier
+okfkb query EXPR [PATH]        # Structured query (filter DSL + graph traversal)
 ```
 
 `okfkb` is a standalone alias; `okf-schema kb <cmd>` and `okfkb <cmd>` are strictly equivalent.
@@ -228,6 +232,179 @@ my-kb/concepts/missing-frontmatter.md
 
 Validation failed: 0 error(s), 1 warning(s) (strict mode).
 ```
+
+## Navigating the KB
+
+`okfkb` exposes the knowledge base as a small set of **navigation tools**, so an agent (or
+human) can actively pull the right granularity instead of loading whole tier folders into
+context. The four commands mirror a natural drill-down:
+
+| Command | Role |
+|---------|------|
+| `okfkb search` | Coarse ranked retrieval — "where might the answer be?" |
+| `okfkb get` | Exact fetch of one node — "show me exactly this." |
+| `okfkb read` | Read a whole stable tier — "give me the settled understanding." |
+| `okfkb query` | Structured selection & graph traversal — "select by criteria / follow links." |
+
+A typical top-down navigation is: `read principles` → `read concepts` → `query`/`search` to
+locate supporting findings → `get` a specific finding for evidence-level detail.
+
+## `okfkb search`
+
+Ranked keyword / fuzzy search across node titles, `context`, `tags`, and body text. Returns a
+compact list of matches (tier, id, title, confidence) for follow-up `get`.
+
+```bash
+okfkb search TEXT [PATH] [OPTIONS]
+```
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TEXT` | **yes** | — | Free-text query. |
+| `PATH` | — | `.` (current directory) | KB root directory. |
+
+| Option | Description |
+|--------|-------------|
+| `--tier TIER` | Restrict search to one tier (`findings`, `concepts`, `principles`, …). Repeatable. |
+| `--limit N` | Maximum number of results (default: `10`). |
+| `--format table\|json\|paths` | Output format (default: `table`). |
+
+**Example:**
+
+```bash
+okfkb search "pll lock time" my-kb/ --tier findings --limit 5
+```
+
+## `okfkb get`
+
+Fetch a single node by its id or bundle-relative path and print it. This is the exact
+drill-down after a `search` or `query`.
+
+```bash
+okfkb get ID [PATH] [OPTIONS]
+```
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ID` | **yes** | — | Node id or bundle-relative path (e.g. `findings/2026.07.03-14.20-pll-temp-drift.md`). |
+| `PATH` | — | `.` (current directory) | KB root directory. |
+
+| Option | Description |
+|--------|-------------|
+| `--format md\|json\|frontmatter` | What to print: full markdown, JSON node, or frontmatter only (default: `md`). |
+
+**Example:**
+
+```bash
+okfkb get findings/2026.07.03-14.20-pll-temp-drift.md my-kb/ --format frontmatter
+```
+
+## `okfkb read`
+
+Read an entire stable tier at once — a fast top-down entry point. Concatenates the nodes of a
+tier (optionally filtered by status) so an agent can absorb the settled understanding before
+descending to evidence.
+
+```bash
+okfkb read TIER [PATH] [OPTIONS]
+```
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TIER` | **yes** | — | Tier name: `concepts`, `principles`, `structures`, `findings`, … |
+| `PATH` | — | `.` (current directory) | KB root directory. |
+
+| Option | Description |
+|--------|-------------|
+| `--status STATUS` | Only include nodes with this `status` (e.g. `active`, `resolved`). |
+| `--format md\|frontmatter\|titles` | Full markdown, frontmatter only, or a title index (default: `md`). |
+
+**Example:**
+
+```bash
+okfkb read concepts my-kb/ --status active
+okfkb read principles my-kb/ --format titles
+```
+
+## `okfkb query`
+
+Structured selection over the KB. `query` combines two complementary styles that can be used
+independently: a flat **filter DSL** for frontmatter, and an **arrow traversal** for following
+the `links` / `backlinks` / promotion graph (a lightweight, Cypher-inspired path syntax).
+
+```bash
+okfkb query EXPR [PATH] [OPTIONS]
+```
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `EXPR` | **yes** | — | A filter expression or a traversal path (see below). |
+| `PATH` | — | `.` (current directory) | KB root directory. |
+
+| Option | Description |
+|--------|-------------|
+| `--format table\|json\|paths` | Output format (default: `table`). |
+| `--limit N` | Maximum number of results. |
+
+### Filter DSL (flat frontmatter selection)
+
+Space-separated `key:value` or `key:op:value` terms, all **ANDed** together.
+
+| Key | Matches |
+|-----|---------|
+| `type` / `tier` | Node type / tier (`finding`, `concept`, `principle`, …) |
+| `confidence` | Ordinal: `low` < `medium` < `high` < `confirmed` — supports ranges |
+| `status` | `active`, `contradicted`, `resolved`, … |
+| `tag` | Membership in the `tags` array |
+| `title` | Substring / regex match on the title |
+| `since` / `until` | Timestamp bounds (ISO date) |
+
+| Operator | Meaning |
+|----------|---------|
+| `:` | equals (or *contains*, for list fields like `tags`) |
+| `>=` `<=` `>` `<` | ordered comparison (confidence, timestamps) |
+| `!=` | not equal |
+| `~` | substring / regex match |
+
+```bash
+# High-confidence, active PLL findings
+okfkb query "type:finding confidence:>=high tag:pll status:active"
+
+# Concepts whose title mentions "boot", created since July
+okfkb query "type:concept title:~boot since:2026-07-01"
+```
+
+### Arrow traversal (pocket-Cypher over the link graph)
+
+A start-set node (with an optional inline filter in `[...]`) followed by one or more hops.
+Each node label is a tier name; hops follow graph edges:
+
+| Hop | Follows |
+|-----|---------|
+| `->` | outgoing `links` |
+| `<-` | incoming `backlinks` |
+| `^` | promotion edge (`promoted_from`: finding → concept) |
+
+Inline filters accept `=`, `>=`, `<=`, `~` (e.g. `[tag=pll,confidence=high]`).
+
+```bash
+# From high-confidence PLL findings, walk up to concepts, then principles
+okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
+
+# Which findings back a concept about boot?
+okfkb query "concept[title~boot] <- finding"
+
+# Findings promoted into concepts
+okfkb query "finding[status=active] ^ concept"
+```
+
+The result is the set of nodes reached by the **final** hop, printed as a table (tier, id,
+title, confidence, status) or as `--format json` / `paths`.
+
+> **Evolving syntax.** The `query` grammar is intentionally small and may still
+> evolve. The filter DSL and arrow traversal cover the common day-to-day needs; a
+> fuller `MATCH … RETURN` grammar may be added later if the arrow form proves too
+> limiting.
 
 ## `okf-schema kb`
 

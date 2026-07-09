@@ -5,6 +5,11 @@ This tutorial shows how a team uses [OKF-KB](../explanation/okfkb-choices.md)
 to capture observations, investigate contradictions,
 and build stable knowledge over a multi-week debugging campaign.
 
+```{image} ../_static/okfkb-hw-debugging-overview.png
+:alt: OKF-KB debugging overview — debug sessions feed a stratified pyramid (findings → concepts → structures → principles), navigated with search/get/read/query
+:width: 100%
+```
+
 > This example demonstrates **agent-driven findings creation**, **knowledge promotion**,
 > and **team consensus** in a realistic HW debugging context.
 
@@ -534,6 +539,30 @@ Fix is planned, executed, and marked complete — all linked to the KB concepts 
 - **"What's still uncertain?"** → Read `findings/` with low confidence; read `experiments/` for open questions
 - **"What must we never do again?"** → Read `principles/`
 - **"What are we building?"** → Read `outcomes/`, sorted by status
+
+Instead of `cat`-ing folders by hand, the agent uses the KB **navigation tools** to pull
+exactly the right granularity:
+
+```bash
+# "What do we know for sure?" — read the settled tier
+okfkb read concepts --status resolved
+
+# "What must we never do again?"
+okfkb read principles --format titles
+
+# Find the high-confidence evidence behind the boot issue
+okfkb query "type:finding confidence:>=high tag:pll status:active"
+
+# Walk the graph: from the PLL findings up to the concept and the principle it produced
+okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
+
+# Which findings back the boot-timing concept?
+okfkb query "concept[title~boot] <- finding"
+
+# Coarse search, then drill into one exact node
+okfkb search "pll lock time" --tier findings
+okfkb get findings/2026.07.03-14.20-pll-temp-drift.md
+```
 
 **One week later**, a new engineer joins. They read:
 

@@ -1,5 +1,9 @@
 ## Unreleased
 
+## v0.7.1 (2026-07-06)
+
+## v0.7.0 (2026-07-06)
+
 ### Feat
 
 - add validate-md command and restructure README with 3 use cases

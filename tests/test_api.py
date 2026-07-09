@@ -1427,3 +1427,283 @@ class TestUpdateBundle:
 
         with pytest.raises(NotADirectoryError):
             update_bundle(VALID_BUNDLE / "subdir" / "concept-a.md")
+
+
+# ---------------------------------------------------------------------------
+# rewrite_superseded_links
+# ---------------------------------------------------------------------------
+
+
+class TestRewriteSupersededLinks:
+    """Tests for rewrite_superseded_links."""
+
+    def test_no_superseded_docs_returns_empty(self, tmp_path: Path) -> None:
+        """Returns empty lists when no superseded documents exist."""
+        from okf_schema.api import rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "a.md").write_text(
+            "---\ntype: Finding\ntitle: A\nstatus: active\n---\n\n# A\n\n[B](b.md)\n",
+            encoding="utf-8",
+        )
+        (bundle / "b.md").write_text(
+            "---\ntype: Finding\ntitle: B\nstatus: active\n---\n\n# B\n",
+            encoding="utf-8",
+        )
+        rewrites, deferred = rewrite_superseded_links(bundle)
+        assert rewrites == []
+        assert deferred == []
+
+    def test_rewrites_link_to_superseded_doc(self, tmp_path: Path) -> None:
+        """Rewrites a body link from superseded doc to its replacement."""
+        from okf_schema.api import rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [new.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        (bundle / "new.md").write_text(
+            "---\ntype: Finding\ntitle: New\nstatus: active\n---\n\n# New\n",
+            encoding="utf-8",
+        )
+        (bundle / "source.md").write_text(
+            "---\ntype: Finding\ntitle: Source\n---\n\n# Source\n\nSee [Old](old.md).\n",
+            encoding="utf-8",
+        )
+        rewrites, deferred = rewrite_superseded_links(bundle)
+        assert len(rewrites) == 1
+        assert rewrites[0].source == "source.md"
+        assert rewrites[0].old_target == "old.md"
+        assert rewrites[0].new_target == "new.md"
+        text = (bundle / "source.md").read_text(encoding="utf-8")
+        assert "[Old](new.md)" in text
+        assert "old.md" not in text
+
+    def test_deferred_when_no_superseded_by(self, tmp_path: Path) -> None:
+        """Defers superseded doc without superseded_by field."""
+        from okf_schema.api import DeferredRewrite, rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        rewrites, deferred = rewrite_superseded_links(bundle)
+        assert rewrites == []
+        assert len(deferred) == 1
+        assert isinstance(deferred[0], DeferredRewrite)
+        assert deferred[0].superseded_doc == "old.md"
+        assert deferred[0].reason == "no_superseded_by"
+
+    def test_deferred_when_replacement_missing(self, tmp_path: Path) -> None:
+        """Defers superseded doc when replacement path does not exist."""
+        from okf_schema.api import rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [nonexistent.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        rewrites, deferred = rewrite_superseded_links(bundle)
+        assert rewrites == []
+        assert len(deferred) == 1
+        assert "replacement_not_found" in deferred[0].reason
+
+    def test_check_mode_does_not_modify_files(self, tmp_path: Path) -> None:
+        """check=True reports rewrites without modifying files."""
+        from okf_schema.api import rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        original = "---\ntype: Finding\ntitle: Source\n---\n\n# Source\n\nSee [Old](old.md).\n"
+        (bundle / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [new.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        (bundle / "new.md").write_text(
+            "---\ntype: Finding\ntitle: New\nstatus: active\n---\n\n# New\n",
+            encoding="utf-8",
+        )
+        (bundle / "source.md").write_text(original, encoding="utf-8")
+        rewrites, _ = rewrite_superseded_links(bundle, check=True)
+        assert len(rewrites) == 1
+        assert (bundle / "source.md").read_text(encoding="utf-8") == original
+
+    def test_rewrites_link_in_subdirectory(self, tmp_path: Path) -> None:
+        """Computes correct relative path for cross-directory links."""
+        from okf_schema.api import rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        findings = bundle / "findings"
+        findings.mkdir()
+        concepts = bundle / "concepts"
+        concepts.mkdir()
+        (findings / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [findings/new.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        (findings / "new.md").write_text(
+            "---\ntype: Finding\ntitle: New\nstatus: active\n---\n\n# New\n",
+            encoding="utf-8",
+        )
+        (concepts / "concept.md").write_text(
+            "---\ntype: Concept\ntitle: Concept\n---\n\n# Concept\n"
+            "\nSee [Old](../findings/old.md).\n",
+            encoding="utf-8",
+        )
+        rewrites, _ = rewrite_superseded_links(bundle)
+        assert len(rewrites) == 1
+        text = (concepts / "concept.md").read_text(encoding="utf-8")
+        assert "../findings/new.md" in text
+        assert "../findings/old.md" not in text
+
+    def test_nonexistent_path_raises(self) -> None:
+        """Raises FileNotFoundError for nonexistent bundle path."""
+        from okf_schema.api import rewrite_superseded_links
+
+        with pytest.raises(FileNotFoundError):
+            rewrite_superseded_links(VALID_BUNDLE / "does-not-exist")
+
+    def test_not_a_directory_raises(self) -> None:
+        """Raises NotADirectoryError when path is a file."""
+        from okf_schema.api import rewrite_superseded_links
+
+        with pytest.raises(NotADirectoryError):
+            rewrite_superseded_links(VALID_BUNDLE / "subdir" / "concept-a.md")
+
+
+class TestUpdateBundleSuperseded:
+    """Tests for update_bundle superseded-rewrite integration."""
+
+    def test_update_result_includes_rewrite_fields(self, tmp_path: Path) -> None:
+        """UpdateResult has superseded_rewrites and deferred_rewrites fields."""
+        from okf_schema.api import UpdateResult, update_bundle
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "concept.md").write_text(
+            "---\ntype: Concept\ntitle: C\n---\n\n# C\n",
+            encoding="utf-8",
+        )
+        result = update_bundle(bundle)
+        assert isinstance(result, UpdateResult)
+        assert hasattr(result, "superseded_rewrites")
+        assert hasattr(result, "deferred_rewrites")
+        assert isinstance(result.superseded_rewrites, list)
+        assert isinstance(result.deferred_rewrites, list)
+
+    def test_update_rewrites_superseded_then_lints(self, tmp_path: Path) -> None:
+        """update_bundle rewrites superseded links before linting."""
+        from okf_schema.api import update_bundle
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [new.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        (bundle / "new.md").write_text(
+            "---\ntype: Finding\ntitle: New\nstatus: active\n---\n\n# New\n",
+            encoding="utf-8",
+        )
+        (bundle / "source.md").write_text(
+            "---\ntype: Finding\ntitle: Source\n---\n\n# Source\n\nSee [Old](old.md).\n",
+            encoding="utf-8",
+        )
+        result = update_bundle(bundle)
+        assert len(result.superseded_rewrites) == 1
+        assert result.deferred_rewrites == []
+        text = (bundle / "source.md").read_text(encoding="utf-8")
+        assert "[Old](new.md)" in text
+
+    def test_rewrite_skips_reserved_files_as_source(self, tmp_path: Path) -> None:
+        """Reserved files (index.md) are not processed as link sources."""
+        from okf_schema.api import rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [new.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        (bundle / "new.md").write_text(
+            "---\ntype: Finding\ntitle: New\nstatus: active\n---\n\n# New\n",
+            encoding="utf-8",
+        )
+        (bundle / "index.md").write_text(
+            "# Index\n\n[Old](old.md)\n",
+            encoding="utf-8",
+        )
+        rewrites, _ = rewrite_superseded_links(bundle)
+        # index.md should not have been processed as a source
+        assert all(r.source != "index.md" for r in rewrites)
+        index_text = (bundle / "index.md").read_text(encoding="utf-8")
+        assert "old.md" in index_text  # unchanged
+
+    def test_rewrite_source_without_frontmatter(self, tmp_path: Path) -> None:
+        """Source docs without frontmatter have their body links rewritten."""
+        from okf_schema.api import rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [new.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        (bundle / "new.md").write_text(
+            "---\ntype: Finding\ntitle: New\nstatus: active\n---\n\n# New\n",
+            encoding="utf-8",
+        )
+        # Source doc with no frontmatter but has a link
+        (bundle / "source.md").write_text(
+            "# Source\n\nSee [Old](old.md).\n",
+            encoding="utf-8",
+        )
+        rewrites, _ = rewrite_superseded_links(bundle)
+        assert len(rewrites) == 1
+        text = (bundle / "source.md").read_text(encoding="utf-8")
+        assert "[Old](new.md)" in text
+
+    def test_rewrite_body_with_non_matching_links(self, tmp_path: Path) -> None:
+        """Non-superseded links in body are preserved unchanged."""
+        from okf_schema.api import rewrite_superseded_links
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [new.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        (bundle / "new.md").write_text(
+            "---\ntype: Finding\ntitle: New\nstatus: active\n---\n\n# New\n",
+            encoding="utf-8",
+        )
+        (bundle / "other.md").write_text(
+            "---\ntype: Finding\ntitle: Other\nstatus: active\n---\n\n# Other\n",
+            encoding="utf-8",
+        )
+        (bundle / "source.md").write_text(
+            "---\ntype: Finding\ntitle: Source\n---\n\n# Source\n"
+            "\n[Old](old.md) and [Other](other.md).\n",
+            encoding="utf-8",
+        )
+        rewrites, _ = rewrite_superseded_links(bundle)
+        assert len(rewrites) == 1
+        assert rewrites[0].old_target == "old.md"
+        text = (bundle / "source.md").read_text(encoding="utf-8")
+        assert "[Old](new.md)" in text
+        assert "[Other](other.md)" in text  # preserved

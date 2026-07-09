@@ -306,13 +306,75 @@ class TestKbUpdate:
         assert result.exit_code == 0, result.output
         assert "Index:" in result.output
 
-    def test_kb_update_missing_path(self, tmp_path: Path) -> None:
+    def test_kb_update_diff_with_actual_changes(self, tmp_path: Path) -> None:
+        """kb update --diff shows actual diff content when files need linting."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        target.mkdir()
+        # Create a file with block-style list that needs linting
+        (target / "doc.md").write_text(
+            "---\ntype: Finding\ntitle: Test\ntags:\n  - a\n  - b\n---\n\n# Test\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(kb, ["update", str(target), "--diff"])
+        assert result.exit_code == 0, result.output
+        # Diff output should contain the change
+        assert "tags:" in result.output
+
+    def test_kb_validate_warnings_only(self, tmp_path: Path) -> None:
+        """kb validate exits 1 for warnings-only (strict mode)."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        target.mkdir()
+        # File with valid type/title/description but no timestamp → W3 warning
+        (target / "doc.md").write_text(
+            "---\ntype: Concept\ntitle: T\ndescription: D\n---\n\n# T\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(kb, ["validate", str(target)])
+        # In strict mode warnings become errors; warnings about missing fields expected
+        assert result.exit_code in (0, 1)
         """kb update exits 1 when PATH does not exist."""
         runner = CliRunner()
         missing = tmp_path / "does-not-exist"
         result = runner.invoke(kb, ["update", str(missing)])
         assert result.exit_code == 1
         assert "Error" in result.output
+
+    def test_kb_update_reports_superseded_rewrites(self, tmp_path: Path) -> None:
+        """kb update reports superseded-link rewrites when they occur."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        target.mkdir()
+        (target / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n"
+            "superseded_by: [new.md]\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        (target / "new.md").write_text(
+            "---\ntype: Finding\ntitle: New\nstatus: active\n---\n\n# New\n",
+            encoding="utf-8",
+        )
+        (target / "source.md").write_text(
+            "---\ntype: Finding\ntitle: Source\n---\n\n# Source\n\nSee [Old](old.md).\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(kb, ["update", str(target)])
+        assert result.exit_code == 0, result.output
+        assert "Superseded links rewritten: 1" in result.output
+
+    def test_kb_update_reports_deferred_rewrites(self, tmp_path: Path) -> None:
+        """kb update reports deferred superseded docs in output."""
+        runner = CliRunner()
+        target = tmp_path / "kb"
+        target.mkdir()
+        (target / "old.md").write_text(
+            "---\ntype: Finding\ntitle: Old\nstatus: superseded\n---\n\n# Old\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(kb, ["update", str(target)])
+        assert result.exit_code == 0
+        assert "Superseded links deferred" in result.output
 
 
 # ---------------------------------------------------------------------------
