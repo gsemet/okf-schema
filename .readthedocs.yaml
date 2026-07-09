@@ -10,6 +10,9 @@ build:
   jobs:
     post_checkout:
       - git fetch --tags
+      - git lfs install
+      - git lfs fetch
+      - git lfs checkout
     pre_build:
       - uv run cz changelog
 

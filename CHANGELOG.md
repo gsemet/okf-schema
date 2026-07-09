@@ -1,4 +1,8 @@
-## Unreleased
+## v0.8.0 (2026-07-10)
+
+### Feat
+
+- **okfkb**: navigation cmds, superseded-link, gardening skill
 
 ## v0.7.1 (2026-07-06)
 
