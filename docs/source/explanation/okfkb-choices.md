@@ -59,6 +59,11 @@ In okfkb, every document has a *tier* that reflects its maturity and confidence 
 The key insight: **each tier answers a different question an agent might ask** —
 "What did we observe?", "What's stable enough to rely on?", "What's still open?", "What must we build?"
 
+```{image} ../_static/okfkb-hw-debugging-overview.png
+:alt: OKF-KB debugging overview — debug sessions feed a stratified pyramid (findings → concepts → structures → principles), navigated with search/get/read/query
+:width: 100%
+```
+
 ---
 
 ## Findings: Agent-Driven Discovery
@@ -348,6 +353,55 @@ The tier folders (`findings/`, `concepts/`, `principles/`, etc.) are opinionated
 
 This enables fast filtering: "Show me only stable concepts" vs. "Show me what we're still investigating"
 without parsing a single document body.
+
+---
+
+## Active Navigation: `search` / `get` / `read` / `query`
+
+A stratified, linked KB is only half the story — the other half is *how* an agent consumes it.
+Rather than dumping whole tier folders into a context window, okfkb exposes the KB as a small
+set of **navigation tools**, so the agent actively pulls the right granularity:
+
+- **`search`** — coarse ranked retrieval ("where might the answer be?")
+- **`get`** — exact fetch of one node ("show me exactly this")
+- **`read`** — read a whole stable tier ("give me the settled understanding")
+- **`query`** — structured selection and graph traversal ("select by criteria / follow links")
+
+This mirrors how the tiers already answer different questions: an agent typically `read`s the
+upper, stable tiers (`principles`, `concepts`) for the big picture, `query`s or `search`es to
+locate relevant nodes, and only `get`s a specific finding when it needs evidence-level detail.
+The design goal is the same as everywhere else in okfkb — **let the agent decide depth cheaply**,
+descending to raw findings only when the higher tiers are insufficient.
+
+### Why a two-flavor `query`
+
+`query` deliberately supports two small styles instead of one large query language:
+
+- A **filter DSL** over flat frontmatter (`type:finding confidence:>=high tag:pll`) — this
+  covers the overwhelmingly common case: "select nodes by tier, confidence, status, and tags."
+  Because confidence is *ordinal* (`low` < `medium` < `high` < `confirmed`), range operators
+  like `>=high` fall out naturally.
+- An **arrow traversal** (`finding[tag=pll] -> concept -> principle`) — a pocket-Cypher over
+  the `links` / `backlinks` / `promoted_from` edges that already exist in frontmatter. `->`
+  follows `links`, `<-` follows `backlinks`, `^` follows promotion. This turns the implicit
+  knowledge graph into something an agent can *walk* ("from these findings, what concepts did
+  they promote into, and what principles govern them?").
+
+We chose this over a full `MATCH … RETURN` grammar (Cypher) or SQL `SELECT` because the two
+lightweight forms cover ~80% of real navigation needs, require no graph database, and stay
+readable to non-developers. The grammar is intentionally small and **experimental** — if the
+arrow form proves too limiting, a fuller path grammar can be layered on later without changing
+the underlying frontmatter model.
+
+### Why tools, not just retrieval
+
+The alternative — a single "retrieve relevant context" step that pre-selects evidence for the
+agent — leaves the agent as a passive consumer of whatever the retriever picked. Exposing the
+tiers as explicit tools keeps the agent in control of *which* abstraction level to consult and
+*when it has enough*, which matches how these files are meant to be read: front-loaded metadata
+first, prose only where needed. This active-navigation stance is corroborated by recent memory
+research (e.g. NapMem's finding that tool-based, multi-granularity navigation outperforms passive
+retrieval over the same sources — see `reference/`).
 
 ---
 

@@ -7,8 +7,9 @@ statistics, and index regeneration.
 
 from __future__ import annotations
 
+import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from okf_schema._internal.models import (
@@ -21,6 +22,7 @@ from okf_schema._internal.models import (
     SearchResult,
 )
 from okf_schema._internal.utils import (
+    MARKDOWN_LINK_RE,
     RESERVED_FILES,
     collect_markdown_files,
     get_concept_info,
@@ -37,11 +39,30 @@ from okf_schema.validator import validate_markdown_files as _validate_markdown_f
 
 
 @dataclass
+class SupersededRewrite:
+    """A link in a document rewritten from a superseded target to its replacement."""
+
+    source: str
+    old_target: str
+    new_target: str
+
+
+@dataclass
+class DeferredRewrite:
+    """A superseded document whose backlinks could not be automatically rewritten."""
+
+    superseded_doc: str
+    reason: str
+
+
+@dataclass
 class UpdateResult:
     """Result of updating an OKF bundle (index + lint)."""
 
     index_updates: list[IndexUpdate]
     lint_results: list[FormattedResult]
+    superseded_rewrites: list[SupersededRewrite] = field(default_factory=list)
+    deferred_rewrites: list[DeferredRewrite] = field(default_factory=list)
 
 
 def _resolve_bundle(bundle_path: str | Path) -> Path:
@@ -352,6 +373,151 @@ def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:
     return updates
 
 
+def _rewrite_body_links(
+    body: str,
+    source_path: Path,
+    bundle: Path,
+    redirect_map: dict[Path, Path],
+) -> tuple[str, list[tuple[str, str]]]:
+    """Rewrite superseded link targets in a markdown body.
+
+    For every internal link whose resolved absolute path appears in
+    *redirect_map*, replaces the link target with a path relative to
+    *source_path* that points to the redirect destination.
+
+    Returns:
+        Tuple of (new_body, rewrites) where *rewrites* is a list of
+        ``(old_bundle_rel, new_bundle_rel)`` pairs for each link replaced.
+    """
+    rewrites: list[tuple[str, str]] = []
+    parts: list[str] = []
+    prev_end = 0
+
+    for match in MARKDOWN_LINK_RE.finditer(body):
+        link_text = match.group(1)
+        link_target = match.group(2)
+        resolved = resolve_link(link_target, source_path, bundle)
+        if resolved is None or resolved not in redirect_map:
+            parts.append(body[prev_end : match.end()])
+            prev_end = match.end()
+            continue
+
+        replacement_abs = redirect_map[resolved]
+        old_rel = resolved.relative_to(bundle).as_posix()
+        new_rel = replacement_abs.relative_to(bundle).as_posix()
+
+        new_target = os.path.relpath(str(replacement_abs), str(source_path.parent))
+        new_target = new_target.replace(os.sep, "/")
+
+        prefix = "!" if match.group(0).startswith("!") else ""
+        new_link = f"{prefix}[{link_text}]({new_target})"
+
+        parts.append(body[prev_end : match.start()])
+        parts.append(new_link)
+        prev_end = match.end()
+
+        rewrites.append((old_rel, new_rel))
+
+    parts.append(body[prev_end:])
+    return ("".join(parts), rewrites) if rewrites else (body, [])
+
+
+def rewrite_superseded_links(
+    bundle_path: str | Path,
+    check: bool = False,
+) -> tuple[list[SupersededRewrite], list[DeferredRewrite]]:
+    """Rewrite markdown body links pointing to superseded documents.
+
+    Scans all documents for ``status: superseded`` with a ``superseded_by``
+    field.  For each such document, every other document whose markdown body
+    links to it has that link rewritten to the first ``superseded_by`` path.
+
+    The ``links`` / ``backlinks`` frontmatter fields are *not* updated here;
+    they are refreshed by the subsequent :func:`lint_bundle` call that
+    :func:`update_bundle` performs automatically.
+
+    Args:
+        bundle_path: Path to the OKF bundle directory.
+        check: If ``True``, report rewrites without modifying files.
+
+    Returns:
+        A tuple ``(rewrites, deferred)`` where *rewrites* lists performed
+        replacements and *deferred* lists superseded docs whose links could
+        not be automatically updated (missing or non-existent ``superseded_by``).
+
+    Raises:
+        FileNotFoundError: When *bundle_path* does not exist.
+        NotADirectoryError: When *bundle_path* is not a directory.
+    """
+    bundle = _resolve_bundle(bundle_path)
+    redirect_map: dict[Path, Path] = {}
+    deferred: list[DeferredRewrite] = []
+
+    for path in collect_markdown_files(bundle):
+        if path.name in RESERVED_FILES:
+            continue
+        text = path.read_text(encoding="utf-8")
+        fm_text, _body = extract_frontmatter(text)
+        if fm_text is None:
+            continue
+        fm = parse_yaml(fm_text)
+        if not isinstance(fm, dict) or fm.get("status") != "superseded":
+            continue
+
+        rel = path.relative_to(bundle).as_posix()
+        superseded_by = fm.get("superseded_by")
+
+        if not superseded_by or not isinstance(superseded_by, list):
+            deferred.append(DeferredRewrite(superseded_doc=rel, reason="no_superseded_by"))
+            continue
+
+        replacement_rel = str(superseded_by[0])
+        replacement_abs = (bundle / replacement_rel).resolve()
+
+        if not replacement_abs.exists():
+            deferred.append(
+                DeferredRewrite(
+                    superseded_doc=rel,
+                    reason=f"replacement_not_found:{replacement_rel}",
+                )
+            )
+            continue
+
+        redirect_map[path.resolve()] = replacement_abs
+
+    rewrites: list[SupersededRewrite] = []
+
+    if not redirect_map:
+        return rewrites, deferred
+
+    for source_path in collect_markdown_files(bundle):
+        if source_path.name in RESERVED_FILES:
+            continue
+        text = source_path.read_text(encoding="utf-8")
+        fm_text, body = extract_frontmatter(text)
+
+        new_body, doc_rewrites = _rewrite_body_links(
+            body, source_path.resolve(), bundle.resolve(), redirect_map
+        )
+        if not doc_rewrites:
+            continue
+
+        source_rel = source_path.relative_to(bundle).as_posix()
+        for old_rel, new_rel in doc_rewrites:
+            rewrites.append(
+                SupersededRewrite(source=source_rel, old_target=old_rel, new_target=new_rel)
+            )
+
+        if not check:
+            if fm_text is not None:
+                new_text = f"---\n{fm_text.strip()}\n---\n{new_body}"
+            else:
+                new_text = new_body
+            source_path.write_text(new_text, encoding="utf-8")
+
+    return rewrites, deferred
+
+
 def update_bundle(
     bundle_path: str | Path,
     check: bool = False,
@@ -360,9 +526,13 @@ def update_bundle(
 ) -> UpdateResult:
     """Regenerate indexes and lint frontmatter in an OKF bundle.
 
-    Combines :func:`index_bundle` and :func:`lint_bundle` into a single
-    operation.  This is the recommended command for keeping a knowledge
-    base up to date after edits.
+    Combines :func:`rewrite_superseded_links`, :func:`index_bundle`, and
+    :func:`lint_bundle` into a single operation.  This is the recommended
+    command for keeping a knowledge base up to date after edits.
+
+    The superseded-link rewriting pass runs first so that the subsequent
+    lint pass can update the ``links`` / ``backlinks`` frontmatter to
+    reflect the rewritten targets.
 
     Args:
         bundle_path: Path to the OKF bundle directory.
@@ -372,16 +542,22 @@ def update_bundle(
             frontmatter fields based on markdown body content.
 
     Returns:
-        An :class:`UpdateResult` with index and lint results.
+        An :class:`UpdateResult` with index, lint, and rewrite results.
 
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
         NotADirectoryError: When *bundle_path* is not a directory.
     """
     bundle = _resolve_bundle(bundle_path)
+    superseded_rewrites, deferred_rewrites = rewrite_superseded_links(bundle, check=check)
     index_updates = index_bundle(bundle)
     lint_results = lint_bundle(bundle, check=check, diff=diff, links=links)
-    return UpdateResult(index_updates=index_updates, lint_results=lint_results)
+    return UpdateResult(
+        index_updates=index_updates,
+        lint_results=lint_results,
+        superseded_rewrites=superseded_rewrites,
+        deferred_rewrites=deferred_rewrites,
+    )
 
 
 def search_bundle(bundle_path: str | Path, query: str) -> list[SearchResult]:

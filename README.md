@@ -164,8 +164,12 @@ okfkb new-finding \
   --title "AI agents improve coding speed" \
   --confidence confirmed
 
-# Explore KB structure
-okf-schema list --path my-knowledge-base/findings
+# Navigate the KB (agent-native memory tools)
+okfkb search "cache eviction"            # ranked keyword search
+okfkb get findings/2026.07.04-14.30-...  # exact fetch of one node
+okfkb read concepts                      # read a whole stable tier
+okfkb query "type:finding confidence:>=high tag:cache"      # filter DSL
+okfkb query "finding[tag=cache] -> concept -> principle"    # graph traversal
 ```
 
 **For full KB documentation**, see the [OKF-KB Design Choices](https://okf-schema.readthedocs.io/en/stable/explanation/okfkb-choices.html) and [HW Debugging Workflow Tutorial](https://okf-schema.readthedocs.io/en/stable/tutorials/okfkb-hw-debugging-workflow.html).
@@ -370,7 +374,32 @@ The `okfkb` binary is a standalone alias for `okf-schema kb` — both are equiva
 | `okfkb install-skills [PATH]` | Deploy bundled skills and guideline into a project; patch `AGENTS.md` |
 | `okfkb update [PATH]` | Regenerate indexes and lint frontmatter (index + lint in one step) |
 | `okfkb validate [PATH]` | Validate bundle with strict mode (warnings as errors) |
+| `okfkb search TEXT` | Ranked keyword/fuzzy search across the KB (optionally scoped `--tier`) |
+| `okfkb get ID` | Exact fetch of a single node by id or path |
+| `okfkb read TIER` | Read a whole stable tier (e.g. `concepts`, `principles`) |
+| `okfkb query EXPR` | Structured query: frontmatter filter DSL + graph traversal (see below) |
 | `okf-schema init NAME --pattern kb` | Same scaffold as `okfkb init` via the pattern registry |
+
+### Navigating the KB: `search` / `get` / `read` / `query`
+
+Beyond authoring, `okfkb` exposes the KB as a small set of **navigation tools** so an agent
+can actively pull the right granularity instead of loading whole folders:
+
+- **`search`** — coarse ranked retrieval across titles, context, tags, and body.
+- **`get`** — exact fetch of one node by id/path (the drill-down after a `search`).
+- **`read`** — read an entire stable tier at once (top-down entry, e.g. `read principles`).
+- **`query`** — structured selection combining two styles:
+  - **Filter DSL** (flat frontmatter): `key:value` / `key:op:value`, ANDed. Confidence is
+    ordinal, so ranges work:
+    ```bash
+    okfkb query "type:finding confidence:>=high tag:pll status:active"
+    ```
+  - **Arrow traversal** (a pocket-Cypher over `links` / `backlinks` / promotion edges):
+    `->` follows `links`, `<-` follows `backlinks`, `^` follows `promoted_from`:
+    ```bash
+    okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
+    okfkb query "concept[title~boot] <- finding"
+    ```
 
 **For full KB documentation and commands**, see the [OKF Knowledge Base reference](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html).
 

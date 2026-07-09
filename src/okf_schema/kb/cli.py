@@ -7,12 +7,14 @@ Provides the ``kb`` group and its ``init``, ``install-skills``,
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
 import click
 
 from okf_schema.api import update_bundle, validate_bundle
+from okf_schema.kb import navigate
 from okf_schema.kb.finding import new_finding as _new_finding
 from okf_schema.kb.install import install_kb
 from okf_schema.kb.scaffold import scaffold_kb
@@ -144,6 +146,18 @@ def update(
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
+    # Report superseded-link rewrites
+    if result.superseded_rewrites:
+        click.echo(f"Superseded links rewritten: {len(result.superseded_rewrites)}")
+        for rw in result.superseded_rewrites:
+            click.echo(f"  {rw.source}: {rw.old_target} → {rw.new_target}")
+    if result.deferred_rewrites:
+        click.echo(
+            f"Superseded links deferred (needs manual review): {len(result.deferred_rewrites)}"
+        )
+        for dr in result.deferred_rewrites:
+            click.echo(f"  {dr.superseded_doc}: {dr.reason}", err=True)
+
     # Report index updates
     updated = sum(1 for u in result.index_updates if u.action == "updated")
     created = sum(1 for u in result.index_updates if u.action == "created")
@@ -228,3 +242,184 @@ def validate(path: str) -> None:
             err=True,
         )
         sys.exit(1)
+
+
+def _node_to_dict(node: navigate.KbNode) -> dict:
+    """Serialise a :class:`KbNode` to a JSON-friendly dict."""
+    return {
+        "path": node.path,
+        "tier": node.tier,
+        "type": node.type,
+        "title": node.title,
+        "confidence": node.confidence,
+        "status": node.status,
+        "tags": node.tags,
+        "timestamp": node.timestamp,
+    }
+
+
+def _echo_node_table(nodes: list[navigate.KbNode]) -> None:
+    """Print a compact table of nodes (tier, confidence, status, title)."""
+    if not nodes:
+        click.echo("No matching nodes.")
+        return
+    for node in nodes:
+        conf = node.confidence or "-"
+        status = node.status or "-"
+        click.echo(f"{node.tier:<11} {conf:<9} {status:<12} {node.title}")
+        click.echo(f"            {node.path}")
+
+
+@kb.command()
+@click.argument("text")
+@click.argument("path", default=".", type=click.Path())
+@click.option(
+    "--tier",
+    "tiers",
+    multiple=True,
+    help="Restrict search to a tier (repeatable), e.g. --tier findings.",
+)
+@click.option("--limit", default=10, show_default=True, help="Maximum results.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json", "paths"]),
+    default="table",
+    show_default=True,
+    help="Output format.",
+)
+def search(
+    text: str,
+    path: str,
+    tiers: tuple[str, ...],
+    limit: int,
+    output_format: str,
+) -> None:
+    """Ranked keyword search across the KB bundle at PATH.
+
+    Matches TEXT against titles, tags, type, context, and body.
+    """
+    target = Path(path)
+    try:
+        hits = navigate.search(target, text, tiers=list(tiers) or None, limit=limit)
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if output_format == "json":
+        click.echo(
+            json.dumps(
+                [{**_node_to_dict(h.node), "score": h.score} for h in hits],
+                indent=2,
+            )
+        )
+        return
+    if output_format == "paths":
+        for hit in hits:
+            click.echo(hit.node.path)
+        return
+    _echo_node_table([h.node for h in hits])
+
+
+@kb.command()
+@click.argument("node_id")
+@click.argument("path", default=".", type=click.Path())
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["md", "json", "frontmatter"]),
+    default="md",
+    show_default=True,
+    help="What to print.",
+)
+def get(node_id: str, path: str, output_format: str) -> None:
+    """Fetch a single node by id or bundle-relative path from PATH."""
+    target = Path(path)
+    try:
+        node = navigate.get(target, node_id)
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if output_format == "json":
+        click.echo(json.dumps({**_node_to_dict(node), "body": node.body}, indent=2))
+        return
+    if output_format == "frontmatter":
+        click.echo(json.dumps(node.frontmatter, indent=2, default=str))
+        return
+    click.echo(f"# {node.title}  ({node.path})\n")
+    click.echo(node.body.strip())
+
+
+@kb.command()
+@click.argument("tier")
+@click.argument("path", default=".", type=click.Path())
+@click.option("--status", default=None, help="Only include nodes with this status.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["md", "frontmatter", "titles"]),
+    default="md",
+    show_default=True,
+    help="Output format.",
+)
+def read(tier: str, path: str, status: str | None, output_format: str) -> None:
+    """Read a whole stable TIER at once from the KB bundle at PATH."""
+    target = Path(path)
+    try:
+        nodes = navigate.read_tier(target, tier, status=status)
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if not nodes:
+        click.echo("No matching nodes.")
+        return
+
+    if output_format == "titles":
+        for node in nodes:
+            click.echo(f"{node.path}\t{node.title}")
+        return
+    if output_format == "frontmatter":
+        click.echo(json.dumps([_node_to_dict(n) for n in nodes], indent=2, default=str))
+        return
+    for node in nodes:
+        click.echo(f"# {node.title}  ({node.path})\n")
+        click.echo(node.body.strip())
+        click.echo("\n---\n")
+
+
+@kb.command()
+@click.argument("expr")
+@click.argument("path", default=".", type=click.Path())
+@click.option("--limit", default=None, type=int, help="Maximum results.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json", "paths"]),
+    default="table",
+    show_default=True,
+    help="Output format.",
+)
+def query(expr: str, path: str, limit: int | None, output_format: str) -> None:
+    """Run a structured query over the KB bundle at PATH.
+
+    EXPR is either a filter expression (e.g.
+    "type:finding confidence:>=high tag:pll") or an arrow-traversal path
+    (e.g. "finding[tag=pll] -> concept -> principle").
+    """
+    target = Path(path)
+    try:
+        nodes = navigate.query(target, expr, limit=limit)
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if output_format == "json":
+        click.echo(json.dumps([_node_to_dict(n) for n in nodes], indent=2))
+        return
+    if output_format == "paths":
+        for node in nodes:
+            click.echo(node.path)
+        return
+    _echo_node_table(nodes)
