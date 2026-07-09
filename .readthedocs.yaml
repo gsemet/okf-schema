@@ -12,7 +12,8 @@ build:
       - git fetch --tags
       # Download and uncompress git-lfs binary
       - wget https://github.com/git-lfs/git-lfs/releases/download/v3.6.1/git-lfs-linux-amd64-v3.6.1.tar.gz
-      - tar xvfz git-lfs-linux-amd64-v3.6.1.tar.gz git-lfs
+      - tar xvfz git-lfs-linux-amd64-v3.6.1.tar.gz
+      - cp git-lfs-*/git-lfs ./git-lfs
       # Configure LFS to use the downloaded binary
       - git config filter.lfs.process "`pwd`/git-lfs filter-process"
       - git config filter.lfs.smudge "`pwd`/git-lfs smudge -- %f"
