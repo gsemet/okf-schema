@@ -12,4 +12,5 @@ migrate-existing-docs
 lint-before-commit
 bootstrap-knowledge-base
 setup-okfkb
+maintain-okfkb-with-skills
 ```
