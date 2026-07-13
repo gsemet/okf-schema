@@ -11,7 +11,9 @@ venue: arXiv
 url: https://arxiv.org/abs/2302.04761
 tags: [tool-use, self-supervised, agents]
 bibtex_key: schick-2023-toolformer
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: [concepts/function-calling.md, concepts/react-pattern.md]
 backlinks: [concepts/function-calling.md, concepts/react-pattern.md]
 ---

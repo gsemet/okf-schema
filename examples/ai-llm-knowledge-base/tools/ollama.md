@@ -10,7 +10,9 @@ language: Go
 maturity: beta
 url: https://ollama.com
 tags: [local-llm, inference, cli]
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: [concepts/function-calling.md, concepts/rag.md]
 backlinks: []
 ---

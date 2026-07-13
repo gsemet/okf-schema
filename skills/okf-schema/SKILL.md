@@ -12,13 +12,14 @@ metadata:
 
 ## Overview
 
-[OKF (Open Knowledge Format)](./references/okf-v0.1.md) is a markdown-based knowledge format where each concept is a markdown file with YAML frontmatter. An OKF bundle is valid if it follows the structural rules defined in the OKF specification: reserved files (`index.md`, `log.md`), YAML frontmatter delimiters, relative markdown links, and so on.
+[OKF (Open Knowledge Format)](./references/okf-v0.2.md) is a markdown-based knowledge format where each concept is a markdown file with YAML frontmatter. An OKF bundle is valid if it follows the structural rules defined in the OKF specification: reserved files (`index.md`, `log.md`), YAML frontmatter delimiters, relative markdown links, and so on.
 
 `okf-schema` is a **validator and toolkit layered on top of OKF**. It does not change the OKF format; it adds:
 
 - **JSONSchema validation** of frontmatter via auto-discovered `_schema/` definitions
 - **Bundle integrity checks** (broken links, missing `index.md`, malformed `log.md`, reserved-file violations)
 - **Linting** of frontmatter: flattens nested lists and converts block-style to inline while preserving YAML comments
+- **OKF 0.2 provenance/trust/lifecycle** validation (E8-E10, W8-W13)
 - **Bundle management** via CLI and Python API: init, list, show, stats, index
 
 In other words: **all `okf-schema` bundles are OKF bundles, but not all OKF bundles need `okf-schema`.** You can author plain OKF without schemas, then opt into validation later by adding a `_schema/` directory.

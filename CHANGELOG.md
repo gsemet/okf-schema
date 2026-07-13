@@ -1,3 +1,29 @@
+## Unreleased
+
+### Feat
+
+- **okf**: [B] implement OKF 0.2 provenance, trust, and lifecycle
+
+## v0.9.0 (2026-07-13)
+
+### Feat
+
+- **okfkb**: add agent-guided knowledge maintenance
+
+## v0.8.3 (2026-07-10)
+
+### Fix
+
+- bad rtd docs
+
+## v0.8.2 (2026-07-10)
+
+### Fix
+
+- apply readthedocs lfs fix
+
+## v0.8.1 (2026-07-10)
+
 ## v0.8.0 (2026-07-10)
 
 ### Feat

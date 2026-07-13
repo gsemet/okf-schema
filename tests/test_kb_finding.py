@@ -82,10 +82,10 @@ class TestNewFindingHappyPath:
         assert "description:" in content
         assert "confidence: medium" in content
         assert "context:" in content
-        assert "timestamp:" in content
+        assert "generated:" in content
         assert "links:" in content
         assert "backlinks:" in content
-        assert "status: active" in content
+        assert "kb_status: active" in content
 
     def test_description_defaults_to_title(self, tmp_path: Path) -> None:
         """description mirrors title when not provided."""

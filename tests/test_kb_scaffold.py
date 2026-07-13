@@ -115,13 +115,13 @@ class TestIndexMdContent:
         assert "okf_version" in fm
 
     def test_index_okf_version_value(self, tmp_path: Path) -> None:
-        """index.md okf_version is '0.1'."""
+        """index.md okf_version is '0.2'."""
         target = tmp_path / "kb"
         scaffold_kb(target)
         content = (target / "index.md").read_text(encoding="utf-8")
         parts = content.split("---")
         fm = yaml.safe_load(parts[1])
-        assert fm["okf_version"] == "0.1"
+        assert fm["okf_version"] == "0.2"
 
 
 # ---------------------------------------------------------------------------

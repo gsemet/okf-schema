@@ -11,7 +11,9 @@ venue: NeurIPS
 url: https://arxiv.org/abs/2201.11903
 tags: [chain-of-thought, reasoning, prompting]
 bibtex_key: wei-2022-cot
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: [concepts/react-pattern.md]
 backlinks: []
 ---

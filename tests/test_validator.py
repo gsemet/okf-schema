@@ -317,7 +317,9 @@ class TestValidateConcept:
             "title: Test\n"
             "description: A test\n"
             "type: concept\n"
-            "timestamp: 2024-01-01\n"
+            "generated:\n"
+            '  at: "2024-01-01T00:00:00Z"\n'
+            "  by: bot:test\n"
             "---\n\n"
             "# Test\n"
         )

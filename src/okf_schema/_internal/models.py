@@ -76,6 +76,7 @@ class ConceptSummary:
     path: str
     type: str
     title: str
+    stale: bool = False
 
 
 @dataclass
@@ -84,6 +85,8 @@ class ConceptDetail:
 
     frontmatter: dict
     body: str
+    trust_tier: str = "unverified"
+    stale: bool = False
 
 
 @dataclass

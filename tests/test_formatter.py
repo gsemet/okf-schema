@@ -519,3 +519,63 @@ class TestLintBundleLinks:
         lint_bundle(bundle, links=True)
         concept_text = (bundle / "concept.md").read_text(encoding="utf-8")
         assert "backlinks: []" in concept_text
+
+
+# ---------------------------------------------------------------------------
+# OKF 0.2: list-of-mapping field exemptions
+# ---------------------------------------------------------------------------
+
+
+class TestLintFrontmatterOkf2Exemptions:
+    """OKF 0.2 list-of-mapping fields must not be inline-forced."""
+
+    def test_sources_block_style_preserved(self) -> None:
+        """Block-style `sources` list-of-mapping is NOT converted to inline."""
+        text = (
+            "---\ntype: concept\n"
+            "sources:\n"
+            "  - resource: https://example.com/\n"
+            "    id: ref-1\n"
+            "---\n\n# Body\n"
+        )
+        result = lint_frontmatter(text)
+        # sources should remain block-style (not inlined to flow-style)
+        assert result is not None
+        assert "sources:" in result
+        # The list must not be collapsed into a single line
+        assert "- resource" in result
+
+    def test_verified_block_style_preserved(self) -> None:
+        """Block-style `verified` list-of-mapping is NOT converted to inline."""
+        text = (
+            "---\ntype: concept\n"
+            "verified:\n"
+            "  - by: human:alice\n"
+            "    at: '2026-01-01'\n"
+            "---\n\n# Body\n"
+        )
+        result = lint_frontmatter(text)
+        assert result is not None
+        assert "verified:" in result
+        assert "- by: human:alice" in result
+
+    def test_scalar_lists_still_inlined(self) -> None:
+        """Regular scalar lists (tags) are still converted to inline."""
+        text = "---\ntype: concept\ntags:\n  - a\n  - b\n---\n\n# Body\n"
+        result = lint_frontmatter(text)
+        assert result is not None
+        assert "tags: [a, b]" in result
+
+    def test_generated_dict_not_altered(self) -> None:
+        """Block-style `generated` dict is preserved (not a list, not inlined)."""
+        text = (
+            "---\ntype: concept\n"
+            "generated:\n"
+            "  at: '2026-01-01T00:00:00Z'\n"
+            "  by: bot:test\n"
+            "---\n\n# Body\n"
+        )
+        result = lint_frontmatter(text)
+        assert result is not None
+        # generated dict should still be present (block-style dict preserved)
+        assert "generated:" in result

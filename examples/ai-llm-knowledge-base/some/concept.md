@@ -10,7 +10,9 @@ author_email: alice@example.com
 complexity: intermediate
 tags: [prompting, reasoning, llm]
 related_tools: [OpenAI-API, LangChain]
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: []
 backlinks: []
 ---

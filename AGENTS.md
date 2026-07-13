@@ -2,6 +2,9 @@
 
 **okf-schema**: A CLI tool and Python library for working with OKF (Open Knowledge Format) bundles — validating frontmatter metadata against JSONSchema, formatting while preserving comments, and managing bundle structure.
 
+This implementation targets **OKF 0.2** (provenance/trust/lifecycle). The OKF 0.2 specification
+is summarized in `skills/okf-schema/references/okf-v0.2.md`.
+
 Primary tech stack: Python 3.10+, Click, ruamel.yaml, jsonschema, UV
 
 ---

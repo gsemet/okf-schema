@@ -2,7 +2,9 @@
 title: Subdir Concept
 description: A valid concept in a subdirectory
 type: concept
-timestamp: 2024-01-15
+generated:
+  at: "2024-01-15T00:00:00Z"
+  by: bot:test
 ---
 
 # Subdir Concept

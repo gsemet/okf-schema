@@ -480,6 +480,25 @@ class TestListBundle:
         concepts = list_bundle(bundle)
         assert concepts == []
 
+    def test_non_stale_concept_has_stale_false(self) -> None:
+        """OKF 0.2: fresh concept has stale=False."""
+        concepts = list_bundle(VALID_BUNDLE)
+        assert all(not c.stale for c in concepts)
+
+    def test_stale_concept_has_stale_true(self, tmp_path: Path) -> None:
+        """OKF 0.2: concept with past stale_after has stale=True."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        subdir = bundle / "things"
+        subdir.mkdir()
+        (subdir / "stale.md").write_text(
+            "---\ntype: concept\ntitle: Stale\ndescription: Old\n"
+            'stale_after: "2000-01-01"\n---\n\n# Stale\n',
+            encoding="utf-8",
+        )
+        concepts = list_bundle(bundle)
+        assert any(c.stale for c in concepts)
+
 
 # ---------------------------------------------------------------------------
 # show_bundle
@@ -521,6 +540,47 @@ class TestShowBundle:
         detail = show_bundle(bundle, "no-fm.md")
         assert detail.frontmatter == {}
         assert "# No Frontmatter" in detail.body
+
+    def test_trust_tier_unverified_for_new_concept(self, tmp_path: Path) -> None:
+        """OKF 0.2: unverified concept has trust_tier='unverified'."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        subdir = bundle / "things"
+        subdir.mkdir()
+        (subdir / "c.md").write_text(
+            "---\ntype: concept\ntitle: T\ndescription: D\n---\n\n# T\n",
+            encoding="utf-8",
+        )
+        detail = show_bundle(bundle, "things/c.md")
+        assert detail.trust_tier == "unverified"
+        assert detail.stale is False
+
+    def test_trust_tier_human_reviewed(self, tmp_path: Path) -> None:
+        """OKF 0.2: human-verified concept has trust_tier='human-reviewed'."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        subdir = bundle / "things"
+        subdir.mkdir()
+        (subdir / "c.md").write_text(
+            "---\ntype: concept\ntitle: T\ndescription: D\n"
+            "verified:\n  - by: human:alice\n    at: '2026-01-01'\n---\n\n# T\n",
+            encoding="utf-8",
+        )
+        detail = show_bundle(bundle, "things/c.md")
+        assert detail.trust_tier == "human-reviewed"
+
+    def test_stale_concept_detected(self, tmp_path: Path) -> None:
+        """OKF 0.2: concept with past stale_after is stale=True."""
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        subdir = bundle / "things"
+        subdir.mkdir()
+        (subdir / "c.md").write_text(
+            "---\ntype: concept\ntitle: T\ndescription: D\nstale_after: '2000-01-01'\n---\n\n# T\n",
+            encoding="utf-8",
+        )
+        detail = show_bundle(bundle, "things/c.md")
+        assert detail.stale is True
 
 
 # ---------------------------------------------------------------------------

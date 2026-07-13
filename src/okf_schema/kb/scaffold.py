@@ -45,7 +45,7 @@ SCHEMA_FILES: tuple[str, ...] = (
 
 _INDEX_TEMPLATE = """\
 ---
-okf_version: "0.1"
+okf_version: "0.2"
 links: []
 backlinks: []
 ---

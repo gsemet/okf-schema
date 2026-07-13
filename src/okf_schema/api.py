@@ -33,7 +33,7 @@ from okf_schema._internal.yaml import extract_frontmatter, parse_yaml
 from okf_schema.formatter import FormattedResult
 from okf_schema.formatter import format_bundle as _format_bundle
 from okf_schema.formatter import lint_bundle as _lint_bundle
-from okf_schema.validator import load_schema_database
+from okf_schema.validator import _derive_trust_tier, _is_stale, load_schema_database
 from okf_schema.validator import validate_bundle as _validate_bundle
 from okf_schema.validator import validate_markdown_files as _validate_markdown_files
 
@@ -255,7 +255,15 @@ def list_bundle(bundle_path: str | Path) -> list[ConceptSummary]:
             continue
         rel = path.relative_to(bundle).as_posix()
         info = get_concept_info(path)
-        results.append(ConceptSummary(path=rel, type=info.type, title=info.title))
+        # Determine staleness for OKF 0.2
+        stale = False
+        text = path.read_text(encoding="utf-8")
+        fm_text, _body = extract_frontmatter(text)
+        if fm_text is not None:
+            fm = parse_yaml(fm_text)
+            if isinstance(fm, dict):
+                stale = _is_stale(fm)
+        results.append(ConceptSummary(path=rel, type=info.type, title=info.title, stale=stale))
 
     results.sort(key=lambda c: c.path)
     return results
@@ -287,7 +295,10 @@ def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
         if parsed is not None:
             frontmatter = parsed
 
-    return ConceptDetail(frontmatter=frontmatter, body=body)
+    trust_tier = _derive_trust_tier(frontmatter)
+    stale = _is_stale(frontmatter)
+
+    return ConceptDetail(frontmatter=frontmatter, body=body, trust_tier=trust_tier, stale=stale)
 
 
 def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:

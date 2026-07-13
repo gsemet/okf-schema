@@ -5,7 +5,7 @@
     "title": { "type": "string" },
     "description": { "type": "string" },
     "type": { "type": "string", "const": "concept" },
-    "timestamp": { "type": "string" }
+    "generated": { "type": "object" }
   },
-  "required": ["type", "timestamp"]
+  "required": ["type", "generated"]
 }

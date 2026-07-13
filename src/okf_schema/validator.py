@@ -1,12 +1,25 @@
 """OKF bundle validation engine.
 
-Implements all conformance error (E1-E7) and best-practice warning (W1-W7)
+Implements conformance error (E1-E10) and best-practice warning (W1-W13)
 rules for validating OKF (Open Knowledge Format) bundles.
+
+OKF 0.2 additions (E8-E10, W8-W13):
+  E8  – `generated` block present but `at` field missing
+  E9  – `sources` entry missing required `resource` field
+  E10 – `verified` entry missing required `by` or `at` field
+  W8  – Deprecated `timestamp` field; use `generated.at` instead
+  W9  – Deprecated body `# Citations` section; use `sources` frontmatter
+  W10 – Malformed actor string in `verified[].by`
+  W11 – File is stale (`stale_after` date has passed)
+  W12 – Footnote `[^id]` with no matching `sources[].id`
+  W13 – Broken path in path-form `resource` or `sources[].resource`
 """
 
 from __future__ import annotations
 
 import json
+import re
+from datetime import date
 from pathlib import Path
 from typing import Any, cast
 
@@ -22,6 +35,15 @@ from okf_schema._internal.utils import (
     find_broken_links,
 )
 from okf_schema._internal.yaml import extract_frontmatter, make_yaml, parse_yaml
+
+# Matches OKF actor strings: <prefix>:<identifier>  e.g. human:alice, bot:ci
+_ACTOR_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*:.+$")
+# Matches Markdown footnote references [^id] in body text
+_FOOTNOTE_REF_RE = re.compile(r"\[\^([^\]]+)\]")
+# Matches Markdown footnote definitions [^id]: ...
+_FOOTNOTE_DEF_RE = re.compile(r"^\[\^([^\]]+)\]:", re.MULTILINE)
+# Matches body-level # Citations heading
+_CITATIONS_HEADING_RE = re.compile(r"^#{1,6}\s+Citations\s*$", re.MULTILINE | re.IGNORECASE)
 
 
 def _resolve_ref(ref_path: str, schema_db: Path, y: Any) -> dict | None:
@@ -201,6 +223,246 @@ def validate_against_schema(
     return errors
 
 
+def _derive_trust_tier(frontmatter: dict) -> str:
+    """Derive the OKF 0.2 trust tier from `verified` entries.
+
+    Returns one of: ``"unverified"``, ``"machine-confirmed"``, or
+    ``"human-reviewed"``.  Only well-formed actor strings contribute to
+    tier promotion; malformed entries are ignored (W10).
+    """
+    verified = frontmatter.get("verified")
+    if not verified:
+        return "unverified"
+
+    # Normalize bare mapping to one-element list
+    if isinstance(verified, dict):
+        verified = [verified]
+
+    if not isinstance(verified, list):
+        return "unverified"
+
+    has_machine = False
+    for entry in verified:
+        if not isinstance(entry, dict):
+            continue
+        by = entry.get("by")
+        if not isinstance(by, str) or not _ACTOR_RE.match(by):
+            continue  # malformed actor — skip for tier derivation
+        if by.startswith("human:"):
+            return "human-reviewed"
+        has_machine = True
+
+    return "machine-confirmed" if has_machine else "unverified"
+
+
+def _is_stale(frontmatter: dict) -> bool:
+    """Return ``True`` when today ≥ the ``stale_after`` date in *frontmatter*."""
+    stale_after = frontmatter.get("stale_after")
+    if not stale_after:
+        return False
+    stale_str = str(stale_after).strip()
+    if not ISO8601_DATE_RE.match(stale_str):
+        return False
+    try:
+        return date.today() >= date.fromisoformat(stale_str)
+    except ValueError:
+        return False
+
+
+def _validate_okf2_generated(
+    path: Path,
+    frontmatter: dict,
+    report: Report,
+) -> None:
+    """Validate the OKF 0.2 `generated` block (E8, W8).
+
+    E8 — `generated` block present but `at` field missing.
+    W8 — Deprecated `timestamp` field present instead of `generated.at`.
+    """
+    generated = frontmatter.get("generated")
+    timestamp = frontmatter.get("timestamp")
+
+    if generated is not None:
+        if isinstance(generated, dict) and not generated.get("at"):
+            report.add_error(
+                "E8",
+                f"File '{path}' has 'generated' block but 'at' field is missing. "
+                "Fix: add 'generated.at: <ISO-8601-datetime>' to the frontmatter.",
+                path,
+            )
+        # `generated` present but not a dict — handled by schema validation (E4)
+    elif timestamp is not None:
+        report.add_warning(
+            "W8",
+            f"File '{path}' uses deprecated 'timestamp' field. "
+            "Migrate to 'generated.at'. "
+            "Fix: okf-schema lint --path <bundle> --fix-timestamp",
+            path,
+        )
+
+
+def _validate_okf2_sources(
+    path: Path,
+    frontmatter: dict,
+    body: str,
+    bundle_root: Path,
+    report: Report,
+) -> None:
+    """Validate the OKF 0.2 `sources` block and footnote integrity (E9, W9, W12, W13)."""
+    sources = frontmatter.get("sources")
+
+    # W9 — deprecated body # Citations section
+    if _CITATIONS_HEADING_RE.search(body):
+        report.add_warning(
+            "W9",
+            f"File '{path}' has a deprecated '# Citations' body section. "
+            "Migrate to 'sources' frontmatter with markdown footnotes. "
+            "Fix: move citations to 'sources:' frontmatter entries and use [^id] footnotes.",
+            path,
+        )
+
+    if sources is None:
+        return
+
+    # Normalize to list if it's a bare mapping
+    if isinstance(sources, dict):
+        sources_list = [sources]
+    elif isinstance(sources, list):
+        sources_list = sources
+    else:
+        return
+
+    # E9 — each entry must have `resource`
+    valid_ids: set[str] = set()
+    for i, entry in enumerate(sources_list):
+        if not isinstance(entry, dict):
+            continue
+        if not entry.get("resource"):
+            report.add_error(
+                "E9",
+                f"File '{path}': sources entry [{i}] is missing required 'resource' field. "
+                "Fix: add 'resource: <URI-or-path>' to the sources entry.",
+                path,
+            )
+
+        # Collect valid IDs for W12 footnote checking
+        entry_id = entry.get("id")
+        if entry_id:
+            valid_ids.add(str(entry_id))
+
+        # W13 — broken path-form resource (skip URLs and scope descriptors)
+        resource = entry.get("resource")
+        if resource and isinstance(resource, str):
+            _check_resource_path(path, resource, bundle_root, report)
+
+    # W12 — footnote reference [^id] with no matching sources[].id
+    footnote_refs = set(_FOOTNOTE_REF_RE.findall(body))
+    for ref_id in footnote_refs:
+        if ref_id not in valid_ids:
+            report.add_warning(
+                "W12",
+                f"File '{path}': footnote reference '[^{ref_id}]' has no matching "
+                "sources entry with id '{ref_id}'. "
+                f"Fix: add a sources entry with 'id: {ref_id}' or remove the footnote.",
+                path,
+            )
+
+
+def _check_resource_path(
+    doc_path: Path,
+    resource: str,
+    bundle_root: Path,
+    report: Report,
+) -> None:
+    """Emit W13 if *resource* is a path-form string that does not resolve."""
+    # Skip URLs (contain "://") and scope descriptors (no file separators and no extension)
+    if "://" in resource or resource.startswith("mailto:"):
+        return
+    # Skip apparent scope descriptors: no "/" or "\" and no "." extension
+    if "/" not in resource and "\\" not in resource and "." not in resource:
+        return
+
+    # Attempt to resolve relative to bundle root and doc parent
+    for base in (bundle_root, doc_path.parent):
+        candidate = (base / resource).resolve()
+        if candidate.exists():
+            return
+
+    report.add_warning(
+        "W13",
+        f"File '{doc_path}': resource path '{resource}' does not resolve to an existing file. "
+        "Fix: correct the path or use a full URL.",
+        doc_path,
+    )
+
+
+def _validate_okf2_verified(
+    path: Path,
+    frontmatter: dict,
+    report: Report,
+) -> None:
+    """Validate the OKF 0.2 `verified` block (E10, W10)."""
+    verified = frontmatter.get("verified")
+    if verified is None:
+        return
+
+    # Normalize bare mapping to one-element list per OKF 0.2 §11 MUST
+    if isinstance(verified, dict):
+        entries = [verified]
+    elif isinstance(verified, list):
+        entries = verified
+    else:
+        return
+
+    for i, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            continue
+
+        by = entry.get("by")
+        at = entry.get("at")
+
+        if not by:
+            report.add_error(
+                "E10",
+                f"File '{path}': verified entry [{i}] is missing required 'by' field. "
+                "Fix: add 'by: <actor-string>' to the verified entry.",
+                path,
+            )
+        elif not isinstance(by, str) or not _ACTOR_RE.match(by):
+            report.add_warning(
+                "W10",
+                f"File '{path}': verified entry [{i}] has malformed 'by' value '{by}'. "
+                "Actor strings must follow the format '<prefix>:<identifier>' "
+                "(e.g. 'human:alice', 'bot:ci'). "
+                "Fix: correct the 'by' value in verified entry [{i}].",
+                path,
+            )
+
+        if not at:
+            report.add_error(
+                "E10",
+                f"File '{path}': verified entry [{i}] is missing required 'at' field. "
+                "Fix: add 'at: <ISO-8601-date>' to the verified entry.",
+                path,
+            )
+
+
+def _validate_okf2_lifecycle(
+    path: Path,
+    frontmatter: dict,
+    report: Report,
+) -> None:
+    """Validate OKF 0.2 lifecycle fields `status` and `stale_after` (W11)."""
+    if _is_stale(frontmatter):
+        stale_after = frontmatter.get("stale_after")
+        report.add_warning(
+            "W11",
+            f"File '{path}' is stale: stale_after date '{stale_after}' has passed. "
+            "Fix: update content and set a new 'stale_after' date, or remove the field.",
+            path,
+        )
+
+
 def _has_nested_lists(value: object) -> bool:
     """Recursively check if *value* contains any nested list structures.
 
@@ -228,12 +490,17 @@ def _has_block_lists(fm_text: str) -> bool:
     the amount of content visible to coding agents that load only the
     first *n* lines of a file.
 
+    Block-style *mappings* (dicts) are exempt — OKF 0.2 fields like
+    ``generated``, ``sources``, ``verified`` are naturally block-mapped.
+
     Args:
         fm_text: Raw YAML frontmatter text (without ``---`` delimiters).
 
     Returns:
-        ``True`` when at least one list uses block style.
+        ``True`` when at least one *list* uses block style.
     """
+    from ruamel.yaml.comments import CommentedSeq
+
     y = make_yaml()
     try:
         data = y.load(fm_text)
@@ -244,7 +511,8 @@ def _has_block_lists(fm_text: str) -> bool:
 
     for value in data.values():
         if (
-            hasattr(value, "fa")
+            isinstance(value, CommentedSeq)
+            and hasattr(value, "fa")
             and hasattr(value.fa, "flow_style")
             and value.fa.flow_style() is False
         ):
@@ -260,7 +528,7 @@ def validate_concept(
 ) -> None:
     """Validate a single concept (non-reserved) ``.md`` file.
 
-    Checks E1, E2, E4, E5, W1, W2, W3, W6, W7.
+    Checks E1, E2, E4, E5, E8-E10, W1, W2, W3, W6-W13.
 
     Args:
         path: Path to the concept markdown file.
@@ -331,14 +599,28 @@ def validate_concept(
                 path,
             )
 
-    # W3 — missing timestamp
-    if "timestamp" not in frontmatter:
-        report.add_warning("W3", f"No 'timestamp (ISO 8601)' field in '{path}'", path)
+    # W3 — missing provenance timestamp (accepts either generated.at or legacy timestamp)
+    generated = frontmatter.get("generated")
+    has_generated_at = isinstance(generated, dict) and bool(generated.get("at"))
+    has_timestamp = bool(frontmatter.get("timestamp"))
+    if not has_generated_at and not has_timestamp:
+        report.add_warning(
+            "W3",
+            f"No provenance timestamp in '{path}'. "
+            "Add 'generated.at: <ISO-8601-datetime>' to the frontmatter.",
+            path,
+        )
 
     # W2 — broken cross-links
     broken = find_broken_links(body, path, bundle_root)
     for target in broken:
         report.add_warning("W2", f"Broken cross-link '{target}' in '{path}'", path)
+
+    # OKF 0.2: validate generated, sources, verified, and lifecycle fields
+    _validate_okf2_generated(path, frontmatter, report)
+    _validate_okf2_sources(path, frontmatter, body, bundle_root, report)
+    _validate_okf2_verified(path, frontmatter, report)
+    _validate_okf2_lifecycle(path, frontmatter, report)
 
 
 def validate_index(
@@ -583,8 +865,23 @@ def validate_markdown_files(
                     path,
                 )
 
-        # W3 — missing timestamp
-        if "timestamp" not in frontmatter:
-            report.add_warning("W3", f"No 'timestamp (ISO 8601)' field in '{path}'", path)
+        # W3 — missing provenance timestamp (accepts either generated.at or legacy timestamp)
+        generated = frontmatter.get("generated")
+        has_generated_at = isinstance(generated, dict) and bool(generated.get("at"))
+        has_timestamp = bool(frontmatter.get("timestamp"))
+        if not has_generated_at and not has_timestamp:
+            report.add_warning(
+                "W3",
+                f"No provenance timestamp in '{path}'. "
+                "Add 'generated.at: <ISO-8601-datetime>' to the frontmatter.",
+                path,
+            )
+
+        # OKF 0.2: validate generated, sources, verified, and lifecycle fields
+        _validate_okf2_generated(path, frontmatter, report)
+        # For standalone files (no bundle_root), use path.parent as root for resource checks
+        _validate_okf2_sources(path, frontmatter, body, path.parent, report)
+        _validate_okf2_verified(path, frontmatter, report)
+        _validate_okf2_lifecycle(path, frontmatter, report)
 
     return report

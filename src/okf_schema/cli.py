@@ -90,7 +90,7 @@ def init(ctx: click.Context, name: str, pattern: str | None) -> None:
     schema_dir.mkdir(parents=True)
 
     index_path = bundle_dir / "index.md"
-    index_path.write_text('---\nokf_version: "0.1"\n---\n\n', encoding="utf-8")
+    index_path.write_text('---\nokf_version: "0.2"\n---\n\n', encoding="utf-8")
 
     log_path = bundle_dir / "log.md"
     today = datetime.date.today().isoformat()
@@ -469,7 +469,8 @@ def list_cmd(ctx: click.Context, bundle_path: str) -> None:
         ctx.exit(2)
 
     for concept in concepts:
-        click.echo(f"{concept.path}  {concept.type}  {concept.title}")
+        stale_marker = " [STALE]" if concept.stale else ""
+        click.echo(f"{concept.path}  {concept.type}  {concept.title}{stale_marker}")
 
 
 # ---------------------------------------------------------------------------
@@ -504,6 +505,10 @@ def show(ctx: click.Context, bundle_path: str, concept_path: str) -> None:
     y.dump(detail.frontmatter, buf)
     fm_yaml = buf.getvalue().rstrip("\n")
     click.echo(f"---\n{fm_yaml}\n---")
+    # OKF 0.2: show derived trust tier and staleness
+    click.echo(f"trust: {detail.trust_tier}")
+    if detail.stale:
+        click.echo("stale: true")
     if detail.body.strip():
         click.echo(detail.body)
 

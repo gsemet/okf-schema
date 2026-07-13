@@ -10,7 +10,9 @@ author_email: bob@example.com
 complexity: intermediate
 tags: [rag, retrieval, llm, knowledge-base]
 related_tools: [LangChain, LlamaIndex, OpenAI-API]
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: [tools/langchain.md]
 backlinks: [papers/attention-is-all-you-need.md, tools/langchain.md,
     tools/ollama.md]

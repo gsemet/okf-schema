@@ -12,7 +12,7 @@ description: >-
   The body and claim are immutable once written. To correct a Finding, write a
   new Finding with `contradicts` or `supersedes` pointing to the old one. The
   only permitted edits to an existing Finding are lifecycle frontmatter:
-  `status` (active, contradicted, superseded), `contradicted_by`, and
+  `kb_status` (active, contradicted, superseded), `contradicted_by`, and
   `superseded_by`, appended by review.
 
   Belongs to the Storage layer. Findings are promoted into Concepts or
@@ -35,8 +35,10 @@ allOf:
           basis for the finding, including assumptions that may later prove wrong.
         type: string
         minLength: 1
-      status:
-        description: Lifecycle state. Appended non-destructively; the body never changes.
+      kb_status:
+        description: >-
+          KB lifecycle state. Appended non-destructively; the body never changes.
+          Use 'status' (OKF 0.2) for the OKF lifecycle vocabulary (draft/stable/deprecated).
         type: string
         enum: [active, contradicted, superseded]
       derived_from:
@@ -58,4 +60,4 @@ allOf:
         description: IDs of later Findings that replace this one (appended by review).
         type: array
         items: { type: string }
-    required: [type, timestamp, confidence, context]
+    required: [type, confidence, context]
