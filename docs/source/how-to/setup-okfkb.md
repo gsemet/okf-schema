@@ -7,6 +7,9 @@ Quick reference for initializing and using an OKF-KB.
 >
 > **Want to understand the design philosophy?**
 > See [OKF-KB Design Choices](../explanation/okfkb-choices.md).
+>
+> **Want agent-assisted maintenance?**
+> See [Maintain an OKFKB with agent skills](maintain-okfkb-with-skills.md).
 
 ## Quick Start (5 Minutes)
 
@@ -44,10 +47,32 @@ Computes backlinks, regenerates `index.md` and `log.md`.
 ### 4. Validate
 
 ```bash
-okf-schema lint --path .
+okfkb validate .
 ```
 
-Checks required fields, timestamps, link validity.
+Strictly checks required fields, timestamps, schema values, and link validity.
+
+## Add the Agent Workflows
+
+Deploy the project-local capture and interactive consolidation skills:
+
+```bash
+okfkb install-skills /path/to/project
+```
+
+The repository-level skills add two broader workflows:
+
+- **`okfkb`** teaches the lifecycle, chooses the right knowledge type, routes
+  empirical discoveries to `record-finding`, and navigates from stable tiers to
+  raw evidence.
+- **`okfkb-gardening`** performs an explicitly invoked, autonomous maintenance
+  pass. It repairs graph mechanics, reconciles Finding lifecycles, consolidates
+  stable knowledge, refreshes operational/planning layers, and runs checks
+  discovered from the project's `AGENTS.md`.
+
+Gardening may update every KB layer except Principles. It reports Principle
+candidates with rationale and evidence; a human must explicitly agree before a
+Principle is created or changed.
 
 ## Navigating the KB
 
@@ -91,7 +116,7 @@ timestamp: 2026-07-04T14:30:00Z
 tags: [domain, tags]
 links: [findings/..., concepts/...]
 backlinks: []  # Auto-computed
-status: active | contradicted | archived
+status: active | contradicted | superseded
 contradicted_by: [findings/...]
 ```
 
@@ -102,11 +127,11 @@ Stable understanding promoted from converged findings.
 ```yaml
 type: Concept
 title: Stable understanding
-confidence: high
-promoted_from: [findings/..., findings/...]
+description: Concise explanation of the stable idea
+derived_from: [findings/..., findings/...]
 links: [concepts/..., principles/...]
 backlinks: []
-status: active | superseded
+status: active | deprecated
 ```
 
 ### Hypotheses: `hypotheses/<name>.md`
@@ -116,9 +141,10 @@ Testable propositions.
 ```yaml
 type: Hypothesis
 title: Proposition to test
-proposed_by: [findings/... or concepts/...]
+description: Testable explanation of observations
+derived_from: [findings/... or concepts/...]
 links: []
-status: open | validated | refuted
+status: proposed | under_test | confirmed | falsified
 ```
 
 ### Experiments: `experiments/<name>.md`
@@ -128,11 +154,12 @@ Planned investigations.
 ```yaml
 type: Experiment
 title: What are we testing?
-hypothesis: [hypotheses/...]
-expected_outcome: What we expect if true
-planned_for: YYYY-MM-DD
-status: planned | in-progress | completed
-results_in: [findings/...]
+description: Reusable procedure for testing the hypothesis
+hypothesis: hypotheses/...
+steps: [Prepare the target, Run the measurement, Capture the signals]
+expected_signals: [Signal expected if true, Signal expected if false]
+status: proposed | active | retired | superseded
+derived_findings: [findings/...]
 ```
 
 ### Principles: `principles/<name>.md`
@@ -142,8 +169,10 @@ Team-agreed standards (rarely created, high stakes).
 ```yaml
 type: Principle
 title: Standard or policy we agree on
-status: active | deprecated
-effective_date: YYYY-MM-DD
+description: Human-agreed normative rule
+rationale: Why this rule exists
+authority: team
+supported_by: [findings/...]
 ```
 
 ### Structures: `structures/<name>.md`
@@ -153,8 +182,10 @@ System composition patterns.
 ```yaml
 type: Structure
 title: System composition or pattern
+description: How the subject is composed or works
+derived_from: [findings/...]
 links: [concepts/...]
-status: active
+status: active | deprecated
 ```
 
 ### Outcomes: `outcomes/<name>.md`
@@ -164,9 +195,10 @@ Planned deliverables.
 ```yaml
 type: Outcome
 title: Project or deliverable
-depends_on: [concepts/...]
-status: planned | in-progress | completed
-target_date: YYYY-MM-DD
+description: Planned result derived from stable knowledge
+status: planned | in_progress | done | cancelled
+deliverable: Concrete artifact or result
+derived_from: [concepts/...]
 ```
 
 ### Reference: `reference/<name>.md`
@@ -176,19 +208,21 @@ External sources.
 ```yaml
 type: Reference
 title: Paper/link title
+description: What this source contributes
 url: https://...
 abstract: Summary
 links: [concepts/..., findings/...]
 ```
 
-### Guides: `guides/<name>.md`
+### Playbooks: `guides/<name>.md`
 
 Operational how-to notes.
 
 ```yaml
-type: Guide
+type: Playbook
 title: How to do X
-status: active
+description: Reproducible workflow that produces a result
+status: active | deprecated | superseded
 links: []
 ```
 
@@ -226,12 +260,17 @@ Verifies:
 4. **Use tags for filtering** — tags help agents search by domain
 5. **Review `log.md` regularly** — keep it human-readable; summarize weekly changes
 6. **Principles are rare** — only for team consensus decisions
-7. **Promotion requires convergence** — wait for 2+ findings before creating a concept
+7. **Promotion requires judgment** — consider evidence quality, independence,
+  scope, counter-evidence, and reuse value rather than relying on a fixed count
+8. **Garden after meaningful batches** — explicitly invoke `okfkb-gardening`
+  for autonomous consolidation and maintenance
+9. **Principles remain human decisions** — gardening proposes; people agree
 
 ## Further Reading
 
 - [OKF-KB Design Choices](../explanation/okfkb-choices.md) — Philosophy, tradeoffs, design rationale
 - [HW Debugging Workflow](../tutorials/okfkb-hw-debugging-workflow.md) — Step-by-step tutorial (automotive example)
+- [Maintain an OKFKB with agent skills](maintain-okfkb-with-skills.md) — Capture, navigate, consolidate, garden, and validate
 - [Bootstrap an Existing KB](../how-to/bootstrap-knowledge-base) — Migrating legacy findings
 - [Building a Knowledge Graph](../tutorials/knowledge-graph) — Cross-linking best practices
 - [Lint Before Commit](../how-to/lint-before-commit) — Keeping frontmatter consistent

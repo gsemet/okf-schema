@@ -174,6 +174,11 @@ okfkb query "finding[tag=cache] -> concept -> principle"    # graph traversal
 
 **For full KB documentation**, see the [OKF-KB Design Choices](https://okf-schema.readthedocs.io/en/stable/explanation/okfkb-choices.html) and [HW Debugging Workflow Tutorial](https://okf-schema.readthedocs.io/en/stable/tutorials/okfkb-hw-debugging-workflow.html).
 
+**Agent skills** complement the CLI: `okf-schema` handles tool mechanics,
+`okfkb` teaches and routes the knowledge lifecycle, and `okfkb-gardening` runs
+explicit, autonomous KB maintenance. See [Agent Skills](skills/README.md) and
+[Maintain an OKFKB with agent skills](docs/source/how-to/maintain-okfkb-with-skills.md).
+
 ### Use Case 3: Validate Standalone Markdown Files
 
 Validate individual markdown files (or collections) against JSON schemas without needing a full OKF bundle.
@@ -417,12 +422,19 @@ for finding in report.findings:
 # report = validate_bundle("path/to/bundle", schema_db="path/to/schemas")
 ```
 
-## Copilot Skill
+## Agent Skills
 
-`okf-schema` also provides a **Copilot skill**.
+The repository provides three complementary skills:
 
-For documentation on skill usage, automation workflows, and agentic knowledge base management,
-see [`skills/okf-schema/SKILL.md`](skills/okf-schema/SKILL.md).
+| Skill | Concise purpose |
+|---|---|
+| [`okf-schema`](skills/okf-schema/SKILL.md) | Operate and troubleshoot the CLI/API, schemas, validation, frontmatter, and generic OKF bundles. |
+| [`okfkb`](skills/okfkb/SKILL.md) | Teach and route the opinionated lifecycle from immutable Findings to stable knowledge and human-governed Principles. |
+| [`okfkb-gardening`](skills/okfkb-gardening/SKILL.md) | Perform explicitly invoked, zero-prompt consolidation, graph repair, stale-knowledge review, and project-prescribed validation. |
+
+See [`skills/README.md`](skills/README.md) for selection guidance, relationships
+with the bundled `record-finding` and `consolidate-knowledge-base` workflows,
+and the recommended maintenance rhythm.
 
 ## Contributing
 

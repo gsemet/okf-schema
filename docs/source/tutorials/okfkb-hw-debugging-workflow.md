@@ -13,6 +13,22 @@ and build stable knowledge over a multi-week debugging campaign.
 > This example demonstrates **agent-driven findings creation**, **knowledge promotion**,
 > and **team consensus** in a realistic HW debugging context.
 
+## Where the Agent Skills Help
+
+This tutorial uses the skills as a lifecycle, not as aliases for CLI commands:
+
+| Skill | Role in the campaign |
+|---|---|
+| `okfkb` | Recognizes durable discoveries, chooses the correct layer, routes Finding capture, and navigates existing knowledge before new investigation. |
+| `record-finding` | Captures each bounded empirical observation quickly without rewriting earlier evidence. |
+| `consolidate-knowledge-base` | Offers an interactive review when engineers want to confirm each contradiction or promotion. |
+| `okfkb-gardening` | Runs an explicitly requested, zero-prompt batch pass after Findings accumulate: repairs the graph, consolidates semantic knowledge, opens investigations, and validates. |
+| `okf-schema` | Performs deterministic index, lint, schema-validation, and query operations underneath those workflows. |
+
+The key boundary is governance: gardening may autonomously maintain Findings,
+Hypotheses, Experiments, Concepts, Structures, Playbooks, and Outcomes, but it
+only **proposes** Principles. A human team must agree before a Principle changes.
+
 ## Scenario: Boot Initialization Timeout on Automotive MCU
 
 **Context**:
@@ -33,7 +49,9 @@ and build stable knowledge over a multi-week debugging campaign.
 
 ### Monday, 2026-07-01 — First Observation
 
-Engineer runs test at room temperature (25°C). **Agent detects anomaly** and creates Finding #1:
+Engineer runs a test at room temperature (25°C). The `okfkb` skill recognizes a
+non-trivial empirical discovery and routes it to `record-finding`, which creates
+Finding #1:
 
 ```bash
 # Agent discovers timing anomaly in trace logs
@@ -46,6 +64,7 @@ okfkb new-finding "Boot initialization hangs ~500ms, sometimes recovers"
 ---
 type: Finding
 title: Boot initialization hangs ~500ms, sometimes recovers
+description: Intermittent boot initialization stalls near 500ms at room temperature.
 confidence: low
 context: >
   Board: Ampere dev, AURIX TC3xx target.
@@ -89,6 +108,7 @@ okfkb new-finding "Boot timeout occurs more frequently at 0°C"
 ---
 type: Finding
 title: Boot timeout occurs more frequently at 0°C
+description: Boot hangs become substantially more frequent as ambient temperature falls.
 confidence: medium
 context: >
   Thermal chamber: -10°C to +70°C sweep.
@@ -131,6 +151,7 @@ okfkb new-finding "PLL lock time increases from 200µs to 800µs at low temperat
 ---
 type: Finding
 title: PLL lock time increases from 200µs to 800µs at low temperature
+description: Direct measurement shows PLL lock time approaching its limit at low temperature.
 confidence: high
 context: >
   Measured via logic analyzer on FRAC_RDY and PLL_LOCK signals.
@@ -172,6 +193,7 @@ okfkb new-finding "Bootloader has hardcoded PLL wait timeout of 400µs, not poll
 ---
 type: Finding
 title: Bootloader has hardcoded PLL wait timeout of 400µs, not polling
+description: Source inspection reveals a fixed wait shorter than measured cold PLL lock times.
 confidence: high
 context: >
   Bootloader source (Ampere repo, BootInit.S line 427):
@@ -207,12 +229,24 @@ This is a DESIGN BUG, not a hardware defect.
 Confidence: high — source code proof + measurements validate.
 ```
 
-## Week 2: Knowledge Consolidation (Promotion to Concepts)
+## Week 2: Skill-Assisted Consolidation
 
-### Monday, 2026-07-08 — Team Review & Promotion Decision
+### Monday, 2026-07-08 — Autonomous Gardening Pass
 
-Architect and engineers meet. They agree: four findings converge on a single understanding.
-Time to **promote to Concept**.
+Four related Findings have accumulated. The team explicitly asks:
+
+> Garden this OKFKB.
+
+`okfkb-gardening` reads the project rules and local schemas, establishes a
+validation baseline, clusters the Findings, and judges that the measurements
+and source evidence converge. Without pausing for questions, it promotes the
+stable explanation into a Concept, creates supporting Structure and Outcome
+documents, refreshes graph metadata, and validates the result.
+
+The promotion does not depend mechanically on “four” Findings. The skill weighs
+evidence quality, independence, scope, counter-evidence, and reuse value. Had
+the cause remained ambiguous, it would have created a Hypothesis and Experiment
+instead of forcing a Concept.
 
 ```bash
 # Create concept consolidating all findings
@@ -220,8 +254,8 @@ cat > concepts/boot-pll-startup-margin.md << 'EOF'
 ---
 type: Concept
 title: Boot Initialization Timing Margin: PLL Lock at Low Temperature
-confidence: high
-promoted_from:
+description: Cold PLL lock time exceeds the bootloader's fixed wait and causes intermittent boot failure.
+derived_from:
   - findings/2026.07.01-09.30-boot-hangs-500ms.md
   - findings/2026.07.02-11.00-temperature-sensitivity.md
   - findings/2026.07.03-14.20-pll-temp-drift.md
@@ -265,7 +299,7 @@ EOF
 okfkb update concepts/boot-pll-startup-margin.md
 ```
 
-### Architect Creates Supporting Documents
+### Gardening Creates Supporting Documents
 
 **Structure Document** (system composition):
 
@@ -274,7 +308,11 @@ cat > structures/boot-sequence-architecture.md << 'EOF'
 ---
 type: Structure
 title: Boot Sequence Architecture
+description: Boot phases and timing dependencies from CPU release to application start.
 status: active
+derived_from:
+  - findings/2026.07.03-14.20-pll-temp-drift.md
+  - findings/2026.07.05-10.15-bootloader-timeout-hardcoded.md
 links:
   - concepts/boot-pll-startup-margin.md
   - concepts/ddr-initialization-flow.md
@@ -315,16 +353,27 @@ EOF
 okfkb update structures/boot-sequence-architecture.md
 ```
 
-**Principle Document** (team decision):
+### Gardening Proposes a Principle
+
+The same evidence suggests a normative rule: hardware-readiness delays should
+be event-driven rather than hardcoded. Gardening includes the proposed wording,
+rationale, and supporting Findings in its final chat report, but does not write
+the Principle.
+
+The firmware architect and engineers explicitly agree with the proposal. Only
+then is the **Principle document** created:
 
 ```bash
 cat > principles/firmware-timeouts-must-be-polled.md << 'EOF'
 ---
 type: Principle
 title: Firmware Timeouts Must Be Event-Driven, Not Hardcoded
-status: active
-effective_date: 2026-07-08
-replaced_by: []
+description: Hardware readiness must be polled with a bounded safety timeout rather than assumed through fixed delays.
+rationale: Fixed delays fail under temperature, voltage, and process variation.
+authority: firmware architect and engineering team, 2026-07-08
+supported_by:
+  - findings/2026.07.03-14.20-pll-temp-drift.md
+  - findings/2026.07.05-10.15-bootloader-timeout-hardcoded.md
 ---
 
 # Principle: Firmware Timeouts Must Be Event-Driven, Not Hardcoded
@@ -360,10 +409,11 @@ cat > outcomes/fix-bootloader-pll-polling.md << 'EOF'
 ---
 type: Outcome
 title: Fix Bootloader PLL Initialization to Use Event Polling
-depends_on:
+description: Replace the fixed PLL wait with bounded event-driven polling and validate it thermally.
+derived_from:
   - concepts/boot-pll-startup-margin.md
 status: planned
-target_date: 2026-07-22
+deliverable: Bootloader change and thermal validation evidence by 2026-07-22.
 ---
 
 # Outcome: Fix Bootloader PLL Initialization
@@ -390,18 +440,21 @@ EOF
 okfkb update outcomes/fix-bootloader-pll-polling.md
 ```
 
-### Index and Review
+### Index, Validate, and Review
 
 ```bash
-# Re-index to compute backlinks
-okf-schema index --path .
+# Refresh indexes, links, backlinks, and frontmatter
+okfkb update .
 
-# Validate all documents
-okf-schema lint --path .
+# Strictly validate all documents
+okfkb validate .
 
-# Review log.md to see week's progress
+# Review significant semantic changes
 cat log.md
 ```
+
+The gardening skill discovers the equivalent project-prescribed commands from
+`AGENTS.md`; it does not assume every repository uses these exact invocations.
 
 ## Week 3: Implementation & Validation
 
@@ -419,6 +472,7 @@ okfkb new-finding "Bootloader fix validated: 100 boot cycles at -10°C, 0 failur
 ---
 type: Finding
 title: Bootloader fix validated: 100 boot cycles at -10°C, 0 failures
+description: Thermal validation records zero boot failures after event-driven PLL polling was introduced.
 confidence: high
 context: >
   Test: Thermal chamber -10°C sustained, 100 power-on cycles.
@@ -435,21 +489,21 @@ status: active
 ---
 ```
 
-### Wednesday, 2026-07-16 — Update Concept Status
+### Wednesday, 2026-07-16 — Refresh Living Knowledge
 
-Architect marks concept as **resolved**, updates outcome:
+The team invokes gardening again. The validation Finding does not rewrite any
+earlier Finding. Instead, gardening updates the living Concept in place, adds
+the new Finding to `derived_from`, records the fix and validation boundary in
+the Concept body, and moves the Outcome from `planned` to `done`.
 
 ```bash
-# Update concept to reflect fix
-cat concepts/boot-pll-startup-margin.md | sed 's/status: active/status: resolved/' > temp.md
-mv temp.md concepts/boot-pll-startup-margin.md
-
-# Mark outcome complete
-cat outcomes/fix-bootloader-pll-polling.md | sed 's/status: planned/status: completed/' > temp.md
-mv temp.md outcomes/fix-bootloader-pll-polling.md
-
-okf-schema index --path .
+okfkb update .
+okfkb validate .
 ```
+
+Concepts remain `active` while they describe valid understanding; “the incident
+was fixed” belongs in their content and linked evidence, not in an unsupported
+`resolved` status.
 
 ## What Happened in the KB
 
@@ -469,7 +523,7 @@ findings/
 ```text
 concepts/
 └── boot-pll-startup-margin.md  ← Promoted from 4 converged findings
-                                   (status: resolved after fix)
+                                   (active, updated with fix evidence)
 ```
 
 ### Structures Layer (System Knowledge)
@@ -506,10 +560,12 @@ outcomes/
 
 ### 2. **Promotion Triggers When Convergence Occurs**
 
-After 4 findings align, team **decides** (human decision) to promote.
-Not automatic; requires judgment about stability.
+After the Findings align, gardening promotes the stable understanding using
+agent judgment about evidence quality, scope, and reuse value.
 
-**Structure enables**: Clear promotion criteria; decisions leave audit trail.
+**Structure enables**: Evidence provenance and `log.md` leave an audit trail.
+Interactive teams can use `consolidate-knowledge-base` instead when they want to
+confirm each mutation.
 
 ### 3. **Contradictions Don't Break the Process**
 
@@ -524,7 +580,8 @@ Both remain immutable; agents can trace the evolution of understanding.
 
 ### 4. **Principles Capture Team Consensus**
 
-After root cause found, architect + team agreed: **"No more hardcoded firmware timeouts."**
+Gardening proposes **"No more hardcoded firmware timeouts."** with supporting
+evidence. The architect and team agree, making it a human-governed decision.
 This becomes an inviolable rule (`principles/`), shaping future architecture decisions.
 
 ### 5. **Outcomes Track What We'll Build**
@@ -535,7 +592,7 @@ Fix is planned, executed, and marked complete — all linked to the KB concepts 
 
 **At any point**, an agent (or human) loading this KB can ask:
 
-- **"What do we know for sure?"** → Read `concepts/`, especially resolved items
+- **"What do we know for sure?"** → Read active `concepts/` and follow their evidence links
 - **"What's still uncertain?"** → Read `findings/` with low confidence; read `experiments/` for open questions
 - **"What must we never do again?"** → Read `principles/`
 - **"What are we building?"** → Read `outcomes/`, sorted by status
@@ -544,8 +601,8 @@ Instead of `cat`-ing folders by hand, the agent uses the KB **navigation tools**
 exactly the right granularity:
 
 ```bash
-# "What do we know for sure?" — read the settled tier
-okfkb read concepts --status resolved
+# "What do we know for sure?" — read the active semantic tier
+okfkb read concepts --status active
 
 # "What must we never do again?"
 okfkb read principles --format titles
@@ -553,11 +610,8 @@ okfkb read principles --format titles
 # Find the high-confidence evidence behind the boot issue
 okfkb query "type:finding confidence:>=high tag:pll status:active"
 
-# Walk the graph: from the PLL findings up to the concept and the principle it produced
-okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
-
-# Which findings back the boot-timing concept?
-okfkb query "concept[title~boot] <- finding"
+# Fetch the stable synthesis and inspect its derived_from evidence
+okfkb get concepts/boot-pll-startup-margin.md --format frontmatter
 
 # Coarse search, then drill into one exact node
 okfkb search "pll lock time" --tier findings
@@ -583,7 +637,7 @@ hypotheses/ → 8 testable propositions
 experiments/ → 3 active investigations
 concepts/ → 6 stable understandings
 principles/ → 2 team decisions
-outcomes/ → 4 planned features (2 in-progress, 1 complete)
+outcomes/ → 4 planned features (2 in_progress, 1 done)
 ```
 
 **Log.md** becomes essential: team reads it every Monday to see what shifted.
@@ -593,10 +647,13 @@ outcomes/ → 4 planned features (2 in-progress, 1 complete)
 
 For hands-on practice:
 
-1. Clone or create an empty KB: `okfkb init my-project-kb`
-2. Record one real debugging session as findings
-3. Ask agent to suggest concept promotion
-4. Create one principle from lessons learned
+1. Create an empty KB: `okfkb init my-project-kb`
+2. Make the `okfkb` skill available and investigate one real problem
+3. Let it route durable observations to `record-finding`
+4. After several Findings accumulate, explicitly invoke `okfkb-gardening`
+5. Review any Principle proposal and make the human governance decision
 
 See [Setup OKF-KB](../how-to/setup-okfkb.md) for commands.
+See [Maintain an OKFKB with agent skills](../how-to/maintain-okfkb-with-skills.md)
+for the recurring capture, consolidation, and gardening workflow.
 See [OKF-KB Design Choices](../explanation/okfkb-choices.md) for philosophy.
