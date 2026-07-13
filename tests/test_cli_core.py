@@ -267,9 +267,8 @@ class TestValidate:
             cli,
             ["validate", "--path", str(VALID_BUNDLE), "--schema-db", str(schema_db)],
         )
-        # The fixture schema requires a "timestamp" field.  The bundle
-        # includes ``timestamp: 2024-01-15`` which is now transparently
-        # normalised to a string, so validation passes.
+        # The fixture schema requires a "generated" block.  The bundle
+        # includes ``generated.at`` which satisfies the requirement.
         assert result.exit_code == 0
         assert "conformant" in result.output.lower()
 

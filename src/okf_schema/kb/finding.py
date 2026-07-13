@@ -75,11 +75,14 @@ def new_finding(
         "description": description if description is not None else title,
         "confidence": confidence,
         "context": context,
-        "timestamp": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated": {
+            "at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "by": "bot:okf-schema",
+        },
         "tags": list(tags) if tags else [],
         "links": [],
         "backlinks": [],
-        "status": "active",
+        "kb_status": "active",
     }
 
     buf = StringIO()

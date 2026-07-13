@@ -291,7 +291,8 @@ class TestValidateMd:
         test_file = tmp_path / "test.md"
         content = (
             "---\ntype: concept\ntitle: Test\ndescription: Test\n"
-            "timestamp: 2024-01-01T00:00:00Z\n---\n\n# Test\n"
+            'generated:\n  at: "2024-01-01T00:00:00Z"\n  by: bot:test\n'
+            "---\n\n# Test\n"
         )
         test_file.write_text(content, encoding="utf-8")
 
@@ -344,13 +345,15 @@ class TestValidateMd:
         file1 = tmp_path / "file1.md"
         content1 = (
             "---\ntype: concept\ntitle: Test1\ndescription: Desc\n"
-            "timestamp: 2024-01-01T00:00:00Z\n---\n\nContent\n"
+            'generated:\n  at: "2024-01-01T00:00:00Z"\n  by: bot:test\n'
+            "---\n\nContent\n"
         )
         file1.write_text(content1, encoding="utf-8")
         file2 = tmp_path / "file2.md"
         content2 = (
             "---\ntype: concept\ntitle: Test2\ndescription: Desc\n"
-            "timestamp: 2024-01-01T00:00:00Z\n---\n\nContent\n"
+            'generated:\n  at: "2024-01-01T00:00:00Z"\n  by: bot:test\n'
+            "---\n\nContent\n"
         )
         file2.write_text(content2, encoding="utf-8")
 

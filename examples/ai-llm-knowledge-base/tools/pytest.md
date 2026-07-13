@@ -10,7 +10,9 @@ language: Python
 maturity: production
 url: https://docs.pytest.org
 tags: [testing, python, automation]
-timestamp: 2026-06-29
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: []
 backlinks: []
 ---

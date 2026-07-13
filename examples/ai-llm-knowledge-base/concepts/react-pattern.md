@@ -10,7 +10,9 @@ author_email: carol@example.com
 complexity: advanced
 tags: [agents, reasoning, tool-use, react]
 related_tools: [LangChain, AutoGPT]
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: [concepts/function-calling.md, papers/toolformer.md]
 backlinks: [concepts/function-calling.md, papers/chain-of-thought-paper.md,
     papers/toolformer.md, tools/langchain.md]

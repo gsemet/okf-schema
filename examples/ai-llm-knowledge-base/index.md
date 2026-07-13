@@ -1,6 +1,8 @@
 ---
 okf_version: "0.1"
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: []
 backlinks: []
 ---

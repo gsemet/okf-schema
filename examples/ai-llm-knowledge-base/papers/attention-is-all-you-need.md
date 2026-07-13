@@ -11,7 +11,9 @@ venue: NeurIPS
 url: https://arxiv.org/abs/1706.03762
 tags: [transformer, attention, architecture]
 bibtex_key: vaswani-2017-attention
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: [concepts/function-calling.md, concepts/rag.md]
 backlinks: []
 ---

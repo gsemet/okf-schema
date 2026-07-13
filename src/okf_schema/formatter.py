@@ -7,6 +7,8 @@ import io
 from dataclasses import dataclass
 from pathlib import Path
 
+from ruamel.yaml.comments import CommentedSeq
+
 from okf_schema._internal.utils import (
     build_link_graph,
     collect_markdown_files,
@@ -99,6 +101,10 @@ def lint_frontmatter(text: str) -> str | None:
     which is important for coding agents that load only the first *n*
     lines of a file.
 
+    OKF 0.2 list-of-mapping fields (``sources``, ``verified``, ``parameters``)
+    are exempted from inline-forcing so that their block style is preserved
+    for readability.
+
     Args:
         text: Full markdown file content.
 
@@ -106,6 +112,9 @@ def lint_frontmatter(text: str) -> str | None:
         The full text with flattened and inline lists, or ``None`` when
         no frontmatter block is present.
     """
+    # OKF 0.2: these list-of-mapping fields must stay block-style for readability
+    _list_of_mapping_fields = frozenset({"sources", "verified", "parameters"})
+
     fm_text, body = extract_frontmatter(text)
     if fm_text is None:
         return None
@@ -118,12 +127,29 @@ def lint_frontmatter(text: str) -> str | None:
     changed = False
     for key in list(data.keys()):
         value = data[key]
+        if key in _list_of_mapping_fields:
+            # Exempt from inline-forcing; still flatten genuinely nested scalar lists
+            if isinstance(value, list):
+                flat = flatten_value(value)
+                if (
+                    isinstance(flat, list)
+                    and flat != value
+                    and not any(isinstance(item, dict) for item in flat)
+                ):
+                    data[key] = flat
+                    changed = True
+            continue
         if isinstance(value, list):
             flat = flatten_value(value)
             if flat != value:
                 data[key] = flat
                 changed = True
-        if hasattr(value, "fa") and hasattr(value.fa, "set_flow_style"):
+        # Only set flow style on lists (CommentedSeq), not on block-mapped dicts
+        if (
+            isinstance(value, CommentedSeq)
+            and hasattr(value, "fa")
+            and hasattr(value.fa, "set_flow_style")
+        ):
             value.fa.set_flow_style()
             changed = True
 

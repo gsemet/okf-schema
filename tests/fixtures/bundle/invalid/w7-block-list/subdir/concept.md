@@ -2,7 +2,9 @@
 title: Test
 description: A test
 type: concept
-timestamp: 2024-01-01
+generated:
+  at: "2024-01-01T00:00:00Z"
+  by: bot:test
 tags:
   - alpha
   - beta

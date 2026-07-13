@@ -10,7 +10,9 @@ language: Multi-language
 maturity: production
 url: https://www.langchain.com
 tags: [framework, agents, chains, rag]
-timestamp: "2026-06-29"
+generated:
+  at: "2026-06-29"
+  by: bot:okf-schema
 links: [concepts/rag.md, concepts/react-pattern.md]
 backlinks: [concepts/rag.md]
 ---

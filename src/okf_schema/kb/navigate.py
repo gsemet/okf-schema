@@ -140,9 +140,11 @@ def _load_node(path: Path, bundle: Path) -> KbNode | None:
         type=str(frontmatter.get("type", "")).strip(),
         title=str(frontmatter.get("title", path.stem)).strip(),
         confidence=str(frontmatter.get("confidence", "")).strip(),
-        status=str(frontmatter.get("status", "")).strip(),
+        status=str(frontmatter.get("kb_status") or frontmatter.get("status", "")).strip(),
         tags=_as_str_list(frontmatter.get("tags")),
-        timestamp=str(frontmatter.get("timestamp", "")).strip(),
+        timestamp=str(
+            (frontmatter.get("generated") or {}).get("at") or frontmatter.get("timestamp", "")
+        ).strip(),
         frontmatter=frontmatter,
         body=body,
     )

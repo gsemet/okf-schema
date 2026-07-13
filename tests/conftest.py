@@ -15,7 +15,7 @@ def valid_bundle(tmp_path: Path) -> Path:
 
     # Root index.md with frontmatter
     (bundle / "index.md").write_text(
-        '---\nokf_version: "0.1"\n---\n\n# Test Bundle\n',
+        '---\nokf_version: "0.2"\n---\n\n# Test Bundle\n',
         encoding="utf-8",
     )
 
@@ -27,12 +27,16 @@ def valid_bundle(tmp_path: Path) -> Path:
     subdir.mkdir()
     (subdir / "concept-a.md").write_text(
         "---\ntype: concept\ntitle: Concept A\n"
-        "description: First concept\ntags: [a, b]\n---\n\nBody of A.\n",
+        "description: First concept\ntags: [a, b]\n"
+        'generated:\n  at: "2024-01-15T00:00:00Z"\n  by: bot:test\n'
+        "---\n\nBody of A.\n",
         encoding="utf-8",
     )
     (subdir / "concept-b.md").write_text(
         "---\ntype: concept\ntitle: Concept B\n"
-        "description: Second concept\ntags: [b, c]\n---\n\n"
+        "description: Second concept\ntags: [b, c]\n"
+        'generated:\n  at: "2024-01-15T00:00:00Z"\n  by: bot:test\n'
+        "---\n\n"
         "Body of B linking to [A](concept-a.md).\n",
         encoding="utf-8",
     )
@@ -41,7 +45,9 @@ def valid_bundle(tmp_path: Path) -> Path:
     subdir2 = bundle / "another"
     subdir2.mkdir()
     (subdir2 / "concept-c.md").write_text(
-        "---\ntype: reference\ntitle: Concept C\ndescription: Third concept\n---\n\nBody of C.\n",
+        "---\ntype: reference\ntitle: Concept C\ndescription: Third concept\n"
+        'generated:\n  at: "2024-01-15T00:00:00Z"\n  by: bot:test\n'
+        "---\n\nBody of C.\n",
         encoding="utf-8",
     )
 

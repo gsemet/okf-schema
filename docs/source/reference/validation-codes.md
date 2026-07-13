@@ -2,7 +2,7 @@
 
 This reference documents all validation codes returned by okf-schema's validation commands (`validate` and `validate-md`).
 
-## Error Codes (E1–E7)
+## Error Codes (E1–E10)
 
 Errors represent conformance violations that must be fixed before the validation passes.
 
@@ -153,7 +153,88 @@ bundle/
 
 ---
 
-## Warning Codes (W1–W7)
+### E8: `generated` Block Missing `at` Field
+
+**Severity**: Error (OKF 0.2)
+
+**Description**: A frontmatter `generated` block is present but the required `at` field is missing.
+
+**Example**:
+```yaml
+---
+type: concept
+generated:
+  by: "human:alice"    # missing `at`
+---
+```
+
+**How to Fix**:
+Add the required `at` field:
+```yaml
+---
+type: concept
+generated:
+  at: "2026-08-10T14:00:00Z"
+  by: "human:alice"
+---
+```
+
+Fix: `okf-schema lint --path <bundle>`
+
+---
+
+### E9: `sources` Entry Missing `resource` Field
+
+**Severity**: Error (OKF 0.2)
+
+**Description**: A `sources` list entry is missing the required `resource` field.
+
+**Example**:
+```yaml
+sources:
+  - id: paper-1
+    title: "My Paper"   # missing `resource`
+```
+
+**How to Fix**:
+Add the required `resource` field:
+```yaml
+sources:
+  - id: paper-1
+    resource: "https://example.com/paper.pdf"
+    title: "My Paper"
+```
+
+Fix: add `resource: <URI-or-path>` to the sources entry.
+
+---
+
+### E10: `verified` Entry Missing `by` or `at` Field
+
+**Severity**: Error (OKF 0.2)
+
+**Description**: A `verified` list entry is missing the required `by` or `at` field.
+
+**Example**:
+```yaml
+verified:
+  - method: "peer-review"   # missing `by` and `at`
+```
+
+**How to Fix**:
+Add the required fields:
+```yaml
+verified:
+  - by: "human:alice"
+    at: "2026-08-10"
+    method: "peer-review"
+```
+
+Fix: add `by: <actor>` and `at: <ISO-8601-date>` to the verified entry.
+
+---
+
+## Warning Codes (W1–W13)
 
 Warnings indicate best-practice violations or missing metadata. Validation passes with warnings unless `--strict` mode is enabled.
 
@@ -326,6 +407,164 @@ To automatically fix all W7 warnings in an OKF bundle, run:
 okf-schema lint --path <bundle>
 ```
 
+> **Note (OKF 0.2)**: The `sources`, `verified`, and `parameters` list-of-mapping
+> fields are **exempted** from inline-forcing by `okf-schema lint`. Their block style
+> is preserved for readability.
+
+---
+
+### W8: Deprecated `timestamp` Field
+
+**Severity**: Warning (OKF 0.2 migration)
+
+**Description**: The frontmatter uses the deprecated OKF 0.1 `timestamp` field instead
+of the OKF 0.2 `generated.at` field.
+
+**Example**:
+```yaml
+timestamp: "2026-08-10T14:00:00Z"   # deprecated
+```
+
+**How to Fix**:
+Replace `timestamp` with a `generated` block:
+```yaml
+generated:
+  at: "2026-08-10T14:00:00Z"
+  by: "human:alice"
+```
+
+Fix: `okf-schema lint --path <bundle> --fix-timestamp`
+
+Stable code: `W8`
+
+---
+
+### W9: Deprecated Body `# Citations` Section
+
+**Severity**: Warning (OKF 0.2 migration)
+
+**Description**: The document body contains a `# Citations` heading. In OKF 0.2,
+citations move to the `sources` frontmatter field with markdown footnotes.
+
+**How to Fix**:
+1. Add a `sources:` frontmatter list with entries having `resource` and optional `id`.
+2. Reference sources in the body using footnote syntax `[^id]`.
+3. Remove the body `# Citations` section.
+
+```yaml
+sources:
+  - id: ref-1
+    resource: "https://example.com/paper.pdf"
+    title: "Example Paper"
+```
+
+```markdown
+This claim is supported by the literature.[^ref-1]
+```
+
+Fix: Manually migrate citations to `sources:` frontmatter and `[^id]` footnotes.
+
+Stable code: `W9`
+
+---
+
+### W10: Malformed Actor String in `verified[].by`
+
+**Severity**: Warning (OKF 0.2)
+
+**Description**: A `verified` entry has a `by` value that does not conform to the
+OKF actor string format `<prefix>:<identifier>`. Only well-formed `human:` actors
+promote the trust tier; malformed actors are ignored for tier derivation.
+
+**Example**:
+```yaml
+verified:
+  - by: "Alice"     # malformed — should be "human:alice"
+    at: "2026-08-10"
+```
+
+**How to Fix**:
+Use the `<prefix>:<identifier>` format:
+```yaml
+verified:
+  - by: "human:alice"
+    at: "2026-08-10"
+```
+
+Stable code: `W10`
+
+---
+
+### W11: Stale File
+
+**Severity**: Warning (OKF 0.2)
+
+**Description**: The `stale_after` date has passed, meaning the document may contain
+outdated information.
+
+**Example**:
+```yaml
+stale_after: "2025-01-01"   # past date → W11
+```
+
+**How to Fix**:
+Either update the content and set a new `stale_after` date, or remove the field:
+```yaml
+stale_after: "2027-01-01"   # updated future date
+```
+
+Stable code: `W11`
+
+---
+
+### W12: Unmatched Footnote Reference
+
+**Severity**: Warning (OKF 0.2)
+
+**Description**: A body footnote reference `[^id]` has no corresponding entry in the
+`sources` frontmatter list with a matching `id`.
+
+**Example**:
+```markdown
+See the paper.[^ref-1]
+```
+Without a `sources` entry having `id: ref-1`.
+
+**How to Fix**:
+Add the corresponding `sources` entry:
+```yaml
+sources:
+  - id: ref-1
+    resource: "https://example.com/paper.pdf"
+```
+
+Stable code: `W12`
+
+---
+
+### W13: Broken Path in `resource` Field
+
+**Severity**: Warning (OKF 0.2)
+
+**Description**: A `resource` field (in frontmatter or in a `sources` entry) contains
+a path-form string that does not resolve to an existing file. URL and scope-descriptor
+forms are skipped.
+
+**Example**:
+```yaml
+sources:
+  - resource: "docs/missing-file.pdf"   # file does not exist
+```
+
+**How to Fix**:
+Correct the path or use a full URL:
+```yaml
+sources:
+  - resource: "https://example.com/paper.pdf"
+```
+
+Stable code: `W13`
+
 ---
 
 ## Exit Codes
@@ -359,7 +598,7 @@ Use `--strict` in CI/CD pipelines to enforce best practices.
 
 When validating an OKF bundle, the following checks are applied:
 
-**All files**: E1, E2, E4, E5, W1, W2, W3, W6, W7
+**All files**: E1, E2, E4, E5, E8-E10, W1, W2, W3, W6-W13
 **Reserved files**: E3, E6
 **Bundle structure**: E7, W4
 
@@ -367,7 +606,7 @@ When validating an OKF bundle, the following checks are applied:
 
 When validating standalone markdown files without a bundle, the following checks are applied:
 
-**All files**: E1, E2, E4, E5, W1, W3, W6, W7
+**All files**: E1, E2, E4, E5, E8-E10, W1, W3, W6-W13
 
 **Not applied** (bundle-specific):
 - W2 (broken links require a common root for resolution)
