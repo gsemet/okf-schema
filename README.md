@@ -1,5 +1,6 @@
 # okf-schema
 
+[![OKF BundleDex](https://bundledex.net/static-badge.svg)](https://bundledex.net)
 [![CI](https://github.com/gsemet/okf-schema/actions/workflows/ci.yml/badge.svg)](https://github.com/gsemet/okf-schema/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/gsemet/okf-schema)](https://codecov.io/gh/gsemet/okf-schema)
 [![PyPI](https://img.shields.io/pypi/v/okf-schema)](https://pypi.org/project/okf-schema/)
