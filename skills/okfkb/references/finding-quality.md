@@ -55,7 +55,7 @@ allowed by the local schema:
 - `derived_from`: the Finding was produced by an Experiment.
 
 Consolidation appends reciprocal lifecycle metadata to the older Finding, such
-as `status: contradicted`, `contradicted_by`, `status: superseded`, or
+as `kb_status: contradicted`, `contradicted_by`, `kb_status: superseded`, or
 `superseded_by`. Appending lifecycle metadata is not permission to alter prose.
 
 ## Before finishing

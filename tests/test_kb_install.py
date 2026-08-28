@@ -1,4 +1,4 @@
-"""Tests for src/okf_schema/kb/install.py — install_kb()."""
+"""Tests for src/okf_schema/okfkb/install.py — install_kb()."""
 
 from __future__ import annotations
 
@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from okf_schema.kb.install import install_kb
+from okf_schema.okfkb.install import install_kb
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 _GUIDELINE_NAME = "knowledge-base.guidelines.md"
-_SKILL_NAMES = ("consolidate-knowledge-base", "record-finding")
+_SKILL_NAMES = ("okfkb-distill", "okfkb-record-findings")
 
 
 def _agents_guideline(base: Path) -> Path:
@@ -93,6 +93,17 @@ class TestFileInstallation:
             assert _agents_skill(tmp_path / ".github", skill).is_dir()
 
 
+def test_installs_the_consolidation_skill(tmp_path: Path) -> None:
+    """Installs the distill skill that drives Finding consolidation."""
+    # @tests_req SwRS-OKFSCHEMA-OKFKB-002
+    # @tests_req SwRS-OKFSCHEMA-OKFKB-005
+    install_kb(tmp_path)
+    skill_md = _agents_skill(tmp_path / ".agents", "okfkb-distill") / "SKILL.md"
+    body = skill_md.read_text(encoding="utf-8")
+    assert "contradictions" in body
+    assert "human confirmation" in body
+
+
 # ---------------------------------------------------------------------------
 # Conflict resolution
 # ---------------------------------------------------------------------------
@@ -116,7 +127,7 @@ class TestConflictResolution:
     def test_skips_existing_skill(self, tmp_path: Path) -> None:
         """Does not overwrite existing skill directory when force=False."""
         base = tmp_path / ".agents"
-        skill_dir = base / "skills" / "record-finding"
+        skill_dir = base / "skills" / "okfkb-record-findings"
         skill_dir.mkdir(parents=True)
         sentinel_file = skill_dir / "custom.txt"
         sentinel_file.write_text("sentinel", encoding="utf-8")
@@ -139,7 +150,7 @@ class TestConflictResolution:
     def test_force_overwrites_skill(self, tmp_path: Path) -> None:
         """Overwrites existing skill directory when force=True."""
         base = tmp_path / ".agents"
-        skill_dir = base / "skills" / "record-finding"
+        skill_dir = base / "skills" / "okfkb-record-findings"
         skill_dir.mkdir(parents=True)
         extra_file = skill_dir / "extra.txt"
         extra_file.write_text("extra", encoding="utf-8")

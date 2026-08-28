@@ -2,9 +2,20 @@
 
 This reference documents all validation codes returned by okf-schema's validation commands (`validate` and `validate-md`).
 
-## Error Codes (E1–E10)
+## Error Codes (E0–E10)
 
 Errors represent conformance violations that must be fixed before the validation passes.
+
+### E0: Invalid Bundle Path
+
+**Severity**: Error
+
+**Description**: The path passed to bundle validation is not a directory.
+
+**How to Fix**: Pass the bundle directory itself, such as
+`okf-schema validate --path my-bundle/bundle`.
+
+---
 
 ### E1: Missing or Unparseable Frontmatter
 
@@ -234,9 +245,18 @@ Fix: add `by: <actor>` and `at: <ISO-8601-date>` to the verified entry.
 
 ---
 
-## Warning Codes (W1–W13)
+## Warning Codes (W0–W13)
 
 Warnings indicate best-practice violations or missing metadata. Validation passes with warnings unless `--strict` mode is enabled.
+
+### W0: Standalone Path Is Not a File
+
+**Severity**: Warning (`validate-md` only)
+
+**Description**: A resolved standalone input path is not a regular markdown
+file. Correct or narrow the input pattern.
+
+---
 
 ### W1: Missing Recommended Fields
 
@@ -283,19 +303,21 @@ Either:
 
 ---
 
-### W3: Missing Timestamp Field
+### W3: Missing Provenance Timestamp
 
 **Severity**: Warning
 
-**Description**: The frontmatter lacks an ISO 8601 timestamp field, which is useful for tracking when a concept was last updated.
+**Description**: The frontmatter lacks `generated.at`, which records document
+provenance. A legacy `timestamp` suppresses W3 but separately triggers W8.
 
 **How to Fix**:
-Add a `timestamp` field in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ):
+Add `generated.at` in ISO 8601 format:
 ```yaml
 ---
 type: concept
 title: My Concept
-timestamp: "2024-07-06"
+generated:
+  at: "2024-07-06T00:00:00Z"
 ---
 ```
 
@@ -433,7 +455,8 @@ generated:
   by: "human:alice"
 ```
 
-Fix: `okf-schema lint --path <bundle> --fix-timestamp`
+Fix: `okf-schema lint --path <bundle>`. Lint preserves the legacy value as
+`generated.at`; it does not invent a `generated.by` actor.
 
 Stable code: `W8`
 
@@ -546,9 +569,8 @@ Stable code: `W12`
 
 **Severity**: Warning (OKF 0.2)
 
-**Description**: A `resource` field (in frontmatter or in a `sources` entry) contains
-a path-form string that does not resolve to an existing file. URL and scope-descriptor
-forms are skipped.
+**Description**: A `sources[].resource` value contains a path-form string that
+does not resolve to an existing file. URL and scope-descriptor forms are skipped.
 
 **Example**:
 ```yaml
@@ -687,7 +709,8 @@ type: principle
 ---
 ```
 
-**Problems**: Missing `title` (W1), missing `description` (W1), missing `timestamp` (W3)
+**Problems**: Missing `title` (W1), missing `description` (W1), and missing
+`generated.at` (W3)
 
 **Fixed**:
 ```yaml
@@ -695,6 +718,7 @@ type: principle
 type: principle
 title: Keep Frontmatter Compact
 description: Coding agents load the first N lines; block-style lists reduce visible content
-timestamp: "2024-07-06"
+generated:
+  at: "2024-07-06T00:00:00Z"
 ---
 ```

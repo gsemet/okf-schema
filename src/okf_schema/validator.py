@@ -296,7 +296,7 @@ def _validate_okf2_generated(
             "W8",
             f"File '{path}' uses deprecated 'timestamp' field. "
             "Migrate to 'generated.at'. "
-            "Fix: okf-schema lint --path <bundle> --fix-timestamp",
+            "Fix: okf-schema lint --path <bundle>",
             path,
         )
 
@@ -520,6 +520,7 @@ def _has_block_lists(fm_text: str) -> bool:
     return False
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-006
 def validate_concept(
     path: Path,
     report: Report,
@@ -712,6 +713,7 @@ def _check_reserved_file_naming(
             )
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-001
 def validate_bundle(
     bundle: Path,
     schemas: dict[str, dict] | None = None,
@@ -782,7 +784,8 @@ def validate_markdown_files(
 ) -> Report:
     """Validate standalone markdown files (not part of an OKF bundle).
 
-    Validates each file using E1-E5 and W1-W3, W6-W7 rules.
+    Validates each file using E1, E2, E4, E5, E8-E10 and W1, W3,
+    W6-W13 rules.
     Bundle-specific constraints (E7, W4, E6, W5) are not applied.
     Links are not validated since there is no common root.
 

@@ -23,11 +23,11 @@ alias for knowledge-base management.
 | Guideline | 1 | `src/okf_schema/data/kb/guidelines/` |
 
 ### New Modules
-- `src/okf_schema/kb/__init__.py`
-- `src/okf_schema/kb/cli.py` — Click command group
-- `src/okf_schema/kb/scaffold.py` — `scaffold_kb()`
-- `src/okf_schema/kb/install.py` — `install_kb()`
-- `src/okf_schema/kb/patterns.py` — `INIT_PATTERNS` registry
+- `src/okf_schema/okfkb/__init__.py`
+- `src/okf_schema/okfkb/cli.py` — Click command group
+- `src/okf_schema/okfkb/scaffold.py` — `scaffold_kb()`
+- `src/okf_schema/okfkb/install.py` — `install_kb()`
+- `src/okf_schema/okfkb/patterns.py` — `INIT_PATTERNS` registry
 
 ### New Tests (69 KB-specific, 463 total)
 - `tests/test_kb_scaffold.py` — 25 tests, 100% coverage

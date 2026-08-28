@@ -48,7 +48,7 @@ paths are covered to maintain the 96% coverage threshold.
    from pathlib import Path
    import yaml
    from click.testing import CliRunner
-   from okf_schema.kb.scaffold import scaffold_kb
+   from okf_schema.okfkb.scaffold import scaffold_kb
    from okf_schema.cli import cli
 
    class TestScaffoldKb:
@@ -107,7 +107,7 @@ paths are covered to maintain the 96% coverage threshold.
 
 4. Run tests with coverage:
    ```bash
-   uv run pytest tests/test_kb_scaffold.py tests/test_kb_patterns.py tests/test_cli_core.py -v --cov=okf_schema.kb --cov-report=term-missing
+   uv run pytest tests/test_kb_scaffold.py tests/test_kb_patterns.py tests/test_cli_core.py -v --cov=okf_schema.okfkb --cov-report=term-missing
    ```
 
 5. Run `just preflight`.

@@ -12,14 +12,32 @@ choice.
 |---|---|
 | `okf-schema` | CLI/API mechanics, schemas, conformance, frontmatter, links, indexing, and validation. |
 | `okfkb` | Knowledge-lifecycle guidance and routing to the smallest appropriate workflow. |
-| `record-finding` | Fast capture of one dated empirical Finding after an investigation. |
-| `consolidate-knowledge-base` | Interactive contradiction and promotion review with human confirmation. |
+| `okfkb-record-findings` | Fast capture of one dated empirical Finding after an investigation. |
+| `okfkb-distill` | Interactive contradiction and promotion review with human confirmation. |
 | `okfkb-gardening` | Explicitly invoked, autonomous, zero-prompt batch maintenance. |
 
 The repository skills are documented in
 [`skills/README.md`](https://github.com/gsemet/okf-schema/blob/main/skills/README.md).
-`record-finding` and `consolidate-knowledge-base` are bundled skills that can be
+`okfkb-record-findings` and `okfkb-distill` are bundled skills that can be
 deployed into a project with `okfkb install-skills`.
+
+## Where the skills are installed
+
+When you run `okfkb install-skills /path/to/project`, the skills are copied into
+the target project's agent-customization directory:
+
+```text
+/path/to/project/.agents/skills/
+├── okfkb-record-findings/SKILL.md
+└── okfkb-distill/SKILL.md
+```
+
+If `.agents/` is absent but `.github/` already exists, installation uses
+`.github/skills/` instead. When neither exists, it creates `.agents/`.
+
+This keeps the skills available to coding agents working in that project. The
+knowledge documents remain in the project knowledge base; installing the skills
+does not copy or modify those documents.
 
 ## 1. Prepare the project
 
@@ -43,7 +61,7 @@ periodic autonomous pass.
 
 Use `okfkb` during debugging, investigation, or verification. At task completion
 it assesses whether a discovery is empirical, non-trivial, reusable, bounded,
-and absent from the KB. Valuable observations are routed to `record-finding`.
+and absent from the KB. Valuable observations are routed to `okfkb-record-findings`.
 
 A Finding records the local truth at time $T$:
 
@@ -76,7 +94,7 @@ Choose one of two modes:
 
 ### Interactive consolidation
 
-Invoke `consolidate-knowledge-base` when a human wants to review each proposed
+Invoke `okfkb-distill` when a human wants to review each proposed
 contradiction, Experiment, or promotion before it is written.
 
 ### Autonomous gardening

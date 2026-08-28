@@ -5,14 +5,14 @@
 
 ## Objective
 
-Implement `src/okf_schema/kb/scaffold.py` containing the `scaffold_kb()` function
+Implement `src/okf_schema/okfkb/scaffold.py` containing the `scaffold_kb()` function
 that creates the canonical KB folder layout: 8 content directories, 8 schema files
 (copied from bundled data), `index.md`, and `log.md`.
 
 ## Files to Modify/Create
 
-- Create `src/okf_schema/kb/__init__.py` (package marker, can re-export)
-- Create `src/okf_schema/kb/scaffold.py`
+- Create `src/okf_schema/okfkb/__init__.py` (package marker, can re-export)
+- Create `src/okf_schema/okfkb/scaffold.py`
 - Create `tests/test_kb_scaffold.py`
 
 ## Acceptance Criteria
@@ -49,7 +49,7 @@ that creates the canonical KB folder layout: 8 content directories, 8 schema fil
    - `test_scaffold_kb_index_has_frontmatter`
    - `test_scaffold_kb_log_has_date_heading`
 
-2. **Green**: Implement `src/okf_schema/kb/scaffold.py`:
+2. **Green**: Implement `src/okf_schema/okfkb/scaffold.py`:
    ```python
    from __future__ import annotations
 

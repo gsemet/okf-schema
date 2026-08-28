@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="540" viewBox="0 0 1440 540" role="img" aria-labelledby="title desc">
+	<title id="title">OKF-KB hardware debugging overview</title>
+	<desc id="desc">A hand-drawn-style systems diagram showing debug sessions producing Findings, which are distilled into Concepts and Structures, while Principles remain human governed. An agent navigates the layers to answer a low-temperature boot question.</desc>
+	<defs>
+		<marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#4a4a4a"/></marker>
+		<marker id="arrow-blue" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#566b8f"/></marker>
+		<pattern id="paper" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#fff"/><circle cx="2" cy="3" r=".45" fill="#e5e1dc"/><circle cx="9" cy="8" r=".35" fill="#ebe7e2"/></pattern>
+		<filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#8f8a84" flood-opacity=".25"/></filter>
+	</defs>
+	<rect width="1440" height="540" rx="18" fill="url(#paper)"/>
+	<g font-family="sans-serif" fill="#202020">
+		<text x="720" y="34" text-anchor="middle" font-size="24" font-weight="700">OKF-KB hardware debugging overview</text>
+		<path d="M382 70 V500 M1058 70 V500" stroke="#aaa39c" stroke-width="1.5" stroke-dasharray="7 8"/>
+		<text x="190" y="78" text-anchor="middle" font-size="20" font-weight="700">Debug Sessions</text>
+		<text x="720" y="78" text-anchor="middle" font-size="20" font-weight="700">Knowledge Base Layers</text>
+		<text x="1248" y="78" text-anchor="middle" font-size="20" font-weight="700">KB Navigation</text>
+
+		<!-- session cards -->
+		<g stroke="#4a4a4a" stroke-width="2" filter="url(#shadow)">
+			<rect x="35" y="105" width="310" height="52" rx="12" fill="#fff"/>
+			<rect x="35" y="174" width="310" height="52" rx="12" fill="#fff"/>
+			<rect x="35" y="243" width="310" height="52" rx="12" fill="#fff"/>
+			<rect x="35" y="312" width="310" height="52" rx="12" fill="#fff"/>
+			<rect x="35" y="381" width="310" height="52" rx="12" fill="#fff"/>
+		</g>
+		<g fill="#cfe3f7" stroke="#4a4a4a" stroke-width="2">
+			<rect x="53" y="118" width="25" height="25" rx="4"/><path d="M48 124h5m-5 7h5m-5 7h5m30-14h5m-5 7h5m-5 7h5M59 113v5m7-5v5m7-5v5M59 143v5m7-5v5m7-5v5"/>
+			<rect x="53" y="187" width="25" height="25" rx="4"/><rect x="53" y="256" width="25" height="25" rx="4"/><rect x="53" y="325" width="25" height="25" rx="4"/><rect x="53" y="394" width="25" height="25" rx="4"/>
+		</g>
+		<g font-size="15"><text x="92" y="127" font-weight="700">Session 1 ·</text><text x="92" y="146">25°C boot hang</text><text x="92" y="196" font-weight="700">Session 2 ·</text><text x="92" y="215">0°C thermal sweep</text><text x="92" y="265" font-weight="700">Session 3 ·</text><text x="92" y="284">PLL lock measurement</text><text x="92" y="334" font-weight="700">Session 4 ·</text><text x="92" y="353">bootloader source review</text><text x="92" y="403" font-weight="700">Session 5 ·</text><text x="92" y="422">fix validated</text></g>
+		<!-- pyramid layers -->
+		<g stroke="#4a4a4a" stroke-width="2" stroke-linejoin="round" filter="url(#shadow)">
+			<path d="M720 98 L662 181 L778 181 Z" fill="#e3d4f2"/>
+			<path d="M662 181 L778 181 L842 273 L598 273 Z" fill="#f7cbc5"/>
+			<path d="M598 273 L842 273 L913 375 L527 375 Z" fill="#fbf0c4"/>
+			<path d="M527 375 L913 375 L975 464 L465 464 Z" fill="#cfe3f7"/>
+		</g>
+		<!-- session evidence uses a quiet gutter bus and enters the Findings layer once -->
+		<g fill="none" stroke="#4a4a4a" stroke-width="1.8">
+			<path d="M345 131H420M345 200H420M345 269H420M345 338H420M345 407H420"/>
+			<path d="M420 131V440H482" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+		</g>
+		<circle cx="482" cy="440" r="6" fill="#fff" stroke="#4a4a4a" stroke-width="2"/>
+		<g text-anchor="middle">
+			<rect x="645" y="120" width="150" height="53" rx="6" fill="#d8c3ec"/>
+			<text x="720" y="137" font-size="14" font-weight="700">Principles</text><text x="720" y="153" font-size="10">authoritative team rules</text><text x="720" y="167" font-size="10">human governed only</text>
+			<text x="720" y="218" font-size="16" font-weight="700">Structures</text><text x="720" y="238" font-size="12">system patterns · domain scope</text>
+			<text x="720" y="310" font-size="16" font-weight="700">Concepts</text><text x="720" y="330" font-size="12">stable understanding · revised by evidence</text>
+			<text x="720" y="410" font-size="17" font-weight="700">Findings · raw evidence</text><text x="720" y="430" font-size="12">immutable · contextual · supersedable</text>
+		</g>
+		<!-- provenance legend: kept below the content so links never cross explanatory text -->
+		<g transform="translate(515 477)" fill="none" stroke="#566b8f" stroke-width="1.5" stroke-dasharray="5 4"><path d="M0 0H120"/><path d="M165 0H285"/></g>
+		<g font-size="11" fill="#4b5563"><text x="575" y="493" text-anchor="middle">relates_to</text><text x="883" y="493" text-anchor="middle">supersedes · provenance</text></g>
+		<!-- representative Markdown entities float to the right of their corresponding layers -->
+		<g fill="none" stroke="#566b8f" stroke-width="1.8">
+			<path d="M755 140L900 130"/>
+			<path d="M807 222L900 203"/>
+			<path d="M842 324L900 276"/>
+			<path d="M930 349L913 416"/>
+		</g>
+		<g stroke="#566b8f" stroke-width="2" filter="url(#shadow)">
+			<rect x="900" y="104" width="140" height="52" rx="10" fill="#e3d4f2"/>
+			<rect x="900" y="177" width="140" height="52" rx="10" fill="#f7cbc5"/>
+			<rect x="900" y="250" width="140" height="52" rx="10" fill="#fbf0c4"/>
+			<rect x="900" y="323" width="140" height="52" rx="10" fill="#cfe3f7"/>
+		</g>
+		<g font-size="10">
+			<text x="910" y="126" font-weight="700">polling-rule.md</text><text x="910" y="145">poll until PLL_LOCK</text>
+			<text x="910" y="199" font-weight="700">boot-sequence.md</text><text x="910" y="218">PLL starts boot release</text>
+			<text x="910" y="272" font-weight="700">ppl.md</text><text x="910" y="291">0°C margin: 950µs</text>
+			<text x="910" y="345" font-weight="700">2026.08-ppl.md</text><text x="910" y="364">0°C: lock at 950µs</text>
+		</g>
+		<!-- layer-to-layer progression: both curves stay outside the pyramid and enter at layer boundaries -->
+		<g fill="none" stroke="#4a4a4a" stroke-width="2" marker-end="url(#arrow-blue)">
+			<path d="M496 420C455 405 451 352 505 326C526 316 546 322 563 324"/>
+			<path d="M563 324C523 306 523 254 570 230C590 220 614 224 630 227"/>
+		</g>
+		<g font-size="11" fill="#4a4a4a" text-anchor="middle">
+			<rect x="448" y="350" width="60" height="22" rx="5" fill="#fff"/>
+			<text x="478" y="365" text-anchor="middle">corroborate</text>
+			<rect x="484" y="212" width="92" height="36" rx="5" fill="#fff"/><text x="530" y="227">consolidate</text><text x="530" y="241">mental model</text>
+		</g>
+		<!-- storage note: avoids placing cards over the pyramid boundary -->
+		<g fill="#fff" stroke="#566b8f" stroke-width="1.5"><rect x="820" y="477" width="155" height="32" rx="8"/></g>
+		<text x="897" y="498" text-anchor="middle" font-size="11" fill="#566b8f">Markdown + Git</text>
+
+		<!-- navigation -->
+		<g stroke="#4a4a4a" stroke-width="2"><circle cx="1100" cy="125" r="19" fill="#cfe3f7"/><path d="M1087 139q13-25 26 0" fill="#f7cbc5"/><circle cx="1100" cy="119" r="7" fill="#fff"/></g><rect x="1130" y="99" width="250" height="52" rx="12" fill="#fff" stroke="#4a4a4a" stroke-width="2"/><text x="1145" y="120" font-size="14">Why does boot hang</text><text x="1145" y="139" font-size="14">at low temperature?</text>
+		<text x="1240" y="180" text-anchor="middle" font-size="14" font-weight="700">Navigation Tools</text><g stroke="#4a4a4a" stroke-width="1.5"><rect x="1090" y="193" width="62" height="25" rx="12" fill="#fff"/><rect x="1163" y="193" width="62" height="25" rx="12" fill="#fff"/><rect x="1236" y="193" width="62" height="25" rx="12" fill="#fff"/><rect x="1309" y="193" width="62" height="25" rx="12" fill="#fff"/></g><g text-anchor="middle" font-size="12"><text x="1121" y="210">search</text><text x="1194" y="210">get</text><text x="1267" y="210">read</text><text x="1340" y="210">query</text></g>
+		<g stroke="#4a4a4a" stroke-width="2" fill="none" marker-end="url(#arrow)"><path d="M1240 248V276"/><path d="M1240 338V366"/><path d="M1240 428V456"/></g>
+		<g stroke="#566b8f" stroke-width="2"><rect x="1090" y="276" width="300" height="62" rx="10" fill="#e3d4f2"/><rect x="1090" y="366" width="300" height="62" rx="10" fill="#fbf0c4"/><rect x="1090" y="456" width="300" height="58" rx="10" fill="#d8ead7"/></g>
+		<g font-size="12"><text x="1105" y="298" font-weight="700">1 · Start at Structures + Concepts</text><text x="1105" y="318">Findings are not read by default.</text><text x="1105" y="388" font-weight="700">2 · Concept is incomplete</text><text x="1105" y="408">Drill down into current Findings.</text><text x="1105" y="478" font-weight="700">3 · Answer</text><text x="1105" y="498">Poll PLL_LOCK; 400µs is too short.</text></g>
+		<text x="720" y="528" text-anchor="middle" font-size="12" fill="#4b5563">Findings read only when a concept is incomplete · Principles checked for company-rule fit</text>
+	</g>
+</svg>

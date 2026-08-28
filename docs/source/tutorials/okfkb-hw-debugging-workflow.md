@@ -5,8 +5,8 @@ This tutorial shows how a team uses [OKF-KB](../explanation/okfkb-choices.md)
 to capture observations, investigate contradictions,
 and build stable knowledge over a multi-week debugging campaign.
 
-```{image} ../_static/okfkb-hw-debugging-overview.png
-:alt: OKF-KB debugging overview — debug sessions feed a stratified pyramid (findings → concepts → structures → principles), navigated with search/get/read/query
+```{image} ../_static/okfkb-hw-debugging-overview-v2.svg
+:alt: OKF-KB debugging overview — debug sessions feed a layered pyramid of findings, concepts, structures, and principles; the agent navigates the layers to diagnose the low-temperature boot issue
 :width: 100%
 ```
 
@@ -20,8 +20,8 @@ This tutorial uses the skills as a lifecycle, not as aliases for CLI commands:
 | Skill | Role in the campaign |
 |---|---|
 | `okfkb` | Recognizes durable discoveries, chooses the correct layer, routes Finding capture, and navigates existing knowledge before new investigation. |
-| `record-finding` | Captures each bounded empirical observation quickly without rewriting earlier evidence. |
-| `consolidate-knowledge-base` | Offers an interactive review when engineers want to confirm each contradiction or promotion. |
+| `okfkb-record-findings` | Captures each bounded empirical observation quickly without rewriting earlier evidence. |
+| `okfkb-distill` | Offers an interactive review when engineers want to confirm each contradiction or promotion. |
 | `okfkb-gardening` | Runs an explicitly requested, zero-prompt batch pass after Findings accumulate: repairs the graph, consolidates semantic knowledge, opens investigations, and validates. |
 | `okf-schema` | Performs deterministic index, lint, schema-validation, and query operations underneath those workflows. |
 
@@ -50,12 +50,12 @@ only **proposes** Principles. A human team must agree before a Principle changes
 ### Monday, 2026-07-01 — First Observation
 
 Engineer runs a test at room temperature (25°C). The `okfkb` skill recognizes a
-non-trivial empirical discovery and routes it to `record-finding`, which creates
+non-trivial empirical discovery and routes it to `okfkb-record-findings`, which creates
 Finding #1:
 
 ```bash
 # Agent discovers timing anomaly in trace logs
-okfkb new-finding "Boot initialization hangs ~500ms, sometimes recovers"
+okfkb new-finding . --title "Boot initialization hangs ~500ms, sometimes recovers"
 ```
 
 **Finding: 2026.07.01-09.30-boot-hangs-500ms.md**
@@ -72,11 +72,13 @@ context: >
   Power supply: 12V nominal.
   Observed in trace: timing stall after peripheral init phase,
   variable recovery (0-100ms delay).
-timestamp: 2026-07-01T09:30:00Z
+generated:
+  at: 2026-07-01T09:30:00Z
+  by: human:alice
 tags: [boot, initialization, timeout]
 links: []
 backlinks: []
-status: active
+kb_status: active
 ---
 ```
 
@@ -99,7 +101,7 @@ Confidence: low — too few datapoints, timing is variable.
 Engineer runs thermal chamber test at 0°C. **Agent creates Finding #2**, linking to #1:
 
 ```bash
-okfkb new-finding "Boot timeout occurs more frequently at 0°C"
+okfkb new-finding . --title "Boot timeout occurs more frequently at 0°C"
 ```
 
 **Finding: 2026.07.02-11.00-temperature-sensitivity.md**
@@ -116,12 +118,14 @@ context: >
   At 25°C: boot hang in 2/20 cycles (10%).
   At 50°C: no failures in 20 cycles.
   Correlation is clear.
-timestamp: 2026-07-02T11:00:00Z
+generated:
+  at: 2026-07-02T11:00:00Z
+  by: human:alice
 tags: [boot, temperature, thermal]
 links:
   - findings/2026.07.01-09.30-boot-hangs-500ms.md
 backlinks: []
-status: active
+kb_status: active
 ---
 ```
 
@@ -142,7 +146,7 @@ Confidence: medium — reproducible trend, clear correlation.
 Engineer measures PLL lock time vs. temperature. **Agent creates Finding #3**:
 
 ```bash
-okfkb new-finding "PLL lock time increases from 200µs to 800µs at low temperature"
+okfkb new-finding . --title "PLL lock time increases from 200µs to 800µs at low temperature"
 ```
 
 **Finding: 2026.07.03-14.20-pll-temp-drift.md**
@@ -159,13 +163,15 @@ context: >
   At 0°C: PLL lock time ~800µs (spec limit: 1000µs, but close).
   At -10°C: PLL lock time ~950µs (near spec boundary).
   Temperature coefficient: ~10µs/°C.
-timestamp: 2026-07-03T14:20:00Z
+generated:
+  at: 2026-07-03T14:20:00Z
+  by: human:alice
 tags: [pll, oscillator, temperature]
 links:
   - findings/2026.07.02-11.00-temperature-sensitivity.md
   - findings/2026.07.01-09.30-boot-hangs-500ms.md
 backlinks: []
-status: active
+kb_status: active
 ---
 ```
 
@@ -184,7 +190,7 @@ Confidence: high — direct measurement with oscilloscope proof.
 Architect reviews bootloader code. **Agent creates Finding #4** (contradiction/refinement):
 
 ```bash
-okfkb new-finding "Bootloader has hardcoded PLL wait timeout of 400µs, not polling"
+okfkb new-finding . --title "Bootloader has hardcoded PLL wait timeout of 400µs, not polling"
 ```
 
 **Finding: 2026.07.05-10.15-bootloader-timeout-hardcoded.md**
@@ -204,12 +210,14 @@ context: >
   Bootloader does NOT poll PLL_LOCK signal.
   It just waits 400µs then proceeds to DDR init.
   If PLL not ready, DDR init fails, firmware hangs.
-timestamp: 2026-07-05T10:15:00Z
+generated:
+  at: 2026-07-05T10:15:00Z
+  by: human:alice
 tags: [bootloader, firmware, pll, timeout]
 links:
   - findings/2026.07.03-14.20-pll-temp-drift.md
   - findings/2026.07.02-11.00-temperature-sensitivity.md
-status: active
+kb_status: active
 ---
 ```
 
@@ -265,7 +273,7 @@ links:
   - principles/firmware-timeouts-must-be-polled.md
   - outcomes/fix-bootloader-pll-polling.md
 backlinks: []
-status: active
+kb_status: active
 ---
 
 # Concept: Boot Initialization Timing Margin: PLL Lock at Low Temperature
@@ -296,7 +304,7 @@ Replace hardcoded WAIT with event-driven polling of PLL_LOCK signal.
 Add minimum timeout of 1200µs (worst case: -10°C + margin).
 EOF
 
-okfkb update concepts/boot-pll-startup-margin.md
+okfkb update .
 ```
 
 ### Gardening Creates Supporting Documents
@@ -309,7 +317,7 @@ cat > structures/boot-sequence-architecture.md << 'EOF'
 type: Structure
 title: Boot Sequence Architecture
 description: Boot phases and timing dependencies from CPU release to application start.
-status: active
+kb_status: active
 derived_from:
   - findings/2026.07.03-14.20-pll-temp-drift.md
   - findings/2026.07.05-10.15-bootloader-timeout-hardcoded.md
@@ -350,7 +358,7 @@ PLL lock phase has insufficient margin at low temperature.
 See `concepts/boot-pll-startup-margin.md` for details.
 EOF
 
-okfkb update structures/boot-sequence-architecture.md
+okfkb update .
 ```
 
 ### Gardening Proposes a Principle
@@ -399,7 +407,7 @@ See `concepts/boot-pll-startup-margin.md` for cautionary example.
 All new bootloader code must follow this pattern.
 EOF
 
-okfkb update principles/firmware-timeouts-must-be-polled.md
+okfkb update .
 ```
 
 **Outcome Document** (planned deliverable):
@@ -412,7 +420,7 @@ title: Fix Bootloader PLL Initialization to Use Event Polling
 description: Replace the fixed PLL wait with bounded event-driven polling and validate it thermally.
 derived_from:
   - concepts/boot-pll-startup-margin.md
-status: planned
+kb_status: planned
 deliverable: Bootloader change and thermal validation evidence by 2026-07-22.
 ---
 
@@ -437,7 +445,7 @@ Replace hardcoded PLL wait (400µs) with:
 Firmware team (Renault Ampere)
 EOF
 
-okfkb update outcomes/fix-bootloader-pll-polling.md
+okfkb update .
 ```
 
 ### Index, Validate, and Review
@@ -463,7 +471,7 @@ The gardening skill discovers the equivalent project-prescribed commands from
 Engineer submits bootloader fix (event-driven PLL polling). **Agent creates validation finding**:
 
 ```bash
-okfkb new-finding "Bootloader fix validated: 100 boot cycles at -10°C, 0 failures"
+okfkb new-finding . --title "Bootloader fix validated: 100 boot cycles at -10°C, 0 failures"
 ```
 
 **Finding: 2026.07.15-16.45-fix-validation.md**
@@ -479,13 +487,15 @@ context: >
   Result: 100% success rate (previously ~60% failure at -10°C).
   Fix: Bootloader now polls PLL_LOCK instead of hardcoded 400µs wait.
   Actual timeout: ~1100µs (within new 1200µs spec).
-timestamp: 2026-07-15T16:45:00Z
+generated:
+  at: 2026-07-15T16:45:00Z
+  by: human:alice
 tags: [boot, validation, fix-verified]
 links:
   - outcomes/fix-bootloader-pll-polling.md
   - concepts/boot-pll-startup-margin.md
 backlinks: []
-status: active
+kb_status: active
 ---
 ```
 
@@ -564,7 +574,7 @@ After the Findings align, gardening promotes the stable understanding using
 agent judgment about evidence quality, scope, and reuse value.
 
 **Structure enables**: Evidence provenance and `log.md` leave an audit trail.
-Interactive teams can use `consolidate-knowledge-base` instead when they want to
+Interactive teams can use `okfkb-distill` instead when they want to
 confirm each mutation.
 
 ### 3. **Contradictions Don't Break the Process**
@@ -572,7 +582,7 @@ confirm each mutation.
 If Day 6 brought contradictory evidence, the old findings would be marked:
 
 ```yaml
-status: contradicted
+kb_status: contradicted
 contradicted_by: [findings/2026.07.06-new-finding.md]
 ```
 
@@ -649,7 +659,7 @@ For hands-on practice:
 
 1. Create an empty KB: `okfkb init my-project-kb`
 2. Make the `okfkb` skill available and investigate one real problem
-3. Let it route durable observations to `record-finding`
+3. Let it route durable observations to `okfkb-record-findings`
 4. After several Findings accumulate, explicitly invoke `okfkb-gardening`
 5. Review any Principle proposal and make the human governance decision
 

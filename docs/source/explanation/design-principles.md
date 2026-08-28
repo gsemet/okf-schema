@@ -6,7 +6,7 @@ decision.
 ## 1. Self-describing bundles
 
 A knowledge base should explain its own structure. By requiring JSONSchema
-files in `_schema/`, OKF-Schema makes bundles self-describing: any tool (or
+files in `_schema/`, OKF-Schema lets bundles be self-describing: any tool (or
 agent) can read the schemas and understand what fields are expected, what
 types they should have, and which are required.
 
@@ -31,7 +31,7 @@ A large knowledge base is overwhelming if presented all at once. OKF-Schema
 encourages progressive disclosure:
 
 * `index.md` files in each directory provide a local table of contents
-* `log.md` files provide a chronological history of changes
+* the root `log.md` provides a chronological history of changes
 * Cross-links between concepts let readers navigate depth-first, exploring
   only what interests them
 
@@ -39,7 +39,9 @@ encourages progressive disclosure:
 
 Validation is not an afterthought: it is a gate that prevents malformed data
 from entering the system. By running `okf-schema validate --strict` in CI,
-you guarantee that every concept on the main branch conforms to the schema.
+you guarantee that every concept with a matching schema on the main branch
+conforms to that schema. Strict mode also promotes warnings, including
+missing-schema warnings, to failures.
 
 This is especially important for agent-generated content: agents can produce
 incorrect frontmatter, and validation catches these errors before they
@@ -64,7 +66,7 @@ A knowledge base is a graph of interlinked concepts, not a folder hierarchy.
 OKF-Schema encourages dense cross-linking through:
 
 * `backlinks` — discover which concepts link to a given target
-* `graph` — build the full link graph for analysis
+* `graph_bundle` — build the full link graph through the Python API
 * Relative links — `../tables/orders.md` works regardless of where the bundle
   is mounted
 

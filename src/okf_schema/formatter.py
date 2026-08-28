@@ -7,7 +7,7 @@ import io
 from dataclasses import dataclass
 from pathlib import Path
 
-from ruamel.yaml.comments import CommentedSeq
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from okf_schema._internal.utils import (
     build_link_graph,
@@ -23,6 +23,25 @@ class FormattedResult:
     path: Path
     changed: bool
     diff: str | None = None
+
+
+def _migrate_legacy_timestamp(data: dict) -> bool:
+    """Move a legacy ``timestamp`` into ``generated.at`` when safe."""
+    if "timestamp" not in data:
+        return False
+    generated = data.get("generated")
+    if "generated" in data and not isinstance(generated, dict):
+        return False
+
+    key_index = list(data).index("timestamp")
+    timestamp = data.pop("timestamp")
+    if isinstance(generated, dict):
+        generated.setdefault("at", timestamp)
+    elif isinstance(data, CommentedMap):
+        data.insert(key_index, "generated", {"at": timestamp})
+    else:  # defensive fallback for alternate YAML loaders
+        data["generated"] = {"at": timestamp}
+    return True
 
 
 def flatten_value(value: object) -> object:
@@ -70,6 +89,11 @@ def format_frontmatter(text: str) -> str | None:
         return text
 
     changed = False
+
+    # Migrate deprecated OKF 0.1 provenance without inventing an actor. Keep
+    # the value and key position stable so the rewrite remains mechanical.
+    changed = _migrate_legacy_timestamp(data)
+
     for key in list(data.keys()):
         value = data[key]
         if isinstance(value, list):
@@ -125,6 +149,11 @@ def lint_frontmatter(text: str) -> str | None:
         return text
 
     changed = False
+
+    # Migrate deprecated OKF 0.1 provenance without inventing an actor. Keep
+    # the value and key position stable so the rewrite remains mechanical.
+    changed = _migrate_legacy_timestamp(data)
+
     for key in list(data.keys()):
         value = data[key]
         if key in _list_of_mapping_fields:
@@ -248,6 +277,7 @@ def format_file(path: Path, check: bool = False, diff: bool = False) -> bool:
     return True
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-003
 def format_bundle(bundle: Path, check: bool = False, diff: bool = False) -> list[FormattedResult]:
     """Format all concept files in an OKF bundle.
 

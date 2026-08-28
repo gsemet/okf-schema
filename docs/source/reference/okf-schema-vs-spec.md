@@ -337,18 +337,19 @@ Notice that `customers.md` has `backlinks: [tables/orders.md]` because
   full body.
 * **Stable diffs** — Because `links` and `backlinks` are sorted and inline,
   adding or removing a single link produces a minimal, readable diff.
-* **Discoverability** — The `okf-schema backlinks` CLI command uses this
-  metadata to answer "what points here?" in O(1) frontmatter reads rather
-  than O(n) body scans.
-* **Validation** — The validator can check that every path in `links` and
-  `backlinks` resolves to an actual file, surfacing stale references early.
+* **Discoverability** — The `okf-schema backlinks` command scans concept
+  bodies and resolves their markdown links, so it works even before metadata
+  has been materialised. This is an O(n) bundle scan.
+* **Validation** — The validator checks body markdown links against the
+  bundle. Run `lint` to regenerate `links` and `backlinks`; those metadata
+  arrays are not independently checked as link sources.
 
 #### API access
 
 The same graph is available programmatically:
 
 ```python
-from okf_schema import graph_bundle, backlinks_bundle
+from okf_schema.api import graph_bundle, backlinks_bundle
 
 # Full adjacency list
 graph = graph_bundle("my-bundle/bundle")

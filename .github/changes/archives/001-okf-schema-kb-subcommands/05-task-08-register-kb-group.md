@@ -15,7 +15,7 @@ Register the `kb` Click command group on the top-level `okf-schema` CLI in
 
 ## Acceptance Criteria
 
-- [ ] `src/okf_schema/cli.py` imports `kb` from `okf_schema.kb.cli`
+- [ ] `src/okf_schema/cli.py` imports `kb` from `okf_schema.okfkb.cli`
 - [ ] `cli.add_command(kb)` is called after existing commands
 - [ ] `okf-schema kb --help` lists `init` and `install` subcommands
 - [ ] `okfkb --help` produces identical output to `okf-schema kb --help`
@@ -54,7 +54,7 @@ Register the `kb` Click command group on the top-level `okf-schema` CLI in
    ```
 
 2. **Green**: Modify `src/okf_schema/cli.py`:
-   - Add import: `from okf_schema.kb.cli import kb`
+   - Add import: `from okf_schema.okfkb.cli import kb`
    - Add `cli.add_command(kb)` after the last `@cli.command()` definition
      (after `backlinks` or at the end of the file before `if __name__` block).
 

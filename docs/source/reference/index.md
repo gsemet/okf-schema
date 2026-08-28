@@ -11,4 +11,7 @@ cli
 kb-commands
 okf-schema-vs-spec
 validation-codes
+okfreq-cli
+okfreq-frontmatter
+okfreq-configuration
 ```

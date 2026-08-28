@@ -1,4 +1,4 @@
-"""Tests for src/okf_schema/kb/scaffold.py — scaffold_kb()."""
+"""Tests for src/okf_schema/okfkb/scaffold.py — scaffold_kb()."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from okf_schema.kb.scaffold import scaffold_kb
+from okf_schema.okfkb.scaffold import scaffold_kb
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -47,6 +47,8 @@ SCHEMA_FILES = {
 
 class TestScaffoldKbCreatesLayout:
     """scaffold_kb creates the canonical KB layout."""
+
+    # @tests_req SwRS-OKFSCHEMA-OKFKB-002
 
     def test_creates_all_content_dirs(self, tmp_path: Path) -> None:
         """Creates the 8 canonical content directories."""

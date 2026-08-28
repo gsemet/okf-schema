@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 760" width="960" height="760" role="img" aria-labelledby="title description">
+  <title id="title">OKFKB overview</title>
+  <desc id="description">A coding agent reads and curates an OKF knowledge bundle through the OKFKB skill while a human remains the editor.</desc>
+
+  <defs>
+    <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#252633" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#F04444"/>
+    </marker>
+    <marker id="arrow-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8A8C9A"/>
+    </marker>
+  </defs>
+
+  <!-- Canvas -->
+  <rect width="960" height="760" fill="#FFFFFF"/>
+
+  <!-- Human / agent boundary: the agent operates on the bundle, the human remains the editor. -->
+  <path d="M 42 116 L 20 116 L 20 514 Q 20 532 38 532 L 58 532" fill="none" stroke="#F04444" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow-red)"/>
+  <text x="13" y="330" transform="rotate(-90 13 330)" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#6C6F80">human reviews &amp; edits</text>
+
+  <!-- Agent card -->
+  <g filter="url(#card-shadow)">
+    <rect x="160" y="34" width="640" height="112" rx="16" fill="#FFFFFF" stroke="#D7D9E1" stroke-width="1.5"/>
+  </g>
+  <rect x="184" y="57" width="44" height="44" rx="11" fill="#FFF0F0" stroke="#F04444" stroke-width="1.5"/>
+  <path d="M 206 66 l 2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5-6 -6-2.5 6-2.5 z" fill="none" stroke="#F04444" stroke-width="1.6"/>
+  <path d="M 216 65 l 1.5 3.5 3.5 1.5 -3.5 1.5 -1.5 3.5 -1.5-3.5 -3.5-1.5 3.5-1.5 z" fill="none" stroke="#F04444" stroke-width="1.2"/>
+  <text x="247" y="78" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#252633">Agent</text>
+  <text x="247" y="103" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="500" fill="#6C6F80">reads context &amp; curates knowledge · you stay the editor</text>
+
+  <!-- Branching arrows from the agent to the two OKFKB surfaces. -->
+  <path d="M 430 147 C 430 173 340 173 300 195" fill="none" stroke="#F04444" stroke-width="2" marker-end="url(#arrow-red)"/>
+  <path d="M 530 147 C 530 173 620 173 660 195" fill="none" stroke="#F04444" stroke-width="2" marker-end="url(#arrow-red)"/>
+  <text x="348" y="177" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#6C6F80">reads &amp; writes</text>
+  <text x="612" y="177" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#6C6F80">runs checks</text>
+
+  <!-- OKF bundle card -->
+  <g filter="url(#card-shadow)">
+    <rect x="60" y="198" width="400" height="322" rx="16" fill="#FFFFFF" stroke="#D7D9E1" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="198" width="400" height="60" rx="16" fill="#F7F8FA"/>
+  <path d="M 60 242 L 460 242" stroke="#D7D9E1" stroke-width="1.5"/>
+  <text x="84" y="235" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#252633">The OKF bundle</text>
+  <text x="296" y="235" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="500" fill="#6C6F80">Markdown + YAML · versioned</text>
+
+  <g font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="14" fill="#30313B">
+    <text x="84" y="286">knowledge/</text>
+    <text x="84" y="314">├── index.md</text>
+    <text x="300" y="314" fill="#737687"># the map</text>
+    <text x="84" y="342">├── log.md</text>
+    <text x="300" y="342" fill="#737687"># the history</text>
+    <text x="84" y="370">├── findings/</text>
+    <text x="300" y="370" fill="#737687"># raw evidence</text>
+    <text x="84" y="398">├── concepts/</text>
+    <text x="300" y="398" fill="#737687"># stable ideas</text>
+    <text x="84" y="426">├── experiments/</text>
+    <text x="300" y="426" fill="#737687"># reproducible tests</text>
+    <text x="84" y="454">├── principles/</text>
+    <text x="300" y="454" fill="#737687"># team standards</text>
+    <text x="84" y="482">└── _schema/</text>
+    <text x="300" y="482" fill="#737687"># the contract</text>
+  </g>
+  <text x="84" y="506" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#F04444">One document = one knowledge claim.</text>
+
+  <!-- OKFKB skill card -->
+  <g filter="url(#card-shadow)">
+    <rect x="500" y="198" width="400" height="322" rx="16" fill="#FFFFFF" stroke="#D7D9E1" stroke-width="1.5"/>
+  </g>
+  <rect x="500" y="198" width="400" height="60" rx="16" fill="#F7F8FA"/>
+  <path d="M 500 242 L 900 242" stroke="#D7D9E1" stroke-width="1.5"/>
+  <rect x="524" y="214" width="34" height="34" rx="8" fill="#FFF0F0" stroke="#F04444" stroke-width="1.2"/>
+  <path d="M 533 231 h 16 M 541 223 v 16" stroke="#F04444" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="533" cy="223" r="2.5" fill="#FFFFFF" stroke="#F04444" stroke-width="1.2"/>
+  <circle cx="549" cy="239" r="2.5" fill="#FFFFFF" stroke="#F04444" stroke-width="1.2"/>
+  <text x="572" y="235" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#252633">The OKFKB skill</text>
+
+  <g font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15">
+    <text x="524" y="291" fill="#F04444" font-family="'SFMono-Regular', Consolas, monospace" font-weight="700">okfkb-record-findings</text>
+    <text x="690" y="291" fill="#6C6F80">— capture one observation</text>
+    <text x="524" y="330" fill="#F04444" font-family="'SFMono-Regular', Consolas, monospace" font-weight="700">consolidate</text>
+    <text x="642" y="330" fill="#6C6F80">— compare &amp; resolve</text>
+    <text x="524" y="369" fill="#F04444" font-family="'SFMono-Regular', Consolas, monospace" font-weight="700">validate</text>
+    <text x="612" y="369" fill="#6C6F80">— enforce JSON Schema</text>
+    <text x="524" y="408" fill="#F04444" font-family="'SFMono-Regular', Consolas, monospace" font-weight="700">promote</text>
+    <text x="610" y="408" fill="#6C6F80">— findings → stable knowledge</text>
+  </g>
+  <path d="M 524 438 L 876 438" stroke="#E5E6EB" stroke-width="1"/>
+  <text x="524" y="466" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#252633">Human confirmation stays in the loop.</text>
+  <text x="524" y="492" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" fill="#6C6F80">The skill proposes; the editor decides.</text>
+
+  <!-- Shared knowledge flow -->
+  <path d="M 260 521 C 260 550 345 550 390 572" fill="none" stroke="#8A8C9A" stroke-width="1.5" marker-end="url(#arrow-grey)"/>
+  <path d="M 700 521 C 700 550 615 550 570 572" fill="none" stroke="#8A8C9A" stroke-width="1.5" marker-end="url(#arrow-grey)"/>
+  <text x="480" y="556" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#6C6F80">the knowledge graph grows through linked Markdown files</text>
+
+  <!-- Bottom principle card -->
+  <g filter="url(#card-shadow)">
+    <rect x="160" y="574" width="640" height="66" rx="14" fill="#F7F8FA" stroke="#D7D9E1" stroke-width="1.5"/>
+  </g>
+  <text x="480" y="602" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#252633">Evidence in → understanding out</text>
+  <text x="480" y="625" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#6C6F80">Findings stay traceable; promotions stay deliberate.</text>
+
+  <!-- Badges -->
+  <g font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="600">
+    <rect x="198" y="678" width="176" height="34" rx="17" fill="#FFF0F0" stroke="#F04444" stroke-width="1.2"/>
+    <text x="286" y="700" text-anchor="middle" fill="#D93636">100% local · Markdown + Git</text>
+    <rect x="392" y="678" width="166" height="34" rx="17" fill="#F7F8FA" stroke="#D7D9E1" stroke-width="1.2"/>
+    <text x="475" y="700" text-anchor="middle" fill="#3F414C">immutable Findings</text>
+    <rect x="576" y="678" width="186" height="34" rx="17" fill="#F7F8FA" stroke="#D7D9E1" stroke-width="1.2"/>
+    <text x="669" y="700" text-anchor="middle" fill="#3F414C">JSON Schema validated</text>
+  </g>
+</svg>

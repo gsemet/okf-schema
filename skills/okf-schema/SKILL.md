@@ -12,6 +12,17 @@ metadata:
 
 ## Overview
 
+## Agent configuration directory precedence
+
+When project instructions or agent configuration are expected under `.agents/`,
+resolve the directory in this order:
+
+1. Use `.agents/` when it exists.
+2. Otherwise use `.github/` as the fallback.
+
+Never prefer `.github/` over an existing `.agents/` directory, and do not create
+both locations for the same configuration.
+
 [OKF (Open Knowledge Format)](./references/okf-v0.2.md) is a markdown-based knowledge format where each concept is a markdown file with YAML frontmatter. An OKF bundle is valid if it follows the structural rules defined in the OKF specification: reserved files (`index.md`, `log.md`), YAML frontmatter delimiters, relative markdown links, and so on.
 
 `okf-schema` is a **validator and toolkit layered on top of OKF**. It does not change the OKF format; it adds:
@@ -38,7 +49,10 @@ The three conformance rules every OKF bundle must satisfy:
 2. Every frontmatter has a non-empty `type` field.
 3. Reserved files follow their defined structure when present.
 
-For full spec details, see [OKF v0.1 Specification](./references/okf-v0.1.md).
+For current lifecycle, provenance, and trust details, see
+[OKF v0.2](./references/okf-v0.2.md). The
+[OKF v0.1 reference](./references/okf-v0.1.md) documents the foundational
+bundle rules and legacy metadata used during migration.
 
 ## Installation
 
@@ -174,10 +188,11 @@ for c in concepts:
 
 ## Validation Rules
 
-### Errors (E1–E7)
+### Errors (E0–E10)
 
 | Code | Rule | Description |
 |------|------|-------------|
+| E0 | Bundle path | Bundle validation target is not a directory |
 | E1 | Parseable frontmatter | Every concept file must have valid YAML frontmatter |
 | E2 | Non-empty `type` field | Frontmatter must contain a non-empty `type` field |
 | E3 | Reserved file frontmatter | Only bundle-root `index.md` may have frontmatter; `log.md` must not |
@@ -185,18 +200,28 @@ for c in concepts:
 | E5 | Flat lists | Frontmatter lists must not be nested (e.g. `tags: [[a], b]`) |
 | E6 | Reserved file location | `log.md` must exist only at bundle root |
 | E7 | Loose root file | Non-reserved `.md` files must not be placed at bundle root; move them into subdirectories |
+| E8 | Generated provenance | `generated` is not a mapping with a valid `at` value |
+| E9 | Source metadata | A source lacks `resource` or duplicates another source ID |
+| E10 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
 
-### Warnings (W1–W7)
+### Warnings (W0–W13)
 
 | Code | Rule | Description |
 |------|------|-------------|
+| W0 | Standalone input | A `validate-md` input path is not a file |
 | W1 | Missing recommended fields | `title` or `description` is missing or empty |
 | W2 | Broken cross-links | Internal markdown link points to a non-existent file |
-| W3 | Missing timestamp | No `timestamp` field in frontmatter |
+| W3 | Missing provenance timestamp | No `generated.at` (or legacy `timestamp`) in frontmatter |
 | W4 | Missing `index.md` | Directory with markdown files has no `index.md` |
 | W5 | Non-ISO date heading | `log.md` date heading not in `YYYY-MM-DD` format |
 | W6 | Missing schema | No schema found for the concept's `type` |
 | W7 | Block-style lists | Frontmatter lists should use inline notation (e.g. `tags: [a, b]`) to keep frontmatter compact |
+| W8 | Legacy timestamp | Migrate `timestamp` to `generated.at` with `okf-schema lint` |
+| W9 | Legacy citations section | Move citations into `sources` and use footnotes |
+| W10 | Actor syntax | A `verified[].by` actor is not `<prefix>:<identifier>` |
+| W11 | Stale content | `stale_after` is in the past |
+| W12 | Source footnote | A body footnote has no matching `sources[].id` |
+| W13 | Source resource | A local `sources[].resource` path does not resolve |
 
 ## Recommended Workflows
 

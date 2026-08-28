@@ -9,11 +9,11 @@ bundled skills + guideline into target project, patches AGENTS.md). It also exte
 `okf-schema init` with `--pattern kb` flag backed by an extensible registry.
 
 New files:
-- `src/okf_schema/kb/__init__.py`
-- `src/okf_schema/kb/cli.py`
-- `src/okf_schema/kb/scaffold.py`
-- `src/okf_schema/kb/install.py`
-- `src/okf_schema/kb/patterns.py`
+- `src/okf_schema/okfkb/__init__.py`
+- `src/okf_schema/okfkb/cli.py`
+- `src/okf_schema/okfkb/scaffold.py`
+- `src/okf_schema/okfkb/install.py`
+- `src/okf_schema/okfkb/patterns.py`
 - `src/okf_schema/data/kb/__init__.py`
 - `src/okf_schema/data/kb/_schema/*.yaml` (8 files)
 - `src/okf_schema/data/kb/skills/*/SKILL.md` (2 files)

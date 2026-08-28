@@ -40,7 +40,7 @@ No StRS impact detected.
 ### 1 — `okf-schema kb` Click Group and `okfkb` Alias
 
 - A new Click command group `kb` is registered on the top-level `okf-schema` CLI.
-- A new `console_scripts` entry point `okfkb = "okf_schema.kb.cli:kb"` is added to
+- A new `console_scripts` entry point `okfkb = "okf_schema.okfkb.cli:kb"` is added to
   `pyproject.toml`; invoking `okfkb <cmd>` is strictly equivalent to
   `okf-schema kb <cmd>`.
 
@@ -136,7 +136,7 @@ No StRS impact detected.
 
 ## Non-Functional Requirements
 
-- **Maintainability**: all scaffold logic lives in `src/okf_schema/kb/` as a separate
+- **Maintainability**: all scaffold logic lives in `src/okf_schema/okfkb/` as a separate
   subpackage; it does not modify any existing command module.
 - **Test coverage**: all new code must maintain the project-wide 96% coverage threshold.
 - **Type safety**: all new functions must carry full type annotations; mypy strict mode
@@ -155,7 +155,7 @@ No StRS impact detected.
   `include` to cover `src/okf_schema/data/kb/`.
 - **`src/okf_schema/commands/init.py`** (or wherever `init` lives): adds `--pattern`
   option and delegates to the registry.
-- **`src/okf_schema/kb/`**: new subpackage containing `cli.py`, `scaffold.py`,
+- **`src/okf_schema/okfkb/`**: new subpackage containing `cli.py`, `scaffold.py`,
   `install.py`, and `patterns.py` (registry).
 
 ## Constraints and Assumptions

@@ -1,0 +1,82 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: base.schema.yaml
+title: okfreq requirement base profile
+description: >-
+  Shared frontmatter contract for every okfreq requirement. It owns stable
+  identity, ownership, lifecycle, provenance, and relationship fields.
+type: object
+properties:
+  type:
+    type: string
+    description: Configured level and schema discriminator.
+  id:
+    type: string
+    pattern: '^[A-Za-z][A-Za-z0-9_-]*$'
+    description: Stable requirement identifier, for example StRS-OKFSCHEMA-CORE-001.
+  uuid:
+    type: string
+    format: uuid
+    description: Stable UUID retained when the document moves or is renamed.
+  title:
+    type: string
+    minLength: 1
+    description: Concise human-readable subject of the requirement.
+  description:
+    type: string
+    minLength: 1
+    description: Normative requirement statement supplied by the author.
+  project:
+    type: string
+    minLength: 1
+    description: Project or product that owns the requirement.
+  scope:
+    type: string
+    minLength: 1
+    description: Domain used for organization, ID allocation, and evidence scanning.
+  lifecycle:
+    type: string
+    enum: [draft, proposed, approved, deprecated, superseded]
+    description: Explicit human-controlled lifecycle state.
+  origin:
+    type: string
+    minLength: 1
+    description: Producer or source, such as native or imported.
+  tier:
+    type: string
+    description: Configured level label; the tier schema constrains its value.
+  derives_from:
+    type: array
+    items:
+      type: string
+    description: Authored IDs of higher-level requirements.
+  derived_by:
+    type: array
+    items:
+      type: string
+    description: Generated reverse links computed from derives_from.
+  depends_on:
+    type: array
+    items:
+      type: string
+    description: Authored prerequisite or peer requirement IDs.
+  external_id:
+    type: string
+    minLength: 1
+    description: Identifier of the corresponding requirement in an external system.
+  external_url:
+    type: string
+    format: uri
+    description: Link to the corresponding requirement in an external system.
+required: [type, id, uuid, title, description, project, scope, lifecycle, origin, tier]
+additionalProperties: true
+examples:
+  - type: StRS
+    id: StRS-OKFSCHEMA-CORE-001
+    uuid: 00000000-0000-4000-8000-000000000001
+    title: Validate requirements
+    description: The tool SHALL validate requirement frontmatter.
+    project: okf-schema
+    scope: core
+    lifecycle: draft
+    origin: native
+    tier: StRS

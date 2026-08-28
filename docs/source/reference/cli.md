@@ -22,10 +22,14 @@ okf-schema [OPTIONS] COMMAND [ARGS]...
 Create a new OKF bundle directory structure.
 
 ```bash
-okf-schema init NAME
+okf-schema init NAME [--pattern PATTERN]
 ```
 
 Creates a directory `NAME/bundle/` with `index.md`, `log.md`, and `_schema/_base.schema.yaml`.
+
+| Option | Description |
+|--------|-------------|
+| `--pattern` | Use a named scaffold pattern. `kb` creates the opinionated knowledge-base layout. |
 
 ---
 
@@ -59,6 +63,22 @@ okf-schema validate --path BUNDLE [--schema-db DIR] [--strict]
 | `--path` | ✅ | — | Root directory of the OKF bundle. |
 | `--schema-db` | — | `_schema/` inside bundle | Override schema directory. |
 | `--strict` | — | `False` | Treat warnings as errors. |
+
+---
+
+## `okf-schema validate-md`
+
+Validate standalone markdown files without requiring an OKF bundle.
+
+```bash
+okf-schema validate-md --input 'notes/**/*.md' --schemas-dir ./schemas [--strict]
+```
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `--input` | ✅ | Glob for markdown files. Repeat the option to supply multiple patterns. |
+| `--schemas-dir` | ✅ | Directory containing `<type>.schema.{json,json5,yaml,yml}` files. |
+| `--strict` | — | Treat warnings as errors. |
 
 ---
 
@@ -135,13 +155,20 @@ Multiple target paths may be provided. The `.md` extension is optional.
 
 ---
 
-## `okf-schema search`
+## `okf-schema kb`
 
-Search concepts by title, description, type, or tags.
+Run the opinionated knowledge-base command group. It includes `init`,
+`install-skills`, `new-finding`, `update`, `validate`, `read`, `get`,
+`search`, and `query`.
 
 ```bash
-okf-schema search --path BUNDLE QUERY
+okf-schema kb --help
 ```
+
+The same commands are also available through the `okfkb` executable. See
+[KB Commands](kb-commands) for their complete syntax. Generic bundle search
+is available through `okf_schema.api.search_bundle`, not as a top-level CLI
+command.
 
 ---
 

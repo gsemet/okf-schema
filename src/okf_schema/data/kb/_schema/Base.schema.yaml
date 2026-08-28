@@ -61,9 +61,10 @@ properties:
     description: ISO 8601 date after which the document is considered stale.
     type: string
   kb_status:
-    description: KB-internal lifecycle state (active, contradicted, superseded).
+    description: >-
+      KB-internal lifecycle state. The allowed vocabulary is defined by each
+      concrete KB document schema.
     type: string
-    enum: [active, contradicted, superseded]
   links:
     type: array
     items:

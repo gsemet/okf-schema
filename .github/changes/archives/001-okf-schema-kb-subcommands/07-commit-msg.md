@@ -21,11 +21,11 @@ Bundled assets (13 files):
 - 1 guideline (knowledge-base.guidelines.md)
 
 New modules:
-- src/okf_schema/kb/__init__.py
-- src/okf_schema/kb/cli.py
-- src/okf_schema/kb/scaffold.py
-- src/okf_schema/kb/install.py
-- src/okf_schema/kb/patterns.py
+- src/okf_schema/okfkb/__init__.py
+- src/okf_schema/okfkb/cli.py
+- src/okf_schema/okfkb/scaffold.py
+- src/okf_schema/okfkb/install.py
+- src/okf_schema/okfkb/patterns.py
 
 New tests (69 KB-specific tests, 463 total):
 - tests/test_kb_scaffold.py

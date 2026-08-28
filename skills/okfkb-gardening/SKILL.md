@@ -8,6 +8,13 @@ metadata:
 
 # OKFKB gardening
 
+## Agent configuration directory precedence
+
+When resolving project instructions, guidelines, or requirements configuration,
+use `.agents/` if it exists. Use `.github/` only when `.agents/` does not exist.
+Never prefer `.github/` over an existing `.agents/` directory, and do not create
+both locations for the same configuration.
+
 Perform a complete recurring maintenance pass without pausing for questions.
 The user supplies only the intent to garden and, optionally, a KB path. Infer
 the rest from the repository, its rules, schemas, and evidence.

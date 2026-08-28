@@ -5,13 +5,13 @@
 
 ## Objective
 
-Implement `src/okf_schema/kb/install.py` containing the `install_kb()` function
+Implement `src/okf_schema/okfkb/install.py` containing the `install_kb()` function
 that deploys bundled skills and guidelines into a target project, with conflict
 resolution and AGENTS.md patching.
 
 ## Files to Modify/Create
 
-- Create `src/okf_schema/kb/install.py`
+- Create `src/okf_schema/okfkb/install.py`
 - Create `tests/test_kb_install.py`
 
 ## Acceptance Criteria
@@ -49,7 +49,7 @@ resolution and AGENTS.md patching.
    - `test_install_kb_creates_dot_agents_when_neither_exists`
    - `test_install_kb_errors_when_target_missing`
 
-2. **Green**: Implement `src/okf_schema/kb/install.py`:
+2. **Green**: Implement `src/okf_schema/okfkb/install.py`:
    ```python
    from __future__ import annotations
 

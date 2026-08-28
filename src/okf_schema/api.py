@@ -79,6 +79,7 @@ def _resolve_bundle(bundle_path: str | Path) -> Path:
     return path
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-001
 def validate_bundle(
     bundle_path: str | Path,
     schema_db: str | Path | None = None,
@@ -123,7 +124,8 @@ def validate_markdown_files(
             relative to the current working directory. Absolute paths are also
             supported.
         schemas_dir: Optional directory containing JSON/YAML schema files.
-            If not provided, schema validation is skipped (W6 warnings emitted).
+            If not provided, schema validation is skipped. Because no schema
+            database was requested, missing-schema (W6) warnings are not emitted.
             Schema files should be named ``<type>.schema.{json|json5|yaml|yml}``.
 
     Returns:
@@ -181,6 +183,7 @@ def validate_markdown_files(
     return _validate_markdown_files(sorted(collected_files), schemas)
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-003
 def format_bundle(
     bundle_path: str | Path,
     check: bool = False,
@@ -234,6 +237,7 @@ def lint_bundle(
     return _lint_bundle(bundle, check=check, diff=diff, links=links)
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-005
 def list_bundle(bundle_path: str | Path) -> list[ConceptSummary]:
     """List all concepts in an OKF bundle.
 
@@ -269,6 +273,7 @@ def list_bundle(bundle_path: str | Path) -> list[ConceptSummary]:
     return results
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-006
 def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
     """Show a single concept's frontmatter and body.
 
@@ -301,6 +306,7 @@ def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
     return ConceptDetail(frontmatter=frontmatter, body=body, trust_tier=trust_tier, stale=stale)
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-004
 def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:
     """Regenerate all ``index.md`` files in an OKF bundle.
 

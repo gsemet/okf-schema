@@ -41,6 +41,7 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-001
 class TestValidateBundle:
     """Tests for validate_bundle."""
 
@@ -395,6 +396,7 @@ class TestValidateMarkdownFiles:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003
 class TestFormatBundle:
     """Tests for format_bundle."""
 
@@ -444,6 +446,7 @@ class TestFormatBundle:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005
 class TestListBundle:
     """Tests for list_bundle."""
 
@@ -505,6 +508,7 @@ class TestListBundle:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006
 class TestShowBundle:
     """Tests for show_bundle."""
 
@@ -588,6 +592,7 @@ class TestShowBundle:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004
 class TestIndexBundle:
     """Tests for index_bundle."""
 

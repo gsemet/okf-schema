@@ -13,4 +13,5 @@ lint-before-commit
 bootstrap-knowledge-base
 setup-okfkb
 maintain-okfkb-with-skills
+okfreq-build-requirement-base
 ```

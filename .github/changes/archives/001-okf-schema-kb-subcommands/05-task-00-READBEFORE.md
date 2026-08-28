@@ -7,17 +7,17 @@ Implements two commands: `okfkb init [PATH]` (scaffolds KB folder layout with 8
 YAML schemas + 8 dirs + index.md + log.md using bundled importlib.resources data)
 and `okfkb install [PATH]` (deploys bundled skills + guideline into target project,
 patches AGENTS.md). Extends `okf-schema init` with `--pattern kb` flag. New
-subpackage at `src/okf_schema/kb/`.
+subpackage at `src/okf_schema/okfkb/`.
 
 ## Key Files
 
 | File | Role |
 |------|------|
 | `src/okf_schema/cli.py` | Top-level Click CLI — register `kb` group, add `--pattern` to `init` |
-| `src/okf_schema/kb/cli.py` | Click command group for `kb` subcommands |
-| `src/okf_schema/kb/scaffold.py` | `scaffold_kb()` — creates dirs, copies schemas, writes index.md/log.md |
-| `src/okf_schema/kb/install.py` | `install_kb()` — deploys skills/guidelines, patches AGENTS.md |
-| `src/okf_schema/kb/patterns.py` | `INIT_PATTERNS` registry dict for extensible init patterns |
+| `src/okf_schema/okfkb/cli.py` | Click command group for `kb` subcommands |
+| `src/okf_schema/okfkb/scaffold.py` | `scaffold_kb()` — creates dirs, copies schemas, writes index.md/log.md |
+| `src/okf_schema/okfkb/install.py` | `install_kb()` — deploys skills/guidelines, patches AGENTS.md |
+| `src/okf_schema/okfkb/patterns.py` | `INIT_PATTERNS` registry dict for extensible init patterns |
 | `src/okf_schema/data/kb/` | Bundled assets (schemas, skills, guidelines) loaded via `importlib.resources` |
 | `pyproject.toml` | Entry points (`okfkb`), hatchling include rules |
 | `tests/test_kb_*.py` | Unit and integration tests for kb subpackage |

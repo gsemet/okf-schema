@@ -1,4 +1,4 @@
-"""Tests for src/okf_schema/kb/navigate.py and the kb navigation CLI commands."""
+"""Tests for src/okf_schema/okfkb/navigate.py and the kb navigation CLI commands."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from okf_schema.kb import navigate
-from okf_schema.kb.cli import kb
+from okf_schema.okfkb import navigate
+from okf_schema.okfkb.cli import kb
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -25,7 +25,7 @@ timestamp: 2026-07-03T14:20:00Z
 tags: [pll, oscillator, temperature]
 links: []
 backlinks: []
-status: active
+kb_status: active
 ---
 # Finding
 PLL lock drifts with temperature.
@@ -41,7 +41,7 @@ timestamp: 2026-07-02T11:00:00Z
 tags: [boot, temperature]
 links: []
 backlinks: []
-status: active
+kb_status: active
 ---
 # Finding
 Temperature correlation.
@@ -52,7 +52,7 @@ _CONCEPT = """\
 type: Concept
 title: Boot PLL startup margin
 confidence: high
-status: resolved
+kb_status: deprecated
 promoted_from: [findings/2026.07.03-14.20-pll-temp-drift.md]
 links: [principles/firmware-timeouts-must-be-polled.md]
 backlinks: []
@@ -66,7 +66,7 @@ _PRINCIPLE = """\
 ---
 type: Principle
 title: Firmware timeouts must be polled
-status: active
+kb_status: active
 links: []
 backlinks: [concepts/boot-pll-startup-margin.md]
 ---
@@ -127,7 +127,7 @@ class TestLoadNodes:
         assert node.tier == "concepts"
         assert node.type == "Concept"
         assert node.confidence == "high"
-        assert node.status == "resolved"
+        assert node.status == "deprecated"
         assert "pll" in node.tags
         assert node.links() == ["principles/firmware-timeouts-must-be-polled.md"]
         assert node.promoted_from() == ["findings/2026.07.03-14.20-pll-temp-drift.md"]
@@ -139,6 +139,8 @@ class TestLoadNodes:
 
 
 class TestSearch:
+    # @tests_req SwRS-OKFSCHEMA-OKFKB-004
+
     def test_search_ranks_title_and_tags(self, kb_bundle: Path) -> None:
         hits = navigate.search(kb_bundle, "pll")
         assert hits, "expected at least one hit"
@@ -190,11 +192,11 @@ class TestRead:
         nodes = navigate.read_tier(kb_bundle, "findings")
         assert len(nodes) == 2
         assert all(n.tier == "findings" for n in nodes)
-        # Sorted by path (chronological due to dated filenames).
-        assert nodes[0].path.endswith("temp-sensitivity.md")
+        # Raw findings are returned most recent first.
+        assert nodes[0].path.endswith("pll-temp-drift.md")
 
     def test_read_status_filter(self, kb_bundle: Path) -> None:
-        nodes = navigate.read_tier(kb_bundle, "concepts", status="resolved")
+        nodes = navigate.read_tier(kb_bundle, "concepts", status="deprecated")
         assert len(nodes) == 1
         assert navigate.read_tier(kb_bundle, "concepts", status="active") == []
 
@@ -220,7 +222,7 @@ class TestQueryFilter:
         assert len(atleast_medium) == 2
 
     def test_status_and_title_regex(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "type:concept title:~boot status:resolved")
+        nodes = navigate.query(kb_bundle, "type:concept title:~boot status:deprecated")
         assert len(nodes) == 1
 
     def test_since_until(self, kb_bundle: Path) -> None:

@@ -2,7 +2,13 @@
 
 ### Feat
 
-- **okf**: [B] implement OKF 0.2 provenance, trust, and lifecycle
+- add ofkreq and requirements traceability
+
+## v0.10.0 (2026-08-10)
+
+### Feat
+
+- **okf**: implement OKF 0.2 compliance
 
 ## v0.9.0 (2026-07-13)
 

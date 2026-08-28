@@ -1,0 +1,33 @@
+{
+  "provenance": {
+    "generator": "okfreq",
+    "command": "okfreq generate-report",
+    "config_version": 1,
+    "sources": [
+      "config.yml",
+      "tiers/"
+    ]
+  },
+  "schema_health": {
+    "requirements": 2,
+    "errors": 0
+  },
+  "structural_traceability": {
+    "graph_errors": 0
+  },
+  "marker_coverage": {
+    "implemented": 1,
+    "tested": 1,
+    "missing_ids": [],
+    "duplicates": [],
+    "non_leaf": [],
+    "warnings": [],
+    "missing_implementation": [],
+    "missing_tests": [],
+    "exemptions": []
+  },
+  "lifecycle": {
+    "draft": 2
+  },
+  "errors": []
+}

@@ -21,6 +21,8 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 class TestGlobalOptions:
     """Tests for global CLI options."""
 
+    # @tests_req SwRS-OKFSCHEMA-CORE-001
+
     def test_version(self) -> None:
         """--version prints version and exits 0."""
         runner = CliRunner()
@@ -50,6 +52,7 @@ class TestGlobalOptions:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-002
 class TestInit:
     """Tests for the init subcommand."""
 

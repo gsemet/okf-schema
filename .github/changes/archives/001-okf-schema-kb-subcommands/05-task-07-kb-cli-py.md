@@ -5,13 +5,13 @@
 
 ## Objective
 
-Implement `src/okf_schema/kb/cli.py` containing the Click command group `kb` with
+Implement `src/okf_schema/okfkb/cli.py` containing the Click command group `kb` with
 `init` and `install` subcommands. This is the CLI surface for `okf-schema kb` and
 `okfkb`.
 
 ## Files to Modify/Create
 
-- Create `src/okf_schema/kb/cli.py`
+- Create `src/okf_schema/okfkb/cli.py`
 - Create `tests/test_kb_cli.py`
 
 ## Acceptance Criteria
@@ -46,7 +46,7 @@ Implement `src/okf_schema/kb/cli.py` containing the Click command group `kb` wit
    - `test_kb_install_creates_files`
    - `test_kb_install_errors_when_target_missing`
 
-2. **Green**: Implement `src/okf_schema/kb/cli.py`:
+2. **Green**: Implement `src/okf_schema/okfkb/cli.py`:
    ```python
    from __future__ import annotations
 
@@ -54,8 +54,8 @@ Implement `src/okf_schema/kb/cli.py` containing the Click command group `kb` wit
 
    import click
 
-   from okf_schema.kb.scaffold import scaffold_kb
-   from okf_schema.kb.install import install_kb
+   from okf_schema.okfkb.scaffold import scaffold_kb
+   from okf_schema.okfkb.install import install_kb
 
 
    @click.group()

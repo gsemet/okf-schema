@@ -84,6 +84,7 @@ def parse_yaml(yaml_text: str) -> dict | None:
     return cast(dict, _normalize_yaml_value(dict(data)))
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-003
 def dump_yaml(data: dict) -> str:
     """Serialize a dict to a YAML string.
 
@@ -95,4 +96,4 @@ def dump_yaml(data: dict) -> str:
     y = make_yaml()
     buf = StringIO()
     y.dump(data, buf)
-    return buf.getvalue()
+    return "\n".join(line.rstrip() for line in buf.getvalue().split("\n"))

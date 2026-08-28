@@ -19,7 +19,7 @@ point in `pyproject.toml`. All acceptance criteria are met and `just preflight` 
 |------|--------|-------|
 | 01 — Copy KB schemas | completed (pass) | All 8 YAML files present; `cmp` confirms verbatim copies from `copilot-session-usage/knowledge/_schema/`; `data/__init__.py` and `data/kb/__init__.py` created; importlib.resources enumeration verified. |
 | 02 — Copy skills/guideline | completed (pass) | `record-finding/SKILL.md`, `consolidate-knowledge-base/SKILL.md`, and `knowledge-base.guidelines.md` all present under `data/kb/`; accessible via `importlib.resources.files`. |
-| 03 — Update pyproject.toml | completed (pass) | `okfkb = "okf_schema.kb.cli:kb"` entry added to `[project.scripts]`; commit message notes that the `kb` module will be created in phase 2, which is the correct deferred approach. No extraneous packaging changes needed (existing `src/okf_schema` wheel-include rule covers `data/kb/`). |
+| 03 — Update pyproject.toml | completed (pass) | `okfkb = "okf_schema.okfkb.cli:kb"` entry added to `[project.scripts]`; commit message notes that the `kb` module will be created in phase 2, which is the correct deferred approach. No extraneous packaging changes needed (existing `src/okf_schema` wheel-include rule covers `data/kb/`). |
 
 ## Quality Checks
 
@@ -33,7 +33,7 @@ point in `pyproject.toml`. All acceptance criteria are met and `just preflight` 
   `copilot-session-usage/knowledge/_schema/` (verified with `cmp -s`).
 - `importlib.resources.files('okf_schema.data.kb').iterdir()` successfully enumerates
   `_schema`, `skills`, and `guidelines` directories.
-- The `okfkb` entry point references `okf_schema.kb.cli:kb`, a module that does not yet
+- The `okfkb` entry point references `okf_schema.okfkb.cli:kb`, a module that does not yet
   exist (created in phase 2). This is intentional and documented in the commit message;
   the installed wheel will be incomplete until phase 2 completes, but that is the expected
   phased delivery.

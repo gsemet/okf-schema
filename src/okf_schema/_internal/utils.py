@@ -119,6 +119,7 @@ def extract_outgoing_links(body: str, source: Path, bundle_root: Path) -> list[s
     return links
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-005
 def build_link_graph(bundle: Path) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     """Build outgoing and incoming link graphs for an OKF bundle.
 

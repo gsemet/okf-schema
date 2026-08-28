@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "manager": "ai-guidelines",
+  "lock_format": "ai-guidelines",
+  "lock_format_version": 1,
+  "manager_version": "0.1.0",
+  "generated_at": "2026-08-28T15:28:07Z",
+  "guidelines": [
+    {
+      "expression": "gsemet/ai-guidelines-registry",
+      "name": "ai-guidelines-registry",
+      "source": "https://github.com/gsemet/ai-guidelines-registry",
+      "source_type": "github",
+      "requested_ref": "a59d831310a8de6e22155336a65bbf82b7ae9731",
+      "reference_kind": "branch",
+      "commit": "a59d831310a8de6e22155336a65bbf82b7ae9731",
+      "captured_at": "2026-08-28T15:28:07Z",
+      "target_path": ".github/guidelines",
+      "files": [
+        {
+          "source_path": "git-commit-message.guidelines.md",
+          "target_path": ".github/guidelines/git-commit-message.guidelines.md",
+          "sha256": "cb4c0d69ceae60b2382644d50721509572c59b5fcffef2bec932375a2496f480"
+        },
+        {
+          "source_path": "python-unittest.guidelines.md",
+          "target_path": ".github/guidelines/python-unittest.guidelines.md",
+          "sha256": "18e02066077482759714b00fe97be51d751f7b775451ff790ef97bd842a77101"
+        }
+      ]
+    }
+  ]
+}

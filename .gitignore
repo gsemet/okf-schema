@@ -41,6 +41,9 @@ htmlcov/
 .tox/
 .nox/
 .coverage
+dist/requirements-report.json
+dist/requirements-report.schema.json
+dist/requirements-report.md
 .coverage.*
 .cache
 nosetests.xml
@@ -213,3 +216,7 @@ tempCodeRunnerFile.py
 
 .agents/changes/
 examples/agentic-knowledge
+
+# ai-guidelines advisory operation locks
+.ai-guidelines-operation.lock
+.guidelines/operation.lock

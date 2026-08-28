@@ -18,12 +18,15 @@ or implementation details of the tool itself.
 
 ## Start with project rules
 
-1. Locate the knowledge-base root. Prefer an explicit path; otherwise infer it
+1. Resolve the agent configuration directory first: use `.agents/` when it
+   exists; otherwise use `.github/`. Never prefer `.github/` when `.agents/` is
+   present, and do not create both locations for the same configuration.
+2. Locate the knowledge-base root. Prefer an explicit path; otherwise infer it
    from the workspace and the presence of `_schema/`, `index.md`, and tier
    directories.
-2. Read the nearest `AGENTS.md` and any linked knowledge-base guidelines before
+3. Read the nearest `AGENTS.md` and any linked knowledge-base guidelines before
    reading or writing KB documents. Local rules and schemas are authoritative.
-3. Inspect the bundle's `_schema/` files before inventing fields, statuses, or
+4. Inspect the bundle's `_schema/` files before inventing fields, statuses, or
    transitions. Preserve extension fields that the bundle already uses.
 
 ## Route the intent
@@ -31,8 +34,8 @@ or implementation details of the tool itself.
 | Intent | Action |
 |---|---|
 | Understand the layers or choose a type | Read [lifecycle and taxonomy](references/lifecycle-and-taxonomy.md). |
-| Preserve a new empirical discovery | Use `record-finding`; apply [Finding quality](references/finding-quality.md). |
-| Review contradictions or promote knowledge with the user | Use `consolidate-knowledge-base`; apply [consolidation judgment](references/consolidation-judgment.md). |
+| Preserve a new empirical discovery | Use `okfkb-record-findings`; apply [Finding quality](references/finding-quality.md). |
+| Review contradictions or promote knowledge with the user | Use `okfkb-distill`; apply [consolidation judgment](references/consolidation-judgment.md). |
 | Perform recurring autonomous KB upkeep | Use `okfkb-gardening`. It is explicit-invocation, zero-prompt maintenance. |
 | Find existing knowledge | Apply [navigation and maintenance](references/navigation-and-maintenance.md), starting from stable tiers. |
 | Validate, lint, initialize, or troubleshoot OKF structure | Use `okf-schema`. |
@@ -63,9 +66,9 @@ directly while preserving all guardrails.
 
 At the end of meaningful debugging, investigation, or verification work, assess
 whether the result is non-trivial, empirical, useful to a future agent, and not
-already captured. If it clearly is, route to `record-finding` without waiting
-for a separate user request. Do not record routine code facts that are cheaper
-to rediscover from source or existing documentation.
+already captured. If it clearly is, route to `okfkb-record-findings` without
+waiting for a separate user request. Do not record routine code facts that are
+cheaper to rediscover from source or existing documentation.
 
 ## Universal guardrails
 

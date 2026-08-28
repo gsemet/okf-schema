@@ -251,7 +251,7 @@
           "event_type": "coding_ended",
           "timestamp": "2026-07-03T21:48:23.659873+00:00",
           "reason": null,
-          "summary": "Created src/okf_schema/kb/scaffold.py with scaffold_kb(); TDD, full coverage"
+          "summary": "Created src/okf_schema/okfkb/scaffold.py with scaffold_kb(); TDD, full coverage"
         },
         {
           "event_type": "completed",
@@ -260,7 +260,7 @@
           "summary": null
         }
       ],
-      "summary": "Created src/okf_schema/kb/scaffold.py with scaffold_kb(); TDD, full coverage",
+      "summary": "Created src/okf_schema/okfkb/scaffold.py with scaffold_kb(); TDD, full coverage",
       "coder_model": "claude-sonnet-4-6",
       "last_inspector_model": "claude-sonnet-4-6"
     },
@@ -311,7 +311,7 @@
           "event_type": "coding_ended",
           "timestamp": "2026-07-03T21:53:54.155864+00:00",
           "reason": null,
-          "summary": "Created src/okf_schema/kb/install.py with install_kb(); TDD coverage"
+          "summary": "Created src/okf_schema/okfkb/install.py with install_kb(); TDD coverage"
         },
         {
           "event_type": "coding_started",

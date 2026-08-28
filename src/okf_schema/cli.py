@@ -22,8 +22,24 @@ from okf_schema.api import (
     validate_bundle,
     validate_markdown_files,
 )
-from okf_schema.kb.cli import kb
-from okf_schema.kb.patterns import INIT_PATTERNS, list_patterns
+from okf_schema.okfkb.cli import kb
+from okf_schema.okfkb.patterns import INIT_PATTERNS, list_patterns
+
+
+class _HelpCommand(click.Command):
+    """Click command with the short and long help options enabled."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        context_settings = kwargs.setdefault("context_settings", {})
+        context_settings.setdefault("help_option_names", ["-h", "--help"])
+        super().__init__(*args, **kwargs)
+
+
+class _HelpGroup(click.Group):
+    """Click group whose commands consistently accept ``-h`` and ``--help``."""
+
+    command_class = _HelpCommand
+
 
 # Force UTF-8 output so Unicode characters (e.g. backlink arrows)
 # print correctly on Windows consoles that default to cp1252.
@@ -35,13 +51,18 @@ if hasattr(_stderr, "reconfigure"):
     _stderr.reconfigure(encoding="utf-8")
 
 
-@click.group(invoke_without_command=True, context_settings={"help_option_names": ["-h", "--help"]})
+@click.group(
+    cls=_HelpGroup,
+    invoke_without_command=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 @click.version_option(version=__version__, prog_name="okf-schema")
 @click.option("--verbose", "-v", count=True, help="Increase verbosity (up to 3).")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-error output.")
 @click.pass_context
 def cli(ctx: click.Context, verbose: int, quiet: bool) -> None:
     """CLI tool and Python library for OKF bundle management."""
+    # @implements_req SwRS-OKFSCHEMA-CORE-001
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     ctx.obj["quiet"] = quiet
@@ -66,6 +87,7 @@ def _echo(ctx: click.Context, message: str) -> None:
 @click.pass_context
 def init(ctx: click.Context, name: str, pattern: str | None) -> None:
     """Create a new OKF bundle directory structure."""
+    # @implements_req SwRS-OKFSCHEMA-CORE-002
     if pattern is not None:
         if pattern not in INIT_PATTERNS:
             available = ", ".join(list_patterns()) or "none"
@@ -415,6 +437,7 @@ def lint(
     (outgoing) and ``backlinks`` (incoming) frontmatter fields
     based on internal markdown links found in each concept's body.
     """
+    # @implements_req SwRS-OKFSCHEMA-CORE-003
     try:
         results = lint_bundle(bundle_path, check=check, diff=diff, links=links)
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
@@ -462,6 +485,7 @@ def lint(
 @click.pass_context
 def list_cmd(ctx: click.Context, bundle_path: str) -> None:
     """List all concepts in an OKF bundle."""
+    # @implements_req SwRS-OKFSCHEMA-CORE-005
     try:
         concepts = list_bundle(bundle_path)
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
@@ -529,6 +553,7 @@ def show(ctx: click.Context, bundle_path: str, concept_path: str) -> None:
 @click.pass_context
 def index(ctx: click.Context, bundle_path: str) -> None:
     """Regenerate all index.md files in an OKF bundle."""
+    # @implements_req SwRS-OKFSCHEMA-CORE-004
     try:
         updates = index_bundle(bundle_path)
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover

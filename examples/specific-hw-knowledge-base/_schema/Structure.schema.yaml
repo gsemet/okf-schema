@@ -10,7 +10,7 @@ description: >-
   (use Principle).
 
   Mutable. Updated as the system evolves. Like Concepts, Structures are never
-  deleted; obsolete Structures are marked `status: deprecated` and linked to
+  deleted; obsolete Structures are marked `kb_status: deprecated` and linked to
   replacements.
 
   Belongs to the Semantic layer. Promoted from confirmed Hypotheses or
@@ -23,7 +23,7 @@ allOf:
         description: Document type — must be "Structure".
         type: string
         const: Structure
-      status:
+      kb_status:
         description: Lifecycle state of the structure.
         type: string
         enum: [active, deprecated]
