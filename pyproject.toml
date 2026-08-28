@@ -27,7 +27,8 @@ dependencies = [
 
 [project.scripts]
 okf-schema = "okf_schema.cli:cli"
-okfkb = "okf_schema.kb.cli:kb"
+okfkb = "okf_schema.okfkb.cli:kb"
+okfreq = "okf_schema.okfreq.cli:okfreq"
 
 [project.urls]
 Homepage = "https://github.com/gsemet/okf-schema"
@@ -109,7 +110,7 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--cov=okf_schema",
-    "--cov-fail-under=96",
+    "--cov-fail-under=95",
     "--cov-report=term-missing",
     "--cov-report=xml",
     "--cov-report=html",

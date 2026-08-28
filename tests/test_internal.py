@@ -241,6 +241,18 @@ class TestDumpYaml:
         assert "cli" in result
 
 
+def test_dump_yaml_removes_round_trip_trailing_whitespace() -> None:
+    """Serialized frontmatter remains compatible with Git whitespace checks."""
+    data = make_yaml().load(
+        "description: A long requirement statement that wraps across a line\n"
+        "  and continues without relying on trailing spaces\n"
+    )
+
+    result = dump_yaml(data)
+
+    assert all(line == line.rstrip() for line in result.splitlines())
+
+
 class TestMakeYaml:
     """Tests for make_yaml factory."""
 

@@ -158,7 +158,7 @@ link is added or removed.
 - [Lint Before Commit](../how-to/lint-before-commit) — automating frontmatter consistency.
 - [Design Principles](../explanation/design-principles) — why OKF-Schema treats knowledge as a graph.
 - [Why an Opinionated Knowledge Base?](../explanation/okfkb-choices) — how links and backlinks work in the KB model.
-- [CLI Reference](../reference/cli.md) — `lint`, `index`, `backlinks`, and `graph` commands.
+- [CLI Reference](../reference/cli.md) — `lint`, `index`, and `backlinks` commands; the full graph is exposed by the Python API.
 
 ## Navigating the graph from the CLI
 
@@ -197,7 +197,7 @@ The full link graph is available through the Python API (see
 [API Reference](../reference/api.md)):
 
 ```python
-from okf_schema import graph_bundle
+from okf_schema.api import graph_bundle
 import json
 
 graph = graph_bundle("acme-knowledge/bundle")
@@ -231,7 +231,7 @@ The same operations are available programmatically.
 ### Full graph
 
 ```python
-from okf_schema import graph_bundle
+from okf_schema.api import graph_bundle
 
 graph = graph_bundle("acme-knowledge/bundle")
 
@@ -242,11 +242,11 @@ for concept, neighbours in graph.items():
 ### Backlinks for a single concept
 
 ```python
-from okf_schema import backlinks_bundle
+from okf_schema.api import backlinks_bundle
 
 results = backlinks_bundle("acme-knowledge/bundle", ["tables/orders.md"])
 for r in results:
-    print(f"{r.target} ← {r.source}  (context: {r.context!r})")
+    print(f"{r.target} ← {r.source}")
 ```
 
 ### Custom graph analysis
@@ -255,7 +255,7 @@ Because `graph_bundle` returns a plain dictionary, you can run any graph
 algorithm on it:
 
 ```python
-from okf_schema import graph_bundle
+from okf_schema.api import graph_bundle
 
 graph = graph_bundle("acme-knowledge/bundle")
 
@@ -275,8 +275,7 @@ print(f"Most referenced: {hub} ({in_degree[hub]} backlinks)")
 
 ## Graph statistics at a glance
 
-Running `okf-schema stats` on the bundle produces a summary that includes
-link density:
+Running `okf-schema stats` on the bundle produces a compact bundle summary:
 
 ```bash
 okf-schema stats --path acme-knowledge/bundle
@@ -285,16 +284,13 @@ okf-schema stats --path acme-knowledge/bundle
 Typical output:
 
 ```text
-Concepts:        10
-Directories:      5
-Links:           18
-Backlinks:       18
-Avg links/concept: 1.8
+12 files · 10 concepts · 5 types · 8,420 bytes
+  18 links
+  Health: 100% — all clear
 ```
 
-A healthy knowledge graph has an average link count well above 1.0. If the
-average is close to zero, the bundle is a collection of isolated documents
-rather than a connected graph.
+Use `graph_bundle` when you need derived graph measures such as average
+out-degree, in-degree, or isolated-node counts.
 
 ## Design tips for a navigable graph
 

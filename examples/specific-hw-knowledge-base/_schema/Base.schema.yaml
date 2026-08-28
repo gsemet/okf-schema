@@ -19,10 +19,52 @@ properties:
     description: Keywords for categorization and search.
     type: array
     items: { type: string }
+  generated:
+    description: OKF 0.2 provenance block recording when and by whom the document was generated.
+    type: object
+    required: [at]
+    properties:
+      at:
+        description: ISO 8601 creation or last-updated timestamp.
+        type: string
+        format: date-time
+      by:
+        description: Actor string identifying the producer (e.g. 'human:alice', 'bot:ci').
+        type: string
   timestamp:
-    description: ISO 8601 creation or last-updated timestamp.
+    description: >-
+      Deprecated (OKF 0.1). ISO 8601 creation timestamp. Prefer 'generated.at'.
     type: string
     format: date-time
+  verified:
+    description: OKF 0.2 trust attestation list.
+    oneOf:
+      - type: array
+        items:
+          type: object
+          required: [by, at]
+          properties:
+            by: { type: string }
+            at: { type: string }
+            method: { type: string }
+      - type: object
+        required: [by, at]
+        properties:
+          by: { type: string }
+          at: { type: string }
+          method: { type: string }
+  status:
+    description: OKF 0.2 lifecycle state (draft, stable, or deprecated).
+    type: string
+    enum: [draft, stable, deprecated]
+  stale_after:
+    description: ISO 8601 date after which the document is considered stale.
+    type: string
+  kb_status:
+    description: >-
+      KB-internal lifecycle state. The allowed vocabulary is defined by each
+      concrete KB document schema.
+    type: string
   links:
     type: array
     items:

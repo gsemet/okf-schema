@@ -9,7 +9,7 @@ description: >-
   operational workflows (use Playbook).
 
   The Experiment template itself is mutable while in `proposed` or `active`
-  status. Once `retired` or `superseded`, it should not be modified.
+  `kb_status`. Once `retired` or `superseded`, it should not be modified.
   Outcomes are recorded as separate Finding documents, not by editing the
   Experiment.
 
@@ -40,7 +40,7 @@ allOf:
         description: How many times this experiment is meant to be run (typically 1–2).
         type: integer
         minimum: 1
-      status:
+      kb_status:
         description: Lifecycle state of the experiment template.
         type: string
         enum: [proposed, active, retired, superseded]

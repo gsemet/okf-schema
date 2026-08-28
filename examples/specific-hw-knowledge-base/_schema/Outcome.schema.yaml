@@ -22,7 +22,7 @@ allOf:
         description: Document type — must be "Outcome".
         type: string
         const: Outcome
-      status:
+      kb_status:
         description: Progress state of the outcome.
         type: string
         enum: [planned, in_progress, done, cancelled]
@@ -37,4 +37,4 @@ allOf:
         description: IDs of Playbooks that describe how to achieve this outcome.
         type: array
         items: { type: string }
-    required: [type, status]
+    required: [type, kb_status]

@@ -14,19 +14,28 @@ update:
     rm -rf uv.lock
     {{ uv }} sync
 
+update-guidelines:
+    guidelines update
+
 # Run the full preflight check: style-check, lint, typecheck, test, docs
 preflight:
-    just style-check
+    if [ -n "${CI:-}" ]; then \
+        just style-check; \
+    else \
+        just style; \
+    fi
     just lint
+    just requirements-lint
     just changelog
     just typecheck
     just test
+    just requirements-report
     just docs
 
 # Run tests with coverage
 [group("test")]
 test:
-    {{ uv_run }} pytest
+    {{ uv_run }} pytest -n 4
 
 # Run tests in parallel with xdist
 [group("test")]
@@ -39,6 +48,7 @@ style:
     {{ uv_run }} ruff format src tests
     {{ uv_run }} ruff check --fix src tests
 
+
 # Check formatting without modifying files
 [group("format")]
 style-check:
@@ -49,6 +59,20 @@ style-check:
 [group("lint")]
 lint:
     {{ uv_run }} ruff check src tests
+
+# Validate the repository's generated okfreq requirement layer
+[group("lint")]
+requirements-lint:
+    {{ uv_run }} okfreq lint requirements
+    {{ uv_run }} okfreq update-coverage requirements --check
+
+# Generate downloadable requirements traceability artifacts
+[group("build")]
+requirements-report:
+    mkdir -p dist
+    {{ uv_run }} okfreq generate-report requirements \
+        --output-json dist/requirements-report.json \
+        --output-summary-md dist/requirements-report.md
 
 # Run type checkers (ty + mypy)
 [group("typecheck")]
@@ -101,21 +125,46 @@ build:
     {{ uv }} build
 
 [group("build")]
-refresh-examples:
+refresh-okf-schema-example:
     {{ uv_run }} okf-schema index --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema lint --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema validate --path examples/ai-llm-knowledge-base --strict
     {{ uv_run }} okf-schema stats --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema list --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema backlinks --path examples/ai-llm-knowledge-base papers/attention-is-all-you-need papers/toolformer
-    rm -rf examples/specific-hw-knowledge-base/
-    {{ uv_run }} okfkb init examples/specific-hw-knowledge-base/
+
+refresh-okfkb-example:
+    {{ uv_run }} okfkb init --force examples/specific-hw-knowledge-base/
     {{ uv_run }} okfkb new-finding examples/specific-hw-knowledge-base/ \
         --title "HW Failure investigation" \
         --confidence low \
         --context "Hardware failure pattern observed in production logs during stress testing."
     {{ uv_run }} okfkb update examples/specific-hw-knowledge-base/
+    {{ uv_run }} okfkb validate examples/specific-hw-knowledge-base/
     {{ uv_run }} okf-schema validate --strict --path examples/specific-hw-knowledge-base/
+
+refresh-okfreq-examples:
+    rm -rf examples/okfreq-examples/requirements/
+    {{ uv_run }} okfreq init --force examples/okfreq-examples/requirements/
+    test -f examples/okfreq-examples/requirements/tiers/strs/StRS-default-001.md || \
+      {{ uv_run }} okfreq new strs "Export a report" --path examples/okfreq-examples/ \
+        --description "When export is requested, the reporting capability SHALL provide a portable report." \
+        --user-need "Users need a portable report for offline review." \
+        --project OKFREQXMP
+    test -f examples/okfreq-examples/requirements/tiers/swrs/SwRS-default-001.md || \
+      {{ uv_run }} okfreq new swrs "Write CSV output" --path examples/okfreq-examples/ \
+        --description "When export is requested, the service SHALL write the report as CSV output." \
+        --project OKFREQXMP \
+        --derives-from "StRS-default-001"
+    {{ uv_run }} python -c 'from pathlib import Path; root=Path("examples/okfreq-examples/requirements/tiers"); p=root/"strs/StRS-default-001.md"; t=p.read_text(); t=t.replace("<!-- Record stakeholder constraints, exclusions, or decisions that shape the\\n     outcome. Remove this section when there are none. -->\\n\\n- <known constraint, exclusion, or rationale>", "The report must remain usable offline and the requirement does not prescribe a specific portable format."); p.write_text(t); p=root/"swrs/SwRS-default-001.md"; t=p.read_text(); t=t.replace("### Scenario: <nominal behavior>\\n\\n- GIVEN <precondition and relevant inputs>\\n- WHEN <trigger or action>\\n- THEN <single observable, verifiable outcome>", "### Scenario: Export selected rows\\n\\n- GIVEN a report containing selected rows\\n- WHEN CSV export is requested\\n- THEN the service returns UTF-8 CSV with one record per selected row"); t=t.replace("### Scenario: <boundary or failure behavior>\\n\\n- GIVEN <boundary precondition or failure>\\n- WHEN <trigger or action>\\n- THEN <observable recovery, rejection, or boundary outcome>", "### Scenario: Export an empty selection\\n\\n- GIVEN a report with no selected rows\\n- WHEN CSV export is requested\\n- THEN the service returns an empty CSV document without failing"); t=t.replace("<!-- Name the verification method, evidence, and boundaries. Do not claim\\n     coverage until implementation and test markers exist. -->\\n\\n- Method: <test, inspection, analysis, or demonstration>\\n- Criteria: <objective pass condition>", "- Method: test\\n- Criteria: Automated tests compare exact CSV output for populated and empty inputs."); p.write_text(t)'
+    {{ uv_run }} pytest -q -o addopts='' -p no:cacheprovider examples/okfreq-examples/tests
+    {{ uv_run }} okfreq trace examples/okfreq-examples/ --json
+    {{ uv_run }} okfreq update-coverage examples/okfreq-examples/ --check
+    {{ uv_run }} okfreq update-coverage examples/okfreq-examples/
+    {{ uv_run }} okfreq validate examples/okfreq-examples/ --prose
+    {{ uv_run }} okfreq lint examples/okfreq-examples/ --prose
+    {{ uv_run }} okfreq generate-report examples/okfreq-examples/ \
+        --output examples/okfreq-examples/dist/requirements-report.json
 
 
 # ── Skill Evals ──────────────────────────────────────────────────────────────

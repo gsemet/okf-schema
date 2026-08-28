@@ -24,9 +24,10 @@ my-knowledge-base/
         └── _base.schema.yaml   # Default JSONSchema for frontmatter
 ```
 
-The `_base.schema.yaml` enforces the minimum OKF contract: every concept
-must have a `type` field. You can extend it or add domain-specific schemas
-in `_schema/`: they are auto-discovered at validation time.
+The generated `_base.schema.yaml` is a starter schema. Validation selects a
+schema by the concept's `type`; `_base.schema.yaml` applies only when a type
+schema references it explicitly. Extend it and add matching type schemas in
+`_schema/` as your bundle grows.
 
 ## Add your first concept
 
@@ -120,7 +121,7 @@ Run both in sequence before every commit to keep the bundle clean.
 
 ### Log changes
 
-Update `log.md` at the root (or in any subdirectory) with a dated entry:
+Update the root `log.md` with a dated entry:
 
 ```markdown
 ## 2026-07-02
@@ -175,8 +176,8 @@ OKF is designed for agentic workflows. Use agents to:
 * **Index** directories automatically when the structure changes.
 * **Lint** frontmatter to keep formatting consistent.
 
-The CLI is built for automation — every command exits with a non-zero
-status on failure and produces machine-parseable output.
+The CLI is built for automation: commands report validation and runtime
+failures with a non-zero status and use predictable textual output.
 
 ## See also
 
@@ -193,8 +194,8 @@ Treat the knowledge base as a living document, not a static archive:
 * **Challenge**: Periodically ask whether a concept is still accurate.
   Does the schema match the current table? Does the playbook still
   reflect the on-call procedure?
-* **Confirm**: When an agent or human verifies a concept, update the
-  `timestamp` field and add a note to `log.md`.
+* **Confirm**: When an agent or human verifies a concept, update
+  `generated.at` (and `generated.by` when known) and add a note to `log.md`.
 * **Infirm**: When a concept becomes obsolete, do not delete it
-  immediately. Mark it with `status: deprecated` and link to its
+  immediately. Mark it with the OKF lifecycle field `status: deprecated` and link to its
   replacement. This preserves historical context.

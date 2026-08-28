@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="300" viewBox="0 0 960 300" role="img" aria-labelledby="title desc">
+	<title id="title">Layered StRS and SwRS requirements</title>
+	<desc id="desc">A stakeholder requirement for an offline portable report derives into two software requirements: CSV output and boundary behavior.</desc>
+	<defs>
+		<marker id="arrow" markerWidth="11" markerHeight="11" refX="10" refY="5.5" markerUnits="userSpaceOnUse" orient="auto">
+			<path d="M0 0 L11 5.5 L0 11 Z" fill="#566b8f"/>
+		</marker>
+	</defs>
+	<rect width="960" height="300" rx="16" fill="#f5f3ef"/>
+	<g font-family="sans-serif" fill="#202020">
+		<text x="480" y="38" text-anchor="middle" font-size="20" font-weight="700">Layered requirements</text>
+		<text x="480" y="62" text-anchor="middle" font-size="14" fill="#4b5563">intent stays separate from testable software behavior</text>
+		<g stroke="#566b8f" stroke-width="3" fill="none" marker-end="url(#arrow)">
+			<path d="M480 139 V166 H285 V190"/>
+			<path d="M480 166 H675 V190"/>
+		</g>
+		<g stroke="#566b8f" stroke-width="2">
+			<rect x="280" y="82" width="400" height="58" rx="12" fill="#cfe3f7"/>
+			<rect x="70" y="190" width="430" height="58" rx="12" fill="#fbf0c4"/>
+			<rect x="530" y="190" width="360" height="58" rx="12" fill="#fbf0c4"/>
+		</g>
+		<g text-anchor="middle" font-size="16">
+			<text x="480" y="108" font-weight="700">StRS · stakeholder use case</text>
+			<text x="480" y="130" font-size="13">portable report for offline review</text>
+			<text x="285" y="216" font-weight="700">SwRS · CSV output</text>
+			<text x="710" y="216" font-weight="700">SwRS · boundary behavior</text>
+			<text x="285" y="238" font-size="13">what the user needs</text>
+			<text x="710" y="238" font-size="13">empty or invalid input</text>
+		</g>
+		<g text-anchor="middle" font-size="14" fill="#4b5563">
+			<text x="285" y="278">derives_from: StRS-default-001</text>
+			<text x="710" y="278">derives_from: StRS-default-001</text>
+		</g>
+	</g>
+</svg>

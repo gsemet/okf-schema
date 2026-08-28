@@ -10,6 +10,8 @@ uv tool install okf-schema
 
 ## With pip
 
+(it is not recommended to install a CLI, `uv` is always to be preferred when available)
+
 ```bash
 pip install okf-schema
 ```
@@ -26,7 +28,7 @@ okf-schema --version
 uv tool install --upgrade okf-schema
 ```
 
-## OKF-Schema library
+## Using OKF-Schema as a library
 
 Install as a Python library for programmatic use:
 

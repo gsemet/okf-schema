@@ -43,3 +43,32 @@ The `okf_schema.api` module provides a clean, typed Python interface for all okf
 ```{eval-rst}
 .. autofunction:: okf_schema.api.backlinks_bundle
 ```
+
+```{eval-rst}
+.. autofunction:: okf_schema.api.validate_markdown_files
+```
+
+```{eval-rst}
+.. autofunction:: okf_schema.api.rewrite_superseded_links
+```
+
+```{eval-rst}
+.. autofunction:: okf_schema.api.update_bundle
+```
+
+## Result types
+
+```{eval-rst}
+.. autoclass:: okf_schema.api.UpdateResult
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: okf_schema.api.SupersededRewrite
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: okf_schema.api.DeferredRewrite
+   :members:
+```

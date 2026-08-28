@@ -1,0 +1,70 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: swrs.schema.yaml
+title: okfreq software requirement profile
+description: >-
+  SwRS defines observable software behavior derived from an StRS. It carries
+  annotation policy and generated implementation and test coverage fields.
+allOf:
+  - $ref: base.schema.yaml
+  - type: object
+    properties:
+      type:
+        const: SwRS
+        description: Software profile discriminator.
+      tier:
+        const: SwRS
+        description: Software tier label.
+      annotation_exemption:
+        type: boolean
+        description: Whether marker coverage is exempted.
+      exemption_reason:
+        type: [string, 'null']
+        minLength: 1
+        description: >-
+          Required justification when coverage is exempted. Explain why the
+          requirement cannot be covered by repository source or tests and
+          identify any external justification or verification document.
+      implemented_in_files:
+        type: array
+        items: {type: string}
+        description: Generated source paths.
+      tested_in_files:
+        type: array
+        items: {type: string}
+        description: Generated test paths.
+      verification_method:
+        type: string
+        description: Author-selected verification method.
+      verification_criteria:
+        type: string
+        description: Objective verification criteria.
+    required: [type, tier, annotation_exemption]
+    allOf:
+      - if:
+          properties:
+            annotation_exemption:
+              const: true
+        then:
+          required: [exemption_reason]
+          properties:
+            exemption_reason:
+              type: string
+              minLength: 1
+examples:
+  - type: SwRS
+    id: SwRS-OKFSCHEMA-CORE-001
+    uuid: 00000000-0000-4000-8000-000000000002
+    title: Validate requirement frontmatter
+    description: The validator SHALL report invalid requirement frontmatter.
+    project: okf-schema
+    scope: core
+    lifecycle: draft
+    origin: native
+    tier: SwRS
+    derives_from: [StRS-OKFSCHEMA-CORE-001]
+    annotation_exemption: false
+    exemption_reason: null
+    implemented_in_files: [src/okf_schema/okfreq/core.py]
+    tested_in_files: [tests/test_okfreq.py]
+    verification_method: test
+    verification_criteria: The focused okfreq test suite passes.

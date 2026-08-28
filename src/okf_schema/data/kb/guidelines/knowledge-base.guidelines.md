@@ -33,10 +33,10 @@ Rules of thumb:
   governance layer; Playbooks are the operational layer; Outcomes are the
   planning layer; References are the lookup layer.
 - Agents dump Findings freely; stable docs are promoted deliberately by the
-  `consolidate-knowledge-base` skill — never dumped ad hoc.
+  `okfkb-distill` skill — never dumped ad hoc.
 - Hypotheses are promoted to Concept or Structure by human decision, never
   automatically.
-- Falsified Hypotheses remain in the knowledge base with `status: falsified`.
+- Falsified Hypotheses remain in the knowledge base with `kb_status: falsified`.
 - Playbooks are experienced until proven false; use `superseded_by` when a
   better workflow emerges.
 - Outcomes track progress and may reference Playbooks for execution.
@@ -50,12 +50,14 @@ type: <one of the types above>   # must match the const in _schema/<Type>.schema
 title: Human-Readable Title       # non-empty
 description: Short summary.        # non-empty
 tags: [keyword]                    # optional but encouraged
-timestamp: 2026-07-02T00:00:00Z   # ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)
+generated:
+  at: 2026-07-02T00:00:00Z        # ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)
+  by: human:alice                  # actor prefix and identifier
 ```
 
 Type-specific required fields:
 
-- **Finding**: also `timestamp`, `confidence` (`low|medium|high`), and `context`
+- **Finding**: also `generated.at`, `confidence` (`low|medium|high|confirmed`), and `context`
   (what you believed and the scope you actually tested).
 - **Experiment**: also `hypothesis` and `steps`.
 
@@ -65,17 +67,17 @@ Type-specific required fields:
 - To correct a Finding, write a NEW Finding with `contradicts: [<old-id>]` or
   `supersedes: [<old-id>]`.
 - The only permitted edits to an existing Finding are the lifecycle fields
-  `status` (`contradicted|superseded`), `contradicted_by`, `superseded_by`,
-  appended by the `consolidate-knowledge-base` review.
+  `kb_status` (`contradicted|superseded`), `contradicted_by`, `superseded_by`,
+  appended by the `okfkb-distill` review.
 - Promotion of converged Findings into Concept/Structure/Principle is done by
-  `consolidate-knowledge-base` with human confirmation — Principles are always
+  `okfkb-distill` with human confirmation — Principles are always
   agreed with humans.
 
 ## 4. Skills
 
-- **`record-finding`** (fast, non-interactive): dump one Finding after an
+- **`okfkb-record-findings`** (fast, non-interactive): dump one Finding after an
   investigation or debugging session.
-- **`consolidate-knowledge-base`** (interactive, human-confirmed): detect
+- **`okfkb-distill`** (interactive, human-confirmed): detect
   contradictions, mark findings, propose Experiments, propose promotions.
 
 ## 5. Validate before commit

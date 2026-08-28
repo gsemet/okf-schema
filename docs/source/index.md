@@ -7,11 +7,18 @@
 
 OKF is a markdown-based knowledge format where each concept is a markdown file with YAML
 frontmatter. This package provides validation against JSONSchema, formatting while preserving
-comments, and bundle management utilities. See this official, draft
+comments, and bundle management utilities.
+See the official OKF
 [spec](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md).
 
 OKF-Schema is highly opinionated: it enforces a stricter model than the spec, and it is not
 guaranteed that every valid OKF bundle will pass `okf-schema` validation.
+
+The project has three clearly separated layers:
+
+1. 📚 generic `okf-schema` tooling for any OKF bundle
+2. 🧠 the `okfkb` knowledge-base subset for maturing engineering knowledge
+3. 📐 the `okfreq` requirements subset for requirement traceability
 
 OKF-Schema bundles are OKF-compliant. See
 [OKF-Schema vs. OKF Spec](reference/okf-schema-vs-spec) for details.
@@ -67,13 +74,21 @@ Understand the design philosophy behind OKF-Schema
 and how it relates to the OKF specification.
 :::
 
-:::{grid-item-card} 🗄️ Opinionated Knowledge Base
+:::{grid-item-card} 🧠 Opinionated Knowledge Base
 :link: explanation/okfkb-choices
 :link-type: doc
 
 Learn why the `okfkb` KB format exists, how agents read frontmatter-first
 markdown, and how links and backlinks keep the graph navigable.
 :::
+
+:::{grid-item-card} 📐 Requirements Traceability
+:link: tutorials/okfreq-traceability
+:link-type: doc
+
+Learn how the separate `okfreq` requirements subset models StRS/SwRS
+derivation, lifecycle, implementation markers, and coverage.
+::
 
 ::::
 

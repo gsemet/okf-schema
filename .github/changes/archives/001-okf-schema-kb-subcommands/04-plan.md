@@ -14,7 +14,7 @@ flag, and bundles skills/guidelines as package data loaded via
 ### New Subpackage
 
 ```
-src/okf_schema/kb/
+src/okf_schema/okfkb/
 ├── __init__.py      # Package marker, re-exports
 ├── cli.py           # Click command group (init, install)
 ├── scaffold.py      # KB scaffold logic (dirs, schemas, index.md, log.md)
@@ -63,7 +63,7 @@ src/okf_schema/data/kb/
    - Add empty `__init__.py` to make it a valid package
 
 2. **Update `pyproject.toml`**
-   - Add `okfkb = "okf_schema.kb.cli:kb"` to `[project.scripts]`
+   - Add `okfkb = "okf_schema.okfkb.cli:kb"` to `[project.scripts]`
    - Verify `tool.hatch.build.targets.wheel.include` covers `src/okf_schema/data/`
 
 3. **Verify bundled assets are loadable**
@@ -72,14 +72,14 @@ src/okf_schema/data/kb/
 
 ### Phase 2 — `kb` Subpackage Core Logic
 
-4. **Create `src/okf_schema/kb/scaffold.py`**
+4. **Create `src/okf_schema/okfkb/scaffold.py`**
    - `scaffold_kb(path: Path, force: bool = False) -> None`
    - Creates 8 content directories, copies 8 schemas from bundled data
    - Writes `index.md` and `log.md` with minimal OKF frontmatter
    - Errors if path exists and is non-empty (unless `--force`)
    - Prints confirmation summary
 
-5. **Create `src/okf_schema/kb/install.py`**
+5. **Create `src/okf_schema/okfkb/install.py`**
    - `install_kb(target: Path, force: bool = False) -> None`
    - Detects `.agents/` or `.github/` in target; prefers `.agents/`
    - Copies skills to `<base>/skills/` and guideline to `<base>/guidelines/`
@@ -87,13 +87,13 @@ src/okf_schema/data/kb/
    - Patches or creates `AGENTS.md` with guideline reference (idempotent)
    - Prints summary of installed/skipped files
 
-6. **Create `src/okf_schema/kb/patterns.py`**
+6. **Create `src/okf_schema/okfkb/patterns.py`**
    - `INIT_PATTERNS: dict[str, Callable[[Path, bool], None]]`
    - Maps pattern names to scaffold functions
    - `register_pattern(name: str, fn: Callable[[Path, bool], None]) -> None`
    - `list_patterns() -> list[str]`
 
-7. **Create `src/okf_schema/kb/cli.py`**
+7. **Create `src/okf_schema/okfkb/cli.py`**
    - Click group `kb` with `init` and `install` subcommands
    - `init`: optional `PATH` arg, `--force` flag, delegates to `scaffold_kb`
    - `install`: optional `PATH` arg, `--force` flag, delegates to `install_kb`

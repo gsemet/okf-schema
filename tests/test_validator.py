@@ -650,6 +650,7 @@ class TestValidateLog:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-001
 class TestValidateBundleValid:
     """Tests with the valid bundle fixture."""
 

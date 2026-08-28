@@ -1,4 +1,4 @@
-"""Tests for okf_schema.kb.finding — new_finding() function and okfkb new-finding CLI."""
+"""Tests for okf_schema.okfkb.finding — new_finding() function and okfkb new-finding CLI."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from okf_schema.kb.cli import kb
-from okf_schema.kb.finding import _slugify, new_finding
+from okf_schema.okfkb.cli import kb
+from okf_schema.okfkb.finding import _slugify, new_finding
 
 # ---------------------------------------------------------------------------
 # _slugify helper
@@ -45,6 +45,8 @@ class TestSlugify:
 
 class TestNewFindingHappyPath:
     """new_finding() creates a valid Finding file."""
+
+    # @tests_req SwRS-OKFSCHEMA-OKFKB-003
 
     def test_creates_file_in_findings_dir(self, tmp_path: Path) -> None:
         """Creates a file inside <kb_path>/findings/."""

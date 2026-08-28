@@ -96,11 +96,11 @@ Installed KB tooling at /tmp/target-project.
 ## Coverage Summary
 
 ```
-src/okf_schema/kb/__init__.py        1      0      0      0   100%
-src/okf_schema/kb/cli.py            30      0      0      0   100%
-src/okf_schema/kb/install.py        70      0     22      0   100%
-src/okf_schema/kb/patterns.py       12      0      2      0   100%
-src/okf_schema/kb/scaffold.py       39      0     10      0   100%
+src/okf_schema/okfkb/__init__.py        1      0      0      0   100%
+src/okf_schema/okfkb/cli.py            30      0      0      0   100%
+src/okf_schema/okfkb/install.py        70      0     22      0   100%
+src/okf_schema/okfkb/patterns.py       12      0      2      0   100%
+src/okf_schema/okfkb/scaffold.py       39      0     10      0   100%
 TOTAL (project-wide)              1326     25    558     40    97%
 Required test coverage of 96% reached. Total coverage: 96.55%
 463 passed in 3.31s
@@ -110,7 +110,7 @@ All five `kb/` modules achieve **100% coverage**.
 
 ## Tech Debt Scan
 
-No `TODO`, `FIXME`, or `HACK` annotations found in `src/okf_schema/kb/` or in any
+No `TODO`, `FIXME`, or `HACK` annotations found in `src/okf_schema/okfkb/` or in any
 of the four KB test files (`test_kb_scaffold.py`, `test_kb_install.py`,
 `test_kb_patterns.py`, `test_kb_cli.py`).
 
@@ -120,7 +120,7 @@ The complete `okf-schema-kb-subcommands` feature is **production-ready**:
 
 - **13 commits** from baseline `a674cdee` covering all four phases (data bundling, core
   logic, CLI integration, tests + docs).
-- **New files**: `src/okf_schema/kb/` (4 modules + `__init__.py`), `src/okf_schema/data/kb/`
+- **New files**: `src/okf_schema/okfkb/` (4 modules + `__init__.py`), `src/okf_schema/data/kb/`
   (13 data files), `tests/test_kb_*.py` (4 test files, 69 tests), README section.
 - **No regressions**: 463 tests pass (vs. 394 before the feature), coverage maintained at
   96.55%.

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Phase 2 delivered the complete `okf_schema.kb` subpackage: `scaffold_kb` creates a full KB layout
+Phase 2 delivered the complete `okf_schema.okfkb` subpackage: `scaffold_kb` creates a full KB layout
 from bundled assets, `install_kb` installs skills/guideline and patches AGENTS.md, `INIT_PATTERNS`
 provides an extensible registry, and the `kb` Click group exposes `init` / `install` subcommands.
 All 454 tests pass with 96.57% coverage against a 96% threshold, and all linter/type-checker checks
@@ -31,7 +31,7 @@ are green.
 
 ## Findings
 
-- All four module files are present under `src/okf_schema/kb/` with the correct public API signatures
+- All four module files are present under `src/okf_schema/okfkb/` with the correct public API signatures
   (`scaffold_kb(path, force)`, `install_kb(target, force)`, `INIT_PATTERNS` registry).
 - Test coverage is distributed across four dedicated test files:
   `test_kb_scaffold.py`, `test_kb_install.py`, `test_kb_patterns.py`, `test_kb_cli.py`.

@@ -45,7 +45,7 @@ CLI command, and the `okfkb` entry point alias. Ensure all edge cases are covere
    ```python
    from pathlib import Path
    from click.testing import CliRunner
-   from okf_schema.kb.install import install_kb
+   from okf_schema.okfkb.install import install_kb
    from okf_schema.cli import cli
 
    class TestInstallKb:
@@ -133,7 +133,7 @@ CLI command, and the `okfkb` entry point alias. Ensure all edge cases are covere
 
 4. Run tests with coverage:
    ```bash
-   uv run pytest tests/test_kb_install.py tests/test_kb_cli.py tests/test_integration.py -v --cov=okf_schema.kb --cov-report=term-missing
+   uv run pytest tests/test_kb_install.py tests/test_kb_cli.py tests/test_integration.py -v --cov=okf_schema.okfkb --cov-report=term-missing
    ```
 
 5. Run `just preflight`.
@@ -156,6 +156,6 @@ CLI command, and the `okfkb` entry point alias. Ensure all edge cases are covere
   `CliRunner` tests the Python API, not the console script entry point.
 - For the entry point test, you can verify `okfkb` is importable:
   ```python
-  from okf_schema.kb.cli import kb
+  from okf_schema.okfkb.cli import kb
   assert kb is not None
   ```

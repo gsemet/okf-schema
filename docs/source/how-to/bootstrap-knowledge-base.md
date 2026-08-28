@@ -80,7 +80,7 @@ okfkb new-finding my-project/knowledge/ \
 After adding files, update the cross-link index and check conformance:
 
 ```bash
-okf-schema update --path my-project/knowledge/
+okfkb update my-project/knowledge/
 okf-schema validate --strict --path my-project/knowledge/
 ```
 
@@ -90,8 +90,8 @@ okf-schema validate --strict --path my-project/knowledge/
 
 ## Step 4 — Install KB tooling into your project
 
-`install-skills` deploys the bundled `record-finding` and
-`consolidate-knowledge-base` agent skills, plus the `knowledge-base.guidelines.md`
+`install-skills` deploys the bundled `okfkb-record-findings` and
+`okfkb-distill` agent skills, plus the `knowledge-base.guidelines.md`
 guideline, into the project's `.agents/` directory:
 
 ```bash
@@ -119,7 +119,7 @@ Add a validation step so schema drift is caught before merge:
 day 1   okfkb init knowledge/
 day 2+  okfkb new-finding knowledge/ --title "..." --confidence medium --context "..."
         # edit the generated file to fill in Observation / Evidence / Implications
-        okfkb update --path knowledge/
+        okfkb update knowledge/
         okfkb validate --strict --path knowledge/
         git add knowledge/ && git commit -m "docs: record finding ..."
 ```

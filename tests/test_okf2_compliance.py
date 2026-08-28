@@ -21,6 +21,7 @@ from okf_schema.validator import (
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006
 class TestDeriveTrustTier:
     """Tests for the OKF 0.2 trust-tier derivation logic."""
 

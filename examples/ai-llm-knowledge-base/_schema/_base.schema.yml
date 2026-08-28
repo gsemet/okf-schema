@@ -33,7 +33,19 @@ properties:
   timestamp:
     type: string
     format: date
-    description: "ISO 8601 datetime of last meaningful change."
+    description: "Deprecated OKF 0.1 timestamp; use generated.at."
+  generated:
+    type: object
+    required: [at]
+    properties:
+      at:
+        type: string
+        description: "ISO 8601 provenance timestamp."
+      by:
+        type: string
+        pattern: "^[A-Za-z][A-Za-z0-9_-]*:.+$"
+        description: "Actor string identifying the producer."
+    additionalProperties: true
   links:
     type: array
     items:

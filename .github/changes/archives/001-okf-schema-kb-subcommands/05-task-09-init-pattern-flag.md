@@ -69,8 +69,8 @@ flag. When `--pattern kb` is supplied, delegate to `scaffold_kb`. Use the
 
 2. **Green**: Modify the `init` command in `src/okf_schema/cli.py`:
    ```python
-   from okf_schema.kb.patterns import INIT_PATTERNS, list_patterns
-   from okf_schema.kb.scaffold import scaffold_kb
+   from okf_schema.okfkb.patterns import INIT_PATTERNS, list_patterns
+   from okf_schema.okfkb.scaffold import scaffold_kb
 
    # Auto-register the kb pattern
    register_pattern("kb", scaffold_kb)
@@ -116,11 +116,11 @@ flag. When `--pattern kb` is supplied, delegate to `scaffold_kb`. Use the
 ## Notes
 
 - The `register_pattern("kb", scaffold_kb)` call should happen at module level
-  in `cli.py` or in `okf_schema/kb/__init__.py` to ensure it's always available.
-- Consider placing the registration in `okf_schema/kb/__init__.py` to keep
+  in `cli.py` or in `okf_schema/okfkb/__init__.py` to ensure it's always available.
+- Consider placing the registration in `okf_schema/okfkb/__init__.py` to keep
   `cli.py` cleaner:
   ```python
-  from okf_schema.kb.patterns import register_pattern
-  from okf_schema.kb.scaffold import scaffold_kb
+  from okf_schema.okfkb.patterns import register_pattern
+  from okf_schema.okfkb.scaffold import scaffold_kb
   register_pattern("kb", scaffold_kb)
   ```

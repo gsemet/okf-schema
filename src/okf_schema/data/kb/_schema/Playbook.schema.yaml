@@ -10,7 +10,7 @@ description: >-
   (use Outcome).
 
   Mutable while active. When a better workflow is found, the old Playbook is
-  marked `status: deprecated` or `superseded` with `superseded_by` pointing to
+  marked `kb_status: deprecated` or `superseded` with `superseded_by` pointing to
   the replacement. Playbooks are experienced until proven false or obsolete.
 
   Belongs to the Operational layer. References Concepts and Structures for
@@ -23,7 +23,7 @@ allOf:
         description: Document type — must be "Playbook" for playbook documents.
         type: string
         const: Playbook
-      status:
+      kb_status:
         description: Lifecycle state of the playbook.
         type: string
         enum: [active, deprecated, superseded]

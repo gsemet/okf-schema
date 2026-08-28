@@ -1,4 +1,4 @@
-"""Tests for src/okf_schema/kb/cli.py — kb Click command group."""
+"""Tests for src/okf_schema/okfkb/cli.py — kb Click command group."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from okf_schema.kb.cli import kb
+from okf_schema.okfkb.cli import kb
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -33,6 +33,8 @@ CONTENT_DIRS = {
 
 class TestKbHelp:
     """The kb group help output lists all subcommands."""
+
+    # @tests_req SwRS-OKFSCHEMA-OKFKB-001
 
     def test_kb_help_lists_init_and_install(self) -> None:
         """kb --help lists both init and install-skills subcommands."""
@@ -124,7 +126,7 @@ class TestKbInit:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """kb init exits with code 1 when scaffold_kb raises an unexpected error."""
-        import okf_schema.kb.cli as cli_module
+        import okf_schema.okfkb.cli as cli_module
 
         def broken_scaffold(path: Path, force: bool = False) -> None:
             raise OSError("disk full")
@@ -189,7 +191,7 @@ class TestKbInstall:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """kb install-skills exits with code 1 when install_kb raises an unexpected error."""
-        import okf_schema.kb.cli as cli_module
+        import okf_schema.okfkb.cli as cli_module
 
         def broken_install(path: Path, force: bool = False) -> None:
             raise OSError("permission denied")
@@ -386,15 +388,15 @@ class TestOkfkbAlias:
     """The okfkb entry point resolves to the kb Click group."""
 
     def test_okfkb_alias_is_importable(self) -> None:
-        """okfkb entry point resolves: kb group is importable from okf_schema.kb.cli."""
-        from okf_schema.kb.cli import kb as okfkb
+        """okfkb entry point resolves: kb group is importable from okf_schema.okfkb.cli."""
+        from okf_schema.okfkb.cli import kb as okfkb
 
         assert okfkb is not None
         assert okfkb.name == "kb"
 
     def test_okfkb_alias_has_init_and_install(self) -> None:
         """The kb group (okfkb alias) exposes both init and install-skills subcommands."""
-        from okf_schema.kb.cli import kb as okfkb
+        from okf_schema.okfkb.cli import kb as okfkb
 
         commands = list(okfkb.commands.keys())
         assert "init" in commands
@@ -404,7 +406,7 @@ class TestOkfkbAlias:
 
     def test_okfkb_alias_invokable_via_runner(self, tmp_path: Path) -> None:
         """okfkb install-skills can be invoked directly through the kb group."""
-        from okf_schema.kb.cli import kb as okfkb
+        from okf_schema.okfkb.cli import kb as okfkb
 
         runner = CliRunner()
         result = runner.invoke(okfkb, ["install-skills", str(tmp_path)])

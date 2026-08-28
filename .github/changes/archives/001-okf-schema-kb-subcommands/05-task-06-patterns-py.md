@@ -5,12 +5,12 @@
 
 ## Objective
 
-Implement `src/okf_schema/kb/patterns.py` containing the `INIT_PATTERNS` registry
+Implement `src/okf_schema/okfkb/patterns.py` containing the `INIT_PATTERNS` registry
 dict and helper functions for extensible init pattern registration.
 
 ## Files to Modify/Create
 
-- Create `src/okf_schema/kb/patterns.py`
+- Create `src/okf_schema/okfkb/patterns.py`
 - Create `tests/test_kb_patterns.py`
 
 ## Acceptance Criteria
@@ -42,7 +42,7 @@ dict and helper functions for extensible init pattern registration.
    - `test_register_duplicate_raises_valueerror`
    - `test_list_patterns_returns_sorted_names`
 
-2. **Green**: Implement `src/okf_schema/kb/patterns.py`:
+2. **Green**: Implement `src/okf_schema/okfkb/patterns.py`:
    ```python
    from __future__ import annotations
 
@@ -91,6 +91,6 @@ dict and helper functions for extensible init pattern registration.
 
 - The registry is intentionally mutable at module level — patterns are registered
   at import time by subpackages.
-- The `kb` pattern will be registered by importing `okf_schema.kb.scaffold` and
+- The `kb` pattern will be registered by importing `okf_schema.okfkb.scaffold` and
   calling `register_pattern("kb", scaffold_kb)` at the bottom of that module
-  (or in `okf_schema/kb/__init__.py`).
+  (or in `okf_schema/okfkb/__init__.py`).

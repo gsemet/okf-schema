@@ -1,0 +1,14 @@
+version: 1
+levels:
+  StRS: {folder: strs, prefix: StRS, derives_from: []}
+  SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS]}
+id_policy: scope-prefix-sequence
+lifecycle:
+  values: [draft, proposed, approved, deprecated, superseded]
+markers:
+  implements: '@implements_req'
+  tests: '@tests_req'
+  id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
+generated_fields: [derived_by, implemented_in_files, tested_in_files]
+scopes:
+  default: {source_dirs: [src], test_dirs: [tests]}

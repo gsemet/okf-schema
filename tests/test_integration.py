@@ -447,8 +447,8 @@ class TestKbEndToEndWorkflow:
         # Verify skills were deployed
         agents_dir = project_path / ".agents"
         assert agents_dir.is_dir()
-        assert (agents_dir / "skills" / "record-finding" / "SKILL.md").is_file()
-        assert (agents_dir / "skills" / "consolidate-knowledge-base" / "SKILL.md").is_file()
+        assert (agents_dir / "skills" / "okfkb-record-findings" / "SKILL.md").is_file()
+        assert (agents_dir / "skills" / "okfkb-distill" / "SKILL.md").is_file()
 
         # Verify guideline was deployed
         assert (agents_dir / "guidelines" / "knowledge-base.guidelines.md").is_file()

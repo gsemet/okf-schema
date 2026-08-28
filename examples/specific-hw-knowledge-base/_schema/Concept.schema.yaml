@@ -10,7 +10,7 @@ description: >-
 
   Mutable. Concepts are updated to reflect new understanding as Findings
   accumulate. They are never deleted; if entirely invalidated, they are
-  marked with `status: deprecated` and linked to replacement Concepts.
+  marked with `kb_status: deprecated` and linked to replacement Concepts.
 
   Belongs to the Semantic layer. Promoted from confirmed Hypotheses or
   converged Findings. Supports Structures and Principles.
@@ -22,7 +22,7 @@ allOf:
         description: Document type — must be "Concept" for concept documents.
         type: string
         const: Concept
-      status:
+      kb_status:
         description: Lifecycle state of the concept.
         type: string
         enum: [active, deprecated]

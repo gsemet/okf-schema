@@ -19,7 +19,7 @@
 | Deliverable | Description |
 |-------------|-------------|
 | `SKILL.md` | Agent skill definition at `.github/skills/okfkb-gardening/SKILL.md` |
-| CLI extension | Extend `okfkb update` in `src/okf_schema/kb/cli.py` to handle `superseded_by` backlink rewriting |
+| CLI extension | Extend `okfkb update` in `src/okf_schema/okfkb/cli.py` to handle `superseded_by` backlink rewriting |
 
 ---
 
@@ -80,7 +80,7 @@ okfkb garden /path/to/kb
 
 ## 4. CLI Extension: `okfkb update` Enhancement
 
-**File:** `src/okf_schema/kb/cli.py` (and supporting internal logic)
+**File:** `src/okf_schema/okfkb/cli.py` (and supporting internal logic)
 
 **New internal step added to `update` command:**
 

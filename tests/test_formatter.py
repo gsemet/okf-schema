@@ -59,6 +59,7 @@ class TestFlattenValue:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003
 class TestFormatFrontmatter:
     """Tests for format_frontmatter."""
 
@@ -579,3 +580,27 @@ class TestLintFrontmatterOkf2Exemptions:
         assert result is not None
         # generated dict should still be present (block-style dict preserved)
         assert "generated:" in result
+
+
+def test_lint_frontmatter_migrates_legacy_timestamp() -> None:
+    text = "---\ntype: concept\ntimestamp: '2026-01-01T00:00:00Z'\ntitle: Example\n---\n\n# Body\n"
+
+    result = lint_frontmatter(text)
+
+    assert result is not None
+    assert "timestamp:" not in result
+    assert "generated:\n  at: '2026-01-01T00:00:00Z'" in result
+    assert result.endswith("# Body\n")
+
+
+def test_lint_frontmatter_removes_redundant_legacy_timestamp() -> None:
+    text = (
+        "---\ntype: concept\ngenerated:\n  at: '2026-02-01T00:00:00Z'\n"
+        "timestamp: '2026-01-01T00:00:00Z'\n---\n\n# Body\n"
+    )
+
+    result = lint_frontmatter(text)
+
+    assert result is not None
+    assert "timestamp:" not in result
+    assert "at: '2026-02-01T00:00:00Z'" in result

@@ -35,6 +35,17 @@ jobs:
       - name: Run preflight
         run: uv run --no-sync -- just preflight
 
+      - name: Upload requirements report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirements-report-${{ matrix.python-version }}
+          path: |
+            dist/requirements-report.json
+            dist/requirements-report.schema.json
+            dist/requirements-report.md
+          if-no-files-found: warn
+
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:

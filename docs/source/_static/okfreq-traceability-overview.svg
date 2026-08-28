@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="240" viewBox="0 0 960 240" role="img" aria-labelledby="title desc">
+	<title id="title">Requirement traceability chain</title>
+	<desc id="desc">Four separate cards show the flow from stakeholder intent to software behavior, implementation, and test evidence.</desc>
+	<defs>
+		<marker id="arrow" markerWidth="11" markerHeight="11" refX="10" refY="5.5" markerUnits="userSpaceOnUse" orient="auto">
+			<path d="M0 0 L11 5.5 L0 11 Z" fill="#566b8f"/>
+		</marker>
+	</defs>
+	<rect width="960" height="240" rx="16" fill="#f5f3ef"/>
+	<g font-family="sans-serif" fill="#202020">
+		<text x="480" y="38" text-anchor="middle" font-size="20" font-weight="700">From intent to evidence</text>
+		<g stroke="#566b8f" stroke-width="4" fill="none" marker-end="url(#arrow)">
+			<path d="M210 125 H262"/>
+			<path d="M450 125 H502"/>
+			<path d="M690 125 H742"/>
+		</g>
+		<g stroke="#566b8f" stroke-width="2">
+			<rect x="30" y="82" width="180" height="86" rx="12" fill="#cfe3f7"/>
+			<rect x="270" y="82" width="180" height="86" rx="12" fill="#fbf0c4"/>
+			<rect x="510" y="82" width="180" height="86" rx="12" fill="#f7cbc5"/>
+			<rect x="750" y="82" width="180" height="86" rx="12" fill="#e3d4f2"/>
+		</g>
+		<g text-anchor="middle" font-size="17">
+			<text x="120" y="116" font-weight="700">StRS</text>
+			<text x="120" y="143">stakeholder intent</text>
+			<text x="360" y="116" font-weight="700">SwRS</text>
+			<text x="360" y="143">software behavior</text>
+			<text x="600" y="116" font-weight="700">Source</text>
+			<text x="600" y="143">implementation</text>
+			<text x="840" y="116" font-weight="700">Test</text>
+			<text x="840" y="143">evidence</text>
+		</g>
+		<g text-anchor="middle" font-size="14" fill="#4b5563">
+			<text x="120" y="202">what the user needs</text>
+			<text x="360" y="202">what the system shall do</text>
+			<text x="600" y="202">@implements_req ID</text>
+			<text x="840" y="202">@tests_req ID</text>
+		</g>
+	</g>
+</svg>

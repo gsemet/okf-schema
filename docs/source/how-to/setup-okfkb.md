@@ -26,14 +26,14 @@ Creates: `index.md`, `log.md`, and tier folders (`findings/`, `concepts/`, `prin
 ### 2. Agent Creates a Finding
 
 ```bash
-okfkb new-finding "What was observed"
+okfkb new-finding . --title "What was observed"
 ```
 
 Creates `findings/YYYY.MM.DD-HH.MM-<slug>.md` with template frontmatter.
 Agent edits, then:
 
 ```bash
-okfkb update findings/YYYY.MM.DD-HH.MM-<slug>.md
+okfkb update .
 ```
 
 ### 3. Index
@@ -42,7 +42,9 @@ okfkb update findings/YYYY.MM.DD-HH.MM-<slug>.md
 okf-schema index --path .
 ```
 
-Computes backlinks, regenerates `index.md` and `log.md`.
+Regenerates `index.md` files. Run `okfkb update .` to regenerate indexes and
+also lint frontmatter, including links and backlinks. `log.md` remains
+human-authored.
 
 ### 4. Validate
 
@@ -63,7 +65,7 @@ okfkb install-skills /path/to/project
 The repository-level skills add two broader workflows:
 
 - **`okfkb`** teaches the lifecycle, chooses the right knowledge type, routes
-  empirical discoveries to `record-finding`, and navigates from stable tiers to
+  empirical discoveries to `okfkb-record-findings`, and navigates from stable tiers to
   raw evidence.
 - **`okfkb-gardening`** performs an explicitly invoked, autonomous maintenance
   pass. It repairs graph mechanics, reconciles Finding lifecycles, consolidates
@@ -110,13 +112,15 @@ Immutable raw observations. Created by agents.
 ```yaml
 type: Finding
 title: What was observed?
-confidence: low | medium | high
+confidence: low | medium | high | confirmed
 context: System state, configuration, environment
-timestamp: 2026-07-04T14:30:00Z
+generated:
+  at: 2026-07-04T14:30:00Z
+  by: human:alice
 tags: [domain, tags]
 links: [findings/..., concepts/...]
 backlinks: []  # Auto-computed
-status: active | contradicted | superseded
+kb_status: active | contradicted | superseded
 contradicted_by: [findings/...]
 ```
 
@@ -131,7 +135,7 @@ description: Concise explanation of the stable idea
 derived_from: [findings/..., findings/...]
 links: [concepts/..., principles/...]
 backlinks: []
-status: active | deprecated
+kb_status: active | deprecated
 ```
 
 ### Hypotheses: `hypotheses/<name>.md`
@@ -144,7 +148,7 @@ title: Proposition to test
 description: Testable explanation of observations
 derived_from: [findings/... or concepts/...]
 links: []
-status: proposed | under_test | confirmed | falsified
+kb_status: proposed | under_test | confirmed | falsified
 ```
 
 ### Experiments: `experiments/<name>.md`
@@ -158,7 +162,7 @@ description: Reusable procedure for testing the hypothesis
 hypothesis: hypotheses/...
 steps: [Prepare the target, Run the measurement, Capture the signals]
 expected_signals: [Signal expected if true, Signal expected if false]
-status: proposed | active | retired | superseded
+kb_status: proposed | active | retired | superseded
 derived_findings: [findings/...]
 ```
 
@@ -185,7 +189,7 @@ title: System composition or pattern
 description: How the subject is composed or works
 derived_from: [findings/...]
 links: [concepts/...]
-status: active | deprecated
+kb_status: active | deprecated
 ```
 
 ### Outcomes: `outcomes/<name>.md`
@@ -196,7 +200,7 @@ Planned deliverables.
 type: Outcome
 title: Project or deliverable
 description: Planned result derived from stable knowledge
-status: planned | in_progress | done | cancelled
+kb_status: planned | in_progress | done | cancelled
 deliverable: Concrete artifact or result
 derived_from: [concepts/...]
 ```
@@ -209,8 +213,8 @@ External sources.
 type: Reference
 title: Paper/link title
 description: What this source contributes
-url: https://...
-abstract: Summary
+authoritative_source: https://example.com/specification
+schema_version: v2.1
 links: [concepts/..., findings/...]
 ```
 
@@ -222,7 +226,7 @@ Operational how-to notes.
 type: Playbook
 title: How to do X
 description: Reproducible workflow that produces a result
-status: active | deprecated | superseded
+kb_status: active | deprecated | superseded
 links: []
 ```
 
@@ -237,24 +241,24 @@ links:
   - principles/timeout-policy.md
 ```
 
-Run `okf-schema index --path .` to auto-compute backlinks.
+Run `okfkb update .` to materialise links and backlinks and regenerate indexes.
 
 ## Frontmatter Validation
 
 ```bash
-okf-schema lint --path .
+okfkb validate .
 ```
 
 Verifies:
 - Required fields present
 - Confidence values valid (`low`, `medium`, `high`)
-- Timestamps in ISO 8601 format
+- `generated.at` timestamps in ISO 8601 format
 - All `links:` point to existing files
-- `status:` values match schema
+- `kb_status:` values match the type schema
 
 ## Tips for Success
 
-1. **Findings are immutable** — once created, only update lifecycle fields (`status`, `contradicted_by`)
+1. **Findings are immutable** — once created, only update lifecycle fields (`kb_status`, `contradicted_by`, `superseded_by`)
 2. **Link aggressively** — more links = more navigable KB
 3. **Index after batches** — run `okf-schema index` after each editing session
 4. **Use tags for filtering** — tags help agents search by domain

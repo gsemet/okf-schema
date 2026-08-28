@@ -31,7 +31,7 @@ All files validated successfully (0 errors, 0 warnings).
 ```
 notes/my-document.md
   WARNING [W1] Missing recommended field 'title' in 'notes/my-document.md'
-  WARNING [W3] No 'timestamp (ISO 8601)' field in 'notes/my-document.md'
+  WARNING [W3] No provenance timestamp in 'notes/my-document.md'. Add 'generated.at: <ISO-8601-datetime>' to the frontmatter.
 
 Validation passed: 2 warning(s).
 ```
@@ -140,7 +140,7 @@ The document content goes here.
 - Must end with `---` before the document body
 - Must have a `type` field (to match a schema)
 
-### Minimal Valid File
+### Minimal Structurally Valid File
 
 ```markdown
 ---
@@ -150,6 +150,9 @@ title: My Concept
 
 Content here.
 ```
+
+This passes structural checks but still reports W1 for a missing
+`description` and W3 for missing `generated.at`.
 
 ## Validation Checks
 
@@ -161,10 +164,19 @@ The `validate-md` command checks the following (unless noted as bundle-only):
 | **E2** | `type` field is non-empty | Add `type: concept` |
 | **E4** | Frontmatter matches the schema | Match schema requirements |
 | **E5** | Lists in frontmatter are flattened | Use `[a, b, c]` not `[[a], [b], [c]]` |
+| **E8** | `generated` has valid structure | Use a mapping with `at` and optional `by` |
+| **E9** | Source IDs are unique | Give every `sources[]` item a distinct `id` |
+| **E10** | Lifecycle dates are valid | Use ISO 8601 values and a valid date order |
 | **W1** | Recommended fields (`title`, `description`) are present | Add `title:` and `description:` |
-| **W3** | Timestamp field is present | Add `timestamp: "2024-07-06"` |
+| **W3** | Provenance timestamp is present | Add `generated: {at: "2024-07-06T00:00:00Z"}` |
 | **W6** | Schema exists for the `type` value | Create or use an existing schema |
 | **W7** | Lists use inline notation, not block style | Use `tags: [a, b]` not `tags:\n  - a\n  - b` |
+| **W8** | Legacy `timestamp` is absent | Run bundle lint or migrate it to `generated.at` |
+| **W9** | Legacy `# Citations` section is absent | Use `sources` and footnotes |
+| **W10** | Verification actors are well formed | Use `<prefix>:<identifier>` |
+| **W11** | Content is not stale | Refresh or revise `stale_after` |
+| **W12** | Footnotes match source IDs | Add the corresponding `sources[].id` |
+| **W13** | Local source resources resolve | Correct `sources[].resource` |
 
 **Not checked in `validate-md`** (bundle-only):
 
@@ -193,7 +205,7 @@ docs/concept-a.md
   WARNING [W1] Missing recommended field 'title' in 'docs/concept-a.md'
 
 docs/concept-b.md
-  WARNING [W3] No 'timestamp (ISO 8601)' field in 'docs/concept-b.md'
+  WARNING [W3] No provenance timestamp in 'docs/concept-b.md'. Add 'generated.at: <ISO-8601-datetime>' to the frontmatter.
 
 Validation passed: 2 warning(s).
 ```
@@ -229,7 +241,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - run: pip install okf-schema

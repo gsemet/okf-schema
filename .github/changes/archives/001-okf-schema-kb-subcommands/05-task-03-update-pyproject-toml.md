@@ -14,7 +14,7 @@ hatchling includes the new `src/okf_schema/data/kb/` directory in the wheel.
 
 ## Acceptance Criteria
 
-- [ ] `[project.scripts]` contains `okfkb = "okf_schema.kb.cli:kb"`
+- [ ] `[project.scripts]` contains `okfkb = "okf_schema.okfkb.cli:kb"`
 - [ ] `tool.hatch.build.targets.wheel.include` covers `src/okf_schema/data/` (or is broad enough)
 - [ ] `uv build` produces a wheel that contains the bundled KB assets
 - [ ] `just preflight` passes with no regressions
@@ -24,7 +24,7 @@ hatchling includes the new `src/okf_schema/data/kb/` directory in the wheel.
 | Source | Rule |
 |--------|------|
 | `pyproject.toml` | Build tool: hatchling + hatch-vcs |
-| `03-specification.md` | New `console_scripts` entry point `okfkb = "okf_schema.kb.cli:kb"` |
+| `03-specification.md` | New `console_scripts` entry point `okfkb = "okf_schema.okfkb.cli:kb"` |
 | `03-specification.md` | Bundled assets must be accessible after `pip install okf-schema` |
 | `AGENTS.md` | Run `just preflight` before committing |
 
@@ -36,7 +36,7 @@ hatchling includes the new `src/okf_schema/data/kb/` directory in the wheel.
    ```toml
    [project.scripts]
    okf-schema = "okf_schema.cli:cli"
-   okfkb = "okf_schema.kb.cli:kb"
+   okfkb = "okf_schema.okfkb.cli:kb"
    ```
 
 3. Verify the wheel include directive. The current config is:
@@ -69,7 +69,7 @@ hatchling includes the new `src/okf_schema/data/kb/` directory in the wheel.
 
 ## Notes
 
-- The `okfkb` entry point targets `okf_schema.kb.cli:kb`, which does not exist yet
+- The `okfkb` entry point targets `okf_schema.okfkb.cli:kb`, which does not exist yet
   (created in Task 07). This is fine — the entry point is declared now and the
   module will exist before the wheel is built for real.
 - If `include = ["src/okf_schema"]` is already present, no packaging change is needed.

@@ -63,6 +63,7 @@ def _make_bundle(path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005
 class TestList:
     """Tests for the list subcommand."""
 

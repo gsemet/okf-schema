@@ -59,7 +59,7 @@ In okfkb, every document has a *tier* that reflects its maturity and confidence 
 The key insight: **each tier answers a different question an agent might ask** —
 "What did we observe?", "What's stable enough to rely on?", "What's still open?", "What must we build?"
 
-```{image} ../_static/okfkb-hw-debugging-overview.png
+```{image} ../_static/okfkb-hw-debugging-overview-v2.png
 :alt: OKF-KB debugging overview — debug sessions feed a stratified pyramid (findings → concepts → structures → principles), navigated with search/get/read/query
 :width: 100%
 ```
@@ -84,7 +84,7 @@ an investigation, it will record a new finding:
 
 ```bash
 # 1. Create a new finding (timestamps and paths auto-generated)
-okfkb new-finding "Cache eviction ratio exceeds threshold"
+okfkb new-finding . --title "Cache eviction ratio exceeds threshold"
 
 # 2. Agent edits the finding markdown and frontmatter
 # (agent sets confidence, links to related docs, adds context)
@@ -115,7 +115,7 @@ Once created, a finding's **body should never be edited**.
 
 Instead:
 
-- If contradicted by a newer finding, the older finding gets a `status: contradicted` frontmatter field
+- If contradicted by a newer finding, the older finding gets a `kb_status: contradicted` frontmatter field
   and a pointer to the contradicting finding in `contradicted_by: [findings/2026.07.05-...md]`
 - The historical record remains intact for audit and reproducibility
 - Agents can then ask: "What's the evolution of our understanding of this cache behavior?"
@@ -174,7 +174,7 @@ concepts/cache-eviction-under-load.md
   type: Concept
   title: Cache LRU Eviction Becomes Aggressive Above 700 RPS
   confidence: high
-  status: active
+  kb_status: active
   promoted_from: [findings/2026.07.01-10.30-cache-hit-rate-drops.md, ...]
   links: [structures/cache-subsystem.md, principles/cache-tuning-policy.md]
   ---
@@ -220,7 +220,7 @@ naturally what is still being investigated vs. what is stable enough to rely on.
 - Timestamps optional, often missing
 
 **okfkb**: Folder structure enforces tier discipline; frontmatter-first guarantees
-agent consumption; indexed backlinks prevent link rot.
+agent consumption; lint-materialised backlinks keep navigation metadata in sync.
 
 ### Alternative 3: Spreadsheet or Database
 
@@ -250,11 +250,13 @@ title: Cache eviction too aggressive
 confidence: medium
 context: >-
   Observed under 800 RPS load; eviction_ratio hit 0.94.
-timestamp: 2026-07-04T14:30:00Z
+generated:
+  at: 2026-07-04T14:30:00Z
+  by: human:alice
 tags: [cache, performance]
 links: [findings/2026.07.03-09.00-root-cause-identified.md]
 backlinks: [structures/cache-subsystem.md]
-status: active
+kb_status: active
 ---
 
 # Finding: Cache eviction too aggressive
@@ -262,7 +264,7 @@ status: active
 ```
 
 An agent loading this file sees — **before reading a single word of prose** —
-the document's type, confidence, context, timestamp, and how it relates to other documents.
+the document's type, confidence, context, provenance timestamp, and how it relates to other documents.
 This is vastly better than burying metadata in headings or relying on filename conventions.
 
 ---
@@ -274,12 +276,12 @@ Every okfkb file carries two arrays in its frontmatter:
 - **`links`** — bundle-relative paths that *this* document explicitly references
 - **`backlinks`** — paths of documents that reference *this* one
 
-When you run `okf-schema index --path my-kb/`, the tool:
+When you run `okfkb update my-kb/`, the tool:
 
-1. Scans every markdown file for its `links` array
-2. For each link `A → B`, appends `A`'s path to `B`'s `backlinks` field
-3. Writes an `index.md` summary (table of contents)
-4. Updates `log.md` with recent changes
+1. Scans every markdown body for relative links
+2. Rewrites each document's `links` and `backlinks` metadata
+3. Writes `index.md` summaries (tables of contents)
+4. Leaves the human-authored `log.md` unchanged
 
 **Why this matters for agents**: An agent reading `concepts/cache-subsystem.md` can immediately
 navigate to all related findings, experiments, and principles via frontmatter fields alone.

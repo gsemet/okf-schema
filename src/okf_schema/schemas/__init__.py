@@ -15,6 +15,7 @@ MINIMAL_SCHEMA: dict = {
 }
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-001
 def get_builtin_schema() -> dict:
     """Return the built-in minimal OKF schema.
 

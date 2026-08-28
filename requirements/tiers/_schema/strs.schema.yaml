@@ -1,0 +1,33 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: strs.schema.yaml
+title: okfreq stakeholder requirement profile
+description: >-
+  StRS records a stakeholder-observable outcome and the need behind it. It
+  does not carry implementation or test coverage fields.
+allOf:
+  - $ref: base.schema.yaml
+  - type: object
+    properties:
+      type:
+        const: StRS
+        description: Stakeholder profile discriminator.
+      tier:
+        const: StRS
+        description: Stakeholder tier label.
+      user_need:
+        type: string
+        minLength: 1
+        description: Preserved stakeholder outcome.
+    required: [type, tier, user_need]
+examples:
+  - type: StRS
+    id: StRS-OKFSCHEMA-CORE-001
+    uuid: 00000000-0000-4000-8000-000000000001
+    title: Validate requirements
+    description: The tool SHALL validate requirement frontmatter.
+    project: okf-schema
+    scope: core
+    lifecycle: draft
+    origin: native
+    tier: StRS
+    user_need: Teams need confidence that requirement metadata is valid.

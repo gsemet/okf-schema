@@ -10,7 +10,7 @@ okfkb install-skills [PATH]    # Install skills and guidelines
 okfkb new-finding [PATH]       # Record a new Finding
 okfkb update [PATH]            # Regenerate indexes and lint frontmatter
 okfkb validate [PATH]          # Validate bundle (strict mode)
-okfkb search TEXT [PATH]       # Ranked keyword/fuzzy search
+okfkb search TEXT [PATH]       # Ranked case-insensitive substring search
 okfkb get ID [PATH]            # Exact fetch of one node by id/path
 okfkb read TIER [PATH]         # Read a whole stable tier
 okfkb query EXPR [PATH]        # Structured query (filter DSL + graph traversal)
@@ -20,8 +20,8 @@ okfkb query EXPR [PATH]        # Structured query (filter DSL + graph traversal)
 
 ## `okfkb init`
 
-Scaffold a canonical knowledge-base folder layout with 8 content directories,
-8 schema YAML files, `index.md`, and `log.md`.
+Scaffold a canonical knowledge-base folder layout with 9 content directories,
+10 schema YAML files, `index.md`, and `log.md`.
 
 ```bash
 okfkb init [PATH]
@@ -71,7 +71,7 @@ okf-schema init my-kb --pattern kb
 
 ## `okfkb install-skills`
 
-Deploy the bundled `record-finding` and `consolidate-knowledge-base` skills, plus the
+Deploy the bundled `okfkb-record-findings` and `okfkb-distill` skills, plus the
 `knowledge-base.guidelines.md` guideline, into a target project directory.
 Patches or creates `AGENTS.md` to reference the installed guideline.
 
@@ -136,14 +136,13 @@ title: Cache eviction too aggressive
 description: Cache eviction too aggressive
 confidence: medium
 context: Observed under 500 RPS load; eviction rate 3× higher than expected.
-timestamp: 2026-07-04T14:30:00Z
-tags:
-- cache
-- performance
-- memory
+generated:
+  at: 2026-07-04T14:30:00Z
+  by: bot:okf-schema
+tags: [cache, performance, memory]
 links: []
 backlinks: []
-status: active
+kb_status: active
 ---
 
 # Finding: Cache eviction too aggressive
@@ -162,7 +161,7 @@ status: active
 ```
 
 **Filename convention:** The slug is derived from the title by lower-casing, replacing non-alphanumeric
-runs with `-`, and truncating at 60 characters. The timestamp uses the current UTC time.
+runs with `-`, and truncating at 60 characters. `generated.at` uses the current UTC time.
 
 ## `okfkb update`
 
@@ -251,7 +250,8 @@ locate supporting findings → `get` a specific finding for evidence-level detai
 
 ## `okfkb search`
 
-Ranked keyword / fuzzy search across node titles, `context`, `tags`, and body text. Returns a
+Ranked, case-insensitive substring search across node titles, type, description,
+`context`, `tags`, and body text. Returns a
 compact list of matches (tier, id, title, confidence) for follow-up `get`.
 
 ```bash
@@ -316,7 +316,7 @@ okfkb read TIER [PATH] [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
-| `--status STATUS` | Only include nodes with this `status` (e.g. `active`, `resolved`). |
+| `--status STATUS` | Only include nodes with this KB lifecycle status (stored as `kb_status`; legacy `status` is accepted), such as `active` or `deprecated`. |
 | `--format md\|frontmatter\|titles` | Full markdown, frontmatter only, or a title index (default: `md`). |
 
 **Example:**
@@ -348,15 +348,15 @@ okfkb query EXPR [PATH] [OPTIONS]
 
 ### Filter DSL (flat frontmatter selection)
 
-Space-separated `key:value` or `key:op:value` terms, all **ANDed** together.
+Space-separated `key:value` or `key:<operator>value` terms, all **ANDed** together.
 
 | Key | Matches |
 |-----|---------|
 | `type` / `tier` | Node type / tier (`finding`, `concept`, `principle`, …) |
 | `confidence` | Ordinal: `low` < `medium` < `high` < `confirmed` — supports ranges |
-| `status` | `active`, `contradicted`, `resolved`, … |
+| `status` | KB lifecycle state from `kb_status` (`active`, `contradicted`, `deprecated`, …); legacy `status` is accepted |
 | `tag` | Membership in the `tags` array |
-| `title` | Substring / regex match on the title |
+| `title` | Exact title by default; substring or regular-expression match with `~` |
 | `since` / `until` | Timestamp bounds (ISO date) |
 
 | Operator | Meaning |

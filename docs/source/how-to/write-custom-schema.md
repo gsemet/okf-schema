@@ -9,7 +9,7 @@ Place schema files in `bundle/_schema/` with the naming convention:
 
 ```text
 _schema/
-  _base.schema.yaml      # Applied to all concepts
+  _base.schema.yaml      # Optional shared constraints
   table.schema.yaml      # Applied when type: table
   metric.schema.yaml     # Applied when type: metric
 ```
@@ -19,8 +19,8 @@ The `type` field selects the schema: `type: table` → `table.schema.yaml`.
 ## Supported file extensions
 
 You can use YAML (`.yaml`, `.yml`), JSON (`.json`), or JSON5 (`.json5`)
-for schema files. The `_base.schema.yaml` file is applied to all concepts
-by default (`$ref`).
+for schema files. `_base.schema.yaml` is not applied implicitly; reference it
+from each type schema that should inherit its constraints.
 
 ## Minimal schema example
 
@@ -52,21 +52,26 @@ additionalProperties: false
 
 ## `$ref` between schemas
 
-Reference shared definitions across schemas:
+The resolver supports whole-file relative references. Compose shared
+constraints with `allOf`:
 
 ```yaml
-# _schema/_common.schema.yaml
-definitions:
-  timestamp:
-    type: string
-    format: date-time
+# _schema/_base.schema.yaml
+type: object
+properties:
+  type: { type: string }
+  title: { type: string }
+required: [type, title]
 ```
 
 ```yaml
 # _schema/table.schema.yaml
-properties:
-  created_at:
-    $ref: "_common.schema.yaml#/definitions/timestamp"
+allOf:
+  - $ref: "_base.schema.yaml"
+  - type: object
+    properties:
+      type: { const: table }
+      owner: { type: string }
 ```
 
 Paths in `$ref` are relative to the `_schema/` directory.
@@ -80,11 +85,12 @@ affect validation, only the generated documentation.
 | Field | Type | Purpose |
 |-------|------|---------|
 | `title` | `string` | Short heading used as the H1 in subdirectory `index.md` files |
-| `x-okf-summary` | `string` | One-line description shown in the subdirectory intro and in the root directory listing |
+| `description` | `string` | Intro text for a type-specific subdirectory |
+| `x-okf-summary` | `string` | One-line description used in the root directory listing |
 
-When `x-okf-summary` is absent, `description` is used as a fallback. When a
+When either field is absent, the other is used as its fallback. When a
 directory contains a mix of concept types, a generic fallback description is
-used instead.
+used for the subdirectory intro.
 
 ### Example
 
@@ -105,7 +111,7 @@ Running `okf-schema index` on a bundle with this schema produces:
 
 - Root `index.md` entry: `[metrics](./metrics/) — Business and engineering metrics with targets and owners.`
 - `metrics/index.md` heading: `# Metric`
-- `metrics/index.md` intro paragraph: `Business and engineering metrics with targets and owners.`
+- `metrics/index.md` intro paragraph: `Schema for KPIs, SLIs, and other measurable indicators.`
 
 ## Tips
 

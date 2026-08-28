@@ -5,7 +5,7 @@ Convert an existing documentation folder into a validated OKF bundle.
 ## 1. Scaffold the bundle structure
 
 ```bash
-okf-schema init my-docs
+okf-schema init my-okf-docs
 ```
 
 ## 2. Move markdown files into namespaced folders
@@ -20,7 +20,7 @@ my-docs/
   api.md
 
 # After
-my-docs/bundle/
+my-okf-docs/bundle/
   guides/
     setup.md
   reference/
@@ -47,7 +47,7 @@ tags: [setup, installation]
 Use a script to bulk-add frontmatter:
 
 ```bash
-for f in my-docs/bundle/**/*.md; do
+for f in my-okf-docs/bundle/**/*.md; do
   if ! grep -q "^---" "$f"; then
     echo -e "---\ntype: concept\n---\n\n$(cat "$f")" > "$f"
   fi
@@ -62,7 +62,7 @@ See [Write a Custom Schema](write-custom-schema.md) for details.
 ## 5. Validate and iterate
 
 ```bash
-okf-schema validate --path my-docs/bundle
+okf-schema validate --path my-okf-docs/bundle
 ```
 
 Fix errors, add missing fields, and repeat until the bundle is conformant.
@@ -70,7 +70,7 @@ Fix errors, add missing fields, and repeat until the bundle is conformant.
 ## 6. Generate index files
 
 ```bash
-okf-schema index --path my-docs/bundle
+okf-schema index --path my-okf-docs/bundle
 ```
 
 This creates `index.md` files in every directory, giving you a navigable table of contents.

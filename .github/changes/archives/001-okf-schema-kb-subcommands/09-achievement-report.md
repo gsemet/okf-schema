@@ -128,13 +128,13 @@ inspection cycle.
 
 No tech debt was introduced by this change.
 
-- **TODO/FIXME/HACK scan**: Zero annotations found in `src/okf_schema/kb/`
+- **TODO/FIXME/HACK scan**: Zero annotations found in `src/okf_schema/okfkb/`
   or any KB test files.
 - **Coverage**: All 5 new `kb/` modules at 100% coverage.
 - **Known limitations**:
   - Wheel-from-scratch install was not explicitly tested in CI (see
     Recommendations).
-  - `okfkb` entry point references `okf_schema.kb.cli:kb`, which is created
+  - `okfkb` entry point references `okf_schema.okfkb.cli:kb`, which is created
     in phase 2; the wheel is functionally incomplete until all phases are
     merged. This is an accepted phased-delivery risk.
 
@@ -246,7 +246,7 @@ point in `pyproject.toml`. All acceptance criteria are met and `just preflight` 
 |------|--------|-------|
 | 01 — Copy KB schemas | completed (pass) | All 8 YAML files present; `cmp` confirms verbatim copies from `copilot-session-usage/knowledge/_schema/`; `data/__init__.py` and `data/kb/__init__.py` created; importlib.resources enumeration verified. |
 | 02 — Copy skills/guideline | completed (pass) | `record-finding/SKILL.md`, `consolidate-knowledge-base/SKILL.md`, and `knowledge-base.guidelines.md` all present under `data/kb/`; accessible via `importlib.resources.files`. |
-| 03 — Update pyproject.toml | completed (pass) | `okfkb = "okf_schema.kb.cli:kb"` entry added to `[project.scripts]`; commit message notes that the `kb` module will be created in phase 2, which is the correct deferred approach. No extraneous packaging changes needed (existing `src/okf_schema` wheel-include rule covers `data/kb/`). |
+| 03 — Update pyproject.toml | completed (pass) | `okfkb = "okf_schema.okfkb.cli:kb"` entry added to `[project.scripts]`; commit message notes that the `kb` module will be created in phase 2, which is the correct deferred approach. No extraneous packaging changes needed (existing `src/okf_schema` wheel-include rule covers `data/kb/`). |
 
 ## Quality Checks
 
@@ -260,7 +260,7 @@ point in `pyproject.toml`. All acceptance criteria are met and `just preflight` 
   `copilot-session-usage/knowledge/_schema/` (verified with `cmp -s`).
 - `importlib.resources.files('okf_schema.data.kb').iterdir()` successfully enumerates
   `_schema`, `skills`, and `guidelines` directories.
-- The `okfkb` entry point references `okf_schema.kb.cli:kb`, a module that does not yet
+- The `okfkb` entry point references `okf_schema.okfkb.cli:kb`, a module that does not yet
   exist (created in phase 2). This is intentional and documented in the commit message;
   the installed wheel will be incomplete until phase 2 completes, but that is the expected
   phased delivery.
@@ -283,7 +283,7 @@ point in `pyproject.toml`. All acceptance criteria are met and `just preflight` 
 
 ## Summary
 
-Phase 2 delivered the complete `okf_schema.kb` subpackage: `scaffold_kb` creates a full KB layout
+Phase 2 delivered the complete `okf_schema.okfkb` subpackage: `scaffold_kb` creates a full KB layout
 from bundled assets, `install_kb` installs skills/guideline and patches AGENTS.md, `INIT_PATTERNS`
 provides an extensible registry, and the `kb` Click group exposes `init` / `install` subcommands.
 All 454 tests pass with 96.57% coverage against a 96% threshold, and all linter/type-checker checks
@@ -308,7 +308,7 @@ are green.
 
 ## Findings
 
-- All four module files are present under `src/okf_schema/kb/` with the correct public API signatures
+- All four module files are present under `src/okf_schema/okfkb/` with the correct public API signatures
   (`scaffold_kb(path, force)`, `install_kb(target, force)`, `INIT_PATTERNS` registry).
 - Test coverage is distributed across four dedicated test files:
   `test_kb_scaffold.py`, `test_kb_install.py`, `test_kb_patterns.py`, `test_kb_cli.py`.
@@ -501,11 +501,11 @@ Installed KB tooling at /tmp/target-project.
 ## Coverage Summary
 
 ```
-src/okf_schema/kb/__init__.py        1      0      0      0   100%
-src/okf_schema/kb/cli.py            30      0      0      0   100%
-src/okf_schema/kb/install.py        70      0     22      0   100%
-src/okf_schema/kb/patterns.py       12      0      2      0   100%
-src/okf_schema/kb/scaffold.py       39      0     10      0   100%
+src/okf_schema/okfkb/__init__.py        1      0      0      0   100%
+src/okf_schema/okfkb/cli.py            30      0      0      0   100%
+src/okf_schema/okfkb/install.py        70      0     22      0   100%
+src/okf_schema/okfkb/patterns.py       12      0      2      0   100%
+src/okf_schema/okfkb/scaffold.py       39      0     10      0   100%
 TOTAL (project-wide)              1326     25    558     40    97%
 Required test coverage of 96% reached. Total coverage: 96.55%
 463 passed in 3.31s
@@ -515,7 +515,7 @@ All five `kb/` modules achieve **100% coverage**.
 
 ## Tech Debt Scan
 
-No `TODO`, `FIXME`, or `HACK` annotations found in `src/okf_schema/kb/` or in any
+No `TODO`, `FIXME`, or `HACK` annotations found in `src/okf_schema/okfkb/` or in any
 of the four KB test files (`test_kb_scaffold.py`, `test_kb_install.py`,
 `test_kb_patterns.py`, `test_kb_cli.py`).
 
@@ -525,7 +525,7 @@ The complete `okf-schema-kb-subcommands` feature is **production-ready**:
 
 - **13 commits** from baseline `a674cdee` covering all four phases (data bundling, core
   logic, CLI integration, tests + docs).
-- **New files**: `src/okf_schema/kb/` (4 modules + `__init__.py`), `src/okf_schema/data/kb/`
+- **New files**: `src/okf_schema/okfkb/` (4 modules + `__init__.py`), `src/okf_schema/data/kb/`
   (13 data files), `tests/test_kb_*.py` (4 test files, 69 tests), README section.
 - **No regressions**: 463 tests pass (vs. 394 before the feature), coverage maintained at
   96.55%.

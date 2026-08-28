@@ -8,10 +8,10 @@ description: >-
   treated as stable knowledge. Do NOT use Hypothesis for already-confirmed
   truths (use Concept or Structure) or for planned deliverables (use Outcome).
 
-  Mutable until tested. Once tested, its status becomes `confirmed` or
+  Mutable until tested. Once tested, its `kb_status` becomes `confirmed` or
   `falsified`. A confirmed Hypothesis is promoted to Concept or Structure
   (human decision). A falsified Hypothesis remains in the knowledge base with
-  `status: falsified` to preserve the record of what was tried.
+  `kb_status: falsified` to preserve the record of what was tried.
 
   Belongs to the Testing layer. Derived from Findings or direct observation.
   Promoted to Concept or Structure when confirmed. Produces Experiments.
@@ -27,7 +27,7 @@ allOf:
         description: IDs of Findings or Concepts that motivated this hypothesis.
         type: array
         items: { type: string }
-      status:
+      kb_status:
         description: Lifecycle state of the hypothesis.
         type: string
         enum: [proposed, under_test, confirmed, falsified]
@@ -42,4 +42,4 @@ allOf:
       promoted_to:
         description: ID of the Concept or Structure this hypothesis was promoted into.
         type: string
-    required: [type, status]
+    required: [type, kb_status]
