@@ -4,7 +4,7 @@ This tutorial is for developers, technical leads, product owners, testers, and
 coding agents who need to keep their software project’s intent connected to
 its implementation and tests.
 
-It is an opinionated workflow based on OKF-Schema.
+It is an opinionated requirement storage structure based on OKF-Schema.
 It serves two purposes:
 
 - provide a ready-to-use, ISO29148 multi-layer, code-anchored requirements
@@ -32,6 +32,12 @@ An `okfreq` requirements base has three organizing dimensions:
 3. **A project**: the complete requirements base belongs to a project, product,
     or system. The project value is recorded in each requirement so documents
     remain identifiable when moved or exchanged.
+
+A requirement is stored in a standalone Markdown file with YAML frontmatter
+(1 requirement = 1 file). Links and relationships are expressed
+in the frontmatter. The linter adds automatically backwards links
+(`derived_by`) matching the authored `derives_from` links, allowing the
+agents to navigate the hierarchy in both directions.
 
 The filename makes these dimensions visible:
 
@@ -232,6 +238,33 @@ direction: authored `derives_from` links point upward, while generated
 `derived_by` links point downward.
 
 ![The StRS stakeholder layer derives into the SwRS software layer](../_static/okfreq-layered-requirements.svg)
+
+## How requirements are stored across tools
+
+The main difference is the unit each tool stores: a feature, a capability, a
+document, a record, or an atomic requirement.
+
+| Project | Requirement storage | Code anchoring |
+|---|---|---|
+| [Kiro Specs](https://kiro.dev/docs/specs/feature-specs/) | One feature directory at `.kiro/specs/<feature>/`. Its `requirements.md` groups user stories and EARS acceptance criteria beside `design.md` and `tasks.md`. | Tasks provide the bridge to implementation; the format does not define persistent requirement markers in code. |
+| [OpenSpec](https://github.com/Fission-AI/OpenSpec/blob/main/docs/overview.md) | Current requirements are grouped by capability in `openspec/specs/<capability>/spec.md`. Proposed additions and changes are stored separately under `openspec/changes/<change>/` and merged into the capability spec when archived. | Verification searches the repository for implementation evidence; the stored format does not require code-side markers. |
+| [StrictDoc](https://strictdoc.readthedocs.io/en/stable/) | Each `.sdoc` file is a requirements document containing multiple nodes. Nodes can have stable UIDs, custom fields, and parent-child relations. | A requirement can reference a file, line range, or language item; source comments and docstrings can link back with `@relation(...)`. |
+| [Tracey](https://github.com/bearcove/tracey) | Existing Markdown or StrictDoc files remain the source of truth. In Markdown, compact markers such as `r[channel.id.parity]` identify requirements inline. | Source and test markers use `r[impl ...]` and `r[verify ...]`. |
+| [Mantra](https://github.com/mhatzl/mantra) | Requirements are structured records loaded from configured files. Each record has an ID and may declare parents or use dotted child IDs to form a hierarchy. | Rust annotations connect requirements to implementation and tests with `satisfies` and `verifies`. |
+| **`okfreq`** (this project !!)| Each atomic requirement has its own Markdown file (named `<ID>.md`), with YAML frontmatter, stored under a configured tier and scope. Stable IDs, UUIDs, and `derives_from` links form the hierarchy. | `@implements_req <ID>` and `@tests_req <ID>` markers anchor each requirement to source and tests. |
+
+Kiro and OpenSpec store requirements as part of a feature or capability spec.
+StrictDoc stores several requirement nodes in a document, while Tracey adds
+identifiers to existing documents and Mantra uses structured records.
+
+`okfreq` treats every requirement as an independently versioned Markdown document,
+but is very similar in behavior to Mantra + Tracey.
+
+The main advantage of `okfreq` is that it is designed to be **AI-friendly**:
+Agent knows markdown + yaml frontmatter, the jsonschema is directly exposed
+to the agent without complex tooling (ex: LSP), and the CLI gives direct and
+accurate feedbacks so the agent fixes automatically any issue.
+Navigating the requirements files is direct by identifying a file named `<ID>.md`.
 
 ## Set up `okfreq`
 
