@@ -199,7 +199,7 @@ for c in concepts:
 | E4 | Schema validation | Frontmatter must validate against its type's JSONSchema |
 | E5 | Flat lists | Frontmatter lists must not be nested (e.g. `tags: [[a], b]`) |
 | E6 | Reserved file location | `log.md` must exist only at bundle root |
-| E7 | Loose root file | Non-reserved `.md` files must not be placed at bundle root; move them into subdirectories |
+| E7 | Retired | Root-level concept documents are allowed by OKF 0.2 |
 | E8 | Generated provenance | `generated` is not a mapping with a valid `at` value |
 | E9 | Source metadata | A source lacks `resource` or duplicates another source ID |
 | E10 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
@@ -276,7 +276,7 @@ my-bundle/
 
 Validation: 2 errors, 1 warning
 - E2: metrics/mrr.md — missing 'type' field
-- E7: root-concept.md — non-reserved file at bundle root
+- W2: metrics/churn.md — broken link to a missing attachment
 - W4: metrics/ — directory missing index.md
 ```
 

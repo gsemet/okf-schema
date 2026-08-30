@@ -182,7 +182,7 @@ The `validate-md` command checks the following (unless noted as bundle-only):
 
 - W2: Broken cross-links (no common bundle root)
 - W4: Missing `index.md` in directories
-- E3, E6, E7: Bundle structure rules
+- E3, E6: Bundle structure rules
 
 For full reference, see [Validation Error & Warning Codes](../reference/validation-codes).
 

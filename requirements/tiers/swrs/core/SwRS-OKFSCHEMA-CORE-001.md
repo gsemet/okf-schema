@@ -46,6 +46,14 @@ report actionable results without silently changing authored content.
 - WHEN the user runs the validation command
 - THEN the command identifies the invalid document and exits unsuccessfully
 
+### Scenario: Accept portable bundle contents
+
+- GIVEN an OKF bundle containing conforming concept documents at its root or in
+  subdirectories and non-Markdown files referenced as attachments
+- WHEN the user runs the validation command
+- THEN the concept documents are validated at either location and the
+  non-Markdown attachments do not produce document validation errors
+
 ### Verification notes
 
 - Method: automated CLI and API tests using valid and invalid bundle fixtures.

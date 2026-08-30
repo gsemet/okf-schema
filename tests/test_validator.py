@@ -742,18 +742,6 @@ class TestValidateBundleE6:
         assert any(f.code == "E6" for f in report.errors)
 
 
-class TestValidateBundleE7:
-    """E7 tests using fixtures."""
-
-    def test_e7_loose_root_file(self) -> None:
-        """E7 triggered when a non-reserved .md file is at bundle root."""
-        bundle = BUNDLE_FIXTURES / "invalid" / "e7-loose-root-file"
-        report = validate_bundle(bundle)
-        assert any(f.code == "E7" for f in report.errors)
-        e7 = next(f for f in report.errors if f.code == "E7")
-        assert "loose-concept.md" in e7.message
-
-
 class TestValidateBundleW1:
     """W1 tests using fixtures."""
 
@@ -909,52 +897,39 @@ class TestValidateBundleEdgeCases:
         report = validate_bundle(tmp_path, None)
         assert report.is_conformant is True
 
-    def test_e7_root_concept_triggers_error(self, tmp_path: Path) -> None:
-        """E7 triggered when a concept .md is placed at bundle root."""
-        path = tmp_path / "concept.md"
-        path.write_text(
-            "---\n"
-            "title: Test\n"
-            "description: A test\n"
-            "type: concept\n"
-            "timestamp: 2024-01-01\n"
-            "---\n\n"
-            "# Test\n"
-        )
-        report = validate_bundle(tmp_path)
-        assert not report.is_conformant
-        assert any(f.code == "E7" for f in report.errors)
-        e7 = next(f for f in report.errors if f.code == "E7")
-        assert "concept.md" in e7.message
 
-    def test_e7_multiple_root_files(self, tmp_path: Path) -> None:
-        """E7 triggered for each non-reserved .md at bundle root."""
-        (tmp_path / "a.md").write_text("---\ntitle: A\ntype: concept\n---\n\n# A\n")
-        (tmp_path / "b.md").write_text("---\ntitle: B\ntype: concept\n---\n\n# B\n")
-        report = validate_bundle(tmp_path)
-        e7s = [f for f in report.errors if f.code == "E7"]
-        assert len(e7s) == 2
+def test_root_concept_is_allowed(tmp_path: Path) -> None:
+    """A conforming concept may be placed at the bundle root."""
+    path = tmp_path / "concept.md"
+    path.write_text(
+        "---\n"
+        "title: Test\n"
+        "description: A test\n"
+        "type: concept\n"
+        "timestamp: 2024-01-01\n"
+        "---\n\n"
+        "# Test\n"
+    )
+    report = validate_bundle(tmp_path)
+    assert report.is_conformant
+    assert report.errors == []
 
-    def test_no_e7_for_reserved_root_files(self, tmp_path: Path) -> None:
-        """index.md and log.md at root do not trigger E7."""
-        (tmp_path / "index.md").write_text("---\nokf_version: '0.1'\n---\n\n# Index\n")
-        (tmp_path / "log.md").write_text("# Log\n\n## 2024-01-15\n\n- Entry\n")
-        report = validate_bundle(tmp_path)
-        assert not any(f.code == "E7" for f in report.errors)
 
-    def test_no_e7_for_subdir_concepts(self, tmp_path: Path) -> None:
-        """Concepts in subdirectories do not trigger E7."""
-        subdir = tmp_path / "concepts"
-        subdir.mkdir()
-        path = subdir / "concept.md"
-        path.write_text(
-            "---\n"
-            "title: Test\n"
-            "description: A test\n"
-            "type: concept\n"
-            "timestamp: 2024-01-01\n"
-            "---\n\n"
-            "# Test\n"
-        )
-        report = validate_bundle(tmp_path)
-        assert not any(f.code == "E7" for f in report.errors)
+def test_non_markdown_attachment_is_allowed(tmp_path: Path) -> None:
+    """Non-markdown files may be attached to a concept without validation errors."""
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    (assets / "diagram.png").write_bytes(b"not-a-real-png")
+    (tmp_path / "concept.md").write_text(
+        "---\n"
+        "title: Test\n"
+        "description: A test with an image\n"
+        "type: concept\n"
+        "timestamp: 2024-01-01\n"
+        "---\n\n"
+        "![Diagram](assets/diagram.png)\n"
+    )
+    report = validate_bundle(tmp_path)
+    assert report.is_conformant
+    assert report.errors == []
+    assert not any(f.code in {"W2", "W4"} for f in report.warnings)
