@@ -4,6 +4,10 @@
 
 - add ofkreq and requirements traceability
 
+### Fix
+
+- **okf**: accept root concepts and bundle attachments
+
 ## v0.10.0 (2026-08-10)
 
 ### Feat

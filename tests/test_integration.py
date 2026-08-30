@@ -86,7 +86,7 @@ class TestEndToEndWorkflow:
         assert result.exit_code == 0
         bundle = project / "bundle"
 
-        # Add concepts via CLI new (in subdirectories to comply with E7)
+        # Add concepts via CLI new
         runner.invoke(
             cli,
             ["new", "--path", str(bundle), "--name", "concepts/alpha", "--type", "concept"],

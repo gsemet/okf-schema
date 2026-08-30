@@ -40,7 +40,7 @@ The spec also permits any additional frontmatter keys beyond the standard fields
 This makes `okf-schema` bundles self-describing and machine-enforceable. The
 trade-off is that you must maintain a schema for every concept type you use.
 
-## 2. No root concepts
+## 2. Root concepts and attachments
 
 ### What the spec says
 
@@ -57,23 +57,21 @@ my_bundle/
 
 ### What OKF-Schema does
 
-`okf-schema` enforces **E7**: non-reserved `.md` files at the bundle root are
-errors. The only files allowed at the root are:
-
-* `index.md` — directory listing
-* `log.md` — update history
-
-All concepts must live inside subdirectories:
+`okf-schema` follows the specification: concept documents may live at the root
+or in nested subdirectories. Non-Markdown files are ignored by document
+validation, so images and other attachments may live alongside the concepts
+that reference them:
 
 ```
 my_bundle/
 ├── index.md
-├── log.md
-└── tables/
-    └── orders.md        # ← correct placement
+├── overview.md
+└── assets/
+    └── architecture.png
 ```
 
-This rule encourages a namespaced structure from the start and prevents
+In `overview.md`, a standard relative Markdown reference such as
+`![Architecture](assets/architecture.png)` is validated as an internal link.
 
 ## See also
 
@@ -81,8 +79,6 @@ This rule encourages a namespaced structure from the start and prevents
 - [Why an Opinionated Knowledge Base?](../explanation/okfkb-choices) — how opinionation works in practice.
 - [Write a Custom Schema](../how-to/write-custom-schema) — authoring schemas that enforce these constraints.
 - [Getting Started](../tutorials/getting-started) — tutorial covering bundle creation and validation.
-root-level clutter as the bundle grows.
-
 ## 3. Additional properties are schema-controlled
 
 ### What the spec says
@@ -135,7 +131,8 @@ specific reason to anchor to the bundle root.
 | `type` field | Required, any string | Must match a schema file in `_schema/` |
 | Frontmatter fields | Any keys allowed | Validated against JSONSchema |
 | Extra / unknown keys | Always tolerated | Controlled by `additionalProperties` |
-| Root `.md` files | Allowed | Forbidden (E7); only `index.md` and `log.md` |
+| Root `.md` files | Allowed | Allowed |
+| Non-Markdown attachments | Allowed as referenced resources | Allowed and ignored by document validation |
 | Internal link style | Relative or bundle-relative | Both supported; **relative preferred** |
 | Link metadata | Implicit (only in body) | Explicit `links` / `backlinks` frontmatter |
 | Schema location | None (spec does not use schemas) | `_schema/*.schema.{yaml,json,json5}` |

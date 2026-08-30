@@ -146,20 +146,20 @@ Move the file to the correct location. For `log.md`, it must be at the root of y
 
 ---
 
-### E7: Non-Reserved File at Bundle Root
+### E7: Retired
 
-**Severity**: Error (OKF bundle validation only)
+`E7` formerly rejected non-reserved Markdown files at the bundle root. It is no
+longer emitted: OKF 0.2 explicitly permits concept documents both at the root
+and in subdirectories.
 
-**Description**: A non-reserved markdown file (not `index.md` or `log.md`) exists at the bundle root. All concept files must be in subdirectories.
-
-**How to Fix**:
-Move the markdown file into a subdirectory (e.g., `concepts/`, `principles/`, etc.):
+For example, this structure is valid:
 ```
 bundle/
-  concepts/
-    my-concept.md      # Correct location
   index.md
   log.md
+  overview.md
+  concepts/
+    details.md
 ```
 
 ---
@@ -620,9 +620,13 @@ Use `--strict` in CI/CD pipelines to enforce best practices.
 
 When validating an OKF bundle, the following checks are applied:
 
-**All files**: E1, E2, E4, E5, E8-E10, W1, W2, W3, W6-W13
+**All Markdown files**: E1, E2, E4, E5, E8-E10, W1, W2, W3, W6-W13
 **Reserved files**: E3, E6
-**Bundle structure**: E7, W4
+**Bundle structure**: W4
+
+Non-Markdown files are not concept documents and are ignored by document
+validation. They may be stored in the bundle and referenced as attachments from
+Markdown concepts.
 
 ### Standalone Validation (`validate-md`)
 
@@ -633,7 +637,7 @@ When validating standalone markdown files without a bundle, the following checks
 **Not applied** (bundle-specific):
 - W2 (broken links require a common root for resolution)
 - W4 (directory structure validation)
-- E3, E6, E7 (bundle structure rules)
+- E3, E6 (bundle structure rules)
 
 ---
 
