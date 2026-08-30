@@ -1,4 +1,19 @@
-"""Domain operations for the standalone ``okfreq`` requirements layer."""
+"""Domain operations for standalone Open Knowledge Format requirements.
+
+The module initializes requirement bundles, creates EARS (Easy Approach to
+Requirements Syntax) scaffolds, validates requirement graphs and schemas,
+scans implementation and test markers, and generates traceability reports.
+Callers normally start with :func:`init_requirements`, then use
+:func:`create_requirement`, :func:`validate_requirements`, and :func:`report`.
+
+Examples:
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> with TemporaryDirectory() as directory:
+    ...     bundle = init_requirements(Path(directory) / "requirements")
+    ...     bundle.is_dir()
+    True
+"""
 
 from __future__ import annotations
 
@@ -248,12 +263,20 @@ def ears_body(
     author can see exactly which parts must be filled in.
 
     Args:
-        level: The configured level name, such as ``StRS`` or ``SwRS``.
-        description: Normative EARS behavior supplied by the author.
-        user_need: Stakeholder need for an upper-level requirement.
+        level:
+            The configured level name, such as ``StRS`` or ``SwRS``.
+        description:
+            Normative EARS behavior supplied by the author.
+        user_need:
+            Stakeholder need for an upper-level requirement.
 
     Returns:
         A Markdown body template for the level.
+
+    Examples:
+        >>> body = ears_body("SwRS", "The tool SHALL validate the bundle.")
+        >>> "### Scenario:" in body
+        True
     """
     if level.lower().startswith("sw"):
         return _SWRS_BODY.format(description=description)
@@ -267,11 +290,16 @@ def body_is_unfilled(text: str) -> bool:
     """Report whether a requirement body still contains EARS placeholders.
 
     Args:
-        text: The full Markdown document text.
+        text:
+            The full Markdown document text.
 
     Returns:
         ``True`` when the body is missing, is only a stub, or still contains
         bracketed placeholders from the scaffold.
+
+    Examples:
+        >>> body_is_unfilled("---\\nid: example\\n---\\n\\nThe tool SHALL work.\\n")
+        False
     """
     _, body = extract_frontmatter(text)
     stripped = body.strip()
@@ -292,10 +320,15 @@ def bundle_path(path: Path) -> Path:
     :func:`tiers_path`.
 
     Args:
-        path: A project directory or an already-initialized bundle directory.
+        path:
+            A project directory or an already-initialized bundle directory.
 
     Returns:
         The resolved bundle root, which may not exist yet.
+
+    Examples:
+        >>> bundle_path(Path("project"))
+        PosixPath('project/.agents/requirements')
     """
     if (path / "config.yml").is_file():
         return path
@@ -317,7 +350,8 @@ def tiers_path(root: Path) -> Path:
     """Resolve the directory holding requirement documents and ``_schema/``.
 
     Args:
-        root: The bundle root returned by :func:`bundle_path`.
+        root:
+            The bundle root returned by :func:`bundle_path`.
 
     Returns:
         ``root / "tiers"`` for split bundles, or ``root`` for legacy flat
@@ -333,7 +367,8 @@ def project_path(root: Path) -> Path:
     """Resolve the project root that scope directories are relative to.
 
     Args:
-        root: The bundle root returned by :func:`bundle_path`.
+        root:
+            The bundle root returned by :func:`bundle_path`.
 
     Returns:
         The directory containing the project sources and tests.
@@ -368,16 +403,26 @@ def init_requirements(path: Path, force: bool = False) -> Path:
     live under ``tiers/``.
 
     Args:
-        path: A project directory or an explicit bundle directory.
-        force: When ``True``, merge into a non-empty directory without
+        path:
+            A project directory or an explicit bundle directory.
+        force:
+            When ``True``, merge into a non-empty directory without
             replacing existing files.
 
     Returns:
         The created bundle root.
 
     Raises:
-        RequirementError: If the target exists, is not empty, and ``force`` is
+        RequirementError:
+            If the target exists, is not empty, and ``force`` is
             not set.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     (root / "config.yml").is_file()
+        True
     """
     root = bundle_path(path)
     if root.exists() and any(root.iterdir()) and not force:
@@ -464,7 +509,8 @@ def _install_guideline(root: Path) -> Path | None:
     """Copy the packaged requirements guideline into the bundle.
 
     Args:
-        root: The bundle root.
+        root:
+            The bundle root.
 
     Returns:
         The installed guideline path, or ``None`` when it already exists.
@@ -479,7 +525,26 @@ def _install_guideline(root: Path) -> Path | None:
 
 
 def load_config(root: Path) -> dict[str, Any]:
-    """Load the requirements configuration."""
+    """Load and normalize the requirements configuration.
+
+    Args:
+        root:
+            Bundle root containing ``config.yml``.
+
+    Returns:
+        The parsed configuration with defaults for optional settings.
+
+    Raises:
+        RequirementError:
+            If ``config.yml`` is empty or cannot be parsed as a mapping.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     load_config(root)["id_policy"]
+        'scope-prefix-sequence'
+    """
     data = parse_yaml((root / "config.yml").read_text(encoding="utf-8"))
     if data is None:
         raise RequirementError(f"invalid configuration: {root / 'config.yml'}")
@@ -518,14 +583,55 @@ def _leaf_levels(config: dict[str, Any]) -> set[str]:
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-006
 def merge_config(root: Path, source: Path) -> list[str]:
-    """Merge a configuration explicitly, preserving unknown keys and reporting conflicts."""
+    """Merge a configuration while preserving unknown keys.
+
+    Existing values take precedence over conflicting imported values.
+
+    Args:
+        root:
+            Bundle root containing the destination ``config.yml``.
+        source:
+            YAML configuration file to import.
+
+    Returns:
+        Dotted paths of settings whose imported values conflicted with
+        existing values.
+
+    Raises:
+        RequirementError:
+            If the imported configuration cannot be parsed.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     location = Path(directory)
+        ...     root = init_requirements(location / "requirements")
+        ...     source = location / "import.yml"
+        ...     _ = source.write_text("custom: true\\n", encoding="utf-8")
+        ...     merge_config(root, source)
+        []
+    """
     current = load_config(root)
     imported = parse_yaml(source.read_text(encoding="utf-8"))
     if imported is None:
         raise RequirementError(f"invalid configuration: {source}")
     conflicts: list[str] = []
 
-    def merge(destination: dict[str, Any], incoming: dict[str, Any], prefix: str = "") -> None:
+    def merge(
+        destination: dict[str, Any],
+        incoming: dict[str, Any],
+        prefix: str = "",
+    ) -> None:
+        """Merge nested mappings and collect conflicting dotted paths.
+
+        Args:
+            destination:
+                Mapping updated with non-conflicting values.
+            incoming:
+                Mapping whose values are imported.
+            prefix:
+                Dotted parent path used for conflict diagnostics.
+        """
         for key, value in incoming.items():
             name = f"{prefix}.{key}" if prefix else str(key)
             if (
@@ -546,13 +652,22 @@ def load_requirements(root: Path) -> dict[str, tuple[Path, dict[str, Any], str]]
     """Load requirement Markdown documents keyed by stable ID.
 
     Args:
-        root: The bundle root returned by :func:`bundle_path`.
+        root:
+            The bundle root returned by :func:`bundle_path`.
 
     Returns:
         A mapping of requirement ID to its path, frontmatter, and raw text.
 
     Raises:
-        RequirementError: If two documents declare the same ID.
+        RequirementError:
+            If two documents declare the same ID.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     load_requirements(root)
+        {}
     """
     result: dict[str, tuple[Path, dict[str, Any], str]] = {}
     for file in sorted(tiers_path(root).glob("**/*.md")):
@@ -589,15 +704,24 @@ def create_requirement(
     can see which parts still need to be written.
 
     Args:
-        root: The bundle root.
-        level: A configured level name, such as ``StRS`` or ``SwRS``.
-        title: Concise statement of the requirement's subject.
-        description: The requirement statement recorded in frontmatter.
-        project: Owning project code.
-        scope: Scope used for allocation and scan mapping.
-        origin: ``native`` for locally authored requirements.
-        derives_from: Parent requirement IDs, required for derived levels.
-        user_need: Optional stakeholder need, recorded for upper levels. When
+        root:
+            The bundle root.
+        level:
+            A configured level name, such as ``StRS`` or ``SwRS``.
+        title:
+            Concise statement of the requirement's subject.
+        description:
+            The requirement statement recorded in frontmatter.
+        project:
+            Owning project code.
+        scope:
+            Scope used for allocation and scan mapping.
+        origin:
+            ``native`` for locally authored requirements.
+        derives_from:
+            Parent requirement IDs, required for derived levels.
+        user_need:
+            Optional stakeholder need, recorded for upper levels. When
             omitted, the StRS scaffold retains an explicit placeholder instead
             of inventing or duplicating stakeholder intent.
 
@@ -605,9 +729,28 @@ def create_requirement(
         The created requirement path.
 
     Raises:
-        RequirementError: If the level is unconfigured, a parent is unknown or
+        RequirementError:
+            If the level is unconfigured, a parent is unknown or
             of the wrong level, a required parent is missing, or the allocated
             ID would collide.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     created = create_requirement(
+        ...         root,
+        ...         "StRS",
+        ...         "Readable reports",
+        ...         "The tool SHALL produce readable reports.",
+        ...         project="example",
+        ...         scope="default",
+        ...         origin="native",
+        ...         user_need="Users need to review requirement coverage.",
+        ...     )
+        ...     created.name
+        'StRS-default-001.md'
     """
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-002
     config = load_config(root)
@@ -690,7 +833,22 @@ def _render_frontmatter(text: str, updates: dict[str, Any]) -> str:
 
 
 def marker_scan(root: Path) -> dict[str, Any]:
-    """Scan configured source and test directories for requirement markers."""
+    """Scan configured source and test directories for requirement markers.
+
+    Args:
+        root:
+            Bundle root whose scope mappings determine which files are scanned.
+
+    Returns:
+        Marker locations and diagnostics grouped by category.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     sorted(marker_scan(root))
+        ['duplicates', 'implemented', 'missing_ids', 'non_leaf', 'tested', 'warnings']
+    """
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-003
     config = load_config(root)
     project = project_path(root)
@@ -766,7 +924,22 @@ def marker_scan(root: Path) -> dict[str, Any]:
 
 
 def graph(root: Path) -> dict[str, Any]:
-    """Return authored and computed reverse derivation edges."""
+    """Return authored and computed reverse derivation edges.
+
+    Args:
+        root:
+            Bundle root containing the requirement documents.
+
+    Returns:
+        Authored parent edges, computed child edges, and graph errors.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     graph(root)["errors"]
+        []
+    """
     requirements = load_requirements(root)
     reverse: dict[str, list[str]] = {identifier: [] for identifier in requirements}
     errors: list[str] = []
@@ -791,12 +964,21 @@ def validate_requirements(root: Path, prose: bool = False) -> list[str]:
     """Run deterministic structural and graph checks.
 
     Args:
-        root: The bundle root.
-        prose: When ``True``, also emit advisory ``W`` prose warnings. Advisory
+        root:
+            The bundle root.
+        prose:
+            When ``True``, also emit advisory ``W`` prose warnings. Advisory
             findings never make structural validation fail on their own.
 
     Returns:
         A list of findings. Structural errors have no ``W`` prefix.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     validate_requirements(root)
+        []
     """
     config = load_config(root)
     requirements = load_requirements(root)
@@ -865,8 +1047,38 @@ def validate_requirements(root: Path, prose: bool = False) -> list[str]:
     return errors
 
 
-def update_coverage(root: Path, *, check: bool = False, show_diff: bool = False) -> list[str]:
-    """Update only generated coverage fields, atomically and previewably."""
+def update_coverage(
+    root: Path,
+    *,
+    check: bool = False,
+    show_diff: bool = False,
+) -> list[str]:
+    """Update generated coverage fields atomically or preview their changes.
+
+    Args:
+        root:
+            Bundle root containing requirements and scan configuration.
+        check:
+            When ``True``, report changed paths without writing them.
+        show_diff:
+            When ``True``, print unified diffs without writing them.
+
+    Returns:
+        Paths of requirement documents that changed or would change.
+
+    Raises:
+        RequirementError:
+            If ``generated_fields`` is malformed or contains unsupported
+            field names.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     update_coverage(root, check=True)
+        []
+    """
     requirements = load_requirements(root)
     config = load_config(root)
     scan = marker_scan(root)
@@ -928,6 +1140,21 @@ def report(root: Path) -> dict[str, Any]:
     Linkage coverage is deliberately separate from test execution coverage:
     a requirement is test-covered when at least one test marker references it.
     No conclusion about whether that test ran or passed is made here.
+
+    Args:
+        root:
+            Bundle root to validate and scan.
+
+    Returns:
+        A serializable report containing traceability totals, requirement
+        records, diagnostics, and provenance.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     report(root)["totals"]["requirements"]
+        0
     """
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-004
     requirements = load_requirements(root)
@@ -963,6 +1190,7 @@ def report(root: Path) -> dict[str, Any]:
     fully_traceable = implemented & tested
 
     def percentage(count: int, total: int) -> float:
+        """Return a percentage rounded to two decimal places."""
         return round((count / total) * 100, 2) if total else 100.0
 
     requirement_records: list[dict[str, Any]] = []
@@ -1102,12 +1330,23 @@ def report(root: Path) -> dict[str, Any]:
 
 
 def write_json_report(root: Path, destination: Path) -> None:
-    """Write a generated JSON report."""
+    """Write a generated requirements report as JSON.
+
+    Args:
+        root:
+            Bundle root to report on.
+        destination:
+            Output JSON path, whose parent directory must exist.
+    """
     _atomic_write(destination, json.dumps(report(root), indent=2) + "\n")
 
 
 def report_schema() -> dict[str, Any]:
-    """Return the JSON Schema for the generated requirements report."""
+    """Return the JSON Schema for generated requirements reports.
+
+    Returns:
+        A JSON Schema mapping describing the detailed report format.
+    """
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "https://okf-schema.dev/schemas/okfreq-requirements-report.schema.json",
@@ -1254,12 +1493,24 @@ def report_schema() -> dict[str, Any]:
 
 
 def write_report_schema(destination: Path) -> None:
-    """Write the JSON Schema describing a generated requirements report."""
+    """Write the JSON Schema describing a generated requirements report.
+
+    Args:
+        destination:
+            Output JSON path, whose parent directory must exist.
+    """
     _atomic_write(destination, json.dumps(report_schema(), indent=2) + "\n")
 
 
 def write_markdown_report(root: Path, destination: Path) -> None:
-    """Write the concise human summary corresponding to :func:`report`."""
+    """Write the concise human summary corresponding to :func:`report`.
+
+    Args:
+        root:
+            Bundle root to report on.
+        destination:
+            Output Markdown path, whose parent directory must exist.
+    """
 
     def status_emoji(status: str) -> str:
         """Return the compact status marker used in the Markdown summary."""

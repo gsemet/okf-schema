@@ -1,7 +1,8 @@
-"""OKF bundle validation engine.
+"""Validate Open Knowledge Format (OKF) bundles and standalone documents.
 
 Implements conformance error (E1-E9) and best-practice warning (W1-W13)
-rules for validating OKF (Open Knowledge Format) bundles.
+rules. :func:`validate_bundle` is the main entry point for a bundle;
+:func:`validate_markdown_files` validates documents without bundle-level rules.
 
 OKF 0.2 additions (E7-E9, W8-W13):
   E7 – `generated` block present but `at` field missing
@@ -13,6 +14,13 @@ OKF 0.2 additions (E7-E9, W8-W13):
   W11 – File is stale (`stale_after` date has passed)
   W12 – Footnote `[^id]` with no matching `sources[].id`
   W13 – Broken path in path-form `resource` or `sources[].resource`
+
+Examples:
+    >>> from tempfile import TemporaryDirectory
+    >>> from pathlib import Path
+    >>> from okf_schema.validator import validate_bundle
+    >>> with TemporaryDirectory() as directory:
+    ...     report = validate_bundle(Path(directory))
 """
 
 from __future__ import annotations
@@ -46,7 +54,11 @@ _FOOTNOTE_DEF_RE = re.compile(r"^\[\^([^\]]+)\]:", re.MULTILINE)
 _CITATIONS_HEADING_RE = re.compile(r"^#{1,6}\s+Citations\s*$", re.MULTILINE | re.IGNORECASE)
 
 
-def _resolve_ref(ref_path: str, schema_db: Path, y: Any) -> dict | None:
+def _resolve_ref(
+    ref_path: str,
+    schema_db: Path,
+    y: Any,
+) -> dict | None:
     """Load a schema fragment referenced by *ref_path*.
 
     The *ref_path* is resolved relative to *schema_db*.  Supported
@@ -56,9 +68,12 @@ def _resolve_ref(ref_path: str, schema_db: Path, y: Any) -> dict | None:
     is found and parsed successfully.
 
     Args:
-        ref_path: Relative path to the referenced schema file.
-        schema_db: Base directory for relative resolution.
-        y: Configured ruamel.yaml instance.
+        ref_path:
+            Relative path to the referenced schema file.
+        schema_db:
+            Base directory for relative resolution.
+        y:
+            Configured ``ruamel.yaml`` instance.
 
     Returns:
         The loaded schema dict, or ``None`` if the file cannot be read
@@ -90,7 +105,11 @@ def _resolve_ref(ref_path: str, schema_db: Path, y: Any) -> dict | None:
     return None
 
 
-def _resolve_refs_in_schema(schema: dict, schema_db: Path, y: Any) -> dict:
+def _resolve_refs_in_schema(
+    schema: dict,
+    schema_db: Path,
+    y: Any,
+) -> dict:
     """Recursively inline all ``$ref`` references inside *schema*.
 
     When a ``$ref`` appears alongside other keys, the referenced dict is
@@ -98,9 +117,12 @@ def _resolve_refs_in_schema(schema: dict, schema_db: Path, y: Any) -> dict:
     content).
 
     Args:
-        schema: Schema dict potentially containing ``$ref`` keys.
-        schema_db: Base directory for relative path resolution.
-        y: Configured ruamel.yaml instance.
+        schema:
+            Schema dictionary potentially containing ``$ref`` keys.
+        schema_db:
+            Base directory for relative path resolution.
+        y:
+            Configured ``ruamel.yaml`` instance.
 
     Returns:
         A new dict with all ``$ref`` nodes replaced by the loaded
@@ -151,10 +173,23 @@ def load_schema_database(schema_db: Path) -> dict[str, dict]:
     *schema_db* and inlined into the loaded schema.
 
     Args:
-        schema_db: Directory containing schema files.
+        schema_db:
+            Directory containing schema files.
 
     Returns:
         Mapping from type name to schema dict.
+
+    Examples:
+        >>> import json
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema.validator import load_schema_database
+        >>> with TemporaryDirectory() as directory:
+        ...     schema_dir = Path(directory)
+        ...     schema_file = schema_dir / "concept.schema.json"
+        ...     _ = schema_file.write_text(json.dumps({"type": "object"}))
+        ...     sorted(load_schema_database(schema_dir))
+        ['concept']
     """
     schemas: dict[str, dict] = {}
     if not schema_db.is_dir():
@@ -205,12 +240,20 @@ def validate_against_schema(
     """Validate *frontmatter* against *schema*.
 
     Args:
-        frontmatter: Parsed YAML frontmatter dict.
-        schema: JSON Schema dict.
-        type_name: Type name for error messages.
+        frontmatter:
+            Parsed YAML frontmatter dictionary.
+        schema:
+            JSON Schema dictionary.
+        type_name:
+            Type name for error messages.
 
     Returns:
         List of human-readable validation error strings.
+
+    Examples:
+        >>> schema = {"type": "object", "required": ["type"]}
+        >>> validate_against_schema({"type": "concept"}, schema, "concept")
+        []
     """
     errors: list[str] = []
     try:
@@ -494,7 +537,8 @@ def _has_block_lists(fm_text: str) -> bool:
     ``generated``, ``sources``, ``verified`` are naturally block-mapped.
 
     Args:
-        fm_text: Raw YAML frontmatter text (without ``---`` delimiters).
+        fm_text:
+            Raw YAML frontmatter text without ``---`` delimiters.
 
     Returns:
         ``True`` when at least one *list* uses block style.
@@ -527,15 +571,29 @@ def validate_concept(
     bundle_root: Path,
     schemas: dict[str, dict] | None,
 ) -> None:
-    """Validate a single concept (non-reserved) ``.md`` file.
+    r"""Validate a single concept (non-reserved) ``.md`` file.
 
     Checks E1, E2, E4, E5, E7-E9, W1, W2, W3, W6-W13.
 
     Args:
-        path: Path to the concept markdown file.
-        report: Report to append findings to.
-        bundle_root: Root directory of the OKF bundle.
-        schemas: Optional schema database mapping type→schema.
+        path:
+            Path to the concept markdown file.
+        report:
+            Report to append findings to.
+        bundle_root:
+            Root directory of the OKF bundle.
+        schemas:
+            Optional schema database mapping type to schema.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from pathlib import Path
+        >>> from okf_schema._internal.models import Report
+        >>> with TemporaryDirectory() as directory:
+        ...     path = Path(directory) / "concept.md"
+        ...     _ = path.write_text("---\ntype: concept\n---\n")
+        ...     report = Report()
+        ...     validate_concept(path, report, Path(directory), schemas=None)
     """
     text = path.read_text(encoding="utf-8")
     fm_text, body = extract_frontmatter(text)
@@ -629,14 +687,27 @@ def validate_index(
     report: Report,
     bundle_root: Path,
 ) -> None:
-    """Validate an ``index.md`` file.
+    r"""Validate an ``index.md`` file.
 
     Checks E3 (non-root index.md must NOT have frontmatter).
 
     Args:
-        path: Path to the index.md file.
-        report: Report to append findings to.
-        bundle_root: Root directory of the OKF bundle.
+        path:
+            Path to the ``index.md`` file.
+        report:
+            Report to append findings to.
+        bundle_root:
+            Root directory of the OKF bundle.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from pathlib import Path
+        >>> from okf_schema._internal.models import Report
+        >>> with TemporaryDirectory() as directory:
+        ...     path = Path(directory) / "index.md"
+        ...     _ = path.write_text("# Index\n")
+        ...     report = Report()
+        ...     validate_index(path, report, Path(directory))
     """
     text = path.read_text(encoding="utf-8")
     fm_text, _body = extract_frontmatter(text)
@@ -661,8 +732,10 @@ def validate_log(
     Checks E3 (no frontmatter) and W5 (ISO 8601 date headings).
 
     Args:
-        path: Path to the log.md file.
-        report: Report to append findings to.
+        path:
+            Path to the ``log.md`` file.
+        report:
+            Report to append findings to.
     """
     text = path.read_text(encoding="utf-8")
     fm_text, _body = extract_frontmatter(text)
@@ -698,9 +771,12 @@ def _check_reserved_file_naming(
     ``index.md`` is allowed at any directory level.
 
     Args:
-        path: Path to the reserved file.
-        report: Report to append findings to.
-        bundle_root: Root directory of the OKF bundle.
+        path:
+            Path to the reserved file.
+        report:
+            Report to append findings to.
+        bundle_root:
+            Root directory of the OKF bundle.
     """
     filename = path.name
     if filename == "log.md":
@@ -727,8 +803,10 @@ def validate_bundle(
     be kept in the bundle as attachments or other referenced resources.
 
     Args:
-        bundle: Path to the OKF bundle directory.
-        schemas: Optional schema database mapping type→schema.
+        bundle:
+            Path to the OKF bundle directory.
+        schemas:
+            Optional schema database mapping type to schema.
 
     Returns:
         A :class:`Report` containing all errors and warnings.
@@ -783,8 +861,10 @@ def validate_markdown_files(
     Links are not validated since there is no common root.
 
     Args:
-        file_paths: List of markdown file paths to validate.
-        schemas: Optional schema database mapping type→schema.
+        file_paths:
+            List of markdown file paths to validate.
+        schemas:
+            Optional schema database mapping type to schema.
 
     Returns:
         A :class:`Report` containing all errors and warnings.

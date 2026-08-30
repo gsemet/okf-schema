@@ -1,25 +1,37 @@
 #!/usr/bin/env python3
-"""A/B Comparison viewer for okf-schema skill evals.
+"""Render A/B (two-variant) comparisons for okf-schema skill evaluations.
 
-Generates a standalone HTML report comparing "with_skill" vs "without_skill"
-results from iteration directories. Both conditions use the same assertion set
-graded deterministically by grade-eval.py.
+Generates a standalone Hypertext Markup Language (HTML) report comparing
+"with_skill" versus "without_skill" results from iteration directories.
+Both conditions use the same assertion set graded deterministically by
+``grade-eval.py``.
 
 Usage:
     python eval-viewer.py --iteration results/iteration-1 --output results/iteration-1/eval-result.html
     python eval-viewer.py --serve      # Serve on localhost
 """
 
+# The embedded standalone report template contains intentionally long HTML/CSS lines.
+# ruff: noqa: E501
+
 import argparse
 import json
 import sys
-from pathlib import Path
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import webbrowser
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 
 
 def load_grading(path: Path) -> dict | None:
-    """Load grading.json in the unified format produced by grade-eval.py."""
+    """Load a grading result produced by ``grade-eval.py``.
+
+    Args:
+        path:
+            Path to a ``grading.json`` file.
+
+    Returns:
+        Normalized grading data, or ``None`` when the file is absent or invalid.
+    """
     if not path.exists():
         return None
     try:
@@ -54,7 +66,15 @@ def load_grading(path: Path) -> dict | None:
 
 
 def load_skeptical_review(iteration_dir: Path) -> str | None:
-    """Load skeptical-review.md if present."""
+    """Load an iteration's skeptical review when present.
+
+    Args:
+        iteration_dir:
+            Evaluation iteration directory.
+
+    Returns:
+        Review markdown, or ``None`` when no review exists.
+    """
     path = iteration_dir / "skeptical-review.md"
     if not path.exists():
         return None
@@ -62,8 +82,17 @@ def load_skeptical_review(iteration_dir: Path) -> str | None:
 
 
 def md_to_html(md: str) -> str:
-    """Basic markdown-to-HTML for the skeptical review."""
+    """Convert the supported skeptical-review markdown subset to HTML.
+
+    Args:
+        md:
+            Markdown source text.
+
+    Returns:
+        Escaped HTML with basic headings, emphasis, lists, and block quotes.
+    """
     import re
+
     html = md
     # Escape HTML
     html = html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -112,6 +141,16 @@ def md_to_html(md: str) -> str:
 
 
 def build_comparison(iteration_dir: Path) -> list[dict]:
+    """Collect paired grading results from an iteration directory.
+
+    Args:
+        iteration_dir:
+            Directory whose children contain ``with_skill`` and
+            ``without_skill`` grading results.
+
+    Returns:
+        Comparison records ordered by evaluation directory name.
+    """
     comparisons = []
     for eval_dir in sorted(iteration_dir.iterdir()):
         if not eval_dir.is_dir() or eval_dir.name.startswith("."):
@@ -119,15 +158,39 @@ def build_comparison(iteration_dir: Path) -> list[dict]:
         with_skill = load_grading(eval_dir / "with_skill" / "grading.json")
         without_skill = load_grading(eval_dir / "without_skill" / "grading.json")
         if with_skill or without_skill:
-            comparisons.append({
-                "name": eval_dir.name,
-                "with_skill": with_skill,
-                "without_skill": without_skill,
-            })
+            comparisons.append(
+                {
+                    "name": eval_dir.name,
+                    "with_skill": with_skill,
+                    "without_skill": without_skill,
+                }
+            )
     return comparisons
 
 
-def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review_html: str | None = None) -> str:
+def generate_html(
+    comparisons: list[dict],
+    iteration_name: str,
+    skeptical_review_html: str | None = None,
+) -> str:
+    """Render a standalone HTML comparison report.
+
+    Args:
+        comparisons:
+            Paired grading records from :func:`build_comparison`.
+        iteration_name:
+            Iteration label displayed in the report header.
+        skeptical_review_html:
+            Optional pre-rendered skeptical assessment.
+
+    Returns:
+        Complete standalone HTML document.
+
+    Examples:
+        >>> html = generate_html([], "iteration-1", skeptical_review_html=None)
+        >>> "iteration-1" in html
+        True
+    """
     rows = []
     for comp in comparisons:
         name = comp["name"]
@@ -150,8 +213,16 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
             text = assertion["text"]
             tier = assertion.get("tier", "secondary")
             tier_badge = f'<span class="tier-badge tier-{tier}">{tier}</span>'
-            ws_exp = next((e for e in ws.get("expectations", []) if e["text"] == text), None) if ws else None
-            wos_exp = next((e for e in wos.get("expectations", []) if e["text"] == text), None) if wos else None
+            ws_exp = (
+                next((e for e in ws.get("expectations", []) if e["text"] == text), None)
+                if ws
+                else None
+            )
+            wos_exp = (
+                next((e for e in wos.get("expectations", []) if e["text"] == text), None)
+                if wos
+                else None
+            )
 
             ws_pass = ws_exp["passed"] if ws_exp else None
             wos_pass = wos_exp["passed"] if wos_exp else None
@@ -172,8 +243,8 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
             exp_rows.append(f"""
                 <tr class="{row_class}">
                     <td class="exp-text">{tier_badge} {text}</td>
-                    <td class="pass-cell {'pass' if ws_pass else ('fail' if ws_pass is False else 'na')}">{"✅ PASS" if ws_pass else ("❌ FAIL" if ws_pass is False else "—")}</td>
-                    <td class="pass-cell {'pass' if wos_pass else ('fail' if wos_pass is False else 'na')}">{"✅ PASS" if wos_pass else ("❌ FAIL" if wos_pass is False else "—")}</td>
+                    <td class="pass-cell {"pass" if ws_pass else ("fail" if ws_pass is False else "na")}">{"✅ PASS" if ws_pass else ("❌ FAIL" if ws_pass is False else "—")}</td>
+                    <td class="pass-cell {"pass" if wos_pass else ("fail" if wos_pass is False else "na")}">{"✅ PASS" if wos_pass else ("❌ FAIL" if wos_pass is False else "—")}</td>
                     <td class="indicator">{indicator}</td>
                 </tr>
             """)
@@ -197,8 +268,8 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
                     </div>
                     <div class="score-box delta {delta_class}">
                         <span class="score-label">Delta</span>
-                        <span class="score-value">{'+' if delta > 0 else ''}{delta:.0f}%</span>
-                        <span class="score-detail primary">Primary: {'+' if delta_primary > 0 else ''}{delta_primary:.0f}%</span>
+                        <span class="score-value">{"+" if delta > 0 else ""}{delta:.0f}%</span>
+                        <span class="score-detail primary">Primary: {"+" if delta_primary > 0 else ""}{delta_primary:.0f}%</span>
                     </div>
                 </div>
             </div>
@@ -212,7 +283,7 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
                     </tr>
                 </thead>
                 <tbody>
-                    {''.join(exp_rows)}
+                    {"".join(exp_rows)}
                 </tbody>
             </table>
         </div>
@@ -220,12 +291,18 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
 
     # Summary stats
     total_delta = sum(
-        (comp["with_skill"]["summary"]["pass_rate"] * 100 if comp["with_skill"] else 0) -
-        (comp["without_skill"]["summary"]["pass_rate"] * 100 if comp["without_skill"] else 0)
+        (comp["with_skill"]["summary"]["pass_rate"] * 100 if comp["with_skill"] else 0)
+        - (comp["without_skill"]["summary"]["pass_rate"] * 100 if comp["without_skill"] else 0)
         for comp in comparisons
     )
     avg_delta = total_delta / len(comparisons) if comparisons else 0
-    improved = sum(1 for c in comparisons if c["with_skill"] and c["without_skill"] and c["with_skill"]["summary"]["pass_rate"] > c["without_skill"]["summary"]["pass_rate"])
+    improved = sum(
+        1
+        for c in comparisons
+        if c["with_skill"]
+        and c["without_skill"]
+        and c["with_skill"]["summary"]["pass_rate"] > c["without_skill"]["summary"]["pass_rate"]
+    )
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -387,7 +464,7 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
                 <div class="label">Evaluations</div>
             </div>
             <div class="summary-pill">
-                <div class="value">{'+' if avg_delta > 0 else ''}{avg_delta:.0f}%</div>
+                <div class="value">{"+" if avg_delta > 0 else ""}{avg_delta:.0f}%</div>
                 <div class="label">Avg Improvement</div>
             </div>
             <div class="summary-pill">
@@ -395,14 +472,15 @@ def generate_html(comparisons: list[dict], iteration_name: str, skeptical_review
                 <div class="label">Improved</div>
             </div>
         </div>
-        {f'<div class="skeptical-review"><h2>🧐 Skeptical Assessment</h2>{skeptical_review_html}</div>' if skeptical_review_html else ''}
-        {''.join(rows)}
+        {f'<div class="skeptical-review"><h2>🧐 Skeptical Assessment</h2>{skeptical_review_html}</div>' if skeptical_review_html else ""}
+        {"".join(rows)}
     </div>
 </body>
 </html>"""
 
 
-def main():
+def main() -> None:
+    """Generate a report and optionally serve it over local HTTP."""
     parser = argparse.ArgumentParser(description="OKF Schema Skill Eval A/B Viewer")
     parser.add_argument("--iteration", "-i", type=Path, default=None)
     parser.add_argument("--output", "-o", type=Path, default=None)
@@ -416,14 +494,21 @@ def main():
         results_dir = Path("results")
         if results_dir.exists():
             iterations = sorted(
-                [d for d in results_dir.iterdir() if d.is_dir() and d.name.startswith("iteration-")],
+                [
+                    d
+                    for d in results_dir.iterdir()
+                    if d.is_dir() and d.name.startswith("iteration-")
+                ],
                 key=lambda d: d.name,
                 reverse=True,
             )
             if iterations:
                 iteration_dir = iterations[0]
         if iteration_dir is None:
-            print("Error: No iteration directory found. Specify one with --iteration.", file=sys.stderr)
+            print(
+                "Error: No iteration directory found. Specify one with --iteration.",
+                file=sys.stderr,
+            )
             sys.exit(1)
     if not iteration_dir.exists():
         print(f"Error: {iteration_dir} not found", file=sys.stderr)
@@ -443,8 +528,12 @@ def main():
     print(f"Report written to: {output_path.resolve()}")
 
     if args.serve:
+
         class Handler(BaseHTTPRequestHandler):
-            def do_GET(self):
+            """Serve the generated report at the root URL."""
+
+            def do_GET(self) -> None:
+                """Handle an HTTP GET request for the report."""
                 if self.path in ("/", "/index.html"):
                     self.send_response(200)
                     self.send_header("Content-Type", "text/html")
@@ -452,7 +541,13 @@ def main():
                     self.wfile.write(html.encode())
                 else:
                     self.send_error(404)
-            def log_message(self, *a): pass
+
+            def log_message(
+                self,
+                message_format: str,
+                *args: object,
+            ) -> None:
+                """Suppress the default request log."""
 
         server = HTTPServer(("127.0.0.1", args.port), Handler)
         url = f"http://localhost:{args.port}"

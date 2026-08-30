@@ -1,9 +1,14 @@
-"""YAML helpers using ruamel.yaml for OKF frontmatter handling."""
+"""Parse and serialize YAML frontmatter while preserving its presentation.
+
+The helpers configure :mod:`ruamel.yaml` for round trips, split frontmatter
+from Markdown bodies, and normalize date values for JSON Schema validation.
+YAML means YAML Ain't Markup Language; OKF means Open Knowledge Format.
+"""
 
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import cast
+from typing import Any, cast
 
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
@@ -14,6 +19,9 @@ def make_yaml() -> YAML:
 
     Configures ``preserve_quotes=True`` and ``default_flow_style=False``
     so that formatting and comments are retained during load/dump cycles.
+
+    Returns:
+        Configured round-trip YAML parser and emitter.
     """
     y = YAML()
     y.preserve_quotes = True
@@ -46,6 +54,18 @@ def extract_frontmatter(text: str) -> tuple[str | None, str]:
     Frontmatter is delimited by ``---`` at the start of the file and a
     closing ``---`` on its own line. Returns ``(frontmatter_yaml, body)``
     or ``(None, text)`` when no valid frontmatter block is found.
+
+    Args:
+        text:
+            Complete Markdown document.
+
+    Returns:
+        YAML source and Markdown body, or ``None`` and the original text when
+        no frontmatter block is present.
+
+    Examples:
+        >>> extract_frontmatter("---\\ntitle: Example\\n---\\nBody")
+        ('\\ntitle: Example', 'Body')
     """
     if not text.startswith("---"):
         return None, text
@@ -62,7 +82,7 @@ def extract_frontmatter(text: str) -> tuple[str | None, str]:
     return fm_text, body
 
 
-def parse_yaml(yaml_text: str) -> dict | None:
+def parse_yaml(yaml_text: str) -> dict[str, Any] | None:
     """Parse YAML text into a plain dict.
 
     Uses :func:`make_yaml` for consistent configuration. Returns ``None``
@@ -71,6 +91,17 @@ def parse_yaml(yaml_text: str) -> dict | None:
     Date and datetime values are automatically converted to ISO 8601
     strings so that JSON Schema ``type: string`` validation works
     transparently for unquoted YAML dates.
+
+    Args:
+        yaml_text:
+            YAML mapping source.
+
+    Returns:
+        Parsed plain mapping, or ``None`` for invalid YAML and non-mappings.
+
+    Examples:
+        >>> parse_yaml("title: Example")
+        {'title': 'Example'}
     """
     y = make_yaml()
     try:
@@ -81,15 +112,26 @@ def parse_yaml(yaml_text: str) -> dict | None:
         return None
     # ruamel.yaml returns CommentedMap — convert to plain dict
     # and normalize native datetime types to strings
-    return cast(dict, _normalize_yaml_value(dict(data)))
+    return cast(dict[str, Any], _normalize_yaml_value(dict(data)))
 
 
 # @implements_req SwRS-OKFSCHEMA-CORE-003
-def dump_yaml(data: dict) -> str:
+def dump_yaml(data: dict[str, Any]) -> str:
     """Serialize a dict to a YAML string.
 
     Uses :func:`make_yaml` so that quotes and comments are preserved
     when round-tripping through :func:`parse_yaml`.
+
+    Args:
+        data:
+            Mapping to serialize.
+
+    Returns:
+        YAML source with line-ending whitespace removed from each line.
+
+    Examples:
+        >>> dump_yaml({"title": "Example"})
+        'title: Example\\n'
     """
     from io import StringIO
 

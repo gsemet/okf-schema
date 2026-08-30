@@ -1,4 +1,8 @@
-"""Generate new Finding documents in a KB bundle."""
+"""Create timestamped Finding documents in a knowledge-base bundle.
+
+The public :func:`new_finding` helper validates confidence values and writes a
+schema-compatible Markdown document with YAML frontmatter.
+"""
 
 from __future__ import annotations
 
@@ -34,13 +38,19 @@ def new_finding(
     filename of the form ``YYYY.MM.DD-HH.MM-<slug>.md``.
 
     Args:
-        kb_path: Root directory of the knowledge base.
-        title: Short human-readable title for the finding.
-        description: One-line summary (defaults to *title* when omitted).
-        confidence: Confidence level — ``low``, ``medium``, ``high``, or
+        kb_path:
+            Root directory of the knowledge base.
+        title:
+            Short human-readable title for the finding.
+        description:
+            One-line summary; defaults to *title* when omitted.
+        confidence:
+            Confidence level: ``low``, ``medium``, ``high``, or
             ``confirmed``.
-        context: Background and assumptions at the time of recording.
-        tags: Optional keyword tags for categorisation.
+        context:
+            Background and assumptions at the time of recording.
+        tags:
+            Optional keyword tags for categorisation.
 
     # @implements_req SwRS-OKFSCHEMA-OKFKB-003
 
@@ -48,7 +58,17 @@ def new_finding(
         Path to the created file.
 
     Raises:
-        ValueError: When *kb_path* does not exist or *confidence* is invalid.
+        ValueError:
+            When *kb_path* does not exist or *confidence* is invalid.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     kb_path = Path(directory)
+        ...     created = new_finding(kb_path, "Stable clock", tags=["timing"])
+        ...     created.parent == kb_path / "findings"
+        True
     """
     if not kb_path.exists():
         raise ValueError(f"KB path does not exist: {kb_path}")

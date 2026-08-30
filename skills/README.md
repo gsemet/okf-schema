@@ -30,6 +30,7 @@ subset, both subsets, or only generic OKF bundles.
 | [`okfkb-gardening`](okfkb-gardening/SKILL.md) | Run an explicit, autonomous, zero-prompt maintenance pass: repair graph mechanics, reconcile Finding lifecycles, consolidate semantic knowledge, surface stale content, and validate the result. | The user explicitly asks to garden, refresh, consolidate, or maintain an OKFKB bundle. |
 | [`okfkb-record-findings`](okfkb-record-findings/SKILL.md) | Record one immutable empirical Finding after an investigation. | A debugging or investigation session produced one durable observation. |
 | [`okfkb-distill`](okfkb-distill/SKILL.md) | Interactively review Findings, contradictions, experiments, and promotions. | A human is ready to consolidate a batch of Findings. |
+| [`okfreq`](okfreq/SKILL.md) | Understand and route the living-requirements lifecycle from stakeholder intent through software behavior to source, tests, and reports. | The task concerns setting up, authoring, implementing, tracing, or maintaining `okfreq` requirements. |
 | [`okfreq-gardening`](okfreq-gardening/SKILL.md) | Audit and safely improve requirement traceability, hierarchy, coverage, and configuration. | The user explicitly asks to garden, audit, refresh, or reconcile an `okfreq` bundle. |
 
 The `okfreq-gardening` skill is the requirements-oriented workflow. It operates
@@ -109,6 +110,9 @@ requirements traceability.
   “How do I rebuild indexes?”
 - Start with **`okfkb`** for semantics: “Is this a Finding or Concept?” or
   “Should these observations be promoted?”
+- Start with **`okfreq`** for requirements semantics: “Is this stakeholder
+  intent or observable software behavior?” or “How should this requirement be
+  connected to code and tests?”
 - Invoke **`okfkb-gardening`** for periodic upkeep after Findings accumulate.
   It does not ask questions during the run and may update all KB layers except
   Principles.

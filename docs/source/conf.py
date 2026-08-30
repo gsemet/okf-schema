@@ -1,4 +1,8 @@
-"""Sphinx configuration for okf-schema documentation."""
+"""Configure the Sphinx and MyST documentation build for okf-schema.
+
+The configuration enables autodoc with Google-style Napoleon docstrings,
+executable doctests, and MyST colon-fence directives.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ version = __version__
 # -- General configuration ---------------------------------------------------
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.doctest",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_design",
@@ -29,7 +34,7 @@ extensions = [
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "_static/*.prompt.md", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = "furo"

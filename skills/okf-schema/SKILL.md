@@ -30,7 +30,7 @@ both locations for the same configuration.
 - **JSONSchema validation** of frontmatter via auto-discovered `_schema/` definitions
 - **Bundle integrity checks** (broken links, missing `index.md`, malformed `log.md`, reserved-file violations)
 - **Linting** of frontmatter: flattens nested lists and converts block-style to inline while preserving YAML comments
-- **OKF 0.2 provenance/trust/lifecycle** validation (E8-E10, W8-W13)
+- **OKF 0.2 provenance/trust/lifecycle** validation (E7-E9, W8-W13)
 - **Bundle management** via CLI and Python API: init, list, show, stats, index
 
 In other words: **all `okf-schema` bundles are OKF bundles, but not all OKF bundles need `okf-schema`.** You can author plain OKF without schemas, then opt into validation later by adding a `_schema/` directory.
@@ -188,7 +188,7 @@ for c in concepts:
 
 ## Validation Rules
 
-### Errors (E0–E10)
+### Errors (E0–E9)
 
 | Code | Rule | Description |
 |------|------|-------------|
@@ -199,10 +199,9 @@ for c in concepts:
 | E4 | Schema validation | Frontmatter must validate against its type's JSONSchema |
 | E5 | Flat lists | Frontmatter lists must not be nested (e.g. `tags: [[a], b]`) |
 | E6 | Reserved file location | `log.md` must exist only at bundle root |
-| E7 | Retired | Root-level concept documents are allowed by OKF 0.2 |
-| E8 | Generated provenance | `generated` is not a mapping with a valid `at` value |
-| E9 | Source metadata | A source lacks `resource` or duplicates another source ID |
-| E10 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
+| E7 | Generated provenance | `generated` is not a mapping with a valid `at` value |
+| E8 | Source metadata | A source lacks `resource` or duplicates another source ID |
+| E9 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
 
 ### Warnings (W0–W13)
 

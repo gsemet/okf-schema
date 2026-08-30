@@ -1,4 +1,4 @@
-"""Install KB skills and guidelines into a target project.
+"""Install knowledge base (KB) skills and guidelines into a target project.
 
 Copies the bundled ``okfkb-record-findings`` and ``okfkb-distill`` skills
 together with ``knowledge-base.guidelines.md`` into the target project's agent
@@ -37,7 +37,8 @@ def _detect_base(target: Path) -> tuple[Path, bool]:
     when neither directory exists.
 
     Args:
-        target: Root directory of the target project.
+        target:
+            Root directory of the target project.
 
     Returns:
         A ``(base, created)`` tuple where *base* is the resolved base
@@ -64,11 +65,15 @@ def _copy_guideline(
     """Copy the bundled guideline file into *base*/guidelines/.
 
     Args:
-        base: Agent configuration base directory (``.agents/`` or
+        base:
+            Agent configuration base directory (``.agents/`` or
             ``.github/``).
-        force: When ``True``, overwrite existing files.
-        installed: Accumulator list for installed file paths (mutated).
-        skipped: Accumulator list for skipped file paths (mutated).
+        force:
+            When ``True``, overwrite existing files.
+        installed:
+            Accumulator list for installed file paths; mutated in place.
+        skipped:
+            Accumulator list for skipped file paths; mutated in place.
     """
     dst_dir = base / "guidelines"
     dst_dir.mkdir(parents=True, exist_ok=True)
@@ -95,11 +100,15 @@ def _copy_skills(
     """Copy all bundled skill directories into *base*/skills/.
 
     Args:
-        base: Agent configuration base directory (``.agents/`` or
+        base:
+            Agent configuration base directory (``.agents/`` or
             ``.github/``).
-        force: When ``True``, overwrite existing skill directories.
-        installed: Accumulator list for installed paths (mutated).
-        skipped: Accumulator list for skipped paths (mutated).
+        force:
+            When ``True``, overwrite existing skill directories.
+        installed:
+            Accumulator list for installed paths; mutated in place.
+        skipped:
+            Accumulator list for skipped paths; mutated in place.
     """
     dst_skills_dir = base / "skills"
     dst_skills_dir.mkdir(parents=True, exist_ok=True)
@@ -131,8 +140,10 @@ def _patch_agents_md(target: Path, base: Path) -> None:
     the reference line.
 
     Args:
-        target: Root directory of the target project.
-        base: Agent configuration base directory — used to build the correct
+        target:
+            Root directory of the target project.
+        base:
+            Agent configuration base directory, used to build the correct
             relative path for the reference line.
     """
     # Build a relative path from the project root to the installed guideline
@@ -165,7 +176,7 @@ def install_kb(target: Path, force: bool = False) -> None:
     """Install KB skills and guidelines into the *target* project.
 
     Detects whether *target*/.agents/ or *target*/.github/ exists and selects
-    the appropriate base directory (`.agents/` is preferred).  Creates
+    the appropriate base directory (``.agents/`` is preferred). Creates
     ``.agents/`` if neither directory exists.  Copies the bundled
     ``okfkb-record-findings`` and ``okfkb-distill`` skills into
     ``<base>/skills/`` and ``knowledge-base.guidelines.md`` into
@@ -173,14 +184,29 @@ def install_kb(target: Path, force: bool = False) -> None:
     root with a reference to the installed guideline.
 
     Args:
-        target: Root directory of the target project.  Must exist.
-        force: When ``True``, overwrite existing files; otherwise skip them
+        target:
+            Root directory of the target project. Must exist.
+        force:
+            When ``True``, overwrite existing files; otherwise skip them
             with a warning.
 
     # @implements_req SwRS-OKFSCHEMA-OKFKB-002
 
     Raises:
-        RuntimeError: If *target* does not exist.
+        RuntimeError:
+            If *target* does not exist.
+
+    Examples:
+        >>> from contextlib import redirect_stdout
+        >>> from io import StringIO
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     project = Path(directory)
+        ...     with redirect_stdout(StringIO()):
+        ...         install_kb(project)
+        ...     (project / ".agents" / "guidelines" / "knowledge-base.guidelines.md").is_file()
+        True
     """
     if not target.exists():
         raise RuntimeError(

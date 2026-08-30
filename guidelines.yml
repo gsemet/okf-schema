@@ -3,4 +3,4 @@ guidelines:
   - source: gsemet/ai-guidelines-registry
     paths:
       - SWE/Git/Git_Commit_Message
-      - SWE/Python/Python_Unit_Test
+      - SWE/Python

@@ -1,5 +1,12 @@
 ## Unreleased
 
+### Fix
+
+- refactor okfreq skill with base knowledge
+- remove E7 error and reorder
+
+## v0.11.0 (2026-08-30)
+
 ### Feat
 
 - add ofkreq and requirements traceability

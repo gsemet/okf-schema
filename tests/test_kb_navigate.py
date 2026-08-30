@@ -100,37 +100,37 @@ def kb_bundle(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-class TestTierNormalization:
-    def test_plural_and_singular_map_to_folder(self) -> None:
-        assert navigate.normalize_tier("finding") == "findings"
-        assert navigate.normalize_tier("findings") == "findings"
-        assert navigate.normalize_tier("Concept") == "concepts"
-        assert navigate.normalize_tier("hypothesis") == "hypotheses"
-        assert navigate.normalize_tier("ref") == "reference"
-
-    def test_unknown_tier_raises(self) -> None:
-        with pytest.raises(ValueError, match="Unknown tier"):
-            navigate.normalize_tier("nonsense")
+def test_tier_normalization_plural_and_singular_map_to_folder() -> None:
+    assert navigate.normalize_tier("finding") == "findings"
+    assert navigate.normalize_tier("findings") == "findings"
+    assert navigate.normalize_tier("Concept") == "concepts"
+    assert navigate.normalize_tier("hypothesis") == "hypotheses"
+    assert navigate.normalize_tier("ref") == "reference"
 
 
-class TestLoadNodes:
-    def test_loads_content_nodes_and_skips_reserved(self, kb_bundle: Path) -> None:
-        nodes = navigate.load_nodes(kb_bundle)
-        paths = {n.path for n in nodes}
-        assert "index.md" not in paths
-        assert "log.md" not in paths
-        assert "concepts/boot-pll-startup-margin.md" in paths
-        assert len(nodes) == 4
+def test_tier_normalization_unknown_tier_raises() -> None:
+    with pytest.raises(ValueError, match="Unknown tier"):
+        navigate.normalize_tier("nonsense")
 
-    def test_node_fields_parsed(self, kb_bundle: Path) -> None:
-        node = navigate.get(kb_bundle, "concepts/boot-pll-startup-margin.md")
-        assert node.tier == "concepts"
-        assert node.type == "Concept"
-        assert node.confidence == "high"
-        assert node.status == "deprecated"
-        assert "pll" in node.tags
-        assert node.links() == ["principles/firmware-timeouts-must-be-polled.md"]
-        assert node.promoted_from() == ["findings/2026.07.03-14.20-pll-temp-drift.md"]
+
+def test_load_nodes_loads_content_nodes_and_skips_reserved(kb_bundle: Path) -> None:
+    nodes = navigate.load_nodes(kb_bundle)
+    paths = {n.path for n in nodes}
+    assert "index.md" not in paths
+    assert "log.md" not in paths
+    assert "concepts/boot-pll-startup-margin.md" in paths
+    assert len(nodes) == 4
+
+
+def test_load_nodes_node_fields_parsed(kb_bundle: Path) -> None:
+    node = navigate.get(kb_bundle, "concepts/boot-pll-startup-margin.md")
+    assert node.tier == "concepts"
+    assert node.type == "Concept"
+    assert node.confidence == "high"
+    assert node.status == "deprecated"
+    assert "pll" in node.tags
+    assert node.links() == ["principles/firmware-timeouts-must-be-polled.md"]
+    assert node.promoted_from() == ["findings/2026.07.03-14.20-pll-temp-drift.md"]
 
 
 # ---------------------------------------------------------------------------
@@ -138,25 +138,28 @@ class TestLoadNodes:
 # ---------------------------------------------------------------------------
 
 
-class TestSearch:
-    # @tests_req SwRS-OKFSCHEMA-OKFKB-004
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004
 
-    def test_search_ranks_title_and_tags(self, kb_bundle: Path) -> None:
-        hits = navigate.search(kb_bundle, "pll")
-        assert hits, "expected at least one hit"
-        # The finding with 'PLL' in title + tag should outrank others.
-        assert hits[0].node.path == "findings/2026.07.03-14.20-pll-temp-drift.md"
 
-    def test_search_tier_filter(self, kb_bundle: Path) -> None:
-        hits = navigate.search(kb_bundle, "pll", tiers=["concepts"])
-        assert all(h.node.tier == "concepts" for h in hits)
+def test_search_search_ranks_title_and_tags(kb_bundle: Path) -> None:
+    hits = navigate.search(kb_bundle, "pll")
+    assert hits, "expected at least one hit"
+    # The finding with 'PLL' in title + tag should outrank others.
+    assert hits[0].node.path == "findings/2026.07.03-14.20-pll-temp-drift.md"
 
-    def test_search_limit(self, kb_bundle: Path) -> None:
-        hits = navigate.search(kb_bundle, "temperature", limit=1)
-        assert len(hits) == 1
 
-    def test_empty_query_returns_nothing(self, kb_bundle: Path) -> None:
-        assert navigate.search(kb_bundle, "   ") == []
+def test_search_search_tier_filter(kb_bundle: Path) -> None:
+    hits = navigate.search(kb_bundle, "pll", tiers=["concepts"])
+    assert all(h.node.tier == "concepts" for h in hits)
+
+
+def test_search_search_limit(kb_bundle: Path) -> None:
+    hits = navigate.search(kb_bundle, "temperature", limit=1)
+    assert len(hits) == 1
+
+
+def test_search_empty_query_returns_nothing(kb_bundle: Path) -> None:
+    assert navigate.search(kb_bundle, "   ") == []
 
 
 # ---------------------------------------------------------------------------
@@ -164,22 +167,24 @@ class TestSearch:
 # ---------------------------------------------------------------------------
 
 
-class TestGet:
-    def test_get_by_full_path(self, kb_bundle: Path) -> None:
-        node = navigate.get(kb_bundle, "concepts/boot-pll-startup-margin.md")
-        assert node.title == "Boot PLL startup margin"
+def test_get_get_by_full_path(kb_bundle: Path) -> None:
+    node = navigate.get(kb_bundle, "concepts/boot-pll-startup-margin.md")
+    assert node.title == "Boot PLL startup margin"
 
-    def test_get_without_extension(self, kb_bundle: Path) -> None:
-        node = navigate.get(kb_bundle, "concepts/boot-pll-startup-margin")
-        assert node.tier == "concepts"
 
-    def test_get_by_stem(self, kb_bundle: Path) -> None:
-        node = navigate.get(kb_bundle, "boot-pll-startup-margin")
-        assert node.tier == "concepts"
+def test_get_get_without_extension(kb_bundle: Path) -> None:
+    node = navigate.get(kb_bundle, "concepts/boot-pll-startup-margin")
+    assert node.tier == "concepts"
 
-    def test_get_missing_raises(self, kb_bundle: Path) -> None:
-        with pytest.raises(FileNotFoundError):
-            navigate.get(kb_bundle, "does-not-exist")
+
+def test_get_get_by_stem(kb_bundle: Path) -> None:
+    node = navigate.get(kb_bundle, "boot-pll-startup-margin")
+    assert node.tier == "concepts"
+
+
+def test_get_get_missing_raises(kb_bundle: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        navigate.get(kb_bundle, "does-not-exist")
 
 
 # ---------------------------------------------------------------------------
@@ -187,22 +192,23 @@ class TestGet:
 # ---------------------------------------------------------------------------
 
 
-class TestRead:
-    def test_read_tier(self, kb_bundle: Path) -> None:
-        nodes = navigate.read_tier(kb_bundle, "findings")
-        assert len(nodes) == 2
-        assert all(n.tier == "findings" for n in nodes)
-        # Raw findings are returned most recent first.
-        assert nodes[0].path.endswith("pll-temp-drift.md")
+def test_read_read_tier(kb_bundle: Path) -> None:
+    nodes = navigate.read_tier(kb_bundle, "findings")
+    assert len(nodes) == 2
+    assert all(n.tier == "findings" for n in nodes)
+    # Raw findings are returned most recent first.
+    assert nodes[0].path.endswith("pll-temp-drift.md")
 
-    def test_read_status_filter(self, kb_bundle: Path) -> None:
-        nodes = navigate.read_tier(kb_bundle, "concepts", status="deprecated")
-        assert len(nodes) == 1
-        assert navigate.read_tier(kb_bundle, "concepts", status="active") == []
 
-    def test_read_unknown_tier_raises(self, kb_bundle: Path) -> None:
-        with pytest.raises(ValueError, match="Unknown tier"):
-            navigate.read_tier(kb_bundle, "bogus")
+def test_read_read_status_filter(kb_bundle: Path) -> None:
+    nodes = navigate.read_tier(kb_bundle, "concepts", status="deprecated")
+    assert len(nodes) == 1
+    assert navigate.read_tier(kb_bundle, "concepts", status="active") == []
+
+
+def test_read_read_unknown_tier_raises(kb_bundle: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown tier"):
+        navigate.read_tier(kb_bundle, "bogus")
 
 
 # ---------------------------------------------------------------------------
@@ -210,37 +216,42 @@ class TestRead:
 # ---------------------------------------------------------------------------
 
 
-class TestQueryFilter:
-    def test_filter_by_type_and_tag(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "type:finding tag:pll")
-        assert [n.path for n in nodes] == ["findings/2026.07.03-14.20-pll-temp-drift.md"]
+def test_query_filter_filter_by_type_and_tag(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "type:finding tag:pll")
+    assert [n.path for n in nodes] == ["findings/2026.07.03-14.20-pll-temp-drift.md"]
 
-    def test_confidence_ordinal_range(self, kb_bundle: Path) -> None:
-        high = navigate.query(kb_bundle, "type:finding confidence:>=high")
-        assert [n.title for n in high] == ["PLL lock time increases at low temperature"]
-        atleast_medium = navigate.query(kb_bundle, "type:finding confidence:>=medium")
-        assert len(atleast_medium) == 2
 
-    def test_status_and_title_regex(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "type:concept title:~boot status:deprecated")
-        assert len(nodes) == 1
+def test_query_filter_confidence_ordinal_range(kb_bundle: Path) -> None:
+    high = navigate.query(kb_bundle, "type:finding confidence:>=high")
+    assert [n.title for n in high] == ["PLL lock time increases at low temperature"]
+    atleast_medium = navigate.query(kb_bundle, "type:finding confidence:>=medium")
+    assert len(atleast_medium) == 2
 
-    def test_since_until(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "type:finding since:2026-07-03")
-        assert len(nodes) == 1
-        assert nodes[0].timestamp.startswith("2026-07-03")
 
-    def test_not_equal(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "type:finding confidence:!=high")
-        assert [n.confidence for n in nodes] == ["medium"]
+def test_query_filter_status_and_title_regex(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "type:concept title:~boot status:deprecated")
+    assert len(nodes) == 1
 
-    def test_empty_expr_raises(self, kb_bundle: Path) -> None:
-        with pytest.raises(ValueError, match="Empty query"):
-            navigate.query(kb_bundle, "   ")
 
-    def test_malformed_term_raises(self, kb_bundle: Path) -> None:
-        with pytest.raises(ValueError, match="Invalid filter term"):
-            navigate.query(kb_bundle, "bareword")
+def test_query_filter_since_until(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "type:finding since:2026-07-03")
+    assert len(nodes) == 1
+    assert nodes[0].timestamp.startswith("2026-07-03")
+
+
+def test_query_filter_not_equal(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "type:finding confidence:!=high")
+    assert [n.confidence for n in nodes] == ["medium"]
+
+
+def test_query_filter_empty_expr_raises(kb_bundle: Path) -> None:
+    with pytest.raises(ValueError, match="Empty query"):
+        navigate.query(kb_bundle, "   ")
+
+
+def test_query_filter_malformed_term_raises(kb_bundle: Path) -> None:
+    with pytest.raises(ValueError, match="Invalid filter term"):
+        navigate.query(kb_bundle, "bareword")
 
 
 # ---------------------------------------------------------------------------
@@ -248,34 +259,39 @@ class TestQueryFilter:
 # ---------------------------------------------------------------------------
 
 
-class TestQueryTraversal:
-    def test_links_hop(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "concept[tag=pll] -> principle")
-        assert [n.path for n in nodes] == ["principles/firmware-timeouts-must-be-polled.md"]
+def test_query_traversal_links_hop(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "concept[tag=pll] -> principle")
+    assert [n.path for n in nodes] == ["principles/firmware-timeouts-must-be-polled.md"]
 
-    def test_backlinks_hop(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "principle <- concept")
-        assert [n.path for n in nodes] == ["concepts/boot-pll-startup-margin.md"]
 
-    def test_promotion_hop(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "finding[tag=pll] ^ concept")
-        assert [n.path for n in nodes] == ["concepts/boot-pll-startup-margin.md"]
+def test_query_traversal_backlinks_hop(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "principle <- concept")
+    assert [n.path for n in nodes] == ["concepts/boot-pll-startup-margin.md"]
 
-    def test_multi_hop(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "finding[tag=pll] ^ concept -> principle")
-        assert [n.path for n in nodes] == ["principles/firmware-timeouts-must-be-polled.md"]
 
-    def test_bare_tier_start_set(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "finding")
-        assert len(nodes) == 2
+def test_query_traversal_promotion_hop(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "finding[tag=pll] ^ concept")
+    assert [n.path for n in nodes] == ["concepts/boot-pll-startup-margin.md"]
 
-    def test_inline_filter_operators(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(kb_bundle, "finding[confidence>=high]")
-        assert len(nodes) == 1
 
-    def test_invalid_node_raises(self, kb_bundle: Path) -> None:
-        with pytest.raises(ValueError, match="Unknown tier"):
-            navigate.query(kb_bundle, "bogus[tag=x] -> concept")
+def test_query_traversal_multi_hop(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "finding[tag=pll] ^ concept -> principle")
+    assert [n.path for n in nodes] == ["principles/firmware-timeouts-must-be-polled.md"]
+
+
+def test_query_traversal_bare_tier_start_set(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "finding")
+    assert len(nodes) == 2
+
+
+def test_query_traversal_inline_filter_operators(kb_bundle: Path) -> None:
+    nodes = navigate.query(kb_bundle, "finding[confidence>=high]")
+    assert len(nodes) == 1
+
+
+def test_query_traversal_invalid_node_raises(kb_bundle: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown tier"):
+        navigate.query(kb_bundle, "bogus[tag=x] -> concept")
 
 
 # ---------------------------------------------------------------------------
@@ -283,96 +299,104 @@ class TestQueryTraversal:
 # ---------------------------------------------------------------------------
 
 
-class TestNavigationCli:
-    def test_search_command_table(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["search", "pll", str(kb_bundle)])
-        assert result.exit_code == 0, result.output
-        assert "PLL lock time" in result.output
+def test_navigation_cli_search_command_table(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["search", "pll", str(kb_bundle)])
+    assert result.exit_code == 0, result.output
+    assert "PLL lock time" in result.output
 
-    def test_search_command_json(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["search", "pll", str(kb_bundle), "--format", "json"])
-        assert result.exit_code == 0, result.output
-        payload = json.loads(result.output)
-        assert payload[0]["score"] >= 1
 
-    def test_get_command_frontmatter(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(
-            kb,
-            [
-                "get",
-                "concepts/boot-pll-startup-margin.md",
-                str(kb_bundle),
-                "--format",
-                "frontmatter",
-            ],
-        )
-        assert result.exit_code == 0, result.output
-        assert "Boot PLL startup margin" in result.output
+def test_navigation_cli_search_command_json(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["search", "pll", str(kb_bundle), "--format", "json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload[0]["score"] >= 1
 
-    def test_get_command_missing_exits_1(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["get", "nope", str(kb_bundle)])
-        assert result.exit_code == 1
-        assert "Error" in result.output
 
-    def test_read_command_titles(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["read", "findings", str(kb_bundle), "--format", "titles"])
-        assert result.exit_code == 0, result.output
-        assert "Boot timeout more frequent at 0C" in result.output
+def test_navigation_cli_get_command_frontmatter(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        kb,
+        [
+            "get",
+            "concepts/boot-pll-startup-margin.md",
+            str(kb_bundle),
+            "--format",
+            "frontmatter",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Boot PLL startup margin" in result.output
 
-    def test_read_command_unknown_tier_exits_1(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["read", "bogus", str(kb_bundle)])
-        assert result.exit_code == 1
-        assert "Error" in result.output
 
-    def test_query_filter_paths(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(
-            kb,
-            [
-                "query",
-                "type:finding confidence:>=high tag:pll",
-                str(kb_bundle),
-                "--format",
-                "paths",
-            ],
-        )
-        assert result.exit_code == 0, result.output
-        assert result.output.strip() == "findings/2026.07.03-14.20-pll-temp-drift.md"
+def test_navigation_cli_get_command_missing_exits_1(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["get", "nope", str(kb_bundle)])
+    assert result.exit_code == 1
+    assert "Error" in result.output
 
-    def test_query_traversal_json(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(
-            kb,
-            [
-                "query",
-                "finding[tag=pll] ^ concept -> principle",
-                str(kb_bundle),
-                "--format",
-                "json",
-            ],
-        )
-        assert result.exit_code == 0, result.output
-        payload = json.loads(result.output)
-        assert payload[0]["path"] == "principles/firmware-timeouts-must-be-polled.md"
 
-    def test_query_bad_expr_exits_1(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["query", "bareword", str(kb_bundle)])
-        assert result.exit_code == 1
-        assert "Error" in result.output
+def test_navigation_cli_read_command_titles(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["read", "findings", str(kb_bundle), "--format", "titles"])
+    assert result.exit_code == 0, result.output
+    assert "Boot timeout more frequent at 0C" in result.output
 
-    def test_kb_help_lists_navigation_commands(self) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["--help"])
-        assert result.exit_code == 0
-        for cmd in ("search", "get", "read", "query"):
-            assert cmd in result.output
+
+def test_navigation_cli_read_command_unknown_tier_exits_1(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["read", "bogus", str(kb_bundle)])
+    assert result.exit_code == 1
+    assert "Error" in result.output
+
+
+def test_navigation_cli_query_filter_paths(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        kb,
+        [
+            "query",
+            "type:finding confidence:>=high tag:pll",
+            str(kb_bundle),
+            "--format",
+            "paths",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == "findings/2026.07.03-14.20-pll-temp-drift.md"
+
+
+def test_navigation_cli_query_traversal_json(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        kb,
+        [
+            "query",
+            "finding[tag=pll] ^ concept -> principle",
+            str(kb_bundle),
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload[0]["path"] == "principles/firmware-timeouts-must-be-polled.md"
+
+
+def test_navigation_cli_query_bad_expr_exits_1(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["query", "bareword", str(kb_bundle)])
+    assert result.exit_code == 1
+    assert "Error" in result.output
+
+
+def test_navigation_cli_kb_help_lists_navigation_commands() -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["--help"])
+    assert result.exit_code == 0
+    for cmd in ("search", "get", "read", "query"):
+        assert cmd in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -431,153 +455,174 @@ def kb_bundle_extra(kb_bundle: Path) -> Path:
     return kb_bundle
 
 
-class TestAsStrList:
-    def test_scalar_string_coerced_to_list(self, kb_bundle_extra: Path) -> None:
-        node = navigate.get(kb_bundle_extra, "outcomes/fix-bootloader-pll-polling.md")
-        assert node.links() == ["concepts/boot-pll-startup-margin.md"]
-        assert node.tags == ["fix"]
-
-    def test_none_value_is_empty(self, kb_bundle_extra: Path) -> None:
-        node = navigate.get(kb_bundle_extra, "outcomes/fix-bootloader-pll-polling.md")
-        assert node.promoted_from() == []
+def test_as_str_list_scalar_string_coerced_to_list(kb_bundle_extra: Path) -> None:
+    node = navigate.get(kb_bundle_extra, "outcomes/fix-bootloader-pll-polling.md")
+    assert node.links() == ["concepts/boot-pll-startup-margin.md"]
+    assert node.tags == ["fix"]
 
 
-class TestSearchScoringBranches:
-    def test_body_only_match(self, kb_bundle_extra: Path) -> None:
-        hits = navigate.search(kb_bundle_extra, "oscilloscope")
-        assert [h.node.tier for h in hits] == ["findings"]
-
-    def test_context_match(self, kb_bundle_extra: Path) -> None:
-        hits = navigate.search(kb_bundle_extra, "watch dog")
-        assert hits and hits[0].node.title == "Sporadic recovery observed"
-
-    def test_no_limit_returns_all(self, kb_bundle_extra: Path) -> None:
-        hits = navigate.search(kb_bundle_extra, "boot", limit=0)
-        assert len(hits) >= 3
+def test_as_str_list_none_value_is_empty(kb_bundle_extra: Path) -> None:
+    node = navigate.get(kb_bundle_extra, "outcomes/fix-bootloader-pll-polling.md")
+    assert node.promoted_from() == []
 
 
-class TestCompareBranches:
-    def test_type_fuzzy_match(self, kb_bundle_extra: Path) -> None:
-        nodes = navigate.query(kb_bundle_extra, "type:~find")
-        assert all(n.tier == "findings" for n in nodes)
-        assert len(nodes) == 3
-
-    def test_scalar_links_traversal(self, kb_bundle_extra: Path) -> None:
-        nodes = navigate.query(kb_bundle_extra, "outcome -> concept")
-        assert [n.path for n in nodes] == ["concepts/boot-pll-startup-margin.md"]
-
-    def test_numeric_frontmatter_comparison(self, kb_bundle_extra: Path) -> None:
-        assert navigate.query(kb_bundle_extra, "type:outcome priority:>=2")
-        assert navigate.query(kb_bundle_extra, "type:outcome priority:<1") == []
-
-    def test_confidence_unknown_value_ordered_false(self, kb_bundle_extra: Path) -> None:
-        # Ordered comparison against a non-ordinal value yields no matches.
-        assert navigate.query(kb_bundle_extra, "type:finding confidence:>=bogus") == []
-
-    def test_string_ordered_comparison(self, kb_bundle_extra: Path) -> None:
-        # status is a plain string; ordered ops fall back to lexical compare.
-        nodes = navigate.query(kb_bundle_extra, "type:outcome status:>=planned")
-        assert len(nodes) == 1
-
-    def test_since_without_timestamp_excluded(self, kb_bundle_extra: Path) -> None:
-        # Outcome has no timestamp, so a since-filter excludes it.
-        assert navigate.query(kb_bundle_extra, "type:outcome since:2020-01-01") == []
+def test_search_scoring_branches_body_only_match(kb_bundle_extra: Path) -> None:
+    hits = navigate.search(kb_bundle_extra, "oscilloscope")
+    assert [h.node.tier for h in hits] == ["findings"]
 
 
-class TestReadAndGetMarkdown:
-    def test_read_md_format_cli(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["read", "principles", str(kb_bundle)])
-        assert result.exit_code == 0, result.output
-        assert "Poll readiness signals." in result.output
-
-    def test_get_md_format_cli(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["get", "concepts/boot-pll-startup-margin.md", str(kb_bundle)])
-        assert result.exit_code == 0, result.output
-        assert "Hardcoded wait too short" in result.output
-
-    def test_query_table_no_matches(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["query", "type:guide", str(kb_bundle)])
-        assert result.exit_code == 0, result.output
-        assert "No matching nodes." in result.output
-
-    def test_read_empty_tier(self, kb_bundle: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(kb, ["read", "guides", str(kb_bundle)])
-        assert result.exit_code == 0, result.output
-        assert "No matching nodes." in result.output
+def test_search_scoring_branches_context_match(kb_bundle_extra: Path) -> None:
+    hits = navigate.search(kb_bundle_extra, "watch dog")
+    assert hits and hits[0].node.title == "Sporadic recovery observed"
 
 
-class TestOperatorBranches:
-    def test_confidence_less_than(self, kb_bundle_extra: Path) -> None:
-        nodes = navigate.query(kb_bundle_extra, "type:finding confidence:<medium")
-        assert [n.confidence for n in nodes] == ["low"]
+def test_search_scoring_branches_no_limit_returns_all(kb_bundle_extra: Path) -> None:
+    hits = navigate.search(kb_bundle_extra, "boot", limit=0)
+    assert len(hits) >= 3
 
-    def test_confidence_less_equal(self, kb_bundle_extra: Path) -> None:
-        nodes = navigate.query(kb_bundle_extra, "type:finding confidence:<=medium")
-        assert {n.confidence for n in nodes} == {"low", "medium"}
 
-    def test_confidence_greater_than(self, kb_bundle_extra: Path) -> None:
-        nodes = navigate.query(kb_bundle_extra, "type:finding confidence:>medium")
-        assert [n.confidence for n in nodes] == ["high"]
+def test_compare_branches_type_fuzzy_match(kb_bundle_extra: Path) -> None:
+    nodes = navigate.query(kb_bundle_extra, "type:~find")
+    assert all(n.tier == "findings" for n in nodes)
+    assert len(nodes) == 3
 
-    def test_confidence_equal(self, kb_bundle_extra: Path) -> None:
-        nodes = navigate.query(kb_bundle_extra, "type:finding confidence:medium")
-        assert [n.confidence for n in nodes] == ["medium"]
 
-    def test_numeric_less_equal_and_greater(self, kb_bundle_extra: Path) -> None:
-        assert navigate.query(kb_bundle_extra, "type:outcome priority:<=2")
-        assert navigate.query(kb_bundle_extra, "type:outcome priority:>1")
-        assert navigate.query(kb_bundle_extra, "type:outcome priority:>5") == []
+def test_compare_branches_scalar_links_traversal(kb_bundle_extra: Path) -> None:
+    nodes = navigate.query(kb_bundle_extra, "outcome -> concept")
+    assert [n.path for n in nodes] == ["concepts/boot-pll-startup-margin.md"]
 
-    def test_string_less_than(self, kb_bundle_extra: Path) -> None:
-        # 'active' < 'planned' lexically.
-        nodes = navigate.query(kb_bundle_extra, "type:finding status:<planned")
-        assert nodes and all(n.status == "active" for n in nodes)
 
-    def test_invalid_regex_falls_back_to_substring(self, kb_bundle_extra: Path) -> None:
-        nodes = navigate.query(kb_bundle_extra, "type:concept title:~(boot")
-        # Invalid regex '(boot' falls back to substring, which will not match.
-        assert nodes == []
+def test_compare_branches_numeric_frontmatter_comparison(kb_bundle_extra: Path) -> None:
+    assert navigate.query(kb_bundle_extra, "type:outcome priority:>=2")
+    assert navigate.query(kb_bundle_extra, "type:outcome priority:<1") == []
 
-    def test_generic_list_field_membership(self, kb_bundle: Path) -> None:
-        nodes = navigate.query(
-            kb_bundle,
-            "type:concept links:principles/firmware-timeouts-must-be-polled.md",
-        )
-        assert len(nodes) == 1
 
-    def test_get_by_bare_filename(self, kb_bundle_extra: Path) -> None:
-        node = navigate.get(kb_bundle_extra, "2026.07.01-09.30-sporadic.md")
-        assert node.tier == "findings"
+def test_compare_branches_confidence_unknown_value_ordered_false(kb_bundle_extra: Path) -> None:
+    # Ordered comparison against a non-ordinal value yields no matches.
+    assert navigate.query(kb_bundle_extra, "type:finding confidence:>=bogus") == []
 
-    def test_dangling_link_hop_skipped(self, kb_bundle_extra: Path) -> None:
-        # The low finding links to a non-existent ghost.md; the hop yields nothing.
-        nodes = navigate.query(kb_bundle_extra, "finding[confidence=low] -> finding")
-        assert nodes == []
 
-    def test_schema_files_skipped(self, kb_bundle_extra: Path) -> None:
-        paths = {n.path for n in navigate.load_nodes(kb_bundle_extra)}
-        assert not any(p.startswith("_schema/") for p in paths)
+def test_compare_branches_string_ordered_comparison(kb_bundle_extra: Path) -> None:
+    # status is a plain string; ordered ops fall back to lexical compare.
+    nodes = navigate.query(kb_bundle_extra, "type:outcome status:>=planned")
+    assert len(nodes) == 1
 
-    def test_description_scoring(self, kb_bundle_extra: Path) -> None:
-        hits = navigate.search(kb_bundle_extra, "pollingfix")
-        assert [h.node.tier for h in hits] == ["outcomes"]
 
-    def test_title_fallback_to_stem(self, kb_bundle_extra: Path) -> None:
-        nodes = navigate.query(kb_bundle_extra, "type:guide title:~untitled")
-        assert [n.path for n in nodes] == ["guides/untitled-note.md"]
+def test_compare_branches_since_without_timestamp_excluded(kb_bundle_extra: Path) -> None:
+    # Outcome has no timestamp, so a since-filter excludes it.
+    assert navigate.query(kb_bundle_extra, "type:outcome since:2020-01-01") == []
 
-    def test_list_field_ordered_op_is_false(self, kb_bundle: Path) -> None:
-        # An ordered operator on a list field yields no matches.
-        assert navigate.query(kb_bundle, "type:concept links:>a") == []
 
-    def test_invalid_inline_filter_raises(self, kb_bundle: Path) -> None:
-        with pytest.raises(ValueError, match="Invalid inline filter"):
-            navigate.query(kb_bundle, "finding[justword]")
+def test_read_and_get_markdown_read_md_format_cli(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["read", "principles", str(kb_bundle)])
+    assert result.exit_code == 0, result.output
+    assert "Poll readiness signals." in result.output
 
-    def test_invalid_node_expression_raises(self, kb_bundle: Path) -> None:
-        with pytest.raises(ValueError, match="Invalid node expression"):
-            navigate.query(kb_bundle, "finding -> 9bad")
+
+def test_read_and_get_markdown_get_md_format_cli(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["get", "concepts/boot-pll-startup-margin.md", str(kb_bundle)])
+    assert result.exit_code == 0, result.output
+    assert "Hardcoded wait too short" in result.output
+
+
+def test_read_and_get_markdown_query_table_no_matches(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["query", "type:guide", str(kb_bundle)])
+    assert result.exit_code == 0, result.output
+    assert "No matching nodes." in result.output
+
+
+def test_read_and_get_markdown_read_empty_tier(kb_bundle: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(kb, ["read", "guides", str(kb_bundle)])
+    assert result.exit_code == 0, result.output
+    assert "No matching nodes." in result.output
+
+
+def test_operator_branches_confidence_less_than(kb_bundle_extra: Path) -> None:
+    nodes = navigate.query(kb_bundle_extra, "type:finding confidence:<medium")
+    assert [n.confidence for n in nodes] == ["low"]
+
+
+def test_operator_branches_confidence_less_equal(kb_bundle_extra: Path) -> None:
+    nodes = navigate.query(kb_bundle_extra, "type:finding confidence:<=medium")
+    assert {n.confidence for n in nodes} == {"low", "medium"}
+
+
+def test_operator_branches_confidence_greater_than(kb_bundle_extra: Path) -> None:
+    nodes = navigate.query(kb_bundle_extra, "type:finding confidence:>medium")
+    assert [n.confidence for n in nodes] == ["high"]
+
+
+def test_operator_branches_confidence_equal(kb_bundle_extra: Path) -> None:
+    nodes = navigate.query(kb_bundle_extra, "type:finding confidence:medium")
+    assert [n.confidence for n in nodes] == ["medium"]
+
+
+def test_operator_branches_numeric_less_equal_and_greater(kb_bundle_extra: Path) -> None:
+    assert navigate.query(kb_bundle_extra, "type:outcome priority:<=2")
+    assert navigate.query(kb_bundle_extra, "type:outcome priority:>1")
+    assert navigate.query(kb_bundle_extra, "type:outcome priority:>5") == []
+
+
+def test_operator_branches_string_less_than(kb_bundle_extra: Path) -> None:
+    # 'active' < 'planned' lexically.
+    nodes = navigate.query(kb_bundle_extra, "type:finding status:<planned")
+    assert nodes and all(n.status == "active" for n in nodes)
+
+
+def test_operator_branches_invalid_regex_falls_back_to_substring(kb_bundle_extra: Path) -> None:
+    nodes = navigate.query(kb_bundle_extra, "type:concept title:~(boot")
+    # Invalid regex '(boot' falls back to substring, which will not match.
+    assert nodes == []
+
+
+def test_operator_branches_generic_list_field_membership(kb_bundle: Path) -> None:
+    nodes = navigate.query(
+        kb_bundle,
+        "type:concept links:principles/firmware-timeouts-must-be-polled.md",
+    )
+    assert len(nodes) == 1
+
+
+def test_operator_branches_get_by_bare_filename(kb_bundle_extra: Path) -> None:
+    node = navigate.get(kb_bundle_extra, "2026.07.01-09.30-sporadic.md")
+    assert node.tier == "findings"
+
+
+def test_operator_branches_dangling_link_hop_skipped(kb_bundle_extra: Path) -> None:
+    # The low finding links to a non-existent ghost.md; the hop yields nothing.
+    nodes = navigate.query(kb_bundle_extra, "finding[confidence=low] -> finding")
+    assert nodes == []
+
+
+def test_operator_branches_schema_files_skipped(kb_bundle_extra: Path) -> None:
+    paths = {n.path for n in navigate.load_nodes(kb_bundle_extra)}
+    assert not any(p.startswith("_schema/") for p in paths)
+
+
+def test_operator_branches_description_scoring(kb_bundle_extra: Path) -> None:
+    hits = navigate.search(kb_bundle_extra, "pollingfix")
+    assert [h.node.tier for h in hits] == ["outcomes"]
+
+
+def test_operator_branches_title_fallback_to_stem(kb_bundle_extra: Path) -> None:
+    nodes = navigate.query(kb_bundle_extra, "type:guide title:~untitled")
+    assert [n.path for n in nodes] == ["guides/untitled-note.md"]
+
+
+def test_operator_branches_list_field_ordered_op_is_false(kb_bundle: Path) -> None:
+    # An ordered operator on a list field yields no matches.
+    assert navigate.query(kb_bundle, "type:concept links:>a") == []
+
+
+def test_operator_branches_invalid_inline_filter_raises(kb_bundle: Path) -> None:
+    with pytest.raises(ValueError, match="Invalid inline filter"):
+        navigate.query(kb_bundle, "finding[justword]")
+
+
+def test_operator_branches_invalid_node_expression_raises(kb_bundle: Path) -> None:
+    with pytest.raises(ValueError, match="Invalid node expression"):
+        navigate.query(kb_bundle, "finding -> 9bad")
