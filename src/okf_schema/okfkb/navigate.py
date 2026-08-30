@@ -1,12 +1,13 @@
-"""Navigation and query engine for OKF knowledge-base bundles.
+"""Navigation and query engine for Open Knowledge Format (OKF) knowledge bases.
 
 Implements the ``search`` / ``get`` / ``read`` / ``query`` navigation tools
-exposed by the ``okfkb`` CLI. These let an agent actively pull the right
-granularity from a stratified KB instead of loading whole tier folders.
+exposed by the ``okfkb`` command-line interface (CLI). These let an agent
+actively pull the right granularity from a stratified knowledge base (KB)
+instead of loading whole tier folders.
 
 The ``query`` engine supports two complementary styles:
 
-* **Filter DSL** — flat frontmatter selection, e.g.
+* **Filter domain-specific language (DSL)** — flat frontmatter selection, e.g.
   ``type:finding confidence:>=high tag:pll status:active``.
 * **Arrow traversal** — a pocket-Cypher over the ``links`` / ``backlinks`` /
   ``promoted_from`` graph, e.g.
@@ -20,6 +21,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from okf_schema._internal.utils import RESERVED_FILES, collect_markdown_files
 from okf_schema._internal.yaml import extract_frontmatter, parse_yaml
@@ -68,7 +70,7 @@ _TIER_ALIASES.update(
 
 @dataclass
 class KbNode:
-    """A single knowledge-base node (one markdown file with frontmatter)."""
+    """A single knowledge-base Markdown document and its frontmatter."""
 
     path: str
     tier: str
@@ -78,7 +80,7 @@ class KbNode:
     status: str
     tags: list[str]
     timestamp: str
-    frontmatter: dict
+    frontmatter: dict[str, Any]
     body: str
 
     def links(self) -> list[str]:
@@ -107,8 +109,20 @@ def _as_str_list(value: object) -> list[str]:
 def normalize_tier(label: str) -> str:
     """Resolve a tier *label* (singular/plural/type) to its folder name.
 
+    Args:
+        label:
+            Singular or plural tier name, case-insensitively.
+
+    Returns:
+        Canonical tier folder name.
+
     Raises:
-        ValueError: When *label* does not map to a known tier.
+        ValueError:
+            When *label* does not map to a known tier.
+
+    Examples:
+        >>> normalize_tier("Finding")
+        'findings'
     """
     key = label.strip().lower()
     if key in _TIER_ALIASES:
@@ -128,7 +142,7 @@ def _load_node(path: Path, bundle: Path) -> KbNode | None:
 
     text = path.read_text(encoding="utf-8")
     fm_text, body = extract_frontmatter(text)
-    frontmatter: dict = {}
+    frontmatter: dict[str, Any] = {}
     if fm_text is not None:
         parsed = parse_yaml(fm_text)
         if isinstance(parsed, dict):
@@ -151,7 +165,17 @@ def _load_node(path: Path, bundle: Path) -> KbNode | None:
 
 
 def load_nodes(bundle: Path) -> list[KbNode]:
-    """Load every content node in *bundle* (excludes reserved/schema files)."""
+    """Load every content node in *bundle*.
+
+    Reserved files and documents in ``_schema/`` are excluded.
+
+    Args:
+        bundle:
+            Root directory of the knowledge-base bundle.
+
+    Returns:
+        Nodes in deterministic path order.
+    """
     nodes: list[KbNode] = []
     for path in collect_markdown_files(bundle):
         node = _load_node(path, bundle)
@@ -185,6 +209,25 @@ def search(
     Matches (case-insensitive) against title, tags, type, description, and
     body, with weighted scoring. Results are sorted by descending score,
     then by path.
+
+    Args:
+        bundle:
+            Root directory of the knowledge-base bundle.
+        text:
+            Case-insensitive search text.
+        tiers:
+            Optional tier names used to restrict the search.
+        limit:
+            Maximum number of hits; non-positive values return all hits.
+
+    Returns:
+        Ranked hits ordered by descending score and then path.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> search(Path("empty-bundle"), "clock")
+        []
+
     # @implements_req SwRS-OKFSCHEMA-OKFKB-004
     """
     needle = text.strip().lower()
@@ -228,8 +271,18 @@ def get(bundle: Path, node_id: str) -> KbNode:
     The id may be given with or without the ``.md`` extension, and either as
     a full path (``findings/2026...md``) or a bare filename/stem.
 
+    Args:
+        bundle:
+            Root directory of the knowledge-base bundle.
+        node_id:
+            Bundle-relative path, filename, or filename stem.
+
+    Returns:
+        Matching knowledge-base node.
+
     Raises:
-        FileNotFoundError: When no node matches *node_id*.
+        FileNotFoundError:
+            When no node matches *node_id*.
     """
     wanted = node_id.strip()
     candidate = bundle / wanted
@@ -257,11 +310,34 @@ def get(bundle: Path, node_id: str) -> KbNode:
 # ---------------------------------------------------------------------------
 
 
-def read_tier(bundle: Path, tier: str, *, status: str | None = None) -> list[KbNode]:
+def read_tier(
+    bundle: Path,
+    tier: str,
+    *,
+    status: str | None = None,
+) -> list[KbNode]:
     """Return all nodes in *tier*, optionally filtered by ``status``.
 
+    Args:
+        bundle:
+            Root directory of the knowledge-base bundle.
+        tier:
+            Singular or plural tier name.
+        status:
+            Optional lifecycle status filter.
+
+    Returns:
+        Matching nodes; findings are newest first and other tiers are in path
+        order.
+
     Raises:
-        ValueError: When *tier* is not a known tier folder.
+        ValueError:
+            When *tier* is not a known tier folder.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> read_tier(Path("empty-bundle"), "concept")
+        []
     """
     folder = normalize_tier(tier)
     nodes = [n for n in load_nodes(bundle) if n.tier == folder]
@@ -383,7 +459,11 @@ def _compare(node: KbNode, cond: _Condition) -> bool:
     return _compare_scalar(text, op, value)
 
 
-def _compare_confidence(node_value: str, op: str, value: str) -> bool:
+def _compare_confidence(
+    node_value: str,
+    op: str,
+    value: str,
+) -> bool:
     """Compare confidence using ordinal ranking for ordered operators."""
     left = _CONFIDENCE_ORDER.get(node_value.lower())
     right = _CONFIDENCE_ORDER.get(value.lower())
@@ -404,7 +484,11 @@ def _compare_confidence(node_value: str, op: str, value: str) -> bool:
     return False
 
 
-def _compare_scalar(text: str, op: str, value: str) -> bool:
+def _compare_scalar(
+    text: str,
+    op: str,
+    value: str,
+) -> bool:
     """Compare a scalar string with numeric fallback for ordered operators."""
     lowered = text.lower()
     target = value.lower()
@@ -423,7 +507,11 @@ def _compare_scalar(text: str, op: str, value: str) -> bool:
     return _ordered(lowered, target, op)
 
 
-def _ordered(left: float | str, right: float | str, op: str) -> bool:
+def _ordered(
+    left: float | str,
+    right: float | str,
+    op: str,
+) -> bool:
     """Apply an ordered comparison operator to two same-typed values."""
     comparator = _ORDERED_OPS.get(op)
     if comparator is None:
@@ -520,14 +608,37 @@ def _apply_hop(
     ]
 
 
-def query(bundle: Path, expr: str, *, limit: int | None = None) -> list[KbNode]:
+def query(
+    bundle: Path,
+    expr: str,
+    *,
+    limit: int | None = None,
+) -> list[KbNode]:
     """Run a structured query over *bundle*.
 
     Dispatches to the arrow-traversal engine when *expr* uses ``->`` / ``<-``
     / ``^`` / ``[...]``, otherwise treats *expr* as a flat filter DSL.
 
+    Args:
+        bundle:
+            Root directory of the knowledge-base bundle.
+        expr:
+            Filter expression or arrow-traversal expression.
+        limit:
+            Maximum number of nodes; ``None`` or a non-positive value returns
+            all matches.
+
+    Returns:
+        Matching nodes in deterministic path order.
+
     Raises:
-        ValueError: When *expr* is empty or malformed.
+        ValueError:
+            When *expr* is empty or malformed.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> query(Path("empty-bundle"), "type:finding confidence:>=high")
+        []
     """
     expression = expr.strip()
     if not expression:

@@ -1,4 +1,8 @@
-"""Data models for okf-schema validation and reporting."""
+"""Typed records shared by okf-schema validation and reporting code.
+
+The models contain data only; validation and bundle mutations live in the
+public :mod:`okf_schema.api` module.
+"""
 
 from __future__ import annotations
 
@@ -27,12 +31,54 @@ class Report:
         """Return True if the report contains no errors."""
         return len(self.errors) == 0
 
-    def add_error(self, code: str, message: str, path: Path | None = None) -> None:
-        """Append an error finding to the report."""
+    def add_error(
+        self,
+        code: str,
+        message: str,
+        path: Path | None = None,
+    ) -> None:
+        """Append an error finding to the report.
+
+        Args:
+            code:
+                Stable machine-readable finding code.
+            message:
+                Human-readable explanation.
+            path:
+                Optional path associated with the finding.
+
+        Examples:
+            >>> from okf_schema._internal.models import Report
+            >>> report = Report()
+            >>> report.add_error("missing-title", "Title is required")
+            >>> report.is_conformant
+            False
+        """
         self.errors.append(Finding(code, message, path))
 
-    def add_warning(self, code: str, message: str, path: Path | None = None) -> None:
-        """Append a warning finding to the report."""
+    def add_warning(
+        self,
+        code: str,
+        message: str,
+        path: Path | None = None,
+    ) -> None:
+        """Append a warning finding to the report.
+
+        Args:
+            code:
+                Stable machine-readable finding code.
+            message:
+                Human-readable explanation.
+            path:
+                Optional path associated with the finding.
+
+        Examples:
+            >>> from okf_schema._internal.models import Report
+            >>> report = Report()
+            >>> report.add_warning("missing-description", "Description is recommended")
+            >>> len(report.warnings)
+            1
+        """
         self.warnings.append(Finding(code, message, path))
 
 
@@ -83,7 +129,7 @@ class ConceptSummary:
 class ConceptDetail:
     """Detailed view of a single concept file."""
 
-    frontmatter: dict
+    frontmatter: dict[str, object]
     body: str
     trust_tier: str = "unverified"
     stale: bool = False

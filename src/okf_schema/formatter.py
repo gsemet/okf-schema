@@ -1,4 +1,14 @@
-"""Frontmatter formatter for OKF bundles."""
+r"""Format YAML frontmatter in Open Knowledge Format (OKF) bundles.
+
+Formatting preserves comments and quoting through ``ruamel.yaml`` while
+flattening nested lists. Linting additionally uses compact flow-style lists
+and can synchronize ``links`` and ``backlinks`` from markdown bodies.
+
+Examples:
+    >>> from okf_schema.formatter import lint_frontmatter
+    >>> lint_frontmatter("---\ntype: concept\ntags:\n  - python\n---\nBody\n")
+    '---\ntype: concept\ntags: [python]\n---\nBody\n'
+"""
 
 from __future__ import annotations
 
@@ -48,11 +58,17 @@ def flatten_value(value: object) -> object:
     """Recursively flatten nested lists; pass through scalars and dicts.
 
     Args:
-        value: Any Python value (scalar, dict, or list).
+        value:
+            Any Python value, including a scalar, dictionary, or list.
 
     Returns:
         The same value with all nested lists flattened into a single
         one-dimensional list. Dicts inside lists are preserved.
+
+    Examples:
+        >>> from okf_schema.formatter import flatten_value
+        >>> flatten_value(["alpha", ["beta", ["gamma"]]])
+        ['alpha', 'beta', 'gamma']
     """
     if isinstance(value, list):
         flat: list[object] = []
@@ -67,17 +83,25 @@ def flatten_value(value: object) -> object:
 
 
 def format_frontmatter(text: str) -> str | None:
-    """Extract frontmatter, flatten nested lists, and re-serialize.
+    r"""Extract frontmatter, flatten nested lists, and re-serialize.
 
     Uses ``ruamel.yaml`` round-trip mode so that comments and quotes
     are preserved wherever possible.
 
     Args:
-        text: Full markdown file content.
+        text:
+            Full markdown file content.
 
     Returns:
         The full text with flattened frontmatter, or ``None`` when no
         frontmatter block is present.
+
+    Examples:
+        >>> from okf_schema.formatter import format_frontmatter
+        >>> text = "---\ntags:\n  - alpha\n  - [beta, gamma]\n---\nBody\n"
+        >>> formatted = format_frontmatter(text)
+        >>> formatted.splitlines()[1:5]
+        ['tags:', '- alpha', '- beta', '- gamma']
     """
     fm_text, body = extract_frontmatter(text)
     if fm_text is None:
@@ -118,7 +142,7 @@ def _fix_whitespace(text: str) -> str:
 
 
 def lint_frontmatter(text: str) -> str | None:
-    """Extract frontmatter, flatten nested lists, and convert to inline.
+    r"""Extract frontmatter, flatten nested lists, and convert to inline.
 
     Uses ``ruamel.yaml`` round-trip mode so that comments and quotes
     are preserved wherever possible.  This keeps frontmatter compact,
@@ -130,11 +154,19 @@ def lint_frontmatter(text: str) -> str | None:
     for readability.
 
     Args:
-        text: Full markdown file content.
+        text:
+            Full markdown file content.
 
     Returns:
         The full text with flattened and inline lists, or ``None`` when
         no frontmatter block is present.
+
+    Examples:
+        >>> from okf_schema.formatter import lint_frontmatter
+        >>> text = "---\ntags:\n  - alpha\n  - beta\n---\nBody\n"
+        >>> linted = lint_frontmatter(text)
+        >>> linted.splitlines()[1]
+        'tags: [alpha, beta]'
     """
     # OKF 0.2: these list-of-mapping fields must stay block-style for readability
     _list_of_mapping_fields = frozenset({"sources", "verified", "parameters"})
@@ -204,9 +236,12 @@ def _update_frontmatter_links(
     reflects the current state.
 
     Args:
-        text: Full markdown file content.
-        outgoing: List of bundle-relative paths this concept links to.
-        incoming: List of bundle-relative paths that link to this concept.
+        text:
+            Full markdown file content.
+        outgoing:
+            List of bundle-relative paths this concept links to.
+        incoming:
+            List of bundle-relative paths that link to this concept.
 
     Returns:
         The full text with updated link fields, or ``None`` when no
@@ -252,19 +287,35 @@ def _update_frontmatter_links(
     return _fix_whitespace(f"---\n{new_fm}\n---\n{body}")
 
 
-def format_file(path: Path, check: bool = False, diff: bool = False) -> bool:
-    """Format a single OKF concept file.
+def format_file(
+    path: Path,
+    check: bool = False,
+    diff: bool = False,
+) -> bool:
+    r"""Format a single OKF concept file.
 
     Args:
-        path: Path to the markdown file.
-        check: If ``True``, do not modify the file; only report whether
+        path:
+            Path to the markdown file.
+        check:
+            If ``True``, do not modify the file; only report whether
             changes would be needed.
-        diff: If ``True``, do not modify the file; only report whether
+        diff:
+            If ``True``, do not modify the file; only report whether
             changes would be needed (the actual diff is produced by
             :func:`format_bundle`).
 
     Returns:
         ``True`` if the file needed formatting changes.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from pathlib import Path
+        >>> with TemporaryDirectory() as directory:
+        ...     path = Path(directory) / "concept.md"
+        ...     _ = path.write_text("Body\n")
+        ...     format_file(path, check=True, diff=False)
+        False
     """
     text = path.read_text(encoding="utf-8")
     result = format_frontmatter(text)
@@ -278,17 +329,31 @@ def format_file(path: Path, check: bool = False, diff: bool = False) -> bool:
 
 
 # @implements_req SwRS-OKFSCHEMA-CORE-003
-def format_bundle(bundle: Path, check: bool = False, diff: bool = False) -> list[FormattedResult]:
+def format_bundle(
+    bundle: Path,
+    check: bool = False,
+    diff: bool = False,
+) -> list[FormattedResult]:
     """Format all concept files in an OKF bundle.
 
     Args:
-        bundle: Root directory of the OKF bundle.
-        check: If ``True``, do not modify any files.
-        diff: If ``True``, include a unified diff string in each
+        bundle:
+            Root directory of the OKF bundle.
+        check:
+            If ``True``, do not modify any files.
+        diff:
+            If ``True``, include a unified diff string in each
             :class:`FormattedResult` without modifying files.
 
     Returns:
         A list of results, one per markdown file found in the bundle.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from pathlib import Path
+        >>> with TemporaryDirectory() as directory:
+        ...     format_bundle(Path(directory), check=True, diff=True)
+        []
     """
     results: list[FormattedResult] = []
     for path in collect_markdown_files(bundle):
@@ -328,15 +393,26 @@ def lint_bundle(
     """Lint all concept files in an OKF bundle (convert block lists to inline).
 
     Args:
-        bundle: Root directory of the OKF bundle.
-        check: If ``True``, do not modify any files.
-        diff: If ``True``, include a unified diff string in each
+        bundle:
+            Root directory of the OKF bundle.
+        check:
+            If ``True``, do not modify any files.
+        diff:
+            If ``True``, include a unified diff string in each
             :class:`FormattedResult` without modifying files.
-        links: If ``True``, also update ``links`` and ``backlinks``
+        links:
+            If ``True``, also update ``links`` and ``backlinks``
             frontmatter fields based on markdown body content.
 
     Returns:
         A list of results, one per markdown file found in the bundle.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from pathlib import Path
+        >>> with TemporaryDirectory() as directory:
+        ...     lint_bundle(Path(directory), check=True, diff=False, links=True)
+        []
     """
     # Pre-compute link graph when links mode is enabled
     outgoing_graph: dict[str, list[str]] = {}

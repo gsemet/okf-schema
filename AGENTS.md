@@ -28,6 +28,7 @@ Read the applicable guideline before changing its scope:
 | [`requirements/guidelines/requirements.guidelines.md`](requirements/guidelines/requirements.guidelines.md) | Requirement documents, `okfreq`, requirement traceability, and generated requirement artifacts |
 | [`.github/guidelines/git-commit-message.guidelines.md`](.github/guidelines/git-commit-message.guidelines.md) | Every Git commit message |
 | [`.github/guidelines/python-unittest.guidelines.md`](.github/guidelines/python-unittest.guidelines.md) | Python unit tests and their fixtures |
+| [`.github/guidelines/python-module-documentation.guidelines.md`](.github/guidelines/python-module-documentation.guidelines.md) | Python Docstring and typing rules |
 
 ---
 

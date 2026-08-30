@@ -1,4 +1,10 @@
-"""Click CLI entry point for okf-schema."""
+"""Command-line interface for creating and maintaining OKF bundles.
+
+The :func:`cli` Click group exposes bundle creation, validation, linting,
+indexing, inspection, and knowledge-base commands. OKF means Open Knowledge
+Format; commands accept filesystem paths and report failures through Click
+exit codes.
+"""
 
 from __future__ import annotations
 
@@ -29,7 +35,11 @@ from okf_schema.okfkb.patterns import INIT_PATTERNS, list_patterns
 class _HelpCommand(click.Command):
     """Click command with the short and long help options enabled."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         context_settings = kwargs.setdefault("context_settings", {})
         context_settings.setdefault("help_option_names", ["-h", "--help"])
         super().__init__(*args, **kwargs)
@@ -60,8 +70,24 @@ if hasattr(_stderr, "reconfigure"):
 @click.option("--verbose", "-v", count=True, help="Increase verbosity (up to 3).")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-error output.")
 @click.pass_context
-def cli(ctx: click.Context, verbose: int, quiet: bool) -> None:
-    """CLI tool and Python library for OKF bundle management."""
+def cli(
+    ctx: click.Context,
+    verbose: int,
+    quiet: bool,
+) -> None:
+    """Manage Open Knowledge Format bundles from the command line.
+
+    Args:
+        ctx:
+            Active Click command context.
+        verbose:
+            Number of requested verbosity increases.
+        quiet:
+            Whether to suppress non-error output.
+
+    Examples:
+        okf-schema --help
+    """
     # @implements_req SwRS-OKFSCHEMA-CORE-001
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
@@ -85,8 +111,25 @@ def _echo(ctx: click.Context, message: str) -> None:
 @click.argument("name")
 @click.option("--pattern", default=None, help="Init pattern to use (e.g. 'kb').")
 @click.pass_context
-def init(ctx: click.Context, name: str, pattern: str | None) -> None:
-    """Create a new OKF bundle directory structure."""
+def init(
+    ctx: click.Context,
+    name: str,
+    pattern: str | None,
+) -> None:
+    """Create a new OKF bundle directory structure.
+
+    Args:
+        ctx:
+            Active Click command context.
+        name:
+            Destination directory for the new bundle.
+        pattern:
+            Optional registered initialization pattern.
+
+    Examples:
+        okf-schema init notes
+        okf-schema init knowledge --pattern kb
+    """
     # @implements_req SwRS-OKFSCHEMA-CORE-002
     if pattern is not None:
         if pattern not in INIT_PATTERNS:
@@ -197,7 +240,23 @@ def new(
     concept_type: str,
     concept_title: str | None,
 ) -> None:
-    """Create a new OKF concept file with frontmatter template."""
+    """Create a new OKF concept file with a frontmatter template.
+
+    Args:
+        ctx:
+            Active Click command context.
+        root_path:
+            Root directory in which to create the concept.
+        name:
+            Concept path relative to ``root_path``, without the ``.md`` suffix.
+        concept_type:
+            Frontmatter type assigned to the concept.
+        concept_title:
+            Optional display title; defaults to the final path component.
+
+    Examples:
+        okf-schema new --path bundle/concepts --name clock --title "Clock"
+    """
     root = Path(root_path)
     file_path = root / f"{name}.md"
 
@@ -259,7 +318,22 @@ def validate(
     schema_db: str | None,
     strict: bool,
 ) -> None:
-    """Validate an OKF bundle."""
+    """Validate an OKF bundle.
+
+    Args:
+        ctx:
+            Active Click command context.
+        bundle_path:
+            Root directory of the bundle to validate.
+        schema_db:
+            Optional directory containing schemas that override the bundle schemas.
+        strict:
+            Whether warnings should cause validation to fail.
+
+    Examples:
+        okf-schema validate --path bundle
+        okf-schema validate --path bundle --strict
+    """
     try:
         report = validate_bundle(bundle_path, schema_db=schema_db)
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
@@ -344,6 +418,16 @@ def validate_md(
 
     Validates one or more markdown files with frontmatter against provided schemas.
     This is useful for validating markdown outside of a full OKF bundle.
+
+    Args:
+        ctx:
+            Active Click command context.
+        input_patterns:
+            Glob patterns selecting Markdown files to validate.
+        schemas_dir:
+            Directory containing the JSON or YAML schemas.
+        strict:
+            Whether warnings should cause validation to fail.
 
     Examples:
         okf-schema validate-md --input 'notes/**/*.md' --schemas-dir ./schemas
@@ -436,6 +520,22 @@ def lint(
     With ``--links/--no-links`` (default: ``--links``), also updates ``links``
     (outgoing) and ``backlinks`` (incoming) frontmatter fields
     based on internal markdown links found in each concept's body.
+
+    Args:
+        ctx:
+            Active Click command context.
+        bundle_path:
+            Root directory of the bundle to lint.
+        check:
+            Whether to report changes without writing them.
+        diff:
+            Whether to print a unified diff without writing changes.
+        links:
+            Whether to synchronize link metadata from Markdown bodies.
+
+    Examples:
+        okf-schema lint --path bundle
+        okf-schema lint --path bundle --check --no-links
     """
     # @implements_req SwRS-OKFSCHEMA-CORE-003
     try:
@@ -484,7 +584,14 @@ def lint(
 )
 @click.pass_context
 def list_cmd(ctx: click.Context, bundle_path: str) -> None:
-    """List all concepts in an OKF bundle."""
+    """List all concepts in an OKF bundle.
+
+    Args:
+        ctx:
+            Active Click command context.
+        bundle_path:
+            Root directory of the bundle to list.
+    """
     # @implements_req SwRS-OKFSCHEMA-CORE-005
     try:
         concepts = list_bundle(bundle_path)
@@ -512,8 +619,24 @@ def list_cmd(ctx: click.Context, bundle_path: str) -> None:
 )
 @click.argument("concept_path")
 @click.pass_context
-def show(ctx: click.Context, bundle_path: str, concept_path: str) -> None:
-    """Show a single concept's frontmatter and body."""
+def show(
+    ctx: click.Context,
+    bundle_path: str,
+    concept_path: str,
+) -> None:
+    """Show a single concept's frontmatter and body.
+
+    Args:
+        ctx:
+            Active Click command context.
+        bundle_path:
+            Root directory of the bundle containing the concept.
+        concept_path:
+            Bundle-relative path of the concept to display.
+
+    Examples:
+        okf-schema show --path bundle concepts/clock.md
+    """
     try:
         detail = show_bundle(bundle_path, concept_path)
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
@@ -552,7 +675,14 @@ def show(ctx: click.Context, bundle_path: str, concept_path: str) -> None:
 )
 @click.pass_context
 def index(ctx: click.Context, bundle_path: str) -> None:
-    """Regenerate all index.md files in an OKF bundle."""
+    """Regenerate all index.md files in an OKF bundle.
+
+    Args:
+        ctx:
+            Active Click command context.
+        bundle_path:
+            Root directory of the bundle to index.
+    """
     # @implements_req SwRS-OKFSCHEMA-CORE-004
     try:
         updates = index_bundle(bundle_path)
@@ -602,7 +732,14 @@ def _health_score(s: BundleStats) -> tuple[int, list[str]]:
 )
 @click.pass_context
 def stats(ctx: click.Context, bundle_path: str) -> None:
-    """Show compact statistics for an OKF bundle."""
+    """Show compact statistics for an OKF bundle.
+
+    Args:
+        ctx:
+            Active Click command context.
+        bundle_path:
+            Root directory of the bundle to summarize.
+    """
     try:
         s = stats_bundle(bundle_path)
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
@@ -678,6 +815,17 @@ def backlinks(
     One line is printed per backlink in the form ``target ← source``.
     Multiple target paths may be provided.  The ``.md`` extension is
     optional and will be added automatically if omitted.
+
+    Args:
+        ctx:
+            Active Click command context.
+        bundle_path:
+            Root directory of the bundle to inspect.
+        targets:
+            Bundle-relative target paths whose backlinks should be listed.
+
+    Examples:
+        okf-schema backlinks --path bundle concepts/clock
     """
     target_list = [t if t.endswith(".md") else f"{t}.md" for t in targets]
     try:

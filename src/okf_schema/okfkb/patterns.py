@@ -22,11 +22,22 @@ def register_pattern(name: str, fn: Callable[[Path, bool], None]) -> None:
     """Register an init pattern.
 
     Args:
-        name: Pattern identifier (e.g., ``"kb"``).
-        fn: Callable that accepts ``(path, force)`` and performs the scaffold.
+        name:
+            Pattern identifier, for example ``"kb"``.
+        fn:
+            Callable that accepts ``(path, force)`` and performs the scaffold.
 
     Raises:
-        ValueError: If *name* is already registered.
+        ValueError:
+            If *name* is already registered.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> register_pattern("example", lambda path, force: None)
+        >>> "example" in list_patterns()
+        True
+        >>> INIT_PATTERNS.pop("example") is not None
+        True
     """
     if name in INIT_PATTERNS:
         raise ValueError(f"Pattern '{name}' is already registered.")

@@ -1,4 +1,15 @@
-"""Command line interface for the standalone ``okfreq`` layer."""
+"""Click command-line interface for standalone requirements management.
+
+The :func:`okfreq` command group initializes requirement bundles, creates
+stakeholder and software requirements, validates their structure, scans
+traceability markers, updates generated coverage fields, and writes reports.
+
+Examples:
+    Invoke the command through the installed console script::
+
+        okfreq --help
+        okfreq validate requirements --prose
+"""
 
 from __future__ import annotations
 
@@ -28,7 +39,12 @@ from okf_schema.okfreq.core import (
 class _HelpCommand(click.Command):
     """Click command with the short and long help options enabled."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize a command and add default help option names."""
         context_settings = kwargs.setdefault("context_settings", {})
         context_settings.setdefault("help_option_names", ["-h", "--help"])
         super().__init__(*args, **kwargs)
@@ -41,10 +57,12 @@ class _HelpGroup(click.Group):
 
 
 def _root(path: str) -> Path:
+    """Resolve a command-line path to its requirements bundle root."""
     return bundle_path(Path(path).resolve())
 
 
 def _fail(exc: RequirementError) -> click.ClickException:
+    """Convert a domain error into a Click command error."""
     return click.ClickException(str(exc))
 
 
@@ -61,7 +79,14 @@ def okfreq() -> None:
 @click.argument("path", default=".", type=click.Path())
 @click.option("--force", is_flag=True, help="Merge without replacing existing files.")
 def init(path: str, force: bool) -> None:
-    """Initialize a requirements bundle below PATH."""
+    """Initialize a requirements bundle below PATH.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+        force:
+            Merge into a non-empty directory without replacing files.
+    """
     try:
         click.echo(
             f"Created requirements bundle at {init_requirements(Path(path).resolve(), force)}"
@@ -76,6 +101,8 @@ def new() -> None:
 
 
 def _register_new(level: str, name: str) -> None:
+    """Register a level-specific requirement creation command."""
+
     @new.command(name)
     @click.argument("title")
     @click.option(
@@ -102,6 +129,34 @@ def _register_new(level: str, name: str) -> None:
         user_need: str | None,
         path: str,
     ) -> None:
+        """Create one requirement of the registered level.
+
+        Args:
+            title:
+                Concise statement of the requirement's subject.
+            description:
+                Normative EARS behavior containing a ``SHALL`` response.
+            project:
+                Owning project code.
+            scope_name:
+                Configured scope used for allocation and marker scanning.
+            origin:
+                Producer or source of the requirement.
+            derives_from:
+                Parent requirement IDs.
+            user_need:
+                Stakeholder need accepted only for an StRS.
+            path:
+                Project or requirements-bundle path.
+
+        Examples:
+            Create a stakeholder requirement::
+
+                okfreq new strs "Readable reports" \
+                    --description "The tool SHALL produce readable reports." \
+                    --project example \
+                    --user-need "Users need to review requirement coverage."
+        """
         try:
             target = create_requirement(
                 _root(path),
@@ -133,11 +188,28 @@ _register_new("SwRS", "swrs")
 @click.argument("path", default=".", type=click.Path())
 @click.option("--json", "as_json", is_flag=True)
 @click.option("--prose", is_flag=True, help="Enable optional prose warnings.")
-def validate(path: str, as_json: bool, prose: bool) -> None:
+def validate(
+    path: str,
+    as_json: bool,
+    prose: bool,
+) -> None:
     """Validate requirements, configuration, and derivation graph.
 
     Advisory prose warnings are reported separately and never change the exit
     status; only structural errors do.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+        as_json:
+            Emit a structured JSON result.
+        prose:
+            Include advisory EARS prose warnings.
+
+    Examples:
+        Validate a bundle and include prose diagnostics::
+
+            okfreq validate requirements --prose
     """
     try:
         findings = validate_requirements(_root(path), prose=prose)
@@ -174,7 +246,14 @@ def _run_validation(path: str) -> None:
 @click.argument("path", default=".", type=click.Path())
 @click.option("--prose", is_flag=True, help="Also report advisory EARS prose warnings.")
 def lint(path: str, prose: bool) -> None:
-    """Run structural checks, optionally with advisory prose warnings."""
+    """Run structural checks, optionally with advisory prose warnings.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+        prose:
+            Print advisory EARS prose warnings before structural validation.
+    """
     if prose:
         for finding in validate_requirements(_root(path), prose=True):
             if finding.startswith("W"):
@@ -185,7 +264,12 @@ def lint(path: str, prose: bool) -> None:
 @okfreq.command()
 @click.argument("path", default=".", type=click.Path())
 def index(path: str) -> None:
-    """Print stable requirement IDs."""
+    """Print stable requirement IDs.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+    """
     for identifier in sorted(load_requirements(_root(path))):
         click.echo(identifier)
 
@@ -194,7 +278,14 @@ def index(path: str) -> None:
 @click.argument("query")
 @click.argument("path", default=".", type=click.Path())
 def search(query: str, path: str) -> None:
-    """Search requirement IDs, titles, and descriptions."""
+    """Search requirement IDs, titles, and descriptions.
+
+    Args:
+        query:
+            Case-insensitive text to find.
+        path:
+            Project or requirements-bundle path.
+    """
     query_lower = query.casefold()
     for identifier, (_, data, _) in load_requirements(_root(path)).items():
         haystack = " ".join(str(data.get(key, "")) for key in ("id", "title", "description"))
@@ -206,7 +297,14 @@ def search(query: str, path: str) -> None:
 @click.argument("path", default=".", type=click.Path())
 @click.option("--json", "as_json", is_flag=True)
 def trace(path: str, as_json: bool) -> None:
-    """Scan configured source and test directories for markers."""
+    """Scan configured source and test directories for markers.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+        as_json:
+            Emit marker locations and diagnostics as JSON.
+    """
     result = marker_scan(_root(path))
     summary = (
         f"implemented: {len(result['implemented'])}; "
@@ -219,14 +317,24 @@ def trace(path: str, as_json: bool) -> None:
 @okfreq.command("in-file")
 @click.argument("file", type=click.Path(exists=True))
 def in_file(file: str) -> None:
-    """Show a requirement file."""
+    """Show a requirement file.
+
+    Args:
+        file:
+            Existing requirement-document path.
+    """
     click.echo(Path(file).read_text(encoding="utf-8"))
 
 
 @okfreq.command()
 @click.argument("path", default=".", type=click.Path())
 def status(path: str) -> None:
-    """Print lifecycle counts and health."""
+    """Print lifecycle counts and health.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+    """
     root = _root(path)
     requirements = load_requirements(root)
     lifecycle: dict[str, int] = {}
@@ -248,7 +356,12 @@ def status(path: str) -> None:
 @okfreq.command()
 @click.argument("path", default=".", type=click.Path())
 def scope(path: str) -> None:
-    """Print configured scope mappings."""
+    """Print configured scope mappings.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+    """
     from okf_schema.okfreq.core import load_config
 
     click.echo(json.dumps(load_config(_root(path)).get("scopes", {}), indent=2))
@@ -258,7 +371,14 @@ def scope(path: str) -> None:
 @click.argument("source", type=click.Path(exists=True))
 @click.option("--path", default=".", type=click.Path())
 def import_config(source: str, path: str) -> None:
-    """Import a configuration explicitly, preserving conflicts and unknown keys."""
+    """Import a configuration explicitly, preserving conflicts and unknown keys.
+
+    Args:
+        source:
+            Existing YAML configuration to import.
+        path:
+            Project or requirements-bundle path.
+    """
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-006
     try:
         conflicts = merge_config(_root(path), Path(source))
@@ -273,7 +393,14 @@ def import_config(source: str, path: str) -> None:
 @click.argument("source", type=click.Path(exists=True))
 @click.option("--path", default=".", type=click.Path())
 def config_merge(source: str, path: str) -> None:
-    """Explicitly merge SOURCE into the project configuration."""
+    """Explicitly merge SOURCE into the project configuration.
+
+    Args:
+        source:
+            Existing YAML configuration to merge.
+        path:
+            Project or requirements-bundle path.
+    """
     try:
         conflicts = merge_config(_root(path), Path(source))
     except RequirementError as exc:
@@ -287,8 +414,26 @@ def config_merge(source: str, path: str) -> None:
 @click.argument("path", default=".", type=click.Path())
 @click.option("--check", is_flag=True, help="Preview and do not write.")
 @click.option("--diff", "show_diff", is_flag=True, help="Print unified diffs and do not write.")
-def coverage(path: str, check: bool, show_diff: bool) -> None:
-    """Explicitly update generated coverage fields."""
+def coverage(
+    path: str,
+    check: bool,
+    show_diff: bool,
+) -> None:
+    """Explicitly update generated coverage fields.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+        check:
+            Preview the changed-file count without writing.
+        show_diff:
+            Print unified diffs without writing.
+
+    Examples:
+        Preview generated coverage changes::
+
+            okfreq update-coverage requirements --check
+    """
     changed = update_coverage(_root(path), check=check, show_diff=show_diff)
     click.echo(f"{len(changed)} files {'would change' if check or show_diff else 'updated'}")
 
@@ -297,7 +442,14 @@ def coverage(path: str, check: bool, show_diff: bool) -> None:
 @click.argument("path", default=".", type=click.Path())
 @click.option("--json", "as_json", is_flag=True)
 def graph_command(path: str, as_json: bool) -> None:
-    """Show authored and computed derivation links."""
+    """Show authored and computed derivation links.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+        as_json:
+            Include errors and both edge directions in the JSON output.
+    """
     result = graph(_root(path))
     click.echo(
         json.dumps(result, indent=2) if as_json else json.dumps(result["derived_by"], indent=2)
@@ -314,8 +466,28 @@ def graph_command(path: str, as_json: bool) -> None:
 @click.option(
     "--output-summary-md", type=click.Path(), help="Write the Markdown summary to this path."
 )
-def generate_report(path: str, output_json: str | None, output_summary_md: str | None) -> None:
-    """Generate detailed JSON and summary Markdown traceability reports."""
+def generate_report(
+    path: str,
+    output_json: str | None,
+    output_summary_md: str | None,
+) -> None:
+    """Generate detailed JSON and summary Markdown traceability reports.
+
+    Args:
+        path:
+            Project or requirements-bundle path.
+        output_json:
+            Optional path for the detailed JSON report.
+        output_summary_md:
+            Optional path for the Markdown summary.
+
+    Examples:
+        Write both report formats to explicit destinations::
+
+            okfreq generate-report requirements \
+                --output-json dist/requirements.json \
+                --output-summary-md dist/requirements.md
+    """
     root = _root(path)
     destinations = []
     if output_json:
@@ -343,8 +515,26 @@ def generate_report(path: str, output_json: str | None, output_summary_md: str |
 @click.argument("target")
 @click.option("--path", default=".", type=click.Path())
 @click.option("--yes", is_flag=True, help="Confirm the explicit lifecycle change.")
-def archive(target: str, path: str, yes: bool) -> None:
-    """Mark TARGET deprecated without deleting it."""
+def archive(
+    target: str,
+    path: str,
+    yes: bool,
+) -> None:
+    """Mark TARGET deprecated without deleting it.
+
+    Args:
+        target:
+            Stable ID of the requirement to deprecate.
+        path:
+            Project or requirements-bundle path.
+        yes:
+            Confirm the lifecycle change.
+
+    Examples:
+        Confirm and archive one requirement::
+
+            okfreq archive SwRS-example-001 --path requirements --yes
+    """
     if not yes:
         raise click.ClickException("archive is destructive to lifecycle state; pass --yes")
     _change_lifecycle(_root(path), target, "deprecated")
@@ -355,8 +545,30 @@ def archive(target: str, path: str, yes: bool) -> None:
 @click.argument("replacement")
 @click.option("--path", default=".", type=click.Path())
 @click.option("--yes", is_flag=True)
-def supersede(target: str, replacement: str, path: str, yes: bool) -> None:
-    """Mark TARGET superseded by REPLACEMENT."""
+def supersede(
+    target: str,
+    replacement: str,
+    path: str,
+    yes: bool,
+) -> None:
+    """Mark TARGET superseded by REPLACEMENT.
+
+    Args:
+        target:
+            Stable ID of the requirement to supersede.
+        replacement:
+            Stable ID of its replacement requirement.
+        path:
+            Project or requirements-bundle path.
+        yes:
+            Confirm the lifecycle change.
+
+    Examples:
+        Confirm a replacement relationship::
+
+            okfreq supersede SwRS-old-001 SwRS-new-001 \
+                --path requirements --yes
+    """
     if not yes:
         raise click.ClickException("supersede requires explicit confirmation with --yes")
     requirements = load_requirements(_root(path))
@@ -368,7 +580,10 @@ def supersede(target: str, replacement: str, path: str, yes: bool) -> None:
 
 
 def _change_lifecycle(
-    root: Path, target: str, lifecycle: str, extra: dict[str, str] | None = None
+    root: Path,
+    target: str,
+    lifecycle: str,
+    extra: dict[str, str] | None = None,
 ) -> None:
     """Change one requirement's lifecycle after explicit confirmation."""
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-007

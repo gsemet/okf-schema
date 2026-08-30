@@ -1,8 +1,19 @@
-"""Public Python API for okf-schema.
+"""Public Python API for Open Knowledge Format (OKF) bundle management.
 
-Provides clean, typed functions for programmatic use of all okf-schema
-capabilities: validation, formatting, listing, searching, graphing,
-statistics, and index regeneration.
+The functions in this module validate and format bundles, regenerate indexes,
+search concepts, inspect links, and compute statistics. Paths may be supplied
+as strings or :class:`pathlib.Path` objects; bundle operations resolve them to
+absolute directories before use.
+
+Examples:
+    Validate an empty temporary bundle without changing the filesystem::
+
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema.api import validate_bundle
+        >>> with TemporaryDirectory() as directory:
+        ...     report = validate_bundle(directory)
+        ...     report.is_conformant
+        True
 """
 
 from __future__ import annotations
@@ -87,8 +98,10 @@ def validate_bundle(
     """Validate an OKF bundle.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
-        schema_db: Optional directory containing JSON/YAML schema files.
+        bundle_path:
+            Path to the OKF bundle directory.
+        schema_db:
+            Optional directory containing JSON or YAML schema files.
             If not provided, the ``_schema`` subdirectory inside the bundle
             is used automatically when it exists.
 
@@ -98,6 +111,7 @@ def validate_bundle(
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
         NotADirectoryError: When *bundle_path* is not a directory.
+
     """
     bundle = _resolve_bundle(bundle_path)
     schemas = None
@@ -119,11 +133,13 @@ def validate_markdown_files(
     glob syntax (supports ``**`` for recursive matching).
 
     Args:
-        input_patterns: One or more glob patterns (e.g., ``'docs/**/*.md'``).
+        input_patterns:
+            One or more glob patterns (for example, ``"docs/**/*.md"``).
             Can be a single string or a list of strings. Patterns are resolved
             relative to the current working directory. Absolute paths are also
             supported.
-        schemas_dir: Optional directory containing JSON/YAML schema files.
+        schemas_dir:
+            Optional directory containing JSON or YAML schema files.
             If not provided, schema validation is skipped. Because no schema
             database was requested, missing-schema (W6) warnings are not emitted.
             Schema files should be named ``<type>.schema.{json|json5|yaml|yml}``.
@@ -192,9 +208,12 @@ def format_bundle(
     """Format frontmatter in all concept files of an OKF bundle.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
-        check: If ``True``, do not modify files; only report changes needed.
-        diff: If ``True``, include unified diff in results without modifying.
+        bundle_path:
+            Path to the OKF bundle directory.
+        check:
+            If ``True``, do not modify files; only report changes needed.
+        diff:
+            If ``True``, include unified diffs in results without modifying files.
 
     Returns:
         List of :class:`FormattedResult`, one per markdown file.
@@ -202,6 +221,12 @@ def format_bundle(
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
         NotADirectoryError: When *bundle_path* is not a directory.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema.api import format_bundle
+        >>> with TemporaryDirectory() as directory:
+        ...     results = format_bundle(directory, check=True)
     """
     bundle = _resolve_bundle(bundle_path)
     return _format_bundle(bundle, check=check, diff=diff)
@@ -220,10 +245,14 @@ def lint_bundle(
     load only the first *n* lines of a file.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
-        check: If ``True``, do not modify files; only report changes needed.
-        diff: If ``True``, include unified diff in results without modifying.
-        links: If ``True``, also update ``links`` and ``backlinks``
+        bundle_path:
+            Path to the OKF bundle directory.
+        check:
+            If ``True``, do not modify files; only report changes needed.
+        diff:
+            If ``True``, include unified diffs in results without modifying files.
+        links:
+            If ``True``, also update ``links`` and ``backlinks``
             frontmatter fields based on markdown body content.
 
     Returns:
@@ -232,6 +261,12 @@ def lint_bundle(
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
         NotADirectoryError: When *bundle_path* is not a directory.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema.api import lint_bundle
+        >>> with TemporaryDirectory() as directory:
+        ...     results = lint_bundle(directory, check=True, links=True)
     """
     bundle = _resolve_bundle(bundle_path)
     return _lint_bundle(bundle, check=check, diff=diff, links=links)
@@ -242,7 +277,8 @@ def list_bundle(bundle_path: str | Path) -> list[ConceptSummary]:
     """List all concepts in an OKF bundle.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
+        bundle_path:
+            Path to the OKF bundle directory.
 
     Returns:
         Sorted list of :class:`ConceptSummary` objects.
@@ -250,6 +286,7 @@ def list_bundle(bundle_path: str | Path) -> list[ConceptSummary]:
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
         NotADirectoryError: When *bundle_path* is not a directory.
+
     """
     bundle = _resolve_bundle(bundle_path)
     results: list[ConceptSummary] = []
@@ -278,8 +315,10 @@ def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
     """Show a single concept's frontmatter and body.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
-        concept_path: Relative path to the concept markdown file.
+        bundle_path:
+            Path to the OKF bundle directory.
+        concept_path:
+            Relative path to the concept markdown file.
 
     Returns:
         A :class:`ConceptDetail` with frontmatter dict and body text.
@@ -315,7 +354,8 @@ def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:
     bundle-root frontmatter if present.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
+        bundle_path:
+            Path to the OKF bundle directory.
 
     Returns:
         List of :class:`IndexUpdate` records describing what changed.
@@ -443,7 +483,7 @@ def rewrite_superseded_links(
     bundle_path: str | Path,
     check: bool = False,
 ) -> tuple[list[SupersededRewrite], list[DeferredRewrite]]:
-    """Rewrite markdown body links pointing to superseded documents.
+    r"""Rewrite markdown body links pointing to superseded documents.
 
     Scans all documents for ``status: superseded`` with a ``superseded_by``
     field.  For each such document, every other document whose markdown body
@@ -454,8 +494,10 @@ def rewrite_superseded_links(
     :func:`update_bundle` performs automatically.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
-        check: If ``True``, report rewrites without modifying files.
+        bundle_path:
+            Path to the OKF bundle directory.
+        check:
+            If ``True``, report rewrites without modifying files.
 
     Returns:
         A tuple ``(rewrites, deferred)`` where *rewrites* lists performed
@@ -465,6 +507,21 @@ def rewrite_superseded_links(
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
         NotADirectoryError: When *bundle_path* is not a directory.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema.api import rewrite_superseded_links
+        >>> with TemporaryDirectory() as directory:
+        ...     bundle = Path(directory)
+        ...     old = "---\nstatus: superseded\nsuperseded_by: [new.md]\n---\n"
+        ...     source = "---\ntype: concept\n---\nSee [old](old.md).\n"
+        ...     _ = (bundle / "old.md").write_text(old)
+        ...     _ = (bundle / "new.md").write_text("---\ntype: concept\n---\n")
+        ...     _ = (bundle / "source.md").write_text(source)
+        ...     rewrites, deferred = rewrite_superseded_links(bundle, check=True)
+        ...     (len(rewrites), len(deferred))
+        (1, 0)
     """
     bundle = _resolve_bundle(bundle_path)
     redirect_map: dict[Path, Path] = {}
@@ -552,10 +609,14 @@ def update_bundle(
     reflect the rewritten targets.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
-        check: If ``True``, do not modify files; only report changes needed.
-        diff: If ``True``, include unified diff in results without modifying.
-        links: If ``True``, also update ``links`` and ``backlinks``
+        bundle_path:
+            Path to the OKF bundle directory.
+        check:
+            If ``True``, do not modify files; only report changes needed.
+        diff:
+            If ``True``, include unified diffs in results without modifying files.
+        links:
+            If ``True``, also update ``links`` and ``backlinks``
             frontmatter fields based on markdown body content.
 
     Returns:
@@ -564,6 +625,12 @@ def update_bundle(
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
         NotADirectoryError: When *bundle_path* is not a directory.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema.api import update_bundle
+        >>> with TemporaryDirectory() as directory:
+        ...     result = update_bundle(directory, check=True, links=True)
     """
     bundle = _resolve_bundle(bundle_path)
     superseded_rewrites, deferred_rewrites = rewrite_superseded_links(bundle, check=check)
@@ -584,8 +651,10 @@ def search_bundle(bundle_path: str | Path, query: str) -> list[SearchResult]:
     ``description``, ``type``, and ``tags`` frontmatter fields.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
-        query: Search string.
+        bundle_path:
+            Path to the OKF bundle directory.
+        query:
+            Search string.
 
     Returns:
         Sorted list of matching :class:`SearchResult` objects.
@@ -638,7 +707,8 @@ def graph_bundle(bundle_path: str | Path) -> dict[str, list[str]]:
     of concept paths it links to.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
+        bundle_path:
+            Path to the OKF bundle directory.
 
     Returns:
         Adjacency dict: ``{concept_path: [linked_path, ...]}``.
@@ -691,8 +761,10 @@ def backlinks_bundle(
     Targets may be given with or without the ``.md`` extension.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
-        targets: List of relative concept paths to find backlinks for.
+        bundle_path:
+            Path to the OKF bundle directory.
+        targets:
+            List of relative concept paths to find backlinks for.
 
     Returns:
         Sorted list of :class:`BacklinkResult` records, one per backlink.
@@ -735,7 +807,8 @@ def stats_bundle(bundle_path: str | Path) -> BundleStats:
     """Compute statistics for an OKF bundle.
 
     Args:
-        bundle_path: Path to the OKF bundle directory.
+        bundle_path:
+            Path to the OKF bundle directory.
 
     Returns:
         A :class:`BundleStats` object with file counts, link counts,

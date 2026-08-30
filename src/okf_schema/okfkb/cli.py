@@ -24,7 +24,11 @@ from okf_schema.okfkb.scaffold import scaffold_kb
 class _HelpCommand(click.Command):
     """Click command with the short and long help options enabled."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         context_settings = kwargs.setdefault("context_settings", {})
         context_settings.setdefault("help_option_names", ["-h", "--help"])
         super().__init__(*args, **kwargs)
@@ -52,6 +56,13 @@ def init(path: str, force: bool) -> None:
     """Scaffold a new knowledge-base bundle at PATH.
 
     PATH defaults to the current directory when omitted.
+
+    Args:
+        path:
+            Destination directory for the knowledge base.
+        force:
+            Whether to overwrite files that already exist.
+
     # @implements_req SwRS-OKFSCHEMA-OKFKB-002
     """
     target = Path(path)
@@ -70,6 +81,12 @@ def install_skills(path: str, force: bool) -> None:
     """Install KB skills and guidelines into a project at PATH.
 
     PATH defaults to the current directory when omitted.
+
+    Args:
+        path:
+            Project directory in which to install the tooling.
+        force:
+            Whether to overwrite files that already exist.
     """
     target = Path(path)
     try:
@@ -120,6 +137,24 @@ def new_finding(
 
     PATH defaults to the current directory when omitted.
     Creates findings/YYYY.MM.DD-HH.MM-<slug>.md with valid OKF frontmatter.
+
+    Args:
+        path:
+            Knowledge-base bundle in which to create the finding.
+        title:
+            Short title for the finding.
+        description:
+            Optional one-line summary; defaults to ``title``.
+        confidence:
+            Confidence level assigned to the finding.
+        context:
+            Background and assumptions recorded with the finding.
+        tags:
+            Comma-separated keyword tags.
+
+    Examples:
+        okfkb new-finding --title "Stable clock" --confidence high --tags timing
+
     # @implements_req SwRS-OKFSCHEMA-OKFKB-003
     """
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
@@ -160,6 +195,21 @@ def update(
     This is equivalent to running ``okf-schema index`` followed by
     ``okf-schema lint`` — the recommended workflow after editing
     concepts in a knowledge base.
+
+    Args:
+        path:
+            Root directory of the knowledge-base bundle.
+        check:
+            Whether to report changes without writing them.
+        diff:
+            Whether to print a unified diff without writing changes.
+        links:
+            Whether to synchronize link metadata from Markdown bodies.
+
+    Examples:
+        okfkb update knowledge
+        okfkb update knowledge --check --no-links
+
     # @implements_req SwRS-OKFSCHEMA-OKFKB-004
     """
     target = Path(path)
@@ -221,6 +271,10 @@ def validate(path: str) -> None:
     """Validate a knowledge base with strict mode (warnings as errors).
 
     This is equivalent to running ``okf-schema validate --strict``.
+
+    Args:
+        path:
+            Root directory of the knowledge-base bundle to validate.
     """
     target = Path(path)
     try:
@@ -321,6 +375,21 @@ def search(
     """Ranked keyword search across the KB bundle at PATH.
 
     Matches TEXT against titles, tags, type, context, and body.
+
+    Args:
+        text:
+            Search text matched against node content and metadata.
+        path:
+            Root directory of the knowledge-base bundle.
+        tiers:
+            Optional tiers to include in the search.
+        limit:
+            Maximum number of results to display.
+        output_format:
+            Output representation: ``table``, ``json``, or ``paths``.
+
+    Examples:
+        okfkb search "clock drift" knowledge --tier finding --limit 5
     """
     target = Path(path)
     try:
@@ -355,8 +424,24 @@ def search(
     show_default=True,
     help="What to print.",
 )
-def get(node_id: str, path: str, output_format: str) -> None:
-    """Fetch a single node by id or bundle-relative path from PATH."""
+def get(
+    node_id: str,
+    path: str,
+    output_format: str,
+) -> None:
+    """Fetch a single node by id or bundle-relative path from PATH.
+
+    Args:
+        node_id:
+            Node identifier or bundle-relative path to fetch.
+        path:
+            Root directory of the knowledge-base bundle.
+        output_format:
+            Output representation: ``md``, ``json``, or ``frontmatter``.
+
+    Examples:
+        okfkb get clock-drift knowledge --format json
+    """
     target = Path(path)
     try:
         node = navigate.get(target, node_id)
@@ -386,8 +471,27 @@ def get(node_id: str, path: str, output_format: str) -> None:
     show_default=True,
     help="Output format.",
 )
-def read(tier: str, path: str, status: str | None, output_format: str) -> None:
-    """Read a whole stable TIER at once from the KB bundle at PATH."""
+def read(
+    tier: str,
+    path: str,
+    status: str | None,
+    output_format: str,
+) -> None:
+    """Read a whole stable TIER at once from the KB bundle at PATH.
+
+    Args:
+        tier:
+            Tier whose nodes should be displayed.
+        path:
+            Root directory of the knowledge-base bundle.
+        status:
+            Optional lifecycle status used to filter nodes.
+        output_format:
+            Output representation: ``md``, ``frontmatter``, or ``titles``.
+
+    Examples:
+        okfkb read concepts knowledge --status active
+    """
     target = Path(path)
     try:
         nodes = navigate.read_tier(target, tier, status=status)
@@ -424,12 +528,30 @@ def read(tier: str, path: str, status: str | None, output_format: str) -> None:
     show_default=True,
     help="Output format.",
 )
-def query(expr: str, path: str, limit: int | None, output_format: str) -> None:
+def query(
+    expr: str,
+    path: str,
+    limit: int | None,
+    output_format: str,
+) -> None:
     """Run a structured query over the KB bundle at PATH.
 
     EXPR is either a filter expression (e.g.
     "type:finding confidence:>=high tag:pll") or an arrow-traversal path
     (e.g. "finding[tag=pll] -> concept -> principle").
+
+    Args:
+        expr:
+            Filter or arrow-traversal expression to evaluate.
+        path:
+            Root directory of the knowledge-base bundle.
+        limit:
+            Optional maximum number of results to display.
+        output_format:
+            Output representation: ``table``, ``json``, or ``paths``.
+
+    Examples:
+        okfkb query "type:finding confidence:>=high" knowledge
     """
     target = Path(path)
     try:

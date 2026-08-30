@@ -1,13 +1,14 @@
-# Requirements Traceability Tutorial with `okfreq`
+# Maintain 2-levels Code-anchored Requirements with `okfreq`
 
 This tutorial is for developers, technical leads, product owners, testers, and
 coding agents who need to keep their software project’s intent connected to
 its implementation and tests.
 
-It is an opinionated workflow based on OKF-Schema. It serves two purposes:
+It is an opinionated workflow based on OKF-Schema.
+It serves two purposes:
 
-- provide a ready-to-use practical multi-layer code-anchored requirements traceability,
-  particularly adapted for open-source projects
+- provide a ready-to-use, ISO29148 multi-layer, code-anchored requirements
+  traceability, particularly adapted for open-source projects
 - demonstrate and illustrate the base concepts so that more complex projects
   can adapt to their needs.
 
@@ -167,8 +168,8 @@ requirements is impossible, what we can do is write
 "intentions of requirements" and then adapt them as we go.
 
 Let's see now how `okfreq` can help us to keep the requirements splited into
-2 layers (ISO29049-like), grounded in the code with full traceability to code
-and test, while still allowing to adapt them as we go.
+2 layers (ISO29148-like), grounded in the code with full traceability to code
+and test.
 
 ## Requirements traceability
 

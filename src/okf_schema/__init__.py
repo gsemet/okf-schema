@@ -1,4 +1,8 @@
-"""okf-schema — CLI tool and Python library for OKF bundle management."""
+"""Top-level package for Open Knowledge Format (OKF) bundle tooling.
+
+Use :mod:`okf_schema.api` for the supported programmatic interface. The
+package root exposes :data:`__version__` for diagnostics and integrations.
+"""
 
 from importlib.metadata import version
 

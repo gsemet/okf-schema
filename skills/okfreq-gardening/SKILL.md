@@ -8,6 +8,11 @@ metadata:
 
 # okfreq gardening
 
+This specialized workflow extends the foundational
+[`okfreq` skill](../okfreq/SKILL.md). Read and apply that skill first so the
+requirements goal, StRS-to-SwRS model, project-guideline precedence, and
+traceability semantics remain in force throughout gardening.
+
 Perform an explicit, evidence-based maintenance pass over an `okfreq` bundle.
 The primary users are coding agents working on brownfield projects where source
 code, tests, and requirements have drifted apart. The workflow discovers gaps,
@@ -49,7 +54,9 @@ unrelated implementation task.
    the presence of `config.yml`. Stop if no unique bundle exists.
 2. Read the nearest `AGENTS.md`, the bundle's own
    `guidelines/requirements.guidelines.md`, any other applicable guidelines,
-   `config.yml`, and every schema in `tiers/_schema/`.
+   `config.yml`, and every schema in `tiers/_schema/`. If the bundle guideline
+   is absent, use the `okfreq` skill's bundled reference guideline as the
+   fallback; a project-local guideline always takes precedence.
 3. Confirm the bundle resolves as expected before auditing content. Run
    `okfreq validate <bundle> --prose`; a traceback or a missing-schema error means the
    layout and the tool disagree, and that drift is the first finding to fix.

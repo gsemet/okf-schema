@@ -74,14 +74,29 @@ def scaffold_kb(path: Path, force: bool = False) -> None:
     ``log.md``.
 
     Args:
-        path: Target directory for the KB bundle.  Created if it does not
+        path:
+            Target directory for the KB bundle. Created if it does not
             exist; must be empty (or non-existent) unless *force* is ``True``.
-        force: When ``True``, overwrite existing files without raising an
+        force:
+            When ``True``, overwrite existing files without raising an
             error even if *path* is non-empty.
 
     Raises:
-        RuntimeError: If *path* exists and is non-empty and *force* is
+        RuntimeError:
+            If *path* exists and is non-empty and *force* is
             ``False``.
+
+    Examples:
+        >>> from contextlib import redirect_stdout
+        >>> from io import StringIO
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     bundle = Path(directory) / "knowledge"
+        ...     with redirect_stdout(StringIO()):
+        ...         scaffold_kb(bundle)
+        ...     (bundle / "findings").is_dir()
+        True
     """
     if path.exists() and any(path.iterdir()) and not force:
         raise RuntimeError(

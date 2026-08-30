@@ -15,15 +15,32 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 
 def load_evals(evals_path: Path) -> dict:
-    """Load eval definitions from evals.json."""
+    """Load evaluation definitions from a JSON file.
+
+    Args:
+        evals_path:
+            Path to the evaluation definition file.
+
+    Returns:
+        Parsed evaluation definitions.
+    """
     return json.loads(evals_path.read_text())
 
 
 def load_transcript(transcript_path: Path) -> str:
-    """Load agent transcript (markdown or plain text)."""
+    """Load an agent transcript as text.
+
+    Args:
+        transcript_path:
+            Path to a markdown or plain-text transcript.
+
+    Returns:
+        Transcript content, or an empty string when the path does not exist.
+    """
     if not transcript_path.exists():
         return ""
     return transcript_path.read_text()
@@ -35,7 +52,7 @@ def _normalize_cmd(cmd: str) -> str:
     if cmd.startswith("uv run -- "):
         cmd = cmd[10:]
     # Normalize --flag=value to --flag value for comparison
-    cmd = re.sub(r'(--\w+)=(\S+)', r'\1 \2', cmd)
+    cmd = re.sub(r"(--\w+)=(\S+)", r"\1 \2", cmd)
     # Remove trailing slashes from path-like segments
     parts = cmd.split()
     normalized = []
@@ -48,7 +65,17 @@ def _normalize_cmd(cmd: str) -> str:
 
 
 def check_command_executed(transcript: str, command: str) -> tuple[bool, str]:
-    """Check if a shell command appears in the transcript."""
+    """Check whether a shell command appears in a transcript.
+
+    Args:
+        transcript:
+            Transcript text to inspect.
+        command:
+            Shell command to find after normalization.
+
+    Returns:
+        A pass flag and a human-readable explanation.
+    """
     target = _normalize_cmd(command)
     # Normalize transcript lines too
     for line in transcript.splitlines():
@@ -66,6 +93,15 @@ def check_command_not_executed(transcript: str, command: str) -> tuple[bool, str
     prefixes).  Help output, quoted documentation, and SKILL.md excerpts are
     ignored automatically because they do not contain the full normalised
     command string.
+
+    Args:
+        transcript:
+            Transcript text to inspect.
+        command:
+            Shell command that must be absent after normalization.
+
+    Returns:
+        A pass flag and a human-readable explanation.
     """
     target = _normalize_cmd(command)
     for line in transcript.splitlines():
@@ -75,16 +111,35 @@ def check_command_not_executed(transcript: str, command: str) -> tuple[bool, str
     return True, f"Command not found: {target[:80]}..."
 
 
-
 def check_output_contains(transcript: str, text: str) -> tuple[bool, str]:
-    """Check if transcript contains specific text (case-insensitive)."""
+    """Check whether a transcript contains text, ignoring case.
+
+    Args:
+        transcript:
+            Transcript text to inspect.
+        text:
+            Text to find.
+
+    Returns:
+        A pass flag and a human-readable explanation.
+    """
     if text.lower() in transcript.lower():
         return True, f"Found: '{text[:60]}...'"
     return False, f"Not found: '{text[:60]}...'"
 
 
 def check_output_matches(transcript: str, pattern: str) -> tuple[bool, str]:
-    """Check if transcript matches a regex pattern."""
+    """Check whether a transcript matches a regular expression.
+
+    Args:
+        transcript:
+            Transcript text to inspect.
+        pattern:
+            Regular expression to search for, ignoring case.
+
+    Returns:
+        A pass flag and a human-readable explanation.
+    """
     try:
         if re.search(pattern, transcript, re.IGNORECASE):
             return True, f"Pattern matched: {pattern[:60]}..."
@@ -94,15 +149,45 @@ def check_output_matches(transcript: str, pattern: str) -> tuple[bool, str]:
 
 
 def check_file_exists(project_dir: Path, rel_path: str) -> tuple[bool, str]:
-    """Check if a file exists relative to project root."""
+    """Check whether a project-relative file exists.
+
+    Args:
+        project_dir:
+            Project root directory.
+        rel_path:
+            File path relative to the project root.
+
+    Returns:
+        A pass flag and a human-readable explanation.
+    """
     file_path = project_dir / rel_path
     if file_path.exists():
         return True, f"File exists: {rel_path}"
     return False, f"File not found: {rel_path}"
 
 
-def check_file_contains(project_dir: Path, rel_path: str, text: str) -> tuple[bool, str]:
-    """Check if a file contains specific text."""
+def check_file_contains(
+    project_dir: Path,
+    rel_path: str,
+    text: str,
+) -> tuple[bool, str]:
+    """Check whether a project-relative file contains text.
+
+    Args:
+        project_dir:
+            Project root directory.
+        rel_path:
+            File path relative to the project root.
+        text:
+            Text to find, ignoring case.
+
+    Returns:
+        A pass flag and a human-readable explanation.
+
+    Examples:
+        >>> check_file_contains(Path("."), "README.md", "okf-schema")[0]
+        True
+    """
     file_path = project_dir / rel_path
     if not file_path.exists():
         return False, f"File not found: {rel_path}"
@@ -112,8 +197,31 @@ def check_file_contains(project_dir: Path, rel_path: str, text: str) -> tuple[bo
     return False, f"Not found '{text[:40]}...' in {rel_path}"
 
 
-def check_file_glob_contains(project_dir: Path, glob_pattern: str, text: str, exclude: list[str] | None = None) -> tuple[bool, str]:
-    """Check if ALL files matching a glob pattern contain specific text."""
+def check_file_glob_contains(
+    project_dir: Path,
+    glob_pattern: str,
+    text: str,
+    exclude: list[str] | None = None,
+) -> tuple[bool, str]:
+    """Check whether every selected file contains text.
+
+    Args:
+        project_dir:
+            Project root directory.
+        glob_pattern:
+            Glob pattern evaluated relative to the project root.
+        text:
+            Text to find, ignoring case.
+        exclude:
+            Optional basenames to omit from the check.
+
+    Returns:
+        A pass flag and a human-readable explanation.
+
+    Examples:
+        >>> check_file_glob_contains(Path("."), "README.md", "okf-schema")[0]
+        True
+    """
     matches = list(project_dir.glob(glob_pattern))
     if not matches:
         return False, f"No files matched pattern: {glob_pattern}"
@@ -130,8 +238,34 @@ def check_file_glob_contains(project_dir: Path, glob_pattern: str, text: str, ex
     return True, f"All {len(matches)} files contain '{text[:40]}...'"
 
 
-def check_file_glob_min_count(project_dir: Path, glob_pattern: str, text: str, min_count: int, exclude: list[str] | None = None) -> tuple[bool, str]:
-    """Check if at least N files matching a glob pattern contain specific text."""
+def check_file_glob_min_count(
+    project_dir: Path,
+    glob_pattern: str,
+    text: str,
+    min_count: int,
+    exclude: list[str] | None = None,
+) -> tuple[bool, str]:
+    """Check whether at least a minimum number of selected files contain text.
+
+    Args:
+        project_dir:
+            Project root directory.
+        glob_pattern:
+            Glob pattern evaluated relative to the project root.
+        text:
+            Text to find, ignoring case.
+        min_count:
+            Minimum number of matching files required.
+        exclude:
+            Optional basenames to omit from the check.
+
+    Returns:
+        A pass flag and a human-readable explanation.
+
+    Examples:
+        >>> check_file_glob_min_count(Path("."), "README.md", "okf-schema", 1)[0]
+        True
+    """
     matches = list(project_dir.glob(glob_pattern))
     if not matches:
         return False, f"No files matched pattern: {glob_pattern}"
@@ -148,8 +282,34 @@ def check_file_glob_min_count(project_dir: Path, glob_pattern: str, text: str, m
     return False, f"Only {count} files contain '{text[:40]}...' (min: {min_count})"
 
 
-def check_file_glob_max_count(project_dir: Path, glob_pattern: str, text: str, max_count: int, exclude: list[str] | None = None) -> tuple[bool, str]:
-    """Check if at most N files matching a glob pattern contain specific text."""
+def check_file_glob_max_count(
+    project_dir: Path,
+    glob_pattern: str,
+    text: str,
+    max_count: int,
+    exclude: list[str] | None = None,
+) -> tuple[bool, str]:
+    """Check whether at most a maximum number of selected files contain text.
+
+    Args:
+        project_dir:
+            Project root directory.
+        glob_pattern:
+            Glob pattern evaluated relative to the project root.
+        text:
+            Text to find, ignoring case.
+        max_count:
+            Maximum number of matching files allowed.
+        exclude:
+            Optional basenames to omit from the check.
+
+    Returns:
+        A pass flag and a human-readable explanation.
+
+    Examples:
+        >>> check_file_glob_max_count(Path("."), "README.md", "not-present", 0)[0]
+        True
+    """
     matches = list(project_dir.glob(glob_pattern))
     if not matches:
         return True, f"No files matched pattern: {glob_pattern}"
@@ -166,8 +326,18 @@ def check_file_glob_max_count(project_dir: Path, glob_pattern: str, text: str, m
     return False, f"{count} files contain '{text[:40]}...' (exceeds max: {max_count})"
 
 
-def resolve_placeholders(value, workspace_path: Path | None) -> str:
-    """Replace {{workspace}} and {{iteration_dir}} placeholders in strings."""
+def resolve_placeholders(value: Any, workspace_path: Path | None) -> Any:
+    """Replace workspace placeholders in string values.
+
+    Args:
+        value:
+            Value to process. Non-string values pass through unchanged.
+        workspace_path:
+            Workspace directory used to resolve placeholders, if available.
+
+    Returns:
+        The resolved string, or the original non-string value.
+    """
     if not isinstance(value, str):
         return value
     if workspace_path is None:
@@ -177,8 +347,32 @@ def resolve_placeholders(value, workspace_path: Path | None) -> str:
     return resolved
 
 
-def grade_assertion(assertion: dict, transcript: str, project_dir: Path, workspace_path: Path | None = None) -> dict:
-    """Grade a single assertion and return result."""
+def grade_assertion(
+    assertion: dict,
+    transcript: str,
+    project_dir: Path,
+    workspace_path: Path | None = None,
+) -> dict:
+    """Grade one assertion against an agent transcript.
+
+    Args:
+        assertion:
+            Assertion definition, including its check type and target.
+        transcript:
+            Transcript text to grade.
+        project_dir:
+            Project root used for file checks.
+        workspace_path:
+            Optional workspace used to resolve placeholders.
+
+    Returns:
+        Structured result containing status and justification.
+
+    Examples:
+        >>> assertion = {"text": "mentions OKF", "target": "OKF"}
+        >>> grade_assertion(assertion, "OKF bundle", Path("."))["result"]
+        'PASS'
+    """
     check_type = assertion.get("check", "output_contains")
     target = resolve_placeholders(assertion.get("target", ""), workspace_path)
     params = assertion.get("params", {})
@@ -214,13 +408,17 @@ def grade_assertion(assertion: dict, transcript: str, project_dir: Path, workspa
         text = params.get("text", "")
         min_count = params.get("min_count", 1)
         exclude = params.get("exclude", [])
-        passed, justification = check_file_glob_min_count(project_dir, glob_pattern, text, min_count, exclude)
+        passed, justification = check_file_glob_min_count(
+            project_dir, glob_pattern, text, min_count, exclude
+        )
     elif check_type == "file_glob_max_count":
         glob_pattern = params.get("glob", "")
         text = params.get("text", "")
         max_count = params.get("max_count", 0)
         exclude = params.get("exclude", [])
-        passed, justification = check_file_glob_max_count(project_dir, glob_pattern, text, max_count, exclude)
+        passed, justification = check_file_glob_max_count(
+            project_dir, glob_pattern, text, max_count, exclude
+        )
     else:
         justification = f"Unknown check type: {check_type}"
 
@@ -233,8 +431,32 @@ def grade_assertion(assertion: dict, transcript: str, project_dir: Path, workspa
     }
 
 
-def grade_eval(eval_def: dict, transcript: str, project_dir: Path, workspace_path: Path | None = None) -> dict:
-    """Grade all assertions for a single eval case."""
+def grade_eval(
+    eval_def: dict,
+    transcript: str,
+    project_dir: Path,
+    workspace_path: Path | None = None,
+) -> dict:
+    """Grade all assertions for one evaluation case.
+
+    Args:
+        eval_def:
+            Evaluation definition containing assertions and metadata.
+        transcript:
+            Transcript text to grade.
+        project_dir:
+            Project root used for file checks.
+        workspace_path:
+            Optional workspace used to resolve placeholders.
+
+    Returns:
+        Evaluation summary and individual assertion results.
+
+    Examples:
+        >>> definition = {"id": 1, "assertions": []}
+        >>> grade_eval(definition, "", Path("."))["overall"]
+        'PASS'
+    """
     results = []
     for assertion in eval_def.get("assertions", []):
         result = grade_assertion(assertion, transcript, project_dir, workspace_path)
@@ -264,8 +486,33 @@ def grade_eval(eval_def: dict, transcript: str, project_dir: Path, workspace_pat
     }
 
 
-def grade_iteration(iteration_dir: Path, evals_path: Path, project_dir: Path) -> list[dict]:
-    """Grade all evals in an iteration directory (both with_skill and without_skill)."""
+def grade_iteration(
+    iteration_dir: Path,
+    evals_path: Path,
+    project_dir: Path,
+) -> list[dict]:
+    """Grade both conditions for every evaluation in an iteration.
+
+    Args:
+        iteration_dir:
+            Directory containing evaluation condition transcripts.
+        evals_path:
+            Path to the JSON evaluation definitions.
+        project_dir:
+            Project root used for file checks and relative output paths.
+
+    Returns:
+        Results for every condition that has a transcript.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as tmp:
+        ...     root = Path(tmp)
+        ...     evals_path = root / "evals.json"
+        ...     _ = evals_path.write_text('{"evals": []}', encoding="utf-8")
+        ...     grade_iteration(root / "iteration", evals_path, root)
+        []
+    """
     evals = load_evals(evals_path)
     all_results = []
 
@@ -286,9 +533,9 @@ def grade_iteration(iteration_dir: Path, evals_path: Path, project_dir: Path) ->
             workspace_raw = eval_def.get("workspace", "")
             if workspace_raw:
                 workspace_path = Path(
-                    workspace_raw
-                    .replace("{{iteration_dir}}", str(iteration_dir))
-                    .replace("{{condition}}", condition)
+                    workspace_raw.replace("{{iteration_dir}}", str(iteration_dir)).replace(
+                        "{{condition}}", condition
+                    )
                 )
             else:
                 workspace_path = None
@@ -304,7 +551,8 @@ def grade_iteration(iteration_dir: Path, evals_path: Path, project_dir: Path) ->
     return all_results
 
 
-def main():
+def main() -> None:
+    """Parse command-line arguments and run the requested grading mode."""
     parser = argparse.ArgumentParser(description="Deterministic grader for okf-schema evals")
     parser.add_argument("--evals", "-e", type=Path, default=Path("skills-evals/evals.json"))
     parser.add_argument("--project-dir", "-p", type=Path, default=Path("."))
