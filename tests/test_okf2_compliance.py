@@ -112,7 +112,7 @@ class TestValidateOkf2Generated:
     """Tests for the OKF 0.2 `generated` block validator."""
 
     def test_no_generated_no_timestamp_no_finding(self, tmp_path: Path) -> None:
-        """No generated or timestamp → no E8/W8 (W3 handles missing provenance)."""
+        """No generated or timestamp → no E7/W8 (W3 handles missing provenance)."""
         path = tmp_path / "f.md"
         path.touch()
         report = Report()
@@ -120,13 +120,13 @@ class TestValidateOkf2Generated:
         assert report.errors == []
         assert report.warnings == []
 
-    def test_e8_generated_missing_at(self, tmp_path: Path) -> None:
-        """E8: generated block present but missing `at`."""
+    def test_e7_generated_missing_at(self, tmp_path: Path) -> None:
+        """E7: generated block present but missing `at`."""
         path = tmp_path / "f.md"
         path.touch()
         report = Report()
         _validate_okf2_generated(path, {"generated": {"by": "bot:ci"}}, report)
-        assert any(f.code == "E8" for f in report.errors)
+        assert any(f.code == "E7" for f in report.errors)
 
     def test_w8_timestamp_present_no_generated(self, tmp_path: Path) -> None:
         """W8: deprecated `timestamp` field emits W8."""
@@ -147,13 +147,13 @@ class TestValidateOkf2Generated:
         assert report.errors == []
         assert report.warnings == []
 
-    def test_generated_non_dict_no_e8(self, tmp_path: Path) -> None:
-        """Non-dict `generated` value does not emit E8 (E4 handles schema errors)."""
+    def test_generated_non_dict_no_e7(self, tmp_path: Path) -> None:
+        """Non-dict `generated` value does not emit E7 (E4 handles schema errors)."""
         path = tmp_path / "f.md"
         path.touch()
         report = Report()
         _validate_okf2_generated(path, {"generated": "invalid"}, report)
-        assert not any(f.code == "E8" for f in report.errors)
+        assert not any(f.code == "E7" for f in report.errors)
 
 
 # ---------------------------------------------------------------------------
@@ -172,24 +172,24 @@ class TestValidateOkf2Sources:
         assert report.errors == []
         assert report.warnings == []
 
-    def test_e9_entry_missing_resource(self, tmp_path: Path) -> None:
-        """E9: sources entry missing `resource`."""
+    def test_e8_entry_missing_resource(self, tmp_path: Path) -> None:
+        """E8: sources entry missing `resource`."""
         path = tmp_path / "f.md"
         path.touch()
         report = Report()
         _validate_okf2_sources(
             path, {"sources": [{"id": "ref-1", "title": "X"}]}, "", tmp_path, report
         )
-        assert any(f.code == "E9" for f in report.errors)
+        assert any(f.code == "E8" for f in report.errors)
 
-    def test_valid_sources_no_e9(self, tmp_path: Path) -> None:
-        """Valid sources entry with resource → no E9."""
+    def test_valid_sources_no_e8(self, tmp_path: Path) -> None:
+        """Valid sources entry with resource → no E8."""
         path = tmp_path / "f.md"
         path.touch()
         report = Report()
         fm = {"sources": [{"resource": "https://example.com/paper.pdf", "id": "ref-1"}]}
         _validate_okf2_sources(path, fm, "", tmp_path, report)
-        assert not any(f.code == "E9" for f in report.errors)
+        assert not any(f.code == "E8" for f in report.errors)
 
     def test_w9_citations_heading_in_body(self, tmp_path: Path) -> None:
         """W9: body `# Citations` section emits W9."""
@@ -265,7 +265,7 @@ class TestValidateOkf2Sources:
         report = Report()
         fm = {"sources": {"resource": "https://example.com/"}}
         _validate_okf2_sources(path, fm, "", tmp_path, report)
-        assert not any(f.code == "E9" for f in report.errors)
+        assert not any(f.code == "E8" for f in report.errors)
 
     def test_non_dict_entry_skipped(self, tmp_path: Path) -> None:
         """Non-dict entries in sources list are skipped without error."""
@@ -274,8 +274,8 @@ class TestValidateOkf2Sources:
         report = Report()
         fm = {"sources": ["not-a-dict"]}
         _validate_okf2_sources(path, fm, "", tmp_path, report)
-        # No crash, no E9 for non-dict entries
-        assert not any(f.code == "E9" for f in report.errors)
+        # No crash, no E8 for non-dict entries
+        assert not any(f.code == "E8" for f in report.errors)
 
     def test_sources_not_list_or_dict(self, tmp_path: Path) -> None:
         """sources with invalid type (string) is skipped gracefully."""
@@ -302,21 +302,21 @@ class TestValidateOkf2Verified:
         assert report.errors == []
         assert report.warnings == []
 
-    def test_e10_missing_by(self, tmp_path: Path) -> None:
-        """E10: verified entry missing `by`."""
+    def test_e9_missing_by(self, tmp_path: Path) -> None:
+        """E9: verified entry missing `by`."""
         path = tmp_path / "f.md"
         path.touch()
         report = Report()
         _validate_okf2_verified(path, {"verified": [{"at": "2026-01-01"}]}, report)
-        assert any(f.code == "E10" for f in report.errors)
+        assert any(f.code == "E9" for f in report.errors)
 
-    def test_e10_missing_at(self, tmp_path: Path) -> None:
-        """E10: verified entry missing `at`."""
+    def test_e9_missing_at(self, tmp_path: Path) -> None:
+        """E9: verified entry missing `at`."""
         path = tmp_path / "f.md"
         path.touch()
         report = Report()
         _validate_okf2_verified(path, {"verified": [{"by": "human:alice"}]}, report)
-        assert any(f.code == "E10" for f in report.errors)
+        assert any(f.code == "E9" for f in report.errors)
 
     def test_w10_malformed_actor(self, tmp_path: Path) -> None:
         """W10: verified entry has malformed `by` actor string."""
@@ -438,15 +438,15 @@ class TestValidateConceptOkf2:
         validate_concept(path, report, tmp_path, None)
         assert any(f.code == "W3" for f in report.warnings)
 
-    def test_e8_generated_missing_at(self, tmp_path: Path) -> None:
-        """E8: generated block without at field."""
+    def test_e7_generated_missing_at(self, tmp_path: Path) -> None:
+        """E7: generated block without at field."""
         path = tmp_path / "concept.md"
         path.write_text(
             "---\ntype: concept\ntitle: T\ndescription: D\ngenerated:\n  by: bot:test\n---\n"
         )
         report = Report()
         validate_concept(path, report, tmp_path, None)
-        assert any(f.code == "E8" for f in report.errors)
+        assert any(f.code == "E7" for f in report.errors)
 
     def test_stale_concept_emits_w11(self, tmp_path: Path) -> None:
         """W11: stale concept file."""
@@ -479,7 +479,7 @@ class TestValidateMarkdownFilesOkf2:
         assert any(f.code == "W8" for f in report.warnings)
 
     def test_verified_fields_validated_via_validate_md(self, tmp_path: Path) -> None:
-        """E10 emitted by validate_markdown_files for invalid verified block."""
+        """E9 emitted by validate_markdown_files for invalid verified block."""
         path = tmp_path / "f.md"
         path.write_text(
             "---\ntype: concept\ntitle: T\ndescription: D\n"
@@ -487,4 +487,4 @@ class TestValidateMarkdownFilesOkf2:
             "verified:\n  - method: peer-review\n---\n"
         )
         report = validate_markdown_files([path])
-        assert any(f.code == "E10" for f in report.errors)
+        assert any(f.code == "E9" for f in report.errors)

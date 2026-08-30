@@ -164,9 +164,9 @@ The `validate-md` command checks the following (unless noted as bundle-only):
 | **E2** | `type` field is non-empty | Add `type: concept` |
 | **E4** | Frontmatter matches the schema | Match schema requirements |
 | **E5** | Lists in frontmatter are flattened | Use `[a, b, c]` not `[[a], [b], [c]]` |
-| **E8** | `generated` has valid structure | Use a mapping with `at` and optional `by` |
-| **E9** | Source IDs are unique | Give every `sources[]` item a distinct `id` |
-| **E10** | Lifecycle dates are valid | Use ISO 8601 values and a valid date order |
+| **E7** | `generated` has valid structure | Use a mapping with `at` and optional `by` |
+| **E8** | Source IDs are unique | Give every `sources[]` item a distinct `id` |
+| **E9** | Lifecycle dates are valid | Use ISO 8601 values and a valid date order |
 | **W1** | Recommended fields (`title`, `description`) are present | Add `title:` and `description:` |
 | **W3** | Provenance timestamp is present | Add `generated: {at: "2024-07-06T00:00:00Z"}` |
 | **W6** | Schema exists for the `type` value | Create or use an existing schema |
