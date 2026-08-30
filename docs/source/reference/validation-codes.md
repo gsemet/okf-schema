@@ -2,7 +2,7 @@
 
 This reference documents all validation codes returned by okf-schema's validation commands (`validate` and `validate-md`).
 
-## Error Codes (E0–E10)
+## Error Codes (E0–E9)
 
 Errors represent conformance violations that must be fixed before the validation passes.
 
@@ -146,25 +146,7 @@ Move the file to the correct location. For `log.md`, it must be at the root of y
 
 ---
 
-### E7: Retired
-
-`E7` formerly rejected non-reserved Markdown files at the bundle root. It is no
-longer emitted: OKF 0.2 explicitly permits concept documents both at the root
-and in subdirectories.
-
-For example, this structure is valid:
-```
-bundle/
-  index.md
-  log.md
-  overview.md
-  concepts/
-    details.md
-```
-
----
-
-### E8: `generated` Block Missing `at` Field
+### E7: `generated` Block Missing `at` Field
 
 **Severity**: Error (OKF 0.2)
 
@@ -194,7 +176,7 @@ Fix: `okf-schema lint --path <bundle>`
 
 ---
 
-### E9: `sources` Entry Missing `resource` Field
+### E8: `sources` Entry Missing `resource` Field
 
 **Severity**: Error (OKF 0.2)
 
@@ -220,7 +202,7 @@ Fix: add `resource: <URI-or-path>` to the sources entry.
 
 ---
 
-### E10: `verified` Entry Missing `by` or `at` Field
+### E9: `verified` Entry Missing `by` or `at` Field
 
 **Severity**: Error (OKF 0.2)
 
@@ -620,7 +602,7 @@ Use `--strict` in CI/CD pipelines to enforce best practices.
 
 When validating an OKF bundle, the following checks are applied:
 
-**All Markdown files**: E1, E2, E4, E5, E8-E10, W1, W2, W3, W6-W13
+**All Markdown files**: E1, E2, E4, E5, E7-E9, W1, W2, W3, W6-W13
 **Reserved files**: E3, E6
 **Bundle structure**: W4
 
@@ -632,7 +614,7 @@ Markdown concepts.
 
 When validating standalone markdown files without a bundle, the following checks are applied:
 
-**All files**: E1, E2, E4, E5, E8-E10, W1, W3, W6-W13
+**All files**: E1, E2, E4, E5, E7-E9, W1, W3, W6-W13
 
 **Not applied** (bundle-specific):
 - W2 (broken links require a common root for resolution)

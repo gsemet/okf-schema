@@ -93,9 +93,9 @@ deferred from `okf-schema` 0.2 support.
 
 | Code | Severity | Description |
 |------|----------|-------------|
-| E8   | Error    | `generated` block present but `at` field missing |
-| E9   | Error    | `sources` entry missing required `resource` field |
-| E10  | Error    | `verified` entry missing required `by` or `at` field |
+| E7   | Error    | `generated` block present but `at` field missing |
+| E8   | Error    | `sources` entry missing required `resource` field |
+| E9   | Error    | `verified` entry missing required `by` or `at` field |
 | W8   | Warning  | Deprecated `timestamp` field; use `generated.at` instead |
 | W9   | Warning  | Deprecated body `# Citations` section; use `sources` frontmatter |
 | W10  | Warning  | Malformed actor string in `verified[].by` |

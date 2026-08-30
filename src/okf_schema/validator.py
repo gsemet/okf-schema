@@ -1,12 +1,12 @@
 """OKF bundle validation engine.
 
-Implements conformance error (E1-E10) and best-practice warning (W1-W13)
+Implements conformance error (E1-E9) and best-practice warning (W1-W13)
 rules for validating OKF (Open Knowledge Format) bundles.
 
-OKF 0.2 additions (E8-E10, W8-W13):
-  E8  – `generated` block present but `at` field missing
-  E9  – `sources` entry missing required `resource` field
-  E10 – `verified` entry missing required `by` or `at` field
+OKF 0.2 additions (E7-E9, W8-W13):
+  E7 – `generated` block present but `at` field missing
+  E8 – `sources` entry missing required `resource` field
+  E9 – `verified` entry missing required `by` or `at` field
   W8  – Deprecated `timestamp` field; use `generated.at` instead
   W9  – Deprecated body `# Citations` section; use `sources` frontmatter
   W10 – Malformed actor string in `verified[].by`
@@ -274,9 +274,9 @@ def _validate_okf2_generated(
     frontmatter: dict,
     report: Report,
 ) -> None:
-    """Validate the OKF 0.2 `generated` block (E8, W8).
+    """Validate the OKF 0.2 `generated` block (E7, W8).
 
-    E8 — `generated` block present but `at` field missing.
+    E7 — `generated` block present but `at` field missing.
     W8 — Deprecated `timestamp` field present instead of `generated.at`.
     """
     generated = frontmatter.get("generated")
@@ -285,7 +285,7 @@ def _validate_okf2_generated(
     if generated is not None:
         if isinstance(generated, dict) and not generated.get("at"):
             report.add_error(
-                "E8",
+                "E7",
                 f"File '{path}' has 'generated' block but 'at' field is missing. "
                 "Fix: add 'generated.at: <ISO-8601-datetime>' to the frontmatter.",
                 path,
@@ -308,7 +308,7 @@ def _validate_okf2_sources(
     bundle_root: Path,
     report: Report,
 ) -> None:
-    """Validate the OKF 0.2 `sources` block and footnote integrity (E9, W9, W12, W13)."""
+    """Validate the OKF 0.2 `sources` block and footnote integrity (E8, W9, W12, W13)."""
     sources = frontmatter.get("sources")
 
     # W9 — deprecated body # Citations section
@@ -332,14 +332,14 @@ def _validate_okf2_sources(
     else:
         return
 
-    # E9 — each entry must have `resource`
+    # E8 — each entry must have `resource`
     valid_ids: set[str] = set()
     for i, entry in enumerate(sources_list):
         if not isinstance(entry, dict):
             continue
         if not entry.get("resource"):
             report.add_error(
-                "E9",
+                "E8",
                 f"File '{path}': sources entry [{i}] is missing required 'resource' field. "
                 "Fix: add 'resource: <URI-or-path>' to the sources entry.",
                 path,
@@ -401,7 +401,7 @@ def _validate_okf2_verified(
     frontmatter: dict,
     report: Report,
 ) -> None:
-    """Validate the OKF 0.2 `verified` block (E10, W10)."""
+    """Validate the OKF 0.2 `verified` block (E9, W10)."""
     verified = frontmatter.get("verified")
     if verified is None:
         return
@@ -423,7 +423,7 @@ def _validate_okf2_verified(
 
         if not by:
             report.add_error(
-                "E10",
+                "E9",
                 f"File '{path}': verified entry [{i}] is missing required 'by' field. "
                 "Fix: add 'by: <actor-string>' to the verified entry.",
                 path,
@@ -440,7 +440,7 @@ def _validate_okf2_verified(
 
         if not at:
             report.add_error(
-                "E10",
+                "E9",
                 f"File '{path}': verified entry [{i}] is missing required 'at' field. "
                 "Fix: add 'at: <ISO-8601-date>' to the verified entry.",
                 path,
@@ -529,7 +529,7 @@ def validate_concept(
 ) -> None:
     """Validate a single concept (non-reserved) ``.md`` file.
 
-    Checks E1, E2, E4, E5, E8-E10, W1, W2, W3, W6-W13.
+    Checks E1, E2, E4, E5, E7-E9, W1, W2, W3, W6-W13.
 
     Args:
         path: Path to the concept markdown file.
@@ -777,7 +777,7 @@ def validate_markdown_files(
 ) -> Report:
     """Validate standalone markdown files (not part of an OKF bundle).
 
-    Validates each file using E1, E2, E4, E5, E8-E10 and W1, W3,
+    Validates each file using E1, E2, E4, E5, E7-E9 and W1, W3,
     W6-W13 rules.
     Bundle-specific constraints (W4, E6, W5) are not applied.
     Links are not validated since there is no common root.
