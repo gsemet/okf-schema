@@ -24,6 +24,12 @@ from okf_schema._internal.utils import (
     collect_markdown_files,
 )
 from okf_schema._internal.yaml import extract_frontmatter, make_yaml
+from okf_schema.okfkb.derivations import (
+    DERIVATION_COMMENT,
+    build_derivation_graph,
+    document_id,
+    supports_derivation_graph,
+)
 
 
 @dataclass
@@ -287,6 +293,38 @@ def _update_frontmatter_links(
     return _fix_whitespace(f"---\n{new_fm}\n---\n{body}")
 
 
+# @implements_req SwRS-OKFSCHEMA-OKFKB-006
+def _update_frontmatter_derivations(
+    text: str,
+    expected: list[str],
+) -> str | None:
+    """Materialize computed ``derives_to`` values and their ownership comment."""
+    fm_text, body = extract_frontmatter(text)
+    if fm_text is None:
+        return None
+
+    y = make_yaml()
+    data = y.load(fm_text)
+    if data is None or not isinstance(data, CommentedMap):
+        return text
+
+    has_ownership_comment = f"# {DERIVATION_COMMENT}\nderives_to:" in fm_text
+    derives_to = CommentedSeq(expected)
+    derives_to.fa.set_flow_style()
+    if "derives_to" in data:
+        data["derives_to"] = derives_to
+    else:
+        insert_at = list(data).index("derived_from") + 1 if "derived_from" in data else len(data)
+        data.insert(insert_at, "derives_to", derives_to)
+    if not has_ownership_comment:
+        data.yaml_set_comment_before_after_key("derives_to", before=DERIVATION_COMMENT)
+
+    buf = io.StringIO()
+    y.dump(data, buf)
+    new_fm = buf.getvalue().rstrip("\n")
+    return _fix_whitespace(f"---\n{new_fm}\n---\n{body}")
+
+
 def format_file(
     path: Path,
     check: bool = False,
@@ -414,11 +452,14 @@ def lint_bundle(
         ...     lint_bundle(Path(directory), check=True, diff=False, links=True)
         []
     """
-    # Pre-compute link graph when links mode is enabled
+    # Pre-compute managed graphs when links mode is enabled.
     outgoing_graph: dict[str, list[str]] = {}
     incoming_graph: dict[str, list[str]] = {}
+    derivation_graph: dict[str, list[str]] | None = None
     if links:
         outgoing_graph, incoming_graph = build_link_graph(bundle)
+    if supports_derivation_graph(bundle):
+        derivation_graph = build_derivation_graph(bundle).derives_to
 
     results: list[FormattedResult] = []
     for path in collect_markdown_files(bundle):
@@ -434,6 +475,14 @@ def lint_bundle(
             link_updated = _update_frontmatter_links(linted, outgoing, incoming)
             if link_updated is not None:
                 linted = link_updated
+
+            if derivation_graph is not None and path.name not in {"index.md", "log.md"}:
+                identifier = document_id(path, bundle)
+                derivation_updated = _update_frontmatter_derivations(
+                    linted, derivation_graph.get(identifier, [])
+                )
+                if derivation_updated is not None:
+                    linted = derivation_updated
 
         if linted is None or linted == original:
             results.append(FormattedResult(path=path, changed=False))

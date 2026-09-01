@@ -52,7 +52,8 @@ allowed by the local schema:
   remain relevant under different contexts until reviewed.
 - `supersedes`: the newer Finding replaces an older account, measurement, or
   scoped understanding.
-- `derived_from`: the Finding was produced by an Experiment.
+- `derived_from`: canonical bundle-relative, extensionless paths of Experiments
+  that produced the Finding. The CLI computes reciprocal `derives_to` links.
 
 Consolidation appends reciprocal lifecycle metadata to the older Finding, such
 as `kb_status: contradicted`, `contradicted_by`, `kb_status: superseded`, or

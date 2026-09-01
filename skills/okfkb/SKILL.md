@@ -28,6 +28,8 @@ or implementation details of the tool itself.
    reading or writing KB documents. Local rules and schemas are authoritative.
 4. Inspect the bundle's `_schema/` files before inventing fields, statuses, or
    transitions. Preserve extension fields that the bundle already uses.
+5. Author derivation provenance with canonical bundle-relative, extensionless
+   `derived_from` paths. Treat `derives_to` as CLI-computed and never edit it.
 
 ## Route the intent
 
@@ -58,7 +60,7 @@ directly while preserving all guardrails.
   or supersede a Principle without explicit human agreement. Evidence may
   suggest a Principle but cannot decide one.
 - **Playbooks are operational knowledge.** The canonical type is `Playbook` in
-  `guides/`; revise or supersede it as experience changes.
+  `playbooks/`; revise or supersede it as experience changes.
 - **Outcomes describe intended deliverables**, not facts or procedures.
 - **References preserve external sources**, not locally inferred truth.
 

@@ -14,14 +14,15 @@ reading full documents.
 | Semantic | `Concept` | `concepts/` | What stable idea explains this? | Living document; update with evidence or deprecate. |
 | Semantic | `Structure` | `structures/` | How is this system composed or how does it work? | Living document; update with evidence or deprecate. |
 | Governance | `Principle` | `principles/` | What must, should, or must not be done? | Human-agreed and stable; never agent-decided. |
-| Operational | `Playbook` | `guides/` | How do we reproducibly achieve a result? | Mutable while active; deprecate or supersede. |
+| Operational | `Playbook` | `playbooks/` | How do we reproducibly achieve a result? | Mutable while active; deprecate or supersede. |
 | Planning | `Outcome` | `outcomes/` | What deliverable do we intend to achieve? | Tracks planned work and progress. |
 | Lookup | `Reference` | `reference/` | What does an external source say? | Immutable representation of an external source. |
 
 The local `_schema/` directory is authoritative when fields or statuses differ.
-For the bundled schema, use `derived_from` on Concepts and Structures and
-`supported_by` on Principles. Do not substitute prose-era aliases such as
-`promoted_from` unless the local schema explicitly permits them.
+For the bundled schema, every document type may use authored `derived_from`
+with canonical bundle-relative, extensionless paths. The CLI computes the
+reciprocal `derives_to`; agents never edit it. Do not use obsolete specialized
+aliases such as `supported_by`, `promoted_to`, or `derived_findings`.
 
 ## Normal knowledge flow
 
@@ -52,7 +53,7 @@ test.
 ### Living knowledge
 
 - Concepts and Structures may be updated in place as understanding changes.
-- Preserve `derived_from` evidence and add new supporting IDs.
+- Preserve `derived_from` evidence and add new canonical extensionless paths.
 - Log material semantic revisions. If the subject itself has been replaced,
   deprecating the old document and creating a new one may be clearer than
   rewriting it into a different idea.

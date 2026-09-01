@@ -23,10 +23,6 @@ allOf:
         description: Document type — must be "Hypothesis".
         type: string
         const: Hypothesis
-      derived_from:
-        description: IDs of Findings or Concepts that motivated this hypothesis.
-        type: array
-        items: { type: string }
       kb_status:
         description: Lifecycle state of the hypothesis.
         type: string
@@ -39,7 +35,4 @@ allOf:
         description: IDs of Findings that falsify this hypothesis.
         type: array
         items: { type: string }
-      promoted_to:
-        description: ID of the Concept or Structure this hypothesis was promoted into.
-        type: string
     required: [type, kb_status]

@@ -65,6 +65,18 @@ properties:
       KB-internal lifecycle state. The allowed vocabulary is defined by each
       concrete KB document schema.
     type: string
+  derived_from:
+    description: >-
+      Authored canonical bundle-relative, extensionless paths of documents
+      from which this document was derived.
+    type: array
+    items: { type: string }
+  derives_to:
+    description: >-
+      Generated canonical bundle-relative, extensionless paths of documents
+      derived from this document. Computed from their derived_from fields.
+    type: array
+    items: { type: string }
   links:
     type: array
     items:

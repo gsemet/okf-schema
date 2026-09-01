@@ -49,7 +49,9 @@ or outcomes. Those are deliberately promoted by `okfkb-distill`.
 4. If this Finding contradicts or replaces an earlier one, add
    `contradicts: [<finding-id>]` or `supersedes: [<finding-id>]`. Do not edit the
    older Finding.
-5. If an Experiment produced the Finding, add `derived_from: <experiment-id>`.
+5. If an Experiment produced the Finding, add
+   `derived_from: [experiments/<extensionless-name>]`. Never edit computed
+   `derives_to`.
 
 ## Immutability and validation
 

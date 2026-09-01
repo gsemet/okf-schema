@@ -1,201 +1,140 @@
-# Getting Started
+# Create and Validate Your First OKF Bundle
 
-This guide walks you through creating, navigating, and maintaining an
-OKF knowledge bundle. It assumes you have already installed `okf-schema`;
-see the [CLI Reference](../reference/cli.md) for installation instructions.
+In this tutorial, you will create an OKF bundle, add one document, and validate
+it. An **OKF bundle** is a directory of Markdown documents whose YAML
+frontmatter follows a schema.
 
-## Create a new bundle
+**Time:** about 5 minutes
 
-Use the `init` command to scaffold a bundle with the required directory
-structure and a base schema:
+**Prerequisite:** Follow the [installation guide](../installation.md) to install
+`okf-schema`. To work with a coding agent, also manually add the `okf-schema`
+skill to your project.
+
+## Create a bundle
+
+Run:
 
 ```bash
 okf-schema init my-knowledge-base
 ```
 
-This creates:
+The command creates the bundle and its starter schema:
 
-```
+```text
 my-knowledge-base/
 └── bundle/
-    ├── index.md          # Bundle root listing
-    ├── log.md            # Chronological update history
+    ├── index.md
+    ├── log.md
     └── _schema/
-        └── _base.schema.yaml   # Default JSONSchema for frontmatter
+        └── _base.schema.yaml
 ```
 
-The generated `_base.schema.yaml` is a starter schema. Validation selects a
-schema by the concept's `type`; `_base.schema.yaml` applies only when a type
-schema references it explicitly. Extend it and add matching type schemas in
-`_schema/` as your bundle grows.
+`index.md` lists the bundle contents. `log.md` records important changes.
+Files in `_schema/` define which frontmatter fields are valid.
 
-## Add your first concept
+## Add one document
 
-A **concept** is a single markdown file with YAML frontmatter. Create one
-with the `new` command:
+Each knowledge item is one Markdown file. Create a document about an API
+endpoint:
 
 ```bash
 okf-schema new --path my-knowledge-base/bundle \
-               --name tables/orders \
-               --type "BigQuery Table" \
-               --title "Customer Orders"
+    --name api/health-check \
+    --type "API Endpoint" \
+    --title "Health Check"
 ```
 
-This produces `my-knowledge-base/bundle/tables/orders.md`:
+The new file contains:
 
 ```markdown
 ---
-type: BigQuery Table
-title: Customer Orders
+type: API Endpoint
+title: Health Check
 description: ""
 tags: []
 ---
-
 ```
 
-Fill in the body with structured content: a schema section, examples,
-citations, or free-form prose. Keep each concept focused on a single
-unit of truth.
+Open `my-knowledge-base/bundle/api/health-check.md` and add a short body below
+the frontmatter:
 
-## Navigate the bundle
+```markdown
+# Health Check
 
-### List everything
+`GET /health` reports whether the service is ready to receive requests.
+```
+
+Keep each document focused on one subject. It can grow later as you learn more.
+
+You can ask a coding agent to author the content instead:
+
+> Use the `okf-schema` skill to complete `api/health-check.md`. Describe only
+> the `GET /health` endpoint, keep the document concise, and validate the bundle
+> when finished.
+
+The skill helps the agent preserve valid frontmatter and use the bundle's local
+schema instead of inventing a format.
+
+## Inspect the bundle
+
+List the documents:
 
 ```bash
 okf-schema list --path my-knowledge-base/bundle
 ```
 
-### See bundle statistics
+Inspect the document and its frontmatter:
 
 ```bash
-okf-schema stats --path my-knowledge-base/bundle
+okf-schema show --path my-knowledge-base/bundle api/health-check
 ```
 
-### Show a specific concept
-
-```bash
-okf-schema show --path my-knowledge-base/bundle tables/orders
-```
-
-### Inspect backlinks
-
-Discover which concepts link to a given file:
-
-```bash
-okf-schema backlinks --path my-knowledge-base/bundle tables/orders
-```
-
-### Generate or refresh index files
-
-`index.md` files provide progressive disclosure: a table of contents for
-each directory. Generate them automatically:
+Refresh the generated indexes:
 
 ```bash
 okf-schema index --path my-knowledge-base/bundle
 ```
 
-## Validate and lint
+## Validate your work
 
-Before committing changes, ensure the bundle is conformant:
+Run the validator before committing bundle changes:
 
 ```bash
-# Standard validation
 okf-schema validate --path my-knowledge-base/bundle
-
-# Strict mode — warnings become errors
-okf-schema validate --path my-knowledge-base/bundle --strict
 ```
 
-Normalize frontmatter formatting (flatten nested lists, inline block
-style, and auto-update `links`/`backlinks`):
+Then normalize the frontmatter and generated link metadata:
 
 ```bash
 okf-schema lint --path my-knowledge-base/bundle
 ```
 
-Use `--no-links` to skip updating link metadata.
-
-Run both in sequence before every commit to keep the bundle clean.
-
-## Maintain the bundle
-
-### Log changes
-
-Update the root `log.md` with a dated entry:
-
-```markdown
-## 2026-07-02
-
-* **Creation**: Added [orders table](tables/orders.md) for sales analytics.
-* **Update**: Linked orders to [customers](tables/customers.md) via `customer_id`.
-```
-
-This creates an audit trail that humans and agents can scan to understand
-the evolution of the knowledge base.
-
-### Cross-link aggressively
-
-Use relative links (`../tables/customers.md` or `./orders.md`) to connect
-related concepts. A dense graph of small, interlinked documents is more
-useful than a few monolithic pages.
-
-### Validate in CI
-
-Add a check to your continuous integration pipeline:
+Use strict validation when warnings should also fail the command:
 
 ```bash
 okf-schema validate --path my-knowledge-base/bundle --strict
 ```
 
-This prevents malformed or incomplete concepts from reaching the main
-branch.
+You now have a bundle containing one indexed, validated knowledge document.
 
-## Design principles for a healthy knowledge base
+## If validation fails
 
-### Prefer small chunks of truth
+Read the first diagnostic and open the named file. Common causes are:
 
-Each concept should describe one thing — a table, a metric, a playbook,
-an API endpoint. When a concept grows beyond a few screenfuls, split it
-into linked sub-concepts. Small documents are easier to read, validate,
-and update.
+- missing `---` delimiters around YAML frontmatter;
+- a missing required field such as `type` or `title`;
+- invalid YAML indentation; or
+- a field whose value does not match its schema.
 
-### Connect everything
+Fix that diagnostic and run `validate` again. Later diagnostics may be effects
+of the first malformed field.
 
-A knowledge base is a graph, not a folder hierarchy. Every concept
-should link to related concepts: a table links to its dataset, a metric
-links to the tables it queries, a playbook links to the resources it
-operates on. Dense cross-linking makes the bundle navigable by both
-humans and agents.
+## Next steps
 
-### Let agents maintain the bundle
-
-OKF is designed for agentic workflows. Use agents to:
-
-* **Generate** concepts from source code, APIs, or databases.
-* **Validate** that frontmatter is complete and links are not broken.
-* **Index** directories automatically when the structure changes.
-* **Lint** frontmatter to keep formatting consistent.
-
-The CLI is built for automation: commands report validation and runtime
-failures with a non-zero status and use predictable textual output.
-
-## See also
-
-- [CLI Reference](../reference/cli.md) — complete command reference.
-- [Building a Knowledge Graph](knowledge-graph) — advanced tutorial on cross-linking concepts.
-- [Bootstrap a Knowledge Base](../how-to/bootstrap-knowledge-base) — setting up the opinionated KB variant.
-- [Validate in CI](../how-to/validate-in-ci) — automating checks in your pipeline.
-- [Design Principles](../explanation/design-principles) — the ideas behind OKF-Schema.
-
-### Challenge and confirm data
-
-Treat the knowledge base as a living document, not a static archive:
-
-* **Challenge**: Periodically ask whether a concept is still accurate.
-  Does the schema match the current table? Does the playbook still
-  reflect the on-call procedure?
-* **Confirm**: When an agent or human verifies a concept, update
-  `generated.at` (and `generated.by` when known) and add a note to `log.md`.
-* **Infirm**: When a concept becomes obsolete, do not delete it
-  immediately. Mark it with the OKF lifecycle field `status: deprecated` and link to its
-  replacement. This preserves historical context.
+- [Link Two Documents and Explore Backlinks](knowledge-graph.md) adds the first
+  relationship to your bundle.
+- [CLI Reference](../reference/cli.md) lists every command and option.
+- [Write a Custom Schema](../how-to/write-custom-schema.md) explains how to
+  validate project-specific document types.
+- [Design Principles](../explanation/design-principles.md) explains why OKF
+  favors small, connected documents.

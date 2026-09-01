@@ -44,10 +44,6 @@ allOf:
         description: Lifecycle state of the experiment template.
         type: string
         enum: [proposed, active, retired, superseded]
-      derived_findings:
-        description: IDs of Findings produced by running this experiment.
-        type: array
-        items: { type: string }
       superseded_by:
         description: IDs of documents that supersede this experiment.
         type: array

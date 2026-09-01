@@ -26,6 +26,7 @@ tags: [pll, oscillator, temperature]
 links: []
 backlinks: []
 kb_status: active
+derives_to: [concepts/boot-pll-startup-margin]
 ---
 # Finding
 PLL lock drifts with temperature.
@@ -53,7 +54,8 @@ type: Concept
 title: Boot PLL startup margin
 confidence: high
 kb_status: deprecated
-promoted_from: [findings/2026.07.03-14.20-pll-temp-drift.md]
+derived_from: [findings/2026.07.03-14.20-pll-temp-drift]
+derives_to: []
 links: [principles/firmware-timeouts-must-be-polled.md]
 backlinks: []
 tags: [pll, boot]
@@ -130,7 +132,8 @@ def test_load_nodes_node_fields_parsed(kb_bundle: Path) -> None:
     assert node.status == "deprecated"
     assert "pll" in node.tags
     assert node.links() == ["principles/firmware-timeouts-must-be-polled.md"]
-    assert node.promoted_from() == ["findings/2026.07.03-14.20-pll-temp-drift.md"]
+    assert node.derived_from() == ["findings/2026.07.03-14.20-pll-temp-drift"]
+    assert node.derives_to() == []
 
 
 # ---------------------------------------------------------------------------
@@ -411,7 +414,7 @@ description: Uniquetoken pollingfix deliverable.
 status: planned
 priority: 2
 links: concepts/boot-pll-startup-margin.md
-promoted_from:
+derives_to:
 tags: fix
 ---
 # Outcome
@@ -448,9 +451,9 @@ def kb_bundle_extra(kb_bundle: Path) -> Path:
     (kb_bundle / "_schema").mkdir()
     (kb_bundle / "_schema" / "Finding.schema.yaml").write_text("type: object\n", encoding="utf-8")
     # A node without a frontmatter title (title falls back to the file stem).
-    (kb_bundle / "guides").mkdir()
-    (kb_bundle / "guides" / "untitled-note.md").write_text(
-        "---\ntype: Guide\nstatus: active\n---\n# Note\n", encoding="utf-8"
+    (kb_bundle / "playbooks").mkdir()
+    (kb_bundle / "playbooks" / "untitled-note.md").write_text(
+        "---\ntype: Playbook\nstatus: active\n---\n# Note\n", encoding="utf-8"
     )
     return kb_bundle
 
@@ -463,7 +466,7 @@ def test_as_str_list_scalar_string_coerced_to_list(kb_bundle_extra: Path) -> Non
 
 def test_as_str_list_none_value_is_empty(kb_bundle_extra: Path) -> None:
     node = navigate.get(kb_bundle_extra, "outcomes/fix-bootloader-pll-polling.md")
-    assert node.promoted_from() == []
+    assert node.derives_to() == []
 
 
 def test_search_scoring_branches_body_only_match(kb_bundle_extra: Path) -> None:
@@ -529,14 +532,14 @@ def test_read_and_get_markdown_get_md_format_cli(kb_bundle: Path) -> None:
 
 def test_read_and_get_markdown_query_table_no_matches(kb_bundle: Path) -> None:
     runner = CliRunner()
-    result = runner.invoke(kb, ["query", "type:guide", str(kb_bundle)])
+    result = runner.invoke(kb, ["query", "type:playbook", str(kb_bundle)])
     assert result.exit_code == 0, result.output
     assert "No matching nodes." in result.output
 
 
 def test_read_and_get_markdown_read_empty_tier(kb_bundle: Path) -> None:
     runner = CliRunner()
-    result = runner.invoke(kb, ["read", "guides", str(kb_bundle)])
+    result = runner.invoke(kb, ["read", "playbooks", str(kb_bundle)])
     assert result.exit_code == 0, result.output
     assert "No matching nodes." in result.output
 
@@ -609,8 +612,8 @@ def test_operator_branches_description_scoring(kb_bundle_extra: Path) -> None:
 
 
 def test_operator_branches_title_fallback_to_stem(kb_bundle_extra: Path) -> None:
-    nodes = navigate.query(kb_bundle_extra, "type:guide title:~untitled")
-    assert [n.path for n in nodes] == ["guides/untitled-note.md"]
+    nodes = navigate.query(kb_bundle_extra, "type:playbook title:~untitled")
+    assert [n.path for n in nodes] == ["playbooks/untitled-note.md"]
 
 
 def test_operator_branches_list_field_ordered_op_is_false(kb_bundle: Path) -> None:

@@ -1,5 +1,11 @@
 ## Unreleased
 
+### Feat
+
+- **okfkb**: maintain canonical derivation links
+
+## v0.11.1 (2026-08-31)
+
 ### Fix
 
 - refactor okfreq skill with base knowledge

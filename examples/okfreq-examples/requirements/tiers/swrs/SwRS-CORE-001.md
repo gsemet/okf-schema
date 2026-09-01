@@ -1,17 +1,17 @@
 ---
 type: SwRS
-id: SwRS-default-001
-uuid: a781661b-513f-41b5-aa87-e9d93f599ee0
+id: SwRS-CORE-001
+uuid: 00000000-0000-4000-8000-000000000002
 title: Write CSV output
 description: When export is requested, the service SHALL write the report as CSV
   output.
 project: OKFREQXMP
-scope: default
+scope: Core
 lifecycle: draft
 origin: native
 tier: SwRS
 derives_from:
-- StRS-default-001
+- StRS-CORE-001
 annotation_exemption: false
 exemption_reason:
 derived_by: []
@@ -27,22 +27,22 @@ tested_in_files:
 
 When export is requested, the service SHALL write the report as CSV output.
 
-### Scenario: <nominal behavior>
+### Scenario: Export selected rows
 
-- GIVEN <precondition and relevant inputs>
-- WHEN <trigger or action>
-- THEN <single observable, verifiable outcome>
+- GIVEN a report containing selected rows
+- WHEN CSV export is requested
+- THEN the service returns UTF-8 CSV with one record per selected row
 
-### Scenario: <boundary or failure behavior>
+### Scenario: Export an empty selection
 
-- GIVEN <boundary precondition or failure>
-- WHEN <trigger or action>
-- THEN <observable recovery, rejection, or boundary outcome>
+- GIVEN a report with no selected rows
+- WHEN CSV export is requested
+- THEN the service returns an empty CSV document without failing
 
 ### Verification notes
 
 <!-- Name the verification method, evidence, and boundaries. Do not claim
      coverage until implementation and test markers exist. -->
 
-- Method: <test, inspection, analysis, or demonstration>
-- Criteria: <objective pass condition>
+- Method: test
+- Criteria: Automated tests compare exact CSV output for populated and empty inputs.

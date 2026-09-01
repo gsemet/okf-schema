@@ -1,0 +1,18 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: swrs.schema.yaml
+title: okfreq swrs requirement profile
+allOf:
+- $ref: base.schema.yaml
+- type: object
+  properties:
+    type:
+      const: SwRS
+    tier:
+      const: SwRS
+    annotation_exemption:
+      type: boolean
+  required:
+  - type
+  - tier
+  - annotation_exemption
+

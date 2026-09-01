@@ -1,6 +1,6 @@
 """Validate Open Knowledge Format (OKF) bundles and standalone documents.
 
-Implements conformance error (E1-E9) and best-practice warning (W1-W13)
+Implements conformance error (E1-E9) and best-practice warning (W1-W14)
 rules. :func:`validate_bundle` is the main entry point for a bundle;
 :func:`validate_markdown_files` validates documents without bundle-level rules.
 
@@ -14,6 +14,7 @@ OKF 0.2 additions (E7-E9, W8-W13):
   W11 – File is stale (`stale_after` date has passed)
   W12 – Footnote `[^id]` with no matching `sources[].id`
   W13 – Broken path in path-form `resource` or `sources[].resource`
+  W14 – Invalid authored OKFKB derivation or stale computed `derives_to`
 
 Examples:
     >>> from tempfile import TemporaryDirectory
@@ -43,6 +44,11 @@ from okf_schema._internal.utils import (
     find_broken_links,
 )
 from okf_schema._internal.yaml import extract_frontmatter, make_yaml, parse_yaml
+from okf_schema.okfkb.derivations import (
+    build_derivation_graph,
+    content_document_paths,
+    supports_derivation_graph,
+)
 
 # Matches OKF actor strings: <prefix>:<identifier>  e.g. human:alice, bot:ci
 _ACTOR_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*:.+$")
@@ -833,6 +839,34 @@ def validate_bundle(
             _check_reserved_file_naming(path, report, bundle)
         else:
             validate_concept(path, report, bundle, schemas)
+
+    # W14 — OKFKB computed reverse derivations are missing, stale, or based
+    # on invalid authored canonical paths. Validation is deliberately read-only.
+    # @implements_req SwRS-OKFSCHEMA-OKFKB-006
+    if supports_derivation_graph(bundle):
+        graph = build_derivation_graph(bundle)
+        documents = content_document_paths(bundle)
+        for invalid in graph.invalid:
+            path = documents[invalid.document_id]
+            report.add_warning(
+                "W14",
+                f"Authored derived_from value '{invalid.source_id}' in '{path}' is not "
+                "an existing canonical bundle-relative extensionless document path",
+                path,
+            )
+        for identifier, path in documents.items():
+            text = path.read_text(encoding="utf-8")
+            fm_text, _body = extract_frontmatter(text)
+            frontmatter = parse_yaml(fm_text) if fm_text is not None else None
+            actual = frontmatter.get("derives_to") if isinstance(frontmatter, dict) else None
+            expected = graph.derives_to[identifier]
+            if actual != expected:
+                report.add_warning(
+                    "W14",
+                    f"Computed derives_to in '{path}' is stale or missing; expected "
+                    f"{expected!r}. Run 'okfkb update <bundle>'.",
+                    path,
+                )
 
     # W4 — directories missing index.md
     for directory in dirs_with_md:

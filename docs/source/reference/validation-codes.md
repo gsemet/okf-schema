@@ -227,7 +227,7 @@ Fix: add `by: <actor>` and `at: <ISO-8601-date>` to the verified entry.
 
 ---
 
-## Warning Codes (W0–W13)
+## Warning Codes (W0–W14)
 
 Warnings indicate best-practice violations or missing metadata. Validation passes with warnings unless `--strict` mode is enabled.
 
@@ -571,6 +571,34 @@ Stable code: `W13`
 
 ---
 
+### W14: Stale or Invalid OKFKB Derivation Graph
+
+**Severity**: Warning (OKFKB bundle validation only)
+
+**Description**: An authored `derived_from` entry is not an existing canonical
+bundle-relative, extensionless document path, or the CLI-computed `derives_to`
+reflection is missing or stale. Validation reports this condition without
+modifying files.
+
+**How to Fix**:
+
+Correct invalid authored paths, then recompute managed graph fields:
+
+```bash
+okfkb update <bundle>
+```
+
+Do not edit fields below this frontmatter separator manually:
+
+```yaml
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
+```
+
+Stable code: `W14`
+
+---
+
 ## Exit Codes
 
 | Exit Code | Meaning |
@@ -602,7 +630,7 @@ Use `--strict` in CI/CD pipelines to enforce best practices.
 
 When validating an OKF bundle, the following checks are applied:
 
-**All Markdown files**: E1, E2, E4, E5, E7-E9, W1, W2, W3, W6-W13
+**All Markdown files**: E1, E2, E4, E5, E7-E9, W1, W2, W3, W6-W14
 **Reserved files**: E3, E6
 **Bundle structure**: W4
 
@@ -619,6 +647,7 @@ When validating standalone markdown files without a bundle, the following checks
 **Not applied** (bundle-specific):
 - W2 (broken links require a common root for resolution)
 - W4 (directory structure validation)
+- W14 (OKFKB derivation graphs require a bundle and local schema)
 - E3, E6 (bundle structure rules)
 
 ---

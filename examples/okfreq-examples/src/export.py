@@ -8,7 +8,7 @@ import csv
 import io
 
 
-# @implements_req SwRS-default-001
+# @implements_req SwRS-CORE-001
 def export_rows(rows: list[list[str]]) -> str:
     r"""Return rows as comma-separated values (CSV) with Unix line endings.
 

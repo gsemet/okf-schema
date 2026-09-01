@@ -9,8 +9,10 @@ Record exactly one dated, falsifiable Finding after an investigation. Write it t
 `knowledge/findings/<slug>.md`, preserve the actual context and caveats, and do
 not rewrite earlier findings. Use the Finding frontmatter required by the
 knowledge-base schema, including `generated.at`, `generated.by`, and
-`kb_status: active`. Do not use this skill for standards, stable concepts,
-structures, or outcomes; those are handled by `okfkb-distill`.
+`kb_status: active`. When an Experiment produced the Finding, author
+`derived_from: [experiments/<extensionless-name>]`; never edit CLI-computed
+`derives_to`. Do not use this skill for standards, stable concepts, structures,
+or outcomes; those are handled by `okfkb-distill`.
 
 After recording, run `just knowledge-lint` and `just knowledge-validate`. Never
 edit or delete a Finding body; corrections are new Findings. Do not run the

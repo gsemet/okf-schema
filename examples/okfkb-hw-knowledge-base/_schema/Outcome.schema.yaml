@@ -29,10 +29,6 @@ allOf:
       deliverable:
         description: Description of the concrete artifact or result to be produced.
         type: string
-      derived_from:
-        description: IDs of Concepts, Structures, or Principles that motivate this outcome.
-        type: array
-        items: { type: string }
       execution_playbooks:
         description: IDs of Playbooks that describe how to achieve this outcome.
         type: array

@@ -21,7 +21,7 @@ my-docs/
 
 # After
 my-okf-docs/bundle/
-  guides/
+  playbooks/
     setup.md
   reference/
     api.md

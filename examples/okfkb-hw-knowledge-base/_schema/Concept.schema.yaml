@@ -26,10 +26,6 @@ allOf:
         description: Lifecycle state of the concept.
         type: string
         enum: [active, deprecated]
-      derived_from:
-        description: IDs of Findings or Hypotheses that support this Concept.
-        type: array
-        items: { type: string }
       related_concepts:
         description: IDs of other Concept documents that deepen or contrast this idea.
         type: array

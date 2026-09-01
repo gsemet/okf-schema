@@ -12,6 +12,9 @@ from io import StringIO
 from pathlib import Path
 
 from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
+from okf_schema.okfkb.derivations import DERIVATION_COMMENT
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
@@ -91,21 +94,27 @@ def new_finding(
     yaml.default_flow_style = False
     yaml.width = 100
 
-    frontmatter: dict[str, object] = {
-        "type": "Finding",
-        "title": title,
-        "description": description if description is not None else title,
-        "confidence": confidence,
-        "context": context,
-        "generated": {
-            "at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "by": "bot:okf-schema",
-        },
-        "tags": list(tags) if tags else [],
-        "links": [],
-        "backlinks": [],
-        "kb_status": "active",
-    }
+    frontmatter: CommentedMap = CommentedMap(
+        {
+            "type": "Finding",
+            "title": title,
+            "description": description if description is not None else title,
+            "confidence": confidence,
+            "context": context,
+            "generated": {
+                "at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "by": "bot:okf-schema",
+            },
+            "tags": list(tags) if tags else [],
+            "links": [],
+            "backlinks": [],
+            "kb_status": "active",
+        }
+    )
+    derives_to = CommentedSeq()
+    derives_to.fa.set_flow_style()
+    frontmatter["derives_to"] = derives_to
+    frontmatter.yaml_set_comment_before_after_key("derives_to", before=DERIVATION_COMMENT)
 
     buf = StringIO()
     yaml.dump(frontmatter, buf)

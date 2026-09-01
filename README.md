@@ -401,7 +401,7 @@ okf-schema stats --path examples/ai-llm-knowledge-base
 `okf-schema` includes a dedicated knowledge-base subcommand group (`okfkb`) for managing OKF
 bundles designed for agent-facing experimental findings. A knowledge base is an
 opinionated OKF bundle with 9 content directories (concepts, experiments,
-findings, guides, hypotheses, outcomes, principles, reference, and structures)
+findings, hypotheses, outcomes, playbooks, principles, reference, and structures)
 and 10 YAML schemas including the shared base schema.
 
 ```bash
@@ -444,11 +444,12 @@ can actively pull the right granularity instead of loading whole folders:
     ```bash
     okfkb query "type:finding confidence:>=high tag:pll status:active"
     ```
-  - **Arrow traversal** (a pocket-Cypher over `links` / `backlinks` / promotion edges):
-    `->` follows `links`, `<-` follows `backlinks`, `^` follows `promoted_from`:
+  - **Arrow traversal** (a pocket-Cypher over links and derivation edges):
+    `->` follows `links`, `<-` follows `backlinks`, and `^` follows computed
+    `derives_to` edges:
     ```bash
-    okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
-    okfkb query "concept[title~boot] <- finding"
+    okfkb query "finding[tag=pll,confidence=high] ^ concept ^ principle"
+    okfkb query "concept[title~boot] -> playbook"
     ```
 
 **For full KB documentation and commands**, see the [OKF Knowledge Base reference](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html).

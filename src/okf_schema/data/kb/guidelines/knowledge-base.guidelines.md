@@ -19,7 +19,7 @@ document is the strict minimal rule set for maintaining it correctly.
 | A stable idea / "what is this?" | `Concept` | `concepts/` | Semantic | Explanatory, mutable |
 | How an object is composed / works | `Structure` | `structures/` | Semantic | Descriptive, mutable |
 | A human-agreed standard | `Principle` | `principles/` | Governance | Normative, stable |
-| A reproducible workflow | `Playbook` | `guides/` | Operational | Procedural, mutable |
+| A reproducible workflow | `Playbook` | `playbooks/` | Operational | Procedural, mutable |
 | A planned deliverable | `Outcome` | `outcomes/` | Planning | Goal-oriented, mutable |
 | External papers, lookup tables | `Reference` | `reference/` | Lookup | Lookup, immutable |
 
@@ -56,6 +56,11 @@ generated:
 ```
 
 Type-specific required fields:
+
+Authors and agents may add `derived_from` using canonical bundle-relative,
+extensionless paths. `okfkb update` computes the reciprocal `derives_to` field
+under `# knowledge graph fields generated automatically — do not edit manually`.
+Never hand-edit `derives_to`.
 
 - **Finding**: also `generated.at`, `confidence` (`low|medium|high|confirmed`), and `context`
   (what you believed and the scope you actually tested).

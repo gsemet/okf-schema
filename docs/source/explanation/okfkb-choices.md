@@ -54,7 +54,7 @@ In okfkb, every document has a *tier* that reflects its maturity and confidence 
 | **principles/** | Durable, team-agreed standards and "directions" | Human decision; replaces ad-hoc convention | Policy |
 | **outcomes/** | Planned projects or deliverables to build from knowledge | Track what you'll *build* from KB | Commitment |
 | **reference/** | External sources: papers, links, third-party docs | Archive findings backed by citations | External |
-| **guides/** | Operational how-to notes (orthogonal to other tiers) | Record repeatable processes | Procedural |
+| **playbooks/** | Operational how-to notes (orthogonal to other tiers) | Record repeatable processes | Procedural |
 
 The key insight: **each tier answers a different question an agent might ask** —
 "What did we observe?", "What's stable enough to rely on?", "What's still open?", "What must we build?"
@@ -175,7 +175,9 @@ concepts/cache-eviction-under-load.md
   title: Cache LRU Eviction Becomes Aggressive Above 700 RPS
   confidence: high
   kb_status: active
-  promoted_from: [findings/2026.07.01-10.30-cache-hit-rate-drops.md, ...]
+  derived_from: [findings/2026.07.01-10.30-cache-hit-rate-drops, ...]
+  # knowledge graph fields generated automatically — do not edit manually
+  derives_to: []
   links: [structures/cache-subsystem.md, principles/cache-tuning-policy.md]
   ---
 
@@ -271,17 +273,19 @@ This is vastly better than burying metadata in headings or relying on filename c
 
 ## Links and Backlinks: Navigation Without the Filesystem
 
-Every okfkb file carries two arrays in its frontmatter:
+Every okfkb file carries managed navigation arrays in its frontmatter:
 
 - **`links`** — bundle-relative paths that *this* document explicitly references
 - **`backlinks`** — paths of documents that reference *this* one
+- **`derives_to`** — computed extensionless paths of documents whose authored
+  `derived_from` points to this document
 
 When you run `okfkb update my-kb/`, the tool:
 
 1. Scans every markdown body for relative links
-2. Rewrites each document's `links` and `backlinks` metadata
+2. Rewrites each document's `links`, `backlinks`, and `derives_to` metadata
 3. Writes `index.md` summaries (tables of contents)
-4. Leaves the human-authored `log.md` unchanged
+4. Leaves authored `derived_from` and the human-authored `log.md` unchanged
 
 **Why this matters for agents**: An agent reading `concepts/cache-subsystem.md` can immediately
 navigate to all related findings, experiments, and principles via frontmatter fields alone.
@@ -384,8 +388,8 @@ descending to raw findings only when the higher tiers are insufficient.
   Because confidence is *ordinal* (`low` < `medium` < `high` < `confirmed`), range operators
   like `>=high` fall out naturally.
 - An **arrow traversal** (`finding[tag=pll] -> concept -> principle`) — a pocket-Cypher over
-  the `links` / `backlinks` / `promoted_from` edges that already exist in frontmatter. `->`
-  follows `links`, `<-` follows `backlinks`, `^` follows promotion. This turns the implicit
+  the `links` / `backlinks` / `derives_to` edges that already exist in frontmatter. `->`
+  follows `links`, `<-` follows `backlinks`, and `^` follows derivation. This turns the implicit
   knowledge graph into something an agent can *walk* ("from these findings, what concepts did
   they promote into, and what principles govern them?").
 
