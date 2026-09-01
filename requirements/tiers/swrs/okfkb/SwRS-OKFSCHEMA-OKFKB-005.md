@@ -13,12 +13,11 @@ tier: SwRS
 derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
-exemption_reason: null
+exemption_reason:
 derived_by: []
 implemented_in_files:
 - src/okf_schema/data/kb/skills/okfkb-distill/SKILL.md
-tested_in_files:
-- tests/test_kb_install.py
+tested_in_files: []
 ---
 
 ## EARS Expression

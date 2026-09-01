@@ -34,6 +34,7 @@ from okf_schema.okfreq.core import (
     write_markdown_report,
     write_report_schema,
 )
+from okf_schema.skill_cli import _register_install_skills
 
 
 class _HelpCommand(click.Command):
@@ -73,6 +74,9 @@ def _fail(exc: RequirementError) -> click.ClickException:
 def okfreq() -> None:
     """Create, validate, trace, and maintain OKF requirements."""
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-001
+
+
+_register_install_skills(okfreq, "okfreq")
 
 
 @okfreq.command("init")

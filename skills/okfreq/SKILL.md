@@ -18,6 +18,20 @@ This skill explains the **requirements and traceability lifecycle**. Use the
 `okf-schema` skill for generic OKF conformance, schemas, frontmatter mechanics,
 or implementation details of the underlying tool.
 
+## Installation
+
+Install or upgrade the Python CLI tool with `uv`:
+
+```bash
+uv tool install okf-schema
+uv tool upgrade okf-schema
+```
+
+This tool installation exposes the `okf-schema`, `okfkb`, and `okfreq` console
+commands. It is separate from installing agent skill folders: use
+`okfreq install-skills` to copy the packaged `okfreq` skill family into an
+agent's skills directory.
+
 ## Start with project rules
 
 1. Locate the requirements bundle. Prefer an explicit path, then a top-level

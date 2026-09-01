@@ -1,0 +1,134 @@
+{
+  "gate_runs": [
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T11:42:18Z",
+      "ended_at": "2026-09-01T11:42:32.232629Z",
+      "token_count": null
+    },
+    {
+      "gate": "task_inspector",
+      "started_at": "2026-09-01T11:46:42.727159Z",
+      "ended_at": "2026-09-01T11:52:18.001105Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T11:57:21Z",
+      "ended_at": "2026-09-01T11:57:23.573722Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T11:57:43Z",
+      "ended_at": "2026-09-01T11:57:44.936559Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T11:58:35Z",
+      "ended_at": "2026-09-01T11:58:36.251963Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T11:58:49Z",
+      "ended_at": "2026-09-01T11:58:55.686600Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T11:59:34Z",
+      "ended_at": "2026-09-01T11:59:41.704210Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T12:01:06Z",
+      "ended_at": "2026-09-01T12:01:13.617436Z",
+      "token_count": null
+    },
+    {
+      "gate": "task_inspector",
+      "started_at": "2026-09-01T12:02:46Z",
+      "ended_at": "2026-09-01T12:09:10.695453Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T12:14:34Z",
+      "ended_at": "2026-09-01T12:15:01.494096Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T12:17:46Z",
+      "ended_at": "2026-09-01T12:18:18.498457Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T12:26:07Z",
+      "ended_at": "2026-09-01T12:26:19.646859Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T12:34:39Z",
+      "ended_at": "2026-09-01T12:35:09.126649Z",
+      "token_count": null
+    },
+    {
+      "gate": "task_inspector",
+      "started_at": "2026-09-01T12:37:30.913934Z",
+      "ended_at": "2026-09-01T12:41:08.484818Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T22:41:47Z",
+      "ended_at": "2026-09-01T22:42:22.194502Z",
+      "token_count": null
+    },
+    {
+      "gate": "task_inspector",
+      "started_at": "2026-09-01T22:49:16.907942Z",
+      "ended_at": "2026-09-01T22:49:16.907954Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T22:54:21Z",
+      "ended_at": "2026-09-01T22:54:42.929820Z",
+      "token_count": null
+    },
+    {
+      "gate": "task_inspector",
+      "started_at": "2026-09-01T22:56:42.080016Z",
+      "ended_at": "2026-09-01T23:04:39.786894Z",
+      "token_count": null
+    },
+    {
+      "gate": "preflight",
+      "started_at": "2026-09-01T23:07:44Z",
+      "ended_at": "2026-09-01T23:08:25Z",
+      "token_count": null
+    }
+  ],
+  "usage_breakdown": {
+    "schema_version": 1,
+    "session_ids": [],
+    "commits": [],
+    "craftsman_phases": {},
+    "models": {},
+    "coverage": {},
+    "evidence": {
+      "status": "unavailable",
+      "source": "unavailable",
+      "additive": false,
+      "boundary": null,
+      "warnings": []
+    },
+    "all_cost_rows": []
+  }
+}

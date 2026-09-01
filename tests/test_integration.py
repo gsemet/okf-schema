@@ -15,6 +15,10 @@ from okf_schema.api import (
     validate_bundle,
 )
 from okf_schema.cli import cli
+from okf_schema.okfkb.cli import kb
+from okf_schema.okfreq.cli import okfreq
+
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002
 
 
 def test_end_to_end_workflow_full_workflow(tmp_path: Path) -> None:
@@ -72,6 +76,29 @@ def test_end_to_end_workflow_full_workflow(tmp_path: Path) -> None:
     stats = stats_bundle(bundle)
     assert stats.total_concepts >= 1
     assert stats.total_files >= 1
+
+
+def test_end_to_end_workflow_install_skills_keeps_families_isolated(tmp_path: Path) -> None:
+    """Each public installer installs only its owned skill family."""
+    runner = CliRunner()
+    core_destination = tmp_path / "core-skills"
+    kb_destination = tmp_path / "kb-skills"
+    req_destination = tmp_path / "req-skills"
+
+    assert runner.invoke(cli, ["install-skills", str(core_destination)]).exit_code == 0
+    assert runner.invoke(kb, ["install-skills", str(kb_destination)]).exit_code == 0
+    assert runner.invoke(okfreq, ["install-skills", str(req_destination)]).exit_code == 0
+
+    assert (core_destination / "okf-schema" / "SKILL.md").is_file()
+    assert not (core_destination / "okfkb" / "SKILL.md").exists()
+    assert (kb_destination / "okfkb" / "SKILL.md").is_file()
+    assert (kb_destination / "okfkb-gardening" / "SKILL.md").is_file()
+    assert not (kb_destination / "okfreq" / "SKILL.md").exists()
+    assert (req_destination / "okfreq" / "SKILL.md").is_file()
+    assert (req_destination / "okfreq-gardening" / "SKILL.md").is_file()
+    assert not (req_destination / "okfkb" / "SKILL.md").exists()
+    assert not (tmp_path / "AGENTS.md").exists()
+    assert not (tmp_path / "guidelines").exists()
 
 
 def test_end_to_end_workflow_cli_sequence_on_same_bundle(tmp_path: Path) -> None:
@@ -430,7 +457,7 @@ def test_cli_integration_backlinks_cli_nonexistent_bundle(tmp_path: Path) -> Non
 
 
 def test_kb_end_to_end_workflow_kb_init_then_install(tmp_path: Path) -> None:
-    """Full KB workflow: init a KB bundle, then install skills into a project."""
+    """Full KB workflow: init a KB bundle, then install skills into a destination."""
     runner = CliRunner()
     kb_path = tmp_path / "mykb"
     project_path = tmp_path / "project"
@@ -447,19 +474,16 @@ def test_kb_end_to_end_workflow_kb_init_then_install(tmp_path: Path) -> None:
     result = runner.invoke(cli, ["kb", "install-skills", str(project_path)])
     assert result.exit_code == 0, f"kb install-skills failed: {result.output}"
 
-    # Verify skills were deployed
-    agents_dir = project_path / ".agents"
-    assert agents_dir.is_dir()
-    assert (agents_dir / "skills" / "okfkb-record-findings" / "SKILL.md").is_file()
-    assert (agents_dir / "skills" / "okfkb-distill" / "SKILL.md").is_file()
+    # Verify the complete family was deployed directly to the requested destination.
+    assert (project_path / "okfkb" / "SKILL.md").is_file()
+    assert (project_path / "okfkb-record-findings" / "SKILL.md").is_file()
+    assert (project_path / "okfkb-distill" / "SKILL.md").is_file()
+    assert (project_path / "okfkb-gardening" / "SKILL.md").is_file()
+    assert "Destination:" in result.output
 
-    # Verify guideline was deployed
-    assert (agents_dir / "guidelines" / "knowledge-base.guidelines.md").is_file()
-
-    # Verify AGENTS.md was created and references the guideline
-    agents_md = project_path / "AGENTS.md"
-    assert agents_md.is_file()
-    assert "knowledge-base.guidelines.md" in agents_md.read_text(encoding="utf-8")
+    # The retired guidance and project-file mutations are absent.
+    assert not (project_path / "guidelines").exists()
+    assert not (project_path / "AGENTS.md").exists()
 
 
 def test_kb_end_to_end_workflow_kb_update(tmp_path: Path) -> None:

@@ -1,0 +1,46 @@
+{
+  "plan_agent_version": "??.??",
+  "status": "complete",
+  "generated_at": "2026-09-01T11:39:22.461967+00:00",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Phase 1 - Resource and Installer Foundation",
+      "tasks": [
+        {
+          "id": "01",
+          "file": "05-task-01-package-skill-resources.md",
+          "dependencies": []
+        },
+        {
+          "id": "02",
+          "file": "05-task-02-build-family-installer.md",
+          "dependencies": [
+            "01"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Phase 2 - Command Integration and Delivery",
+      "tasks": [
+        {
+          "id": "03",
+          "file": "05-task-03-wire-cli-commands.md",
+          "dependencies": [
+            "02"
+          ]
+        },
+        {
+          "id": "04",
+          "file": "05-task-04-document-and-verify-distribution.md",
+          "dependencies": [
+            "01",
+            "03"
+          ]
+        }
+      ]
+    }
+  ]
+}

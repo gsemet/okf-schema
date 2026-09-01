@@ -1,250 +1,97 @@
-"""Tests for src/okf_schema/okfkb/install.py — install_kb()."""
+"""Tests for the shared installer facade in ``okf_schema.okfkb.install``."""
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 
 import pytest
 
 from okf_schema.okfkb.install import install_kb
+from okf_schema.skill_installer import SKILL_FAMILIES, InstallationError, resolve_destination
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-_GUIDELINE_NAME = "knowledge-base.guidelines.md"
-_SKILL_NAMES = ("okfkb-distill", "okfkb-record-findings")
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002
 
 
-def _agents_guideline(base: Path) -> Path:
-    return base / "guidelines" / _GUIDELINE_NAME
+def test_install_kb_installs_exact_family_at_supplied_destination(tmp_path: Path) -> None:
+    """The compatibility facade installs all and only the packaged okfkb family."""
+    destination = tmp_path / "skills"
+
+    report = install_kb(destination)
+
+    assert report.destination == destination.resolve()
+    assert {entry.skill for entry in report.skills} == set(SKILL_FAMILIES["okfkb"])
+    assert all((destination / skill / "SKILL.md").is_file() for skill in SKILL_FAMILIES["okfkb"])
 
 
-def _agents_skill(base: Path, skill: str) -> Path:
-    return base / "skills" / skill
-
-
-# ---------------------------------------------------------------------------
-# Base directory detection
-# ---------------------------------------------------------------------------
-
-
-def test_base_directory_detection_creates_dot_agents_when_neither_exists(tmp_path: Path) -> None:
-    """Creates .agents/ when neither .agents/ nor .github/ exists."""
-    install_kb(tmp_path)
-    assert (tmp_path / ".agents").is_dir()
-
-
-def test_base_directory_detection_prefers_dot_agents_over_dot_github(tmp_path: Path) -> None:
-    """Uses .agents/ when both .agents/ and .github/ exist."""
-    (tmp_path / ".agents").mkdir()
-    (tmp_path / ".github").mkdir()
-    install_kb(tmp_path)
-    assert _agents_guideline(tmp_path / ".agents").is_file()
-
-
-def test_base_directory_detection_falls_back_to_dot_github(tmp_path: Path) -> None:
-    """Uses .github/ when only .github/ exists."""
-    (tmp_path / ".github").mkdir()
-    install_kb(tmp_path)
-    assert _agents_guideline(tmp_path / ".github").is_file()
-
-
-def test_base_directory_detection_dot_agents_does_not_create_dot_github(tmp_path: Path) -> None:
-    """Does not create .github/ when .agents/ is used."""
-    install_kb(tmp_path)
-    assert not (tmp_path / ".github").exists()
-
-
-# ---------------------------------------------------------------------------
-# File installation
-# ---------------------------------------------------------------------------
-
-
-def test_file_installation_installs_guideline(tmp_path: Path) -> None:
-    """Copies knowledge-base.guidelines.md into <base>/guidelines/."""
-    install_kb(tmp_path)
-    assert _agents_guideline(tmp_path / ".agents").is_file()
-
-
-def test_file_installation_installs_all_skills(tmp_path: Path) -> None:
-    """Copies all bundled skill directories into <base>/skills/."""
-    install_kb(tmp_path)
-    for skill in _SKILL_NAMES:
-        assert _agents_skill(tmp_path / ".agents", skill).is_dir(), (
-            f"Skill directory missing: {skill}"
-        )
-
-
-def test_file_installation_skill_directory_has_skill_md(tmp_path: Path) -> None:
-    """Each skill directory contains SKILL.md."""
-    install_kb(tmp_path)
-    for skill in _SKILL_NAMES:
-        skill_md = _agents_skill(tmp_path / ".agents", skill) / "SKILL.md"
-        assert skill_md.is_file(), f"SKILL.md missing in {skill}"
-
-
-def test_file_installation_installs_into_dot_github_fallback(tmp_path: Path) -> None:
-    """Skills and guideline land under .github/ when only .github/ exists."""
-    (tmp_path / ".github").mkdir()
-    install_kb(tmp_path)
-    assert _agents_guideline(tmp_path / ".github").is_file()
-    for skill in _SKILL_NAMES:
-        assert _agents_skill(tmp_path / ".github", skill).is_dir()
-
-
-def test_installs_the_consolidation_skill(tmp_path: Path) -> None:
-    """Installs the distill skill that drives Finding consolidation."""
-    # @tests_req SwRS-OKFSCHEMA-OKFKB-002
-    # @tests_req SwRS-OKFSCHEMA-OKFKB-005
-    install_kb(tmp_path)
-    skill_md = _agents_skill(tmp_path / ".agents", "okfkb-distill") / "SKILL.md"
-    body = skill_md.read_text(encoding="utf-8")
-    assert "contradictions" in body
-    assert "human confirmation" in body
-
-
-# ---------------------------------------------------------------------------
-# Conflict resolution
-# ---------------------------------------------------------------------------
-
-
-def test_conflict_resolution_skips_existing_guideline(tmp_path: Path) -> None:
-    """Does not overwrite existing guideline when force=False."""
-    base = tmp_path / ".agents"
-    (base / "guidelines").mkdir(parents=True)
-    sentinel = "ORIGINAL_CONTENT"
-    (base / "guidelines" / _GUIDELINE_NAME).write_text(sentinel, encoding="utf-8")
-
-    install_kb(tmp_path, force=False)
-
-    content = (base / "guidelines" / _GUIDELINE_NAME).read_text(encoding="utf-8")
-    assert content == sentinel
-
-
-def test_conflict_resolution_skips_existing_skill(tmp_path: Path) -> None:
-    """Does not overwrite existing skill directory when force=False."""
-    base = tmp_path / ".agents"
-    skill_dir = base / "skills" / "okfkb-record-findings"
-    skill_dir.mkdir(parents=True)
-    sentinel_file = skill_dir / "custom.txt"
-    sentinel_file.write_text("sentinel", encoding="utf-8")
-
-    install_kb(tmp_path, force=False)
-
-    assert sentinel_file.exists(), "Sentinel file was removed during skip"
-
-
-def test_conflict_resolution_force_overwrites_guideline(tmp_path: Path) -> None:
-    """Overwrites existing guideline when force=True."""
-    base = tmp_path / ".agents"
-    (base / "guidelines").mkdir(parents=True)
-    (base / "guidelines" / _GUIDELINE_NAME).write_text("OLD", encoding="utf-8")
-
-    install_kb(tmp_path, force=True)
-
-    content = (base / "guidelines" / _GUIDELINE_NAME).read_text(encoding="utf-8")
-    assert content != "OLD"
-
-
-def test_conflict_resolution_force_overwrites_skill(tmp_path: Path) -> None:
-    """Overwrites existing skill directory when force=True."""
-    base = tmp_path / ".agents"
-    skill_dir = base / "skills" / "okfkb-record-findings"
-    skill_dir.mkdir(parents=True)
-    extra_file = skill_dir / "extra.txt"
-    extra_file.write_text("extra", encoding="utf-8")
-
-    install_kb(tmp_path, force=True)
-
-    # After force overwrite the skill dir exists and has SKILL.md
-    assert (skill_dir / "SKILL.md").is_file()
-
-
-# ---------------------------------------------------------------------------
-# AGENTS.md patching
-# ---------------------------------------------------------------------------
-
-
-def test_agents_md_patching_creates_agents_md_when_missing(tmp_path: Path) -> None:
-    """Creates AGENTS.md when it does not exist."""
-    install_kb(tmp_path)
-    assert (tmp_path / "AGENTS.md").is_file()
-
-
-def test_agents_md_patching_created_agents_md_contains_guideline_ref(tmp_path: Path) -> None:
-    """Created AGENTS.md references the installed guideline."""
-    install_kb(tmp_path)
-    content = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
-    assert _GUIDELINE_NAME in content
-
-
-def test_agents_md_patching_created_agents_md_has_project_stub(tmp_path: Path) -> None:
-    """Created AGENTS.md has at least a minimal heading/stub."""
-    install_kb(tmp_path)
-    content = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
-    assert "AGENTS" in content or "#" in content
-
-
-def test_agents_md_patching_appends_ref_to_existing_agents_md(tmp_path: Path) -> None:
-    """Appends guideline reference to existing AGENTS.md."""
-    agents_md = tmp_path / "AGENTS.md"
-    agents_md.write_text("# AGENTS.md\n\nexisting content\n", encoding="utf-8")
-    install_kb(tmp_path)
-    content = agents_md.read_text(encoding="utf-8")
-    assert _GUIDELINE_NAME in content
-    assert "existing content" in content
-
-
-def test_agents_md_patching_idempotent_agents_md_patch(tmp_path: Path) -> None:
-    """Running install_kb twice does not duplicate the guideline reference."""
-    install_kb(tmp_path)
-    install_kb(tmp_path, force=True)
-    content = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
-    assert content.count(_GUIDELINE_NAME) == 1
-
-
-def test_agents_md_patching_no_duplicate_on_existing_ref(tmp_path: Path) -> None:
-    """Does not append ref when it already exists in AGENTS.md."""
-    base = tmp_path / ".agents"
-    base.mkdir()
-    ref_line = f"- [Knowledge Base Guidelines](.agents/guidelines/{_GUIDELINE_NAME})"
-    agents_md = tmp_path / "AGENTS.md"
-    agents_md.write_text(f"# AGENTS.md\n\n{ref_line}\n", encoding="utf-8")
-    install_kb(tmp_path)
-    content = agents_md.read_text(encoding="utf-8")
-    assert content.count(_GUIDELINE_NAME) == 1
-
-
-def test_agents_md_patching_agents_md_ref_uses_dot_github_path_when_applicable(
+def test_install_kb_updates_owned_directory_and_preserves_unrelated_content(
     tmp_path: Path,
 ) -> None:
-    """AGENTS.md reference path reflects .github/ when that is the base."""
-    (tmp_path / ".github").mkdir()
-    install_kb(tmp_path)
-    content = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
-    assert ".github/guidelines" in content
+    """A repeated install updates owned files without deleting unrelated entries."""
+    destination = tmp_path / "skills"
+    install_kb(destination)
+    owned = destination / "okfkb-record-findings"
+    unrelated = destination / "other-skill"
+    (owned / "stale.txt").write_text("stale", encoding="utf-8")
+    unrelated.mkdir()
+    (unrelated / "keep.txt").write_text("keep", encoding="utf-8")
+
+    report = install_kb(destination)
+
+    assert {entry.status for entry in report.skills} == {"updated"}
+    assert not (owned / "stale.txt").exists()
+    assert (unrelated / "keep.txt").read_text(encoding="utf-8") == "keep"
 
 
-# ---------------------------------------------------------------------------
-# Error handling
-# ---------------------------------------------------------------------------
+def test_install_kb_does_not_mutate_guidelines_or_agents_file(tmp_path: Path) -> None:
+    """The retired guideline and AGENTS.md mutations are absent from the facade."""
+    destination = tmp_path / "skills"
+
+    install_kb(destination)
+
+    assert not (tmp_path / "AGENTS.md").exists()
+    assert not (destination / "guidelines").exists()
 
 
-def test_error_handling_errors_when_target_missing(tmp_path: Path) -> None:
-    """Raises RuntimeError when target path does not exist."""
-    missing = tmp_path / "does_not_exist"
-    with pytest.raises((RuntimeError, SystemExit)):
-        install_kb(missing)
+def test_install_kb_no_longer_exposes_force_parameter() -> None:
+    """The retired force option is absent from the installer API."""
+    assert "force" not in inspect.signature(install_kb).parameters
 
 
-# ---------------------------------------------------------------------------
-# Summary output
-# ---------------------------------------------------------------------------
+def test_install_kb_rejects_retired_force_keyword(tmp_path: Path) -> None:
+    """The facade rejects the retired force keyword instead of ignoring it."""
+    with pytest.raises(TypeError):
+        install_kb(tmp_path / "skills", force=True)
 
 
-def test_summary_output_prints_summary(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Prints at least one installed/skipped line."""
-    install_kb(tmp_path)
-    captured = capsys.readouterr()
-    assert captured.out  # non-empty output
+def test_install_kb_rejects_owned_symbolic_link(tmp_path: Path) -> None:
+    """The facade preserves the shared installer's symlink safety contract."""
+    destination = tmp_path / "skills"
+    destination.mkdir()
+    target = tmp_path / "outside"
+    target.mkdir()
+    link = destination / "okfkb-gardening"
+    link.symlink_to(target, target_is_directory=True)
+
+    with pytest.raises(InstallationError, match="symbolic link.*okfkb-gardening"):
+        install_kb(destination)
+
+    assert link.is_symlink()
+
+
+def test_install_kb_rejects_explicit_destination_symlink_after_resolution(
+    tmp_path: Path,
+) -> None:
+    """Public destination resolution must preserve a symlink for rejection."""
+    destination = tmp_path / "skills"
+    target = tmp_path / "outside"
+    target.mkdir()
+    destination.symlink_to(target, target_is_directory=True)
+
+    resolved_destination = resolve_destination(destination, cwd=tmp_path)
+
+    with pytest.raises(InstallationError, match="symbolic link"):
+        install_kb(resolved_destination)
+
+    assert destination.is_symlink()
+    assert not (target / "okfkb").exists()

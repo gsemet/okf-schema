@@ -12,7 +12,8 @@ lifecycle: draft
 origin: native
 tier: StRS
 derives_from: []
-user_need: Teams need auditable requirements traceability before delivery decisions.
+user_need: Teams need auditable requirements traceability before delivery
+  decisions.
 derived_by:
 - SwRS-OKFSCHEMA-OKFREQ-001
 - SwRS-OKFSCHEMA-OKFREQ-002

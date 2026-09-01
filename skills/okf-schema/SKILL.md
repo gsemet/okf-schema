@@ -56,9 +56,17 @@ bundle rules and legacy metadata used during migration.
 
 ## Installation
 
+Install or upgrade the Python CLI tool with `uv`:
+
 ```bash
 uv tool install okf-schema
+uv tool upgrade okf-schema
 ```
+
+This tool installation exposes the `okf-schema`, `okfkb`, and `okfreq` console
+commands. It is separate from installing agent skill folders: use
+`okf-schema install-skills` to copy the packaged `okf-schema` skill into an
+agent's skills directory.
 
 ## Quickstart
 

@@ -1,0 +1,576 @@
+// This file is managed by the Craftsman CLI.
+// To update it: uv run craftsman agent update-task / update-phase
+// Avoid reading this file for context, prefere using craftsman agent prd-status command.
+// In every case, NEVER edit it manually !
+{
+  "version": "1.0",
+  "jira_id": "install-skills-command",
+  "title": "Packaged agent skill installation",
+  "started": "2026-09-01T11:37:26.188025+00:00",
+  "updated": "2026-09-01T23:19:11.552309+00:00",
+  "initial_sha1": "5beb8f1af7382b97744b1f1a2a7e874e9f35f6e7",
+  "squash_from_sha1": "5beb8f1af7382b97744b1f1a2a7e874e9f35f6e7",
+  "squash_includes_spec": false,
+  "plan_agent_version": null,
+  "workflow": "craftsman",
+  "current_phase": "phase-1",
+  "hitl_mode": false,
+  "settings": {
+    "task_size": "middle",
+    "phase_inspector": true
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Phase 1 - Resource and Installer Foundation",
+      "status": "coded_not_reviewed",
+      "completed_at": "2026-09-01T12:44:16.890054+00:00",
+      "inspector_started_at": "2026-09-01T12:42:15.957958+00:00",
+      "started_sha1": "4f0467faede839256ce59a904129563dd5b42068",
+      "completed_sha1": "4f0467faede839256ce59a904129563dd5b42068"
+    },
+    {
+      "id": "phase-2",
+      "name": "Phase 2 - Command Integration and Delivery",
+      "status": "completed",
+      "completed_at": "2026-09-01T23:18:02.867655+00:00",
+      "inspector_started_at": "2026-09-01T23:14:43.400982+00:00",
+      "started_sha1": null,
+      "completed_sha1": "61122355f1c539909f72c2b890dea9d990f632b5"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "01",
+      "file": "05-task-01-package-skill-resources.md",
+      "title": "Package Complete Skill Resources",
+      "phase_id": "phase-1",
+      "status": "completed",
+      "inspector_verdict": "pass",
+      "dependencies": [],
+      "started_at": "2026-09-01T11:40:37.257546+00:00",
+      "first_coding_started_at": "2026-09-01T11:40:37.257546+00:00",
+      "completed_at": "2026-09-01T11:42:53.387214+00:00",
+      "inspection_history": [
+        {
+          "verdict": "pass",
+          "notes": "Full pass: all seven skill roots are present, byte-identical to canonical trees, importable through importlib.resources, and represented in the built wheel. Focused resource tests are present and the package marker is documented. No requirements configuration applies. ⚠️ Session logs contain only session_start, so just preflight completion cannot be verified from session evidence; this warning does not block the verdict.",
+          "timestamp": "2026-09-01T11:48:53.491940+00:00",
+          "summary": "Verified complete packaged skill resources and wheel coverage",
+          "inspector_model": "unknown"
+        }
+      ],
+      "events": [
+        {
+          "event_type": "created",
+          "timestamp": "2026-09-01T11:39:40.527669+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T11:40:37.257536+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_ended",
+          "timestamp": "2026-09-01T11:42:53.387198+00:00",
+          "reason": null,
+          "summary": "Packaged all canonical agent skill resources"
+        },
+        {
+          "event_type": "review_started",
+          "timestamp": "2026-09-01T11:46:42.727159+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "review_ended",
+          "timestamp": "2026-09-01T11:48:53.491920+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "completed",
+          "timestamp": "2026-09-01T11:48:53.491932+00:00",
+          "reason": null,
+          "summary": "Verified complete packaged skill resources and wheel coverage"
+        }
+      ],
+      "summary": "Verified complete packaged skill resources and wheel coverage",
+      "coder_model": "unknown",
+      "last_inspector_model": "unknown",
+      "cost": {
+        "total_usd": 0.0,
+        "by_model": [],
+        "totals": {
+          "input_tokens": 0,
+          "cached_tokens": 0,
+          "output_tokens": 0
+        },
+        "attribution_status": "unassigned",
+        "availability": "unavailable",
+        "diagnostics": [
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "0bfda86a1d0c6d61e67d2f236da8098fa74096bf"
+          }
+        ],
+        "observed_commits": []
+      },
+      "coder_trailer_cost": null,
+      "inspector_trailer_cost": null,
+      "replay_marker": null,
+      "context_manifest": null
+    },
+    {
+      "id": "02",
+      "file": "05-task-02-build-family-installer.md",
+      "title": "Build the Staged Family Installer",
+      "phase_id": "phase-1",
+      "status": "completed",
+      "inspector_verdict": "pass",
+      "dependencies": [
+        "01"
+      ],
+      "started_at": "2026-09-01T12:32:00.765882+00:00",
+      "first_coding_started_at": "2026-09-01T11:52:46.010176+00:00",
+      "completed_at": "2026-09-01T12:35:24.936204+00:00",
+      "inspection_history": [
+        {
+          "verdict": "fail",
+          "notes": "INCOMPLETE. Review envelope: task 02, phase-1, Coder commit 43c050882f34ff881c51b3da9cd0e2412235171a, first review, Craftsman: Task Inspector Subagent, model unknown. Full pass: shared family staging, destination resolution, normal-directory replacement, status reporting, unrelated-content preservation, and pre-mutation symlink checks are present. Level A failure: craftsman req scope --diff HEAD~1..HEAD surfaces SwRS-OKFSCHEMA-OKFKB-002, but no changed implementation file has @implements_req and no changed test file has @tests_req; coverage frontmatter was not updated after the code change. Run craftsman req update-coverage and commit the updated frontmatter before re-submitting. Legacy contract failure: src/okf_schema/okfkb/install.py:15 still accepts arbitrary _legacy_options, so retired force and other options remain silently reachable; src/okf_schema/okfkb/cli.py:77-93 still exposes and forwards --force and retains the old project-target behavior. Documentation guideline failure: public resolve_destination at src/okf_schema/skill_installer.py:66 and install_skill_family at :123 have more than two parameters but no runnable Examples sections. Quality gate warning: no coder session artifact contains a completed just preflight invocation, so that criterion is unverified by session-log-only review. req lint passed with zero violations. OWASP review found no security issue.",
+          "timestamp": "2026-09-01T12:08:49.537685+00:00",
+          "summary": null,
+          "inspector_model": "unknown"
+        },
+        {
+          "verdict": "fail",
+          "notes": "INCOMPLETE. Re-review full pass: family definitions, complete staging, replacement/status reporting, unrelated-content preservation, symlink rejection, and legacy okfkb contract removal are present. Delta pass: strict install_kb signature and --force rejection resolved; public installer API Examples resolved; requirements traceability remains unresolved because tests/test_skill_installer.py has no @tests_req marker and SwRS-OKFSCHEMA-OKFKB-002 generated coverage omits src/okf_schema/skill_installer.py and tests/test_skill_installer.py. Run craftsman req update-coverage and commit the updated frontmatter before resubmitting. Quality gate warning: no Coder session artifact contains a completed just preflight invocation, so preflight remains unverified under session-log-only review.",
+          "timestamp": "2026-09-01T12:22:29.331059+00:00",
+          "summary": null,
+          "inspector_model": null
+        },
+        {
+          "verdict": "fail",
+          "notes": "INCOMPLETE. Review envelope: task 02, file 05-task-02-build-family-installer.md, PRD install-skills-command, phase phase-1, Coder commit 5901b756ac26cabd2f103efd9d4860cdae8e9685, re-review attempt 2, canonical agent Craftsman: Task Inspector Subagent, selected model unavailable in active session metadata. Full pass: destination selectors and precedence, immutable family ownership, family-wide staging before mutation, normal-directory replacement and statuses, parent creation, unrelated-content preservation, owned skill symlink rejection, legacy contract removal, requirement markers/frontmatter, and req lint all pass. Blocking defect: resolve_destination() follows an explicit or selector destination symlink with Path.resolve() at src/okf_schema/skill_installer.py:114 and :127; okfkb cli then passes that resolved target to install_kb at src/okf_schema/okfkb/cli.py:117-123. A minimal public-path check installed okf-schema through an explicit symlink, proving the installer mutates the link target instead of rejecting the destination link. Add coverage for the public resolve-then-install path and preserve the symlink so install_skill_family can reject it. Delta pass: requirements traceability resolved; retired installer contract resolved; public API Examples resolved; quality-gate evidence remains unverified because the Coder session log contains no completed just preflight invocation, which is a warning under the session-log-only protocol. OWASP review: destination symlink traversal is an input-validation/least-privilege safety defect; no other security findings.",
+          "timestamp": "2026-09-01T12:30:32.705693+00:00",
+          "summary": null,
+          "inspector_model": "unknown"
+        },
+        {
+          "verdict": "pass",
+          "notes": "PASS. Review envelope: task 02, file 05-task-02-build-family-installer.md, PRD install-skills-command, phase phase-1, Coder commit 9403fbf26ea247117304e24b1a6614434534546e, re-review attempt 3, canonical agent Craftsman: Task Inspector Subagent, selected model unavailable. Full pass: destination default/selectors/relative paths/explicit precedence; immutable exact family ownership; family-wide staging before mutation; installed and updated statuses; normal-directory replacement; parent creation; unrelated-content preservation; owned skill and destination symlink rejection; and removal of the retired installer contract all pass. Delta pass: Round 1 requirements traceability resolved; retired contract resolved; API documentation resolved. Round 2 requirements traceability resolved. Round 3 destination symlink traversal resolved by lexical normalization and public-path regression coverage. Quality gate warning: no Coder session artifact contains a completed just preflight invocation, so that criterion is unverified under the session-log-only protocol; this warning does not block approval. Applicable guidelines pass; no constitution or requirements configuration applies. OWASP review found no security issue.",
+          "timestamp": "2026-09-01T12:40:56.039510+00:00",
+          "summary": "Verified staged family installer and destination symlink safety",
+          "inspector_model": "unknown"
+        }
+      ],
+      "events": [
+        {
+          "event_type": "created",
+          "timestamp": "2026-09-01T11:39:40.774692+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T11:52:46.010164+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_ended",
+          "timestamp": "2026-09-01T12:01:59.816743+00:00",
+          "reason": null,
+          "summary": "Implemented staged family-scoped skill installation"
+        },
+        {
+          "event_type": "review_started",
+          "timestamp": "2026-09-01T12:02:46.482362+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "rework_started",
+          "timestamp": "2026-09-01T12:08:49.537661+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T12:08:49.537679+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T12:10:25.336834+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_ended",
+          "timestamp": "2026-09-01T12:18:37.081285+00:00",
+          "reason": null,
+          "summary": "Reworked staged family installer and retired legacy okfkb install contract"
+        },
+        {
+          "event_type": "review_started",
+          "timestamp": "2026-09-01T12:20:09.360236+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "rework_started",
+          "timestamp": "2026-09-01T12:22:29.331038+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T12:22:29.331052+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T12:24:17.854575+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_ended",
+          "timestamp": "2026-09-01T12:27:07.988867+00:00",
+          "reason": null,
+          "summary": "Added installer requirement traceability and verified full preflight"
+        },
+        {
+          "event_type": "review_started",
+          "timestamp": "2026-09-01T12:28:13.153063+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "rework_started",
+          "timestamp": "2026-09-01T12:30:32.705674+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T12:30:32.705687+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T12:32:00.765850+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_ended",
+          "timestamp": "2026-09-01T12:35:24.936180+00:00",
+          "reason": null,
+          "summary": "Preserved destination symlinks through public resolution so installs reject them safely"
+        },
+        {
+          "event_type": "review_started",
+          "timestamp": "2026-09-01T12:37:30.913934+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "review_ended",
+          "timestamp": "2026-09-01T12:40:56.039485+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "completed",
+          "timestamp": "2026-09-01T12:40:56.039501+00:00",
+          "reason": null,
+          "summary": "Verified staged family installer and destination symlink safety"
+        }
+      ],
+      "summary": "Verified staged family installer and destination symlink safety",
+      "coder_model": "unknown",
+      "last_inspector_model": "unknown",
+      "cost": {
+        "total_usd": 0.0,
+        "by_model": [],
+        "totals": {
+          "input_tokens": 0,
+          "cached_tokens": 0,
+          "output_tokens": 0
+        },
+        "attribution_status": "unassigned",
+        "availability": "unavailable",
+        "diagnostics": [
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "43c050882f34ff881c51b3da9cd0e2412235171a"
+          },
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "7fb7b2747ab312aa3c0f28026f62bcbdf98ea5d9"
+          },
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "5901b756ac26cabd2f103efd9d4860cdae8e9685"
+          },
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "204ab2ace2b305613f605067d20927ad32466625"
+          },
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "9403fbf26ea247117304e24b1a6614434534546e"
+          }
+        ],
+        "observed_commits": []
+      },
+      "coder_trailer_cost": null,
+      "inspector_trailer_cost": null,
+      "replay_marker": null,
+      "context_manifest": null
+    },
+    {
+      "id": "03",
+      "file": "05-task-03-wire-cli-commands.md",
+      "title": "Wire Consistent CLI Commands",
+      "phase_id": "phase-2",
+      "status": "completed",
+      "inspector_verdict": "pass",
+      "dependencies": [
+        "02"
+      ],
+      "started_at": "2026-09-01T22:38:34.957950+00:00",
+      "first_coding_started_at": "2026-09-01T22:38:34.957950+00:00",
+      "completed_at": "2026-09-01T22:42:34.908539+00:00",
+      "inspection_history": [
+        {
+          "verdict": "pass",
+          "notes": "PASS. Review envelope: task 03, file 05-task-03-wire-cli-commands.md, PRD install-skills-command, phase phase-2, Coder commit c92eec8426a8e969984381fe0bfd0dfb29f87ea9, first review, canonical agent Craftsman: Task Inspector Subagent, selected model unavailable. Full pass: all three entry points expose the shared destination and selector contract; default, explicit, relative, selector, and precedence semantics are wired; family isolation and per-skill installed/updated output are preserved; Click reports staging, symlink, and replacement failures as nonzero errors; retired okfkb install behavior and side effects are absent; focused coverage is present across core, KB, requirements, and integration paths; applicable guidelines pass; no constitution or requirements configuration applies; OWASP review found no security issue. ⚠️ Session logs not available for a completed just preflight invocation, so quality-gate completion cannot be verified under the session-log-only protocol; this warning does not block approval.",
+          "timestamp": "2026-09-01T22:49:08.435333+00:00",
+          "summary": "Verified consistent family-scoped install-skills commands across all entry points",
+          "inspector_model": "unknown"
+        }
+      ],
+      "events": [
+        {
+          "event_type": "created",
+          "timestamp": "2026-09-01T11:39:41.022468+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T22:38:34.957931+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_ended",
+          "timestamp": "2026-09-01T22:42:34.908508+00:00",
+          "reason": null,
+          "summary": "Exposed consistent family-scoped install-skills commands"
+        },
+        {
+          "event_type": "review_started",
+          "timestamp": "2026-09-01T22:44:45.188893+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "review_ended",
+          "timestamp": "2026-09-01T22:49:08.435293+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "completed",
+          "timestamp": "2026-09-01T22:49:08.435317+00:00",
+          "reason": null,
+          "summary": "Verified consistent family-scoped install-skills commands across all entry points"
+        }
+      ],
+      "summary": "Verified consistent family-scoped install-skills commands across all entry points",
+      "coder_model": "unknown",
+      "last_inspector_model": "unknown",
+      "cost": {
+        "total_usd": 0.0,
+        "by_model": [],
+        "totals": {
+          "input_tokens": 0,
+          "cached_tokens": 0,
+          "output_tokens": 0
+        },
+        "attribution_status": "unassigned",
+        "availability": "unavailable",
+        "diagnostics": [
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "c92eec8426a8e969984381fe0bfd0dfb29f87ea9"
+          },
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "8d3ad505a9e2247a0b658160a0966956b26fd8b2"
+          }
+        ],
+        "observed_commits": []
+      },
+      "coder_trailer_cost": null,
+      "inspector_trailer_cost": null,
+      "replay_marker": null,
+      "context_manifest": null
+    },
+    {
+      "id": "04",
+      "file": "05-task-04-document-and-verify-distribution.md",
+      "title": "Document and Verify Installed Distribution",
+      "phase_id": "phase-2",
+      "status": "completed",
+      "inspector_verdict": "pass",
+      "dependencies": [
+        "01",
+        "03"
+      ],
+      "started_at": "2026-09-01T23:05:26.682018+00:00",
+      "first_coding_started_at": "2026-09-01T22:51:24.780774+00:00",
+      "completed_at": "2026-09-01T23:09:33.341922+00:00",
+      "inspection_history": [
+        {
+          "verdict": "fail",
+          "notes": "Incomplete: the wheel distribution regression test injects the host editable site-packages through PYTHONPATH and resolves okf_schema to the repository checkout; repeated-input documentation coverage also violates the parametrization guideline. Coder preflight completion is unverified from session logs.",
+          "timestamp": "2026-09-01T23:04:00.983783+00:00",
+          "summary": null,
+          "inspector_model": "unknown"
+        },
+        {
+          "verdict": "pass",
+          "notes": "PASS. Review envelope: task 04, file 05-task-04-document-and-verify-distribution.md, PRD install-skills-command, phase phase-2, Coder commit 3d792921256be1150b00b45ab2efba32778a4e61, re-review attempt 2, canonical agent Craftsman: Task Inspector Subagent, selected model unavailable. Full pass: all acceptance criteria are met. Each base skill documents both uv tool commands, all three console entry points, and the distinction between Python CLI installation and agent-skill folder installation. Canonical and packaged base documents are byte-identical; the isolated built-wheel regression test invokes all three installed console scripts, verifies every owned family root and representative nested content, and asserts the imported package is not from the repository checkout. Focused validation passed with 7 tests, and coder session logs show the final just preflight completed successfully after the fix with 765 passed and 95.04% coverage. Delta pass: prior wheel-isolation defect resolved by removing inherited .pth/source package paths and asserting installed import location; prior repeated-input guideline defect resolved with parametrization. Applicable guidelines pass; no constitution or requirements configuration applies; OWASP review found no security issue.",
+          "timestamp": "2026-09-01T23:13:37.203775+00:00",
+          "summary": "Verified documented skill distribution and isolated wheel installation",
+          "inspector_model": "unknown"
+        }
+      ],
+      "events": [
+        {
+          "event_type": "created",
+          "timestamp": "2026-09-01T11:39:47.126118+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T22:51:24.780756+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_ended",
+          "timestamp": "2026-09-01T22:55:32.218379+00:00",
+          "reason": null,
+          "summary": "Documented and verified installed-wheel skill deployment"
+        },
+        {
+          "event_type": "review_started",
+          "timestamp": "2026-09-01T22:56:42.080016+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "rework_started",
+          "timestamp": "2026-09-01T23:04:00.983750+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T23:04:00.983772+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_started",
+          "timestamp": "2026-09-01T23:05:26.681999+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "coding_ended",
+          "timestamp": "2026-09-01T23:09:33.341888+00:00",
+          "reason": null,
+          "summary": "Fixed isolated built-wheel verification and parameterized documentation coverage"
+        },
+        {
+          "event_type": "review_started",
+          "timestamp": "2026-09-01T23:10:43.097507+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "review_ended",
+          "timestamp": "2026-09-01T23:13:37.203738+00:00",
+          "reason": null,
+          "summary": null
+        },
+        {
+          "event_type": "completed",
+          "timestamp": "2026-09-01T23:13:37.203759+00:00",
+          "reason": null,
+          "summary": "Verified documented skill distribution and isolated wheel installation"
+        }
+      ],
+      "summary": "Verified documented skill distribution and isolated wheel installation",
+      "coder_model": "unknown",
+      "last_inspector_model": "unknown",
+      "cost": {
+        "total_usd": 0.0,
+        "by_model": [],
+        "totals": {
+          "input_tokens": 0,
+          "cached_tokens": 0,
+          "output_tokens": 0
+        },
+        "attribution_status": "unassigned",
+        "availability": "unavailable",
+        "diagnostics": [
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "3d849e5f743c7f80b951069eba0d6d640243b594"
+          },
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "a16d20ffd74304367c86e899be3acf3e4fc7b90f"
+          },
+          {
+            "code": "unavailable_snapshot",
+            "message": "Commit has no valid model snapshot.",
+            "commit_id": "3d792921256be1150b00b45ab2efba32778a4e61"
+          }
+        ],
+        "observed_commits": []
+      },
+      "coder_trailer_cost": null,
+      "inspector_trailer_cost": null,
+      "replay_marker": null,
+      "context_manifest": null
+    }
+  ],
+  "spec_files": null,
+  "validation_cache": []
+}

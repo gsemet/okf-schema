@@ -13,7 +13,7 @@ tier: SwRS
 derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
-exemption_reason: null
+exemption_reason:
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfkb/finding.py
