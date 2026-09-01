@@ -31,6 +31,8 @@ proactively during unrelated work.
 - Never discard or overwrite unrelated user changes.
 - Never invent fields or statuses. The bundle's `_schema/` files and local rules
   are authoritative.
+- Author derivation provenance only through canonical bundle-relative,
+  extensionless `derived_from` paths. Never edit CLI-computed `derives_to`.
 - Do not ask questions mid-run. Resolve conservatively, defer uncertain actions,
   and report them at the end.
 - Do not write a maintenance report file. Add `log.md` entries only for
@@ -72,7 +74,8 @@ Read frontmatter before bodies. Build an inventory of:
 2. Use git history to identify confident renames or moves. Apply only unambiguous
    repairs; defer uncertain targets.
 3. Propagate valid supersession redirects using project tooling when available.
-4. Refresh generated links, backlinks, and indexes according to project rules.
+4. Refresh generated links, backlinks, `derives_to`, and indexes according to
+   project rules.
 5. Preserve YAML comments and unknown extension fields.
 
 ## Phase 4 — Consolidate Findings

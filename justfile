@@ -29,6 +29,7 @@ preflight:
     just changelog
     just typecheck
     just test
+    just refresh-all-examples
     just requirements-report
     just docs
 
@@ -125,6 +126,12 @@ build:
     {{ uv }} build
 
 [group("build")]
+refresh-all-examples:
+    just refresh-okf-schema-example
+    just refresh-okfkb-example
+    just refresh-okfreq-examples
+
+[group("build")]
 refresh-okf-schema-example:
     {{ uv_run }} okf-schema index --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema lint --path examples/ai-llm-knowledge-base
@@ -133,38 +140,49 @@ refresh-okf-schema-example:
     {{ uv_run }} okf-schema list --path examples/ai-llm-knowledge-base
     {{ uv_run }} okf-schema backlinks --path examples/ai-llm-knowledge-base papers/attention-is-all-you-need papers/toolformer
 
+[group("build")]
 refresh-okfkb-example:
-    {{ uv_run }} okfkb init --force examples/specific-hw-knowledge-base/
-    {{ uv_run }} okfkb new-finding examples/specific-hw-knowledge-base/ \
-        --title "HW Failure investigation" \
-        --confidence low \
-        --context "Hardware failure pattern observed in production logs during stress testing."
-    {{ uv_run }} okfkb update examples/specific-hw-knowledge-base/
-    {{ uv_run }} okfkb validate examples/specific-hw-knowledge-base/
-    {{ uv_run }} okf-schema validate --strict --path examples/specific-hw-knowledge-base/
+    {{ uv_run }} okfkb update examples/okfkb-hw-knowledge-base/
+    {{ uv_run }} okfkb validate examples/okfkb-hw-knowledge-base/
+    {{ uv_run }} okf-schema validate --strict --path examples/okfkb-hw-knowledge-base/
 
+[group("build")]
 refresh-okfreq-examples:
     rm -rf examples/okfreq-examples/requirements/
     {{ uv_run }} okfreq init --force examples/okfreq-examples/requirements/
-    test -f examples/okfreq-examples/requirements/tiers/strs/StRS-default-001.md || \
-      {{ uv_run }} okfreq new strs "Export a report" --path examples/okfreq-examples/ \
-        --description "When export is requested, the reporting capability SHALL provide a portable report." \
-        --user-need "Users need a portable report for offline review." \
-        --project OKFREQXMP
-    test -f examples/okfreq-examples/requirements/tiers/swrs/SwRS-default-001.md || \
-      {{ uv_run }} okfreq new swrs "Write CSV output" --path examples/okfreq-examples/ \
-        --description "When export is requested, the service SHALL write the report as CSV output." \
-        --project OKFREQXMP \
-        --derives-from "StRS-default-001"
-    {{ uv_run }} python -c 'from pathlib import Path; root=Path("examples/okfreq-examples/requirements/tiers"); p=root/"strs/StRS-default-001.md"; t=p.read_text(); t=t.replace("<!-- Record stakeholder constraints, exclusions, or decisions that shape the\\n     outcome. Remove this section when there are none. -->\\n\\n- <known constraint, exclusion, or rationale>", "The report must remain usable offline and the requirement does not prescribe a specific portable format."); p.write_text(t); p=root/"swrs/SwRS-default-001.md"; t=p.read_text(); t=t.replace("### Scenario: <nominal behavior>\\n\\n- GIVEN <precondition and relevant inputs>\\n- WHEN <trigger or action>\\n- THEN <single observable, verifiable outcome>", "### Scenario: Export selected rows\\n\\n- GIVEN a report containing selected rows\\n- WHEN CSV export is requested\\n- THEN the service returns UTF-8 CSV with one record per selected row"); t=t.replace("### Scenario: <boundary or failure behavior>\\n\\n- GIVEN <boundary precondition or failure>\\n- WHEN <trigger or action>\\n- THEN <observable recovery, rejection, or boundary outcome>", "### Scenario: Export an empty selection\\n\\n- GIVEN a report with no selected rows\\n- WHEN CSV export is requested\\n- THEN the service returns an empty CSV document without failing"); t=t.replace("<!-- Name the verification method, evidence, and boundaries. Do not claim\\n     coverage until implementation and test markers exist. -->\\n\\n- Method: <test, inspection, analysis, or demonstration>\\n- Criteria: <objective pass condition>", "- Method: test\\n- Criteria: Automated tests compare exact CSV output for populated and empty inputs."); p.write_text(t)'
+    {{ uv_run }} python -c 'from pathlib import Path; p=Path("examples/okfreq-examples/requirements/config.yml"); t=p.read_text(); t=t.replace("  default: {source_dirs: [src], test_dirs: [tests]}", "  Core: {id_token: CORE, source_dirs: [src], test_dirs: [tests]}"); assert "  Core: {id_token: CORE, source_dirs: [src], test_dirs: [tests]}" in t; p.write_text(t)'
+    test -f examples/okfreq-examples/requirements/tiers/strs/StRS-CORE-001.md || \
+        {{ uv_run }} okfreq new strs "Export a report" --path examples/okfreq-examples/ \
+            --scope Core \
+            --description "When export is requested, the reporting capability SHALL provide a portable report." \
+            --user-need "Users need a portable report for offline review." \
+            --project OKFREQXMP
+    test -f examples/okfreq-examples/requirements/tiers/swrs/SwRS-CORE-001.md || \
+        {{ uv_run }} okfreq new swrs "Write CSV output" --path examples/okfreq-examples/ \
+            --scope Core \
+            --description "When export is requested, the service SHALL write the report as CSV output." \
+            --project OKFREQXMP \
+            --derives-from "StRS-CORE-001"
+    test -f examples/okfreq-examples/requirements/tiers/swrs/SwRS-CORE-002.md || \
+        {{ uv_run }} okfreq new swrs "Format Rust CSV rows" --path examples/okfreq-examples/ \
+            --scope Core \
+            --description "When Rust export is requested, the service SHALL return the selected row as a newline-terminated CSV record." \
+            --project OKFREQXMP \
+            --derives-from "StRS-CORE-001"
+    {{ uv_run }} python -c 'from pathlib import Path; root=Path("examples/okfreq-examples/requirements/tiers"); p=root/"strs/StRS-CORE-001.md"; t=p.read_text(); t=t.replace("<known constraint, exclusion, or rationale>", "The report must remain usable offline and the requirement does not prescribe a specific portable format."); p.write_text(t); p=root/"swrs/SwRS-CORE-001.md"; t=p.read_text(); t=t.replace("<nominal behavior>", "Export selected rows").replace("<precondition and relevant inputs>", "a report containing selected rows").replace("<trigger or action>", "CSV export is requested", 1).replace("<single observable, verifiable outcome>", "the service returns UTF-8 CSV with one record per selected row").replace("<boundary or failure behavior>", "Export an empty selection").replace("<boundary precondition or failure>", "a report with no selected rows").replace("<trigger or action>", "CSV export is requested", 1).replace("<observable recovery, rejection, or boundary outcome>", "the service returns an empty CSV document without failing").replace("<test, inspection, analysis, or demonstration>", "test").replace("<objective pass condition>", "Automated tests compare exact CSV output for populated and empty inputs."); p.write_text(t)'
+    {{ uv_run }} python -c 'from pathlib import Path; p=Path("examples/okfreq-examples/requirements/tiers/swrs/SwRS-CORE-002.md"); t=p.read_text(); t=t.replace("<nominal behavior>", "Return a Rust CSV row").replace("<precondition and relevant inputs>", "a Rust report row with two fields").replace("<trigger or action>", "Rust CSV export is requested", 1).replace("<single observable, verifiable outcome>", "the service returns the fields as one newline-terminated CSV record").replace("<boundary or failure behavior>", "Export an empty Rust row").replace("<boundary precondition or failure>", "a Rust report row with two empty fields").replace("<trigger or action>", "Rust CSV export is requested", 1).replace("<observable recovery, rejection, or boundary outcome>", "the service returns a newline-terminated empty CSV record without failing").replace("<test, inspection, analysis, or demonstration>", "test").replace("<objective pass condition>", "The Rust test compares exact output for populated and empty rows."); p.write_text(t)'
+    {{ uv_run }} python -c 'import re; from pathlib import Path; root=Path("examples/okfreq-examples/requirements/tiers"); p=root/"strs/StRS-CORE-001.md"; t=p.read_text(); t=re.sub(r"(?m)^uuid: .+$", "uuid: 00000000-0000-4000-8000-000000000001", t, count=1); p.write_text(t); p=root/"swrs/SwRS-CORE-001.md"; t=p.read_text(); t=re.sub(r"(?m)^uuid: .+$", "uuid: 00000000-0000-4000-8000-000000000002", t, count=1); p.write_text(t); p=root/"swrs/SwRS-CORE-002.md"; t=p.read_text(); t=re.sub(r"(?m)^uuid: .+$", "uuid: 00000000-0000-4000-8000-000000000003", t, count=1); p.write_text(t)'
     {{ uv_run }} pytest -q -o addopts='' -p no:cacheprovider examples/okfreq-examples/tests
     {{ uv_run }} okfreq trace examples/okfreq-examples/ --json
-    {{ uv_run }} okfreq update-coverage examples/okfreq-examples/ --check
     {{ uv_run }} okfreq update-coverage examples/okfreq-examples/
+    {{ uv_run }} okfreq update-coverage examples/okfreq-examples/ --check
     {{ uv_run }} okfreq validate examples/okfreq-examples/ --prose
     {{ uv_run }} okfreq lint examples/okfreq-examples/ --prose
+    mkdir -p examples/okfreq-examples/dist
     {{ uv_run }} okfreq generate-report examples/okfreq-examples/ \
-        --output examples/okfreq-examples/dist/requirements-report.json
+        --output-json examples/okfreq-examples/dist/requirements-report.json \
+        --output-summary-md examples/okfreq-examples/dist/requirements-report.md
+    {{ uv_run }} python -c 'import json; import re; from pathlib import Path; fixed_date="2026-09-01T00:00:00+00:00"; report_path=Path("examples/okfreq-examples/dist/requirements-report.json"); report=json.loads(report_path.read_text()); report.pop("bundle_path", None); scan=report.get("scan", {}); scan.pop("project_root", None); report["generated_at"]=fixed_date; report["generated_by"]["version"]="0.0.0-example"; report_path.write_text(json.dumps(report, indent=2) + chr(10)); markdown_path=Path("examples/okfreq-examples/dist/requirements-report.md"); markdown=markdown_path.read_text(); markdown, count=re.subn(r"(?m)^Generated: .*$", "Generated: " + fixed_date, markdown, count=1); assert count == 1; markdown_path.write_text(markdown)'
 
 
 # ── Skill Evals ──────────────────────────────────────────────────────────────

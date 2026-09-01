@@ -43,8 +43,8 @@ okf-schema index --path .
 ```
 
 Regenerates `index.md` files. Run `okfkb update .` to regenerate indexes and
-also lint frontmatter, including links and backlinks. `log.md` remains
-human-authored.
+also lint frontmatter, including links, backlinks, and computed `derives_to`.
+Authored `derived_from` and `log.md` remain unchanged.
 
 ### 4. Validate
 
@@ -94,9 +94,9 @@ okfkb read concepts --status active
 # Structured query: filter DSL (flat frontmatter)
 okfkb query "type:finding confidence:>=high tag:pll status:active"
 
-# Structured query: arrow traversal over the link/promotion graph
-#   ->  follows links   <-  follows backlinks   ^  follows promotion
-okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
+# Structured query: arrow traversal over links and computed derivations
+#   -> follows links, <- follows backlinks, ^ follows derives_to
+okfkb query "finding[tag=pll,confidence=high] ^ concept ^ principle"
 ```
 
 **When to use which:** `read` a stable tier for the big picture, `query`/`search` to locate
@@ -122,6 +122,8 @@ links: [findings/..., concepts/...]
 backlinks: []  # Auto-computed
 kb_status: active | contradicted | superseded
 contradicted_by: [findings/...]
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 ```
 
 ### Concepts: `concepts/<name>.md`
@@ -132,7 +134,9 @@ Stable understanding promoted from converged findings.
 type: Concept
 title: Stable understanding
 description: Concise explanation of the stable idea
-derived_from: [findings/..., findings/...]
+derived_from: [findings/<extensionless-name>, findings/<extensionless-name>]
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 links: [concepts/..., principles/...]
 backlinks: []
 kb_status: active | deprecated
@@ -146,7 +150,9 @@ Testable propositions.
 type: Hypothesis
 title: Proposition to test
 description: Testable explanation of observations
-derived_from: [findings/... or concepts/...]
+derived_from: [findings/<extensionless-name>]
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 links: []
 kb_status: proposed | under_test | confirmed | falsified
 ```
@@ -163,7 +169,9 @@ hypothesis: hypotheses/...
 steps: [Prepare the target, Run the measurement, Capture the signals]
 expected_signals: [Signal expected if true, Signal expected if false]
 kb_status: proposed | active | retired | superseded
-derived_findings: [findings/...]
+derived_from: [hypotheses/<extensionless-name>]
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 ```
 
 ### Principles: `principles/<name>.md`
@@ -176,7 +184,9 @@ title: Standard or policy we agree on
 description: Human-agreed normative rule
 rationale: Why this rule exists
 authority: team
-supported_by: [findings/...]
+derived_from: [findings/<extensionless-name>]
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 ```
 
 ### Structures: `structures/<name>.md`
@@ -187,7 +197,9 @@ System composition patterns.
 type: Structure
 title: System composition or pattern
 description: How the subject is composed or works
-derived_from: [findings/...]
+derived_from: [findings/<extensionless-name>]
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 links: [concepts/...]
 kb_status: active | deprecated
 ```
@@ -202,7 +214,9 @@ title: Project or deliverable
 description: Planned result derived from stable knowledge
 kb_status: planned | in_progress | done | cancelled
 deliverable: Concrete artifact or result
-derived_from: [concepts/...]
+derived_from: [concepts/<extensionless-name>]
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 ```
 
 ### Reference: `reference/<name>.md`
@@ -215,10 +229,12 @@ title: Paper/link title
 description: What this source contributes
 authoritative_source: https://example.com/specification
 schema_version: v2.1
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 links: [concepts/..., findings/...]
 ```
 
-### Playbooks: `guides/<name>.md`
+### Playbooks: `playbooks/<name>.md`
 
 Operational how-to notes.
 
@@ -227,6 +243,9 @@ type: Playbook
 title: How to do X
 description: Reproducible workflow that produces a result
 kb_status: active | deprecated | superseded
+derived_from: [concepts/<extensionless-name>]
+# knowledge graph fields generated automatically — do not edit manually
+derives_to: []
 links: []
 ```
 
@@ -241,7 +260,9 @@ links:
   - principles/timeout-policy.md
 ```
 
-Run `okfkb update .` to materialise links and backlinks and regenerate indexes.
+Run `okfkb update .` to materialise links, backlinks, and reciprocal
+`derives_to` fields and regenerate indexes. Author `derived_from`; never edit
+the computed section.
 
 ## Frontmatter Validation
 

@@ -19,7 +19,7 @@ CONTENT_DIRS = {
     "concepts",
     "experiments",
     "findings",
-    "guides",
+    "playbooks",
     "hypotheses",
     "outcomes",
     "principles",

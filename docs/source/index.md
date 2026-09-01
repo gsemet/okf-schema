@@ -79,7 +79,8 @@ and how it relates to the OKF specification.
 :link-type: doc
 
 Learn why the `okfkb` KB format exists, how agents read frontmatter-first
-markdown, and how links and backlinks keep the graph navigable.
+markdown, and how links, backlinks, and computed derivation reflections keep
+the graph navigable.
 :::
 
 :::{grid-item-card} 📐 Requirements Traceability

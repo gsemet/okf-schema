@@ -10,7 +10,7 @@ The ``query`` engine supports two complementary styles:
 * **Filter domain-specific language (DSL)** — flat frontmatter selection, e.g.
   ``type:finding confidence:>=high tag:pll status:active``.
 * **Arrow traversal** — a pocket-Cypher over the ``links`` / ``backlinks`` /
-  ``promoted_from`` graph, e.g.
+  ``derives_to`` graph, e.g.
   ``finding[tag=pll,confidence=high] -> concept -> principle``.
 """
 
@@ -42,7 +42,7 @@ _TIER_FOLDERS = (
     "concepts",
     "experiments",
     "findings",
-    "guides",
+    "playbooks",
     "hypotheses",
     "outcomes",
     "principles",
@@ -91,9 +91,13 @@ class KbNode:
         """Return incoming ``backlinks`` as bundle-relative paths."""
         return _as_str_list(self.frontmatter.get("backlinks"))
 
-    def promoted_from(self) -> list[str]:
-        """Return promotion sources (``promoted_from``) as paths."""
-        return _as_str_list(self.frontmatter.get("promoted_from"))
+    def derived_from(self) -> list[str]:
+        """Return authored derivation sources as canonical document IDs."""
+        return _as_str_list(self.frontmatter.get("derived_from"))
+
+    def derives_to(self) -> list[str]:
+        """Return computed downstream derivations as canonical document IDs."""
+        return _as_str_list(self.frontmatter.get("derives_to"))
 
 
 def _as_str_list(value: object) -> list[str]:
@@ -548,6 +552,7 @@ def _run_traversal(nodes: list[KbNode], expr: str) -> list[KbNode]:
         raise ValueError("Empty traversal expression.")
 
     by_path = {n.path: n for n in nodes}
+    by_path.update({n.path.removesuffix(".md"): n for n in nodes})
     first = _parse_node_step(hops[0])
     current = [
         n
@@ -559,7 +564,7 @@ def _run_traversal(nodes: list[KbNode], expr: str) -> list[KbNode]:
     while i < len(hops):
         op = hops[i]
         step = _parse_node_step(hops[i + 1])
-        current = _apply_hop(current, op, step, by_path, nodes)
+        current = _apply_hop(current, op, step, by_path)
         i += 2
 
     # Deduplicate while preserving order, then sort by path.
@@ -578,7 +583,6 @@ def _apply_hop(
     op: str,
     step: _NodeStep,
     by_path: dict[str, KbNode],
-    all_nodes: list[KbNode],
 ) -> list[KbNode]:
     """Apply a single traversal hop and filter to *step*'s tier/conditions."""
     reached: list[KbNode] = []
@@ -593,11 +597,11 @@ def _apply_hop(
                 if source in by_path:
                     reached.append(by_path[source])
     elif op == "^":
-        # Promotion: find nodes whose promoted_from references a current node.
-        current_paths = {n.path for n in current}
-        for candidate in all_nodes:
-            if current_paths.intersection(candidate.promoted_from()):
-                reached.append(candidate)
+        # Derivation: follow computed reverse edges from sources to products.
+        for node in current:
+            for target in node.derives_to():
+                if target in by_path:
+                    reached.append(by_path[target])
     else:  # pragma: no cover - guarded by regex
         raise ValueError(f"Unknown hop operator {op!r}.")
 

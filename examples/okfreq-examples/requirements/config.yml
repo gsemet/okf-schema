@@ -11,4 +11,4 @@ markers:
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, implemented_in_files, tested_in_files]
 scopes:
-  default: {source_dirs: [src], test_dirs: [tests]}
+  Core: {id_token: CORE, source_dirs: [src], test_dirs: [tests]}

@@ -9,7 +9,7 @@ from export import export_rows  # noqa: E402
 
 
 # This file verifies both nominal and boundary behavior for the requirement.
-# @tests_req SwRS-default-001
+# @tests_req SwRS-CORE-001
 def test_export_rows() -> None:
     assert export_rows([["name", "note"], ["Ada", "uses, commas"]]) == (
         'name,note\nAda,"uses, commas"\n'

@@ -145,12 +145,12 @@ okfkb query "type:concept title:~boot since:2026-07-01"
 Confidence is ordinal (`low` < `medium` < `high` < `confirmed`) so `>=high` works.
 Special keys: `type`/`tier`, `tag`, `since`/`until` (timestamp bounds).
 
-**`query` — arrow traversal** (pocket-Cypher over `links`/`backlinks`/`promoted_from`):
+**`query` — arrow traversal** (pocket-Cypher over `links`/`backlinks`/`derives_to`):
 
 ```bash
-# ->  follows links   <-  follows backlinks   ^  follows promotion
-okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
-okfkb query "concept[title~boot] <- finding"
+# -> follows links, <- follows backlinks, ^ follows computed derivation products
+okfkb query "finding[tag=pll,confidence=high] ^ concept ^ principle"
+okfkb query "concept[title~boot] -> playbook"
 okfkb query "finding[status=active] ^ concept"
 ```
 
@@ -203,7 +203,7 @@ for c in concepts:
 | E8 | Source metadata | A source lacks `resource` or duplicates another source ID |
 | E9 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
 
-### Warnings (W0–W13)
+### Warnings (W0–W14)
 
 | Code | Rule | Description |
 |------|------|-------------|
@@ -221,6 +221,7 @@ for c in concepts:
 | W11 | Stale content | `stale_after` is in the past |
 | W12 | Source footnote | A body footnote has no matching `sources[].id` |
 | W13 | Source resource | A local `sources[].resource` path does not resolve |
+| W14 | KB derivation graph | Authored derivation paths are invalid or computed `derives_to` is stale |
 
 ## Recommended Workflows
 

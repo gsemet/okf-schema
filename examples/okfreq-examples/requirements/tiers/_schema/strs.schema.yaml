@@ -1,0 +1,19 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: strs.schema.yaml
+title: okfreq strs requirement profile
+allOf:
+- $ref: base.schema.yaml
+- type: object
+  properties:
+    type:
+      const: StRS
+    tier:
+      const: StRS
+    user_need:
+      type: string
+      minLength: 1
+  required:
+  - type
+  - tier
+  - user_need
+

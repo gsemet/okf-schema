@@ -1261,9 +1261,7 @@ def report(root: Path) -> dict[str, Any]:
             "version": package_version,
             "command": "okfreq generate-report",
         },
-        "bundle_path": root.as_posix(),
         "scan": {
-            "project_root": project_path(root).as_posix(),
             "source_and_test_directories": config.get("scopes", {}),
         },
         "execution_evidence": {
@@ -1358,7 +1356,6 @@ def report_schema() -> dict[str, Any]:
             "format_version",
             "generated_at",
             "generated_by",
-            "bundle_path",
             "scan",
             "execution_evidence",
             "coverage_definition",
@@ -1380,7 +1377,6 @@ def report_schema() -> dict[str, Any]:
                 },
                 "additionalProperties": False,
             },
-            "bundle_path": {"type": "string"},
             "scan": {"type": "object"},
             "execution_evidence": {
                 "type": "object",

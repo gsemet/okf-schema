@@ -1,0 +1,261 @@
+{
+  "report_format": "okfreq-requirements-report",
+  "format_version": 1,
+  "generated_at": "2026-09-01T00:00:00+00:00",
+  "generated_by": {
+    "tool": "okfreq",
+    "version": "0.0.0-example",
+    "command": "okfreq generate-report"
+  },
+  "scan": {
+    "source_and_test_directories": {
+      "Core": {
+        "id_token": "CORE",
+        "source_dirs": [
+          "src"
+        ],
+        "test_dirs": [
+          "tests"
+        ]
+      }
+    }
+  },
+  "execution_evidence": {
+    "status": "not_collected",
+    "result_files": [],
+    "description": "Only linked test markers were scanned."
+  },
+  "coverage_definition": {
+    "population": "configured leaf requirements without annotation exemptions",
+    "source": "at least one @implements_req marker",
+    "tests": "at least one @tests_req marker",
+    "combined": "at least one source marker and one test marker"
+  },
+  "totals": {
+    "requirements": 3,
+    "coverage_target_requirements": 2,
+    "implemented": 2,
+    "tested": 2,
+    "fully_traceable": 2,
+    "source_coverage_percent": 100.0,
+    "test_coverage_percent": 100.0,
+    "combined_coverage_percent": 100.0
+  },
+  "scopes": {
+    "Core": {
+      "requirements": 2,
+      "implemented": 2,
+      "tested": 2,
+      "fully_traceable": 2,
+      "configured": true,
+      "source_coverage_percent": 100.0,
+      "test_coverage_percent": 100.0,
+      "combined_coverage_percent": 100.0
+    }
+  },
+  "requirements": [
+    {
+      "id": "StRS-CORE-001",
+      "path": "requirements/tiers/strs/StRS-CORE-001.md",
+      "text": "---\ntype: StRS\nid: StRS-CORE-001\nuuid: 00000000-0000-4000-8000-000000000001\ntitle: Export a report\ndescription: When export is requested, the reporting capability SHALL provide a\n  portable report.\nproject: OKFREQXMP\nscope: Core\nlifecycle: draft\norigin: native\ntier: StRS\nderives_from: []\nuser_need: Users need a portable report for offline review.\nderived_by:\n- SwRS-CORE-001\n- SwRS-CORE-002\n---\n\n## EARS Expression\n\n### Normative behavior\n\nWhen export is requested, the reporting capability SHALL provide a portable report.\n\n### Preserved stakeholder intent\n\n## User Need\n\nUsers need a portable report for offline review.\n\n### Rationale and constraints\n\n<!-- Record stakeholder constraints, exclusions, or decisions that shape the\n     outcome. Remove this section when there are none. -->\n\n- The report must remain usable offline and the requirement does not prescribe a specific portable format.\n",
+      "frontmatter": {
+        "type": "StRS",
+        "id": "StRS-CORE-001",
+        "uuid": "00000000-0000-4000-8000-000000000001",
+        "title": "Export a report",
+        "description": "When export is requested, the reporting capability SHALL provide a portable report.",
+        "project": "OKFREQXMP",
+        "scope": "Core",
+        "lifecycle": "draft",
+        "origin": "native",
+        "tier": "StRS",
+        "derives_from": [],
+        "user_need": "Users need a portable report for offline review.",
+        "derived_by": [
+          "SwRS-CORE-001",
+          "SwRS-CORE-002"
+        ]
+      },
+      "scope": "Core",
+      "tier": "StRS",
+      "derives_from": [],
+      "coverage_target": false,
+      "implementation": {
+        "status": "missing",
+        "files": [],
+        "count": 0
+      },
+      "tests": {
+        "status": "missing",
+        "files": [],
+        "count": 0
+      },
+      "execution": {
+        "status": "not_collected",
+        "results": []
+      },
+      "diagnostics": {
+        "exempted": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "SwRS-CORE-001",
+      "path": "requirements/tiers/swrs/SwRS-CORE-001.md",
+      "text": "---\ntype: SwRS\nid: SwRS-CORE-001\nuuid: 00000000-0000-4000-8000-000000000002\ntitle: Write CSV output\ndescription: When export is requested, the service SHALL write the report as CSV\n  output.\nproject: OKFREQXMP\nscope: Core\nlifecycle: draft\norigin: native\ntier: SwRS\nderives_from:\n- StRS-CORE-001\nannotation_exemption: false\nexemption_reason:\nderived_by: []\nimplemented_in_files:\n- src/export.py\ntested_in_files:\n- tests/test_export.py\n---\n\n## EARS Expression\n\n### Normative behavior\n\nWhen export is requested, the service SHALL write the report as CSV output.\n\n### Scenario: Export selected rows\n\n- GIVEN a report containing selected rows\n- WHEN CSV export is requested\n- THEN the service returns UTF-8 CSV with one record per selected row\n\n### Scenario: Export an empty selection\n\n- GIVEN a report with no selected rows\n- WHEN CSV export is requested\n- THEN the service returns an empty CSV document without failing\n\n### Verification notes\n\n<!-- Name the verification method, evidence, and boundaries. Do not claim\n     coverage until implementation and test markers exist. -->\n\n- Method: test\n- Criteria: Automated tests compare exact CSV output for populated and empty inputs.\n",
+      "frontmatter": {
+        "type": "SwRS",
+        "id": "SwRS-CORE-001",
+        "uuid": "00000000-0000-4000-8000-000000000002",
+        "title": "Write CSV output",
+        "description": "When export is requested, the service SHALL write the report as CSV output.",
+        "project": "OKFREQXMP",
+        "scope": "Core",
+        "lifecycle": "draft",
+        "origin": "native",
+        "tier": "SwRS",
+        "derives_from": [
+          "StRS-CORE-001"
+        ],
+        "annotation_exemption": false,
+        "exemption_reason": null,
+        "derived_by": [],
+        "implemented_in_files": [
+          "src/export.py"
+        ],
+        "tested_in_files": [
+          "tests/test_export.py"
+        ]
+      },
+      "scope": "Core",
+      "tier": "SwRS",
+      "derives_from": [
+        "StRS-CORE-001"
+      ],
+      "coverage_target": true,
+      "implementation": {
+        "status": "covered",
+        "files": [
+          "src/export.py"
+        ],
+        "count": 1
+      },
+      "tests": {
+        "status": "covered",
+        "files": [
+          "tests/test_export.py"
+        ],
+        "count": 1
+      },
+      "execution": {
+        "status": "not_collected",
+        "results": []
+      },
+      "diagnostics": {
+        "exempted": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "SwRS-CORE-002",
+      "path": "requirements/tiers/swrs/SwRS-CORE-002.md",
+      "text": "---\ntype: SwRS\nid: SwRS-CORE-002\nuuid: 00000000-0000-4000-8000-000000000003\ntitle: Format Rust CSV rows\ndescription: When Rust export is requested, the service SHALL return the\n  selected row as a newline-terminated CSV record.\nproject: OKFREQXMP\nscope: Core\nlifecycle: draft\norigin: native\ntier: SwRS\nderives_from:\n- StRS-CORE-001\nannotation_exemption: false\nexemption_reason:\nderived_by: []\nimplemented_in_files:\n- src/rust_export.rs\ntested_in_files:\n- tests/rust_export_test.rs\n---\n\n## EARS Expression\n\n### Normative behavior\n\nWhen Rust export is requested, the service SHALL return the selected row as a newline-terminated CSV record.\n\n### Scenario: Return a Rust CSV row\n\n- GIVEN a Rust report row with two fields\n- WHEN Rust CSV export is requested\n- THEN the service returns the fields as one newline-terminated CSV record\n\n### Scenario: Export an empty Rust row\n\n- GIVEN a Rust report row with two empty fields\n- WHEN Rust CSV export is requested\n- THEN the service returns a newline-terminated empty CSV record without failing\n\n### Verification notes\n\n<!-- Name the verification method, evidence, and boundaries. Do not claim\n     coverage until implementation and test markers exist. -->\n\n- Method: test\n- Criteria: The Rust test compares exact output for populated and empty rows.\n",
+      "frontmatter": {
+        "type": "SwRS",
+        "id": "SwRS-CORE-002",
+        "uuid": "00000000-0000-4000-8000-000000000003",
+        "title": "Format Rust CSV rows",
+        "description": "When Rust export is requested, the service SHALL return the selected row as a newline-terminated CSV record.",
+        "project": "OKFREQXMP",
+        "scope": "Core",
+        "lifecycle": "draft",
+        "origin": "native",
+        "tier": "SwRS",
+        "derives_from": [
+          "StRS-CORE-001"
+        ],
+        "annotation_exemption": false,
+        "exemption_reason": null,
+        "derived_by": [],
+        "implemented_in_files": [
+          "src/rust_export.rs"
+        ],
+        "tested_in_files": [
+          "tests/rust_export_test.rs"
+        ]
+      },
+      "scope": "Core",
+      "tier": "SwRS",
+      "derives_from": [
+        "StRS-CORE-001"
+      ],
+      "coverage_target": true,
+      "implementation": {
+        "status": "covered",
+        "files": [
+          "src/rust_export.rs"
+        ],
+        "count": 1
+      },
+      "tests": {
+        "status": "covered",
+        "files": [
+          "tests/rust_export_test.rs"
+        ],
+        "count": 1
+      },
+      "execution": {
+        "status": "not_collected",
+        "results": []
+      },
+      "diagnostics": {
+        "exempted": false,
+        "errors": []
+      }
+    }
+  ],
+  "marker_coverage": {
+    "implemented": 2,
+    "tested": 2,
+    "missing_ids": [],
+    "duplicates": [],
+    "non_leaf": [],
+    "warnings": [],
+    "missing_implementation": [],
+    "missing_tests": [],
+    "exemptions": []
+  },
+  "legacy": {
+    "provenance": {
+      "generator": "okfreq",
+      "command": "okfreq generate-report",
+      "config_version": 1,
+      "sources": [
+        "config.yml",
+        "tiers/"
+      ]
+    },
+    "schema_health": {
+      "requirements": 3,
+      "errors": 0
+    },
+    "structural_traceability": {
+      "graph_errors": 0
+    },
+    "marker_coverage": {
+      "implemented": 2,
+      "tested": 2,
+      "missing_ids": [],
+      "duplicates": [],
+      "non_leaf": [],
+      "warnings": [],
+      "missing_implementation": [],
+      "missing_tests": [],
+      "exemptions": []
+    },
+    "lifecycle": {
+      "draft": 3
+    },
+    "errors": []
+  }
+}

@@ -30,8 +30,4 @@ allOf:
       authority:
         description: Who agreed this principle (e.g. "team", "human-reviewed").
         type: string
-      supported_by:
-        description: IDs of Findings that provide empirical support for this principle.
-        type: array
-        items: { type: string }
     required: [type]

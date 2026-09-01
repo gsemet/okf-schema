@@ -3,8 +3,8 @@ type: SwRS
 id: SwRS-OKFSCHEMA-OKFKB-002
 uuid: 56c42668-10b7-4119-a083-1d257fd94b0d
 title: Scaffold and install knowledge bases
-description: The okfkb layer scaffolds knowledge bases and installs their
-  supporting guidance.
+description: The okfkb layer scaffolds knowledge bases with type-aligned tier
+  folders and installs their supporting guidance.
 project: okf-schema
 scope: okfkb
 lifecycle: draft
@@ -38,8 +38,9 @@ overwriting existing authored files.
 
 - GIVEN an empty target directory
 - WHEN the user initializes an `okfkb` knowledge base
-- THEN the target contains the required schemas, layer directories, indexes, and
-  guidance needed for subsequent knowledge operations
+- THEN the target contains the required schemas, type-aligned layer
+  directories, indexes, and guidance needed for subsequent knowledge
+  operations, including `playbooks/` for `Playbook` documents
 
 ### Scenario: Install into existing content
 

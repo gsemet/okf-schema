@@ -60,6 +60,7 @@ experiments/ ↓ ← planned investigations
 concepts/ ↓    ← stable knowledge
 structures/ ↓  ← system composition
 principles/ ↓  ← team standards
+playbooks/ ↓   ← reproducible operations
 outcomes/ ↓    ← planned deliverables
 ```
 

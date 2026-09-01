@@ -53,7 +53,7 @@ okfkb init [PATH]
 ├── concepts/
 ├── experiments/
 ├── findings/
-├── guides/
+├── playbooks/
 ├── hypotheses/
 ├── outcomes/
 ├── principles/
@@ -383,18 +383,15 @@ Each node label is a tier name; hops follow graph edges:
 |-----|---------|
 | `->` | outgoing `links` |
 | `<-` | incoming `backlinks` |
-| `^` | promotion edge (`promoted_from`: finding → concept) |
+| `^` | derivation edge (computed `derives_to`: source → derived document) |
 
 Inline filters accept `=`, `>=`, `<=`, `~` (e.g. `[tag=pll,confidence=high]`).
 
 ```bash
-# From high-confidence PLL findings, walk up to concepts, then principles
-okfkb query "finding[tag=pll,confidence=high] -> concept -> principle"
+# From high-confidence PLL findings, follow derivation into concepts and principles
+okfkb query "finding[tag=pll,confidence=high] ^ concept ^ principle"
 
-# Which findings back a concept about boot?
-okfkb query "concept[title~boot] <- finding"
-
-# Findings promoted into concepts
+# Findings distilled into concepts
 okfkb query "finding[status=active] ^ concept"
 ```
 

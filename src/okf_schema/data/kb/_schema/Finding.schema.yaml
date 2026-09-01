@@ -41,9 +41,6 @@ allOf:
           Use 'status' (OKF 0.2) for the OKF lifecycle vocabulary (draft/stable/deprecated).
         type: string
         enum: [active, contradicted, superseded]
-      derived_from:
-        description: ID of the Experiment whose run produced this finding, if any.
-        type: string
       contradicts:
         description: IDs of earlier Findings this finding contradicts.
         type: array

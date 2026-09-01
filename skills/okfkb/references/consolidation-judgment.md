@@ -46,8 +46,9 @@ enough; many derivative Findings may not be. Use Hypotheses and Experiments when
 evidence remains ambiguous.
 
 Choose **Concept** for the stable idea or explanation and **Structure** for
-composition, relationships, architecture, or mechanics. Use schema-canonical
-`derived_from` links to preserve provenance.
+composition, relationships, architecture, or mechanics. Use authored
+`derived_from` with canonical bundle-relative, extensionless paths to preserve
+provenance; the CLI computes reciprocal `derives_to` links.
 
 ## Updating stable knowledge
 

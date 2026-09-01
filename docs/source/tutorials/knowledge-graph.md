@@ -1,318 +1,121 @@
-# Building your first Knowledge Graph
+# Link Two Documents and Explore Backlinks
 
-This tutorial walks through a **fictional** OKF bundle for a data-platform
-team. You will see how cross-links between concepts create a navigable
-knowledge graph, how `okf-schema lint` materialises those links into
-frontmatter metadata, and how to query the graph from both the CLI and the
-Python API.
+In this tutorial, you will connect two documents and let `okf-schema` generate
+the reverse relationship. This creates the smallest useful knowledge graph.
 
-## Scenario
+**Time:** about 10 minutes
 
-Imagine you are the data-platform team at *Acme Corp*. Your knowledge base
-covers tables, datasets, ingestion jobs, metrics, and runbooks. Concepts are
-small — one per table, one per job, one per metric — and they are densely
-linked.
+**Prerequisite:** Complete
+[Create and Validate Your First OKF Bundle](getting-started.md). The commands
+below use the bundle created there.
 
-Here is the bundle layout:
+## Create a second document
 
-```text
-acme-knowledge/
-├── index.md
-├── log.md
-├── tables/
-│   ├── index.md
-│   ├── orders.md
-│   ├── customers.md
-│   └── products.md
-├── datasets/
-│   ├── index.md
-│   └── sales-dwh.md
-├── jobs/
-│   ├── index.md
-│   ├── ingest-orders.md
-│   └── ingest-customers.md
-├── metrics/
-│   ├── index.md
-│   ├── daily-revenue.md
-│   └── customer-lifetime-value.md
-└── runbooks/
-    ├── index.md
-    └── freshness-alert.md
+The existing `api/health-check.md` document describes an endpoint. Add a
+runbook that explains what to do when that endpoint reports a problem:
+
+```bash
+okf-schema new --path my-knowledge-base/bundle \
+    --name runbooks/service-unavailable \
+    --type Runbook \
+    --title "Service Unavailable"
 ```
 
-## Concept bodies: where links live
-
-Links are ordinary markdown links in the body. The surrounding prose gives
-meaning to the relationship.
-Links and backlinks will later appear in the `links` and `backlinks` frontmatter
-fields after running `okf-schema lint`.
-
-Let's see how these excerpts from three newly created concepts:
-
-### `tables/orders.md`
+Open `my-knowledge-base/bundle/runbooks/service-unavailable.md` and add:
 
 ```markdown
----
-type: BigQuery Table
-title: Customer Orders
-description: One row per completed order across all channels.
-tags:
-  - sales
-  - core
----
+# Service Unavailable
 
-## Schema
-
-| Column        | Type   | Description                              |
-|---------------|--------|------------------------------------------|
-| `order_id`    | STRING | Globally unique order identifier.        |
-| `customer_id` | STRING | Foreign key into [customers](customers.md). |
-| `product_id`  | STRING | Foreign key into [products](products.md). |
-
-## Joins
-
-Joined with [customers](customers.md) on `customer_id`.
-Joined with [products](products.md) on `product_id`.
-
-## Downstream
-
-Part of the [sales-dwh](datasets/sales-dwh.md) dataset.
+Check the [health endpoint](../api/health-check.md) before restarting the
+service.
 ```
 
-### `metrics/daily-revenue.md`
+The ordinary Markdown link is the authored relationship. Its surrounding
+sentence explains why the documents are related.
 
-````markdown
----
-type: Metric
-title: Daily Revenue
-description: Sum of order totals per calendar day.
-tags: [sales, kpi]
----
+Instead of editing manually, tell your coding agent:
 
-# Definition
+> Use the `okf-schema` skill to create a `Service Unavailable` runbook in the
+> current bundle. Link it to `api/health-check.md`, explain why the operator
+> follows that link, then lint and validate the bundle.
 
-```sql
-SELECT DATE(placed_at) AS day, SUM(total_usd) AS revenue
-FROM `orders`
-GROUP BY 1
-```
-````
+The prompt states the relationship's meaning; the skill handles valid paths,
+frontmatter, and generated link metadata.
 
-## Running `lint` to materialise the graph
+## Generate graph metadata
 
-After authoring the concepts, run:
+Run the linter:
 
 ```bash
-okf-schema lint --path acme-knowledge/bundle
+okf-schema lint --path my-knowledge-base/bundle
 ```
 
-`okf-schema` scans every body, extracts internal links, resolves them to
-bundle-relative paths, flattens lists and updates the frontmatter fields.
+The linter resolves internal links and updates two generated frontmatter
+fields:
 
-### Result: `tables/orders.md`
+- `links` lists documents referenced by the current document.
+- `backlinks` lists documents that reference the current document.
 
-```markdown
----
-type: BigQuery Table
-title: Customer Orders
-description: One row per completed order across all channels.
-tags: [sales, core]
-links: [datasets/sales-dwh.md, tables/customers.md, tables/products.md]
-backlinks:
-  [datasets/sales-dwh.md, jobs/ingest-orders.md, metrics/customer-lifetime-value.md,
-   metrics/daily-revenue.md, tables/customers.md, tables/products.md]
----
+The runbook now has an outgoing link similar to:
 
-## Schema
-
-| Column        | Type   | Description                              |
-|---------------|--------|------------------------------------------|
-| `order_id`    | STRING | Globally unique order identifier.        |
-| `customer_id` | STRING | Foreign key into [customers](customers.md). |
-| `product_id`  | STRING | Foreign key into [products](products.md). |
-
-## Joins
-
-Joined with [customers](customers.md) on `customer_id`.
-Joined with [products](products.md) on `product_id`.
-
-## Downstream
-
-Part of the [sales-dwh](datasets/sales-dwh.md) dataset.
+```yaml
+links: [api/health-check.md]
+backlinks: []
 ```
 
-Notice:
+The health-check document receives the reverse edge:
 
-* **`links`** — The three concepts `orders.md` links *to*:
-  `customers.md`, `products.md`, and `sales-dwh.md`.
-* **`backlinks`** — The six concepts that link *here*:
-  `sales-dwh.md`, `ingest-orders.md`, `customer-lifetime-value.md`,
-  `daily-revenue.md`, `customers.md`, and `products.md`.
+```yaml
+links: []
+backlinks: [runbooks/service-unavailable.md]
+```
 
-Both lists are sorted alphabetically so diffs stay minimal when a single
-link is added or removed.
+Do not edit these generated lists by hand. Edit Markdown links in document
+bodies and run `lint` again.
 
-## See also
+## Follow the relationship
 
-- [Getting Started](getting-started) — foundational tutorial on creating and navigating bundles.
-- [Lint Before Commit](../how-to/lint-before-commit) — automating frontmatter consistency.
-- [Design Principles](../explanation/design-principles) — why OKF-Schema treats knowledge as a graph.
-- [Why an Opinionated Knowledge Base?](../explanation/okfkb-choices) — how links and backlinks work in the KB model.
-- [CLI Reference](../reference/cli.md) — `lint`, `index`, and `backlinks` commands; the full graph is exposed by the Python API.
-
-## Navigating the graph from the CLI
-
-### Show all outgoing links
+Ask which documents depend on the health-check document:
 
 ```bash
-okf-schema show --path acme-knowledge/bundle tables/orders
+okf-schema backlinks --path my-knowledge-base/bundle api/health-check
 ```
 
-The rendered output includes the `links` frontmatter field, giving you an
-instant neighbourhood map.
+This is useful before renaming, deleting, or substantially changing a document.
+It shows which other knowledge may need review.
 
-### Discover backlinks
+Inspect the runbook to see its outgoing links:
 
 ```bash
-okf-schema backlinks --path acme-knowledge/bundle tables/orders
+okf-schema show --path my-knowledge-base/bundle runbooks/service-unavailable
 ```
 
-Output:
+## Check the result
 
-```text
-tables/orders.md ← datasets/sales-dwh.md
-tables/orders.md ← jobs/ingest-orders.md
-tables/orders.md ← metrics/customer-lifetime-value.md
-tables/orders.md ← metrics/daily-revenue.md
-tables/orders.md ← tables/customers.md
-tables/orders.md ← tables/products.md
-```
-
-This answers the question *"If I change the orders table schema, what else
-needs review?"* in one command.
-
-### Build the full adjacency list (Python API)
-
-The full link graph is available through the Python API (see
-[API Reference](../reference/api.md)):
-
-```python
-from okf_schema.api import graph_bundle
-import json
-
-graph = graph_bundle("acme-knowledge/bundle")
-print(json.dumps(graph, indent=2))
-```
-
-Output (excerpt):
-
-```json
-{
-  "tables/orders.md": [
-    "datasets/sales-dwh.md",
-    "tables/customers.md",
-    "tables/products.md"
-  ],
-  "tables/customers.md": [
-    "metrics/customer-lifetime-value.md",
-    "tables/orders.md"
-  ],
-  "metrics/daily-revenue.md": [
-    "datasets/sales-dwh.md",
-    "tables/orders.md"
-  ]
-}
-```
-
-## Querying the graph from Python
-
-The same operations are available programmatically.
-
-### Full graph
-
-```python
-from okf_schema.api import graph_bundle
-
-graph = graph_bundle("acme-knowledge/bundle")
-
-for concept, neighbours in graph.items():
-    print(f"{concept} → {neighbours}")
-```
-
-### Backlinks for a single concept
-
-```python
-from okf_schema.api import backlinks_bundle
-
-results = backlinks_bundle("acme-knowledge/bundle", ["tables/orders.md"])
-for r in results:
-    print(f"{r.target} ← {r.source}")
-```
-
-### Custom graph analysis
-
-Because `graph_bundle` returns a plain dictionary, you can run any graph
-algorithm on it:
-
-```python
-from okf_schema.api import graph_bundle
-
-graph = graph_bundle("acme-knowledge/bundle")
-
-# Find concepts with no outgoing links (leaf nodes)
-leaves = [c for c, n in graph.items() if not n]
-print("Leaf concepts:", leaves)
-
-# Find the most referenced concept (highest in-degree)
-in_degree: dict[str, int] = {}
-for neighbours in graph.values():
-    for n in neighbours:
-        in_degree[n] = in_degree.get(n, 0) + 1
-
-hub = max(in_degree, key=in_degree.get)
-print(f"Most referenced: {hub} ({in_degree[hub]} backlinks)")
-```
-
-## Graph statistics at a glance
-
-Running `okf-schema stats` on the bundle produces a compact bundle summary:
+Refresh indexes and validate the bundle:
 
 ```bash
-okf-schema stats --path acme-knowledge/bundle
+okf-schema index --path my-knowledge-base/bundle
+okf-schema validate --path my-knowledge-base/bundle --strict
 ```
 
-Typical output:
+You now have a two-document graph with an authored link and a generated
+backlink.
 
-```text
-12 files · 10 concepts · 5 types · 8,420 bytes
-  18 links
-  Health: 100% — all clear
-```
+## If a link is unresolved
 
-Use `graph_bundle` when you need derived graph measures such as average
-out-degree, in-degree, or isolated-node counts.
+Check the path from the file containing the link. The runbook is one directory
+below the bundle root, so it uses `../api/health-check.md`, not
+`api/health-check.md`. Keep the `.md` suffix in Markdown body links.
 
-## Design tips for a navigable graph
+Run `lint` after correcting the path, then validate again.
 
-1. **Link early, link often**
-   Every time you mention another concept by name, turn it into a markdown
-   link. The lint step will do the bookkeeping.
+## Next steps
 
-2. **Use relative paths for portability**
-   Write `../tables/orders.md` or `./customers.md` rather than
-   `/tables/orders.md`. Relative paths survive when a subdirectory is copied
-   or symlinked into another bundle.
-
-3. **Let `lint` run in CI**
-   Add `okf-schema lint --path acme-knowledge/bundle --check` to your CI
-   pipeline. It fails if `links` or `backlinks` are out of sync with the
-   body, catching stale metadata before it reaches the main branch.
-
-4. **Prefer small concepts over monolithic pages**
-   A 500-line page with ten embedded links is less useful than ten 50-line
-   pages with two links each. Small concepts keep the graph granular and
-   navigable.
-
-5. **Review backlinks before refactoring**
-   Before renaming or deleting a concept, run `okf-schema backlinks` to see
-   every file that depends on it. Update or redirect those links first.
+- [Lint Before Commit](../how-to/lint-before-commit.md) keeps graph metadata in
+  sync automatically.
+- [Python API Reference](../reference/api.md) covers custom graph analysis.
+- [Design Principles](../explanation/design-principles.md) explains the graph
+  model and guidance for document size and linking.
+- [Record Your First Finding](okfkb-first-finding.md) introduces the optional
+  opinionated OKF-KB workflow.

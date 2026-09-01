@@ -321,6 +321,8 @@ def test_report_and_cli_surface(tmp_path: Path) -> None:
     assert schema.is_file()
     schema_data = json.loads(schema.read_text(encoding="utf-8"))
     assert schema_data["$defs"]["requirement"]["properties"]["text"]["type"] == "string"
+    assert "bundle_path" not in schema_data["required"]
+    assert "bundle_path" not in schema_data["properties"]
     markdown = tmp_path / "report.md"
     assert (
         runner.invoke(
@@ -345,6 +347,8 @@ def test_report_defines_marker_coverage_and_preserves_requirement_text(tmp_path:
     )
 
     result = report(root)
+    assert "bundle_path" not in result
+    assert "project_root" not in result["scan"]
     assert result["totals"]["source_coverage_percent"] == 100.0
     assert result["totals"]["test_coverage_percent"] == 100.0
     assert result["totals"]["combined_coverage_percent"] == 100.0

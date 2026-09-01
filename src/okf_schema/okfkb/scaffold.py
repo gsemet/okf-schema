@@ -21,7 +21,7 @@ CONTENT_DIRS: tuple[str, ...] = (
     "concepts",
     "experiments",
     "findings",
-    "guides",
+    "playbooks",
     "hypotheses",
     "outcomes",
     "principles",

@@ -27,10 +27,6 @@ allOf:
         description: Lifecycle state of the structure.
         type: string
         enum: [active, deprecated]
-      derived_from:
-        description: IDs of Findings or Hypotheses that support this Structure.
-        type: array
-        items: { type: string }
       subject:
         description: The object or system whose structure is described.
         type: string

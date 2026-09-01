@@ -41,8 +41,9 @@ each mutation.
    - how it works → `Structure`;
    - stable idea or definition → `Concept`;
    - standard or convention → `Principle`.
-   Link promoted documents to supporting Findings with `supported_by` or
-   `related_concepts`. Write only after confirmation.
+   Link promoted documents to their sources with authored `derived_from`
+   canonical bundle-relative, extensionless paths. Never edit computed
+   `derives_to`. Write only after confirmation.
 6. Run the knowledge-base validation commands before finishing:
 
    ```console

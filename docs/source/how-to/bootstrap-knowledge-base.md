@@ -33,7 +33,7 @@ knowledge/
 ├── concepts/
 ├── experiments/
 ├── findings/         # ← where new-finding writes files
-├── guides/
+├── playbooks/
 ├── hypotheses/
 ├── outcomes/
 ├── principles/
@@ -84,7 +84,9 @@ okfkb update my-project/knowledge/
 okf-schema validate --strict --path my-project/knowledge/
 ```
 
-- **`update`** (alias to `okf-schema index` + `okf-schema lint`) scans all markdown files, computes backlinks, updates `index.md`, and normalises YAML frontmatter.
+- **`update`** (alias to `okf-schema index` + `okf-schema lint`) scans all
+  markdown files, computes backlinks and reciprocal `derives_to`, updates
+  `index.md`, and normalises YAML frontmatter.
 
 - **`validate --strict`** checks all files against the bundled schemas.
 

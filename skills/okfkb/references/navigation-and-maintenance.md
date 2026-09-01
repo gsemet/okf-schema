@@ -34,7 +34,8 @@ After KB mutations:
 
 - ensure relationship paths resolve;
 - maintain reciprocal contradiction/supersession metadata where supported;
-- refresh generated links, backlinks, and indexes with project-prescribed tools;
+- refresh generated links, backlinks, `derives_to`, and indexes with
+  project-prescribed tools;
 - keep frontmatter compact and schema-valid;
 - preserve unknown extension fields and YAML comments;
 - add `log.md` entries only for significant semantic events: promotion,
