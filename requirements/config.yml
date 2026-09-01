@@ -19,8 +19,8 @@ scopes:
   okfkb:
     id_token: OKFKB
     folder: okfkb
-    source_dirs: [src/okf_schema/okfkb, src/okf_schema/data/kb/skills]
-    test_dirs: [tests/test_kb_cli.py, tests/test_kb_derivations.py, tests/test_kb_finding.py, tests/test_kb_install.py, tests/test_kb_navigate.py, tests/test_kb_patterns.py, tests/test_kb_scaffold.py]
+    source_dirs: [src/okf_schema/okfkb, src/okf_schema/data/kb/skills, src/okf_schema/skill_installer.py]
+    test_dirs: [tests/test_kb_cli.py, tests/test_kb_derivations.py, tests/test_kb_finding.py, tests/test_kb_install.py, tests/test_kb_navigate.py, tests/test_kb_patterns.py, tests/test_kb_scaffold.py, tests/test_skill_installer.py]
   okfreq:
     id_token: OKFREQ
     folder: okfreq

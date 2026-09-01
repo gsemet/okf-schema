@@ -19,6 +19,8 @@ from okf_schema.okfkb import navigate
 from okf_schema.okfkb.finding import new_finding as _new_finding
 from okf_schema.okfkb.install import install_kb
 from okf_schema.okfkb.scaffold import scaffold_kb
+from okf_schema.skill_cli import _register_install_skills
+from okf_schema.skill_installer import InstallationReport
 
 
 class _HelpCommand(click.Command):
@@ -74,27 +76,13 @@ def init(path: str, force: bool) -> None:
     click.echo(f"Created knowledge base at {target}.")
 
 
-@kb.command("install-skills")
-@click.argument("path", default=".", type=click.Path())
-@click.option("--force", is_flag=True, help="Overwrite existing files.")
-def install_skills(path: str, force: bool) -> None:
-    """Install KB skills and guidelines into a project at PATH.
+def _install_kb_family(destination: Path) -> InstallationReport:
+    """Install the packaged knowledge-base family through its facade."""
+    # @implements_req SwRS-OKFSCHEMA-OKFKB-002
+    return install_kb(destination)
 
-    PATH defaults to the current directory when omitted.
 
-    Args:
-        path:
-            Project directory in which to install the tooling.
-        force:
-            Whether to overwrite files that already exist.
-    """
-    target = Path(path)
-    try:
-        install_kb(target, force=force)
-    except Exception as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-    click.echo(f"Installed KB tooling at {target}.")
+_register_install_skills(kb, "okfkb", installer=_install_kb_family)
 
 
 @kb.command("new-finding")

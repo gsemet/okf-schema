@@ -36,39 +36,45 @@ Install as a Python library for programmatic use:
 uv add okf-schema
 ```
 
-## Install the agent skills manually
+## Install the agent skills
 
-The Python package installs the `okf-schema`, `okfkb`, and `okfreq` commands.
-The agent skills are currently distributed in the repository and are not yet
-included in the PyPI package. Copy the skills you need into your project's
-agent configuration before following an agent-assisted tutorial.
-
-Clone or download the repository, then copy complete skill directories. Each
-directory must keep its `SKILL.md` file and any `references/` files beside it:
+The skills are included in the package and installed by the command that owns
+each skill family. Run the commands for the families you want to use:
 
 ```bash
-mkdir -p .agents/skills
-cp -R /path/to/okf-schema/skills/okf-schema .agents/skills/
-cp -R /path/to/okf-schema/skills/okfkb .agents/skills/
-cp -R /path/to/okf-schema/skills/okfkb-record-findings .agents/skills/
-cp -R /path/to/okf-schema/skills/okfkb-distill .agents/skills/
-cp -R /path/to/okf-schema/skills/okfkb-gardening .agents/skills/
-cp -R /path/to/okf-schema/skills/okfreq .agents/skills/
-cp -R /path/to/okf-schema/skills/okfreq-gardening .agents/skills/
+okf-schema install-skills
+okfkb install-skills
+okfreq install-skills
 ```
 
-Use `.agents/skills/` when your agent supports it. If the project already uses
-`.github/skills/` instead, copy the directories there; do not maintain the same
-skill in both locations. Restart or reload the agent session after copying so
-it discovers the new skills.
+By default, skills are installed globally under `~/.copilot/skills`. To install
+them in the current project instead, choose the directory supported by your
+agent:
 
-You do not need every skill:
+```bash
+# GitHub Copilot project skills
+okf-schema install-skills --local-copilot
+okfkb install-skills --local-copilot
+okfreq install-skills --local-copilot
+
+# Agent Skills project directory
+okf-schema install-skills --local-agents
+okfkb install-skills --local-agents
+okfreq install-skills --local-agents
+```
+
+An explicit destination can be used when the project has its own skill
+directory:
+
+```bash
+okf-schema install-skills ./vendor/agent-skills
+```
+
+The commands install these families:
 
 - `okf-schema` covers generic bundle authoring and validation.
-- `okfkb` routes knowledge work; `okfkb-record-findings` captures one
-  observation, while `okfkb-distill` and `okfkb-gardening` consolidate batches.
-- `okfreq` covers requirement authoring and implementation;
-  `okfreq-gardening` audits an existing requirements base.
+- `okfkb` includes knowledge-base authoring, findings, and consolidation skills.
+- `okfreq` includes requirements authoring and requirements-maintenance skills.
 
 Invoke a skill by naming it in your request. For example:
 

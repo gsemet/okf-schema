@@ -16,6 +16,20 @@ This skill explains the **opinionated knowledge lifecycle**. Use the
 `okf-schema` skill for CLI syntax, schema validation, generic OKF conformance,
 or implementation details of the tool itself.
 
+## Installation
+
+Install or upgrade the Python CLI tool with `uv`:
+
+```bash
+uv tool install okf-schema
+uv tool upgrade okf-schema
+```
+
+This tool installation exposes the `okf-schema`, `okfkb`, and `okfreq` console
+commands. It is separate from installing agent skill folders: use
+`okfkb install-skills` to copy the packaged `okfkb` skill family into an
+agent's skills directory.
+
 ## Start with project rules
 
 1. Resolve the agent configuration directory first: use `.agents/` when it

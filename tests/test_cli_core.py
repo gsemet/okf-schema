@@ -6,7 +6,9 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
+import okf_schema.skill_cli as skill_cli
 from okf_schema.cli import cli
+from okf_schema.skill_installer import SKILL_FAMILIES
 
 FIXTURES = Path(__file__).parent / "fixtures"
 BUNDLE_FIXTURES = FIXTURES / "bundle"
@@ -45,6 +47,128 @@ def test_global_options_verbose_quiet_are_accepted() -> None:
     assert result.exit_code == 0
     result = runner.invoke(cli, ["--quiet", "--version"])
     assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# install-skills
+# ---------------------------------------------------------------------------
+
+
+def test_install_skills_help_exposes_shared_destination_contract() -> None:
+    """okf-schema install-skills exposes the common destination selectors."""
+    runner = CliRunner()
+    result = runner.invoke(cli, ["install-skills", "--help"])
+
+    assert result.exit_code == 0
+    assert "DESTINATION" in result.output
+    for option in ("--agent-copilot", "--local-copilot", "--local-agents"):
+        assert option in result.output
+    assert "--force" not in result.output
+
+
+def test_install_skills_installs_only_core_family_and_reports_destination(tmp_path: Path) -> None:
+    """okf-schema install-skills installs only the core skill family."""
+    runner = CliRunner()
+    destination = tmp_path / "nested" / "skills"
+
+    result = runner.invoke(cli, ["install-skills", str(destination)])
+
+    assert result.exit_code == 0, result.output
+    assert result.output.startswith(f"Destination: {destination.resolve()}\n")
+    assert [line.split(": ")[-1] for line in result.output.splitlines()[1:]] == list(
+        SKILL_FAMILIES["okf-schema"]
+    )
+    assert (destination / "okf-schema" / "SKILL.md").is_file()
+    assert not (destination / "okfkb" / "SKILL.md").exists()
+
+
+def test_install_skills_explicit_destination_precedes_local_selector(tmp_path: Path) -> None:
+    """An explicit root destination wins over a local selector."""
+    runner = CliRunner()
+    explicit = tmp_path / "explicit" / "skills"
+
+    with runner.isolated_filesystem(temp_dir=tmp_path) as working_directory:
+        result = runner.invoke(
+            cli,
+            ["install-skills", str(explicit), "--local-agents"],
+        )
+
+    assert result.exit_code == 0, result.output
+    assert (explicit / "okf-schema" / "SKILL.md").is_file()
+    assert not (Path(working_directory) / ".agents" / "skills").exists()
+
+
+def test_install_skills_default_destination_is_global_copilot(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """The root command defaults to the global Copilot destination."""
+    home = tmp_path / "home"
+    monkeypatch.setattr(Path, "home", lambda: home)
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["install-skills"])
+
+    destination = home / ".copilot" / "skills"
+    assert result.exit_code == 0, result.output
+    assert f"Destination: {destination}" in result.output
+    assert (destination / "okf-schema" / "SKILL.md").is_file()
+
+
+def test_install_skills_reports_updated_and_preserves_unrelated_skill(tmp_path: Path) -> None:
+    """A repeated root install updates its skill and keeps unrelated content."""
+    runner = CliRunner()
+    destination = tmp_path / "skills"
+    unrelated = destination / "okfreq"
+    unrelated.mkdir(parents=True)
+    (unrelated / "keep.txt").write_text("keep", encoding="utf-8")
+
+    first = runner.invoke(cli, ["install-skills", str(destination)])
+    second = runner.invoke(cli, ["install-skills", str(destination)])
+
+    assert first.exit_code == 0, first.output
+    assert second.exit_code == 0, second.output
+    assert "updated: okf-schema" in second.output
+    assert (unrelated / "keep.txt").read_text(encoding="utf-8") == "keep"
+
+
+def test_install_skills_rejects_owned_symlink_with_click_error(tmp_path: Path) -> None:
+    """The root command rejects an owned symbolic link without following it."""
+    runner = CliRunner()
+    destination = tmp_path / "skills"
+    outside = tmp_path / "outside"
+    destination.mkdir()
+    outside.mkdir()
+    link = destination / "okf-schema"
+    link.symlink_to(outside, target_is_directory=True)
+
+    result = runner.invoke(cli, ["install-skills", str(destination)])
+
+    assert result.exit_code == 1
+    assert "symbolic link" in result.output
+    assert link.is_symlink()
+    assert not (outside / "SKILL.md").exists()
+
+
+def test_install_skills_reports_staging_failure_without_mutating_destination(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """A staging failure is a clear nonzero CLI result with no destination mutation."""
+    destination = tmp_path / "skills"
+    destination.mkdir()
+    sentinel = destination / "sentinel.txt"
+    sentinel.write_text("unchanged", encoding="utf-8")
+
+    def fail_staging(family: str, target: Path) -> None:
+        raise RuntimeError(f"staging failed for {family} at {target}")
+
+    monkeypatch.setattr(skill_cli, "install_skill_family", fail_staging)
+    result = CliRunner().invoke(cli, ["install-skills", str(destination)])
+
+    assert result.exit_code == 1
+    assert "staging failed" in result.output
+    assert sentinel.read_text(encoding="utf-8") == "unchanged"
 
 
 # ---------------------------------------------------------------------------

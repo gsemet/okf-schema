@@ -30,6 +30,7 @@ from okf_schema.api import (
 )
 from okf_schema.okfkb.cli import kb
 from okf_schema.okfkb.patterns import INIT_PATTERNS, list_patterns
+from okf_schema.skill_cli import _register_install_skills
 
 
 class _HelpCommand(click.Command):
@@ -848,5 +849,6 @@ def backlinks(
             click.echo(f"{target} ← ❌")
 
 
-# Register the kb subcommand group
+# Register the packaged skill command and kb subcommand group.
+_register_install_skills(cli, "okf-schema")
 cli.add_command(kb)

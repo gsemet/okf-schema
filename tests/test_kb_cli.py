@@ -32,6 +32,7 @@ CONTENT_DIRS = {
 
 
 # @tests_req SwRS-OKFSCHEMA-OKFKB-001
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002
 
 
 def test_kb_help_kb_help_lists_init_and_install() -> None:
@@ -52,11 +53,16 @@ def test_kb_help_kb_init_help() -> None:
 
 
 def test_kb_help_kb_install_help() -> None:
-    """kb install-skills --help shows PATH argument and --force flag."""
+    """kb install-skills --help shows destination selectors without --force."""
     runner = CliRunner()
     result = runner.invoke(kb, ["install-skills", "--help"])
     assert result.exit_code == 0
-    assert "--force" in result.output
+    assert "DESTINATION" in result.output
+    assert "--agent-copilot" in result.output
+    assert "--local-copilot" in result.output
+    assert "--local-agents" in result.output
+    options = result.output.split("Options:", maxsplit=1)[1]
+    assert "--force" not in options
 
 
 def test_kb_help_kb_validate_help() -> None:
@@ -146,14 +152,14 @@ def test_kb_init_kb_init_exits_1_on_unexpected_error(
 
 
 def test_kb_install_kb_install_creates_files(tmp_path: Path) -> None:
-    """kb install-skills PATH creates skills and guideline files."""
+    """kb install-skills DESTINATION creates the complete KB skill family."""
     runner = CliRunner()
     result = runner.invoke(kb, ["install-skills", str(tmp_path)])
     assert result.exit_code == 0, result.output
-    # Should create .agents/ or .github/ with skills and guidelines
-    agents_dir = tmp_path / ".agents"
-    assert agents_dir.exists()
-    assert (agents_dir / "guidelines" / "knowledge-base.guidelines.md").is_file()
+    for skill in ("okfkb", "okfkb-distill", "okfkb-gardening", "okfkb-record-findings"):
+        assert (tmp_path / skill / "SKILL.md").is_file()
+    assert "Destination:" in result.output
+    assert "installed: okfkb" in result.output
 
 
 def test_kb_install_kb_install_prints_confirmation(tmp_path: Path) -> None:
@@ -164,32 +170,30 @@ def test_kb_install_kb_install_prints_confirmation(tmp_path: Path) -> None:
     assert str(tmp_path) in result.output
 
 
-def test_kb_install_kb_install_default_path_is_cwd(tmp_path: Path) -> None:
-    """kb install-skills with no PATH argument defaults to current directory."""
+def test_kb_install_kb_install_local_agents_selector_is_relative_to_cwd(tmp_path: Path) -> None:
+    """The local-agents selector creates skills below the current directory."""
     runner = CliRunner()
     with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-        result = runner.invoke(kb, ["install-skills"])
+        result = runner.invoke(kb, ["install-skills", "--local-agents"])
         assert result.exit_code == 0, result.output
-        assert (Path(td) / ".agents").exists()
+        assert (Path(td) / ".agents" / "skills" / "okfkb" / "SKILL.md").is_file()
 
 
-def test_kb_install_kb_install_errors_when_target_missing(tmp_path: Path) -> None:
-    """kb install-skills exits with code 1 when PATH does not exist."""
+def test_kb_install_kb_install_creates_missing_destination(tmp_path: Path) -> None:
+    """kb install-skills creates a missing explicit destination."""
     runner = CliRunner()
     missing = tmp_path / "does-not-exist"
     result = runner.invoke(kb, ["install-skills", str(missing)])
-    assert result.exit_code == 1
-    assert "Error" in result.output or "does not exist" in result.output
-
-
-def test_kb_install_kb_install_force_overwrites(tmp_path: Path) -> None:
-    """kb install-skills --force overwrites existing files."""
-    runner = CliRunner()
-    # First install
-    runner.invoke(kb, ["install-skills", str(tmp_path)])
-    # Second install with --force should succeed
-    result = runner.invoke(kb, ["install-skills", str(tmp_path), "--force"])
     assert result.exit_code == 0, result.output
+    assert (missing / "okfkb" / "SKILL.md").is_file()
+
+
+def test_kb_install_kb_install_rejects_retired_force_option(tmp_path: Path) -> None:
+    """kb install-skills rejects the retired force option."""
+    runner = CliRunner()
+    result = runner.invoke(kb, ["install-skills", str(tmp_path), "--force"])
+    assert result.exit_code == 2
+    assert "No such option '--force'" in result.output
 
 
 def test_kb_install_kb_install_exits_1_on_unexpected_error(
@@ -198,7 +202,7 @@ def test_kb_install_kb_install_exits_1_on_unexpected_error(
     """kb install-skills exits with code 1 when install_kb raises an unexpected error."""
     import okf_schema.okfkb.cli as cli_module
 
-    def broken_install(path: Path, force: bool = False) -> None:
+    def broken_install(path: Path) -> None:
         raise OSError("permission denied")
 
     monkeypatch.setattr(cli_module, "install_kb", broken_install)

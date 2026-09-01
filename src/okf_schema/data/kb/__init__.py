@@ -1,1 +1,1 @@
-"""Bundled schemas, guidelines, and skills for knowledge-base scaffolding."""
+"""Bundled schemas and guidelines for knowledge-base scaffolding."""

@@ -65,10 +65,13 @@ build-backend = "hatchling.build"
 source = "vcs"
 
 [tool.hatch.build.targets.sdist]
-include = ["src/okf_schema"]
+include = ["src/okf_schema", "skills"]
 
 [tool.hatch.build.targets.wheel]
 include = ["src/okf_schema"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "okf_schema/skills"
 
 [tool.hatch.build.targets.wheel.sources]
 "src/okf_schema" = "okf_schema"
