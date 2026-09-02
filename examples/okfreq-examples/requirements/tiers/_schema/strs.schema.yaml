@@ -1,6 +1,9 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: strs.schema.yaml
 title: okfreq strs requirement profile
+description: StRS records stakeholder intent and does not carry implementation
+  or source coverage fields. Stakeholder test coverage is computed from linked
+  SwRS according to configuration.
 allOf:
 - $ref: base.schema.yaml
 - type: object

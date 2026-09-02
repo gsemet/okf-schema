@@ -14,13 +14,9 @@ These guidelines govern the `okfreq` requirements layer in this repository.
 
 ## While editing
 
-- Store stakeholder requirements under `requirements/tiers/strs/<scope>/` and
   software requirements under `requirements/tiers/swrs/<scope>/`.
-- Use the filename and ID convention already established by the bundle, such as
   `SwRS-OKFSCHEMA-OKFREQ-002.md`.
-- Author parent relationships with `derives_from`; do not hand-edit generated
   `derived_by`, `implemented_in_files`, or `tested_in_files` fields.
-- For leaf software requirements, add `@implements_req <ID>` markers close to
   the implementation and `@tests_req <ID>` markers close to corresponding
   tests. Do not use source/test markers on stakeholder or other non-leaf levels.
 - Keep core `okf-schema`, knowledge-base `okfkb`, and requirements `okfreq`

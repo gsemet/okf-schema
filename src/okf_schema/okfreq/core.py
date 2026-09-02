@@ -39,6 +39,7 @@ levels:
   StRS: {folder: strs, prefix: StRS, derives_from: []}
   SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS]}
 id_policy: scope-prefix-sequence
+strs_test_coverage_mode: linked-swrs
 lifecycle:
   values: [draft, proposed, approved, deprecated, superseded]
 markers:
@@ -127,7 +128,10 @@ examples:
 GENERATED_STRS_SCHEMA = """$schema: https://json-schema.org/draft/2020-12/schema
 $id: strs.schema.yaml
 title: okfreq stakeholder requirement profile
-description: StRS records a stakeholder-observable outcome and its need.
+description: >-
+    StRS records a stakeholder-observable outcome and its need. It does not carry
+    implementation or source coverage fields; stakeholder test coverage is
+    computed in reports from linked SwRS according to configuration.
 allOf:
   - $ref: base.schema.yaml
   - type: object
@@ -199,6 +203,21 @@ LIFECYCLES = ("draft", "proposed", "approved", "deprecated", "superseded")
 GUIDELINE_NAME = "requirements.guidelines.md"
 DEFAULT_ID_PATTERN = r"[A-Za-z][A-Za-z0-9_-]*"
 SUPPORTED_GENERATED_FIELDS = frozenset({"derived_by", "implemented_in_files", "tested_in_files"})
+STRS_TEST_COVERAGE_MODES = (
+    "linked-swrs",
+    "linked-swrs-and-validation-test",
+)
+STRS_TEST_COVERAGE_DESCRIPTIONS = {
+    "linked-swrs": (
+        "An StRS is considered as covered when it is linked to at least one SwRS and "
+        "every linked SwRS has at least one test marker."
+    ),
+    "linked-swrs-and-validation-test": (
+        "An StRS is considered as covered when it is linked to at least one SwRS, every "
+        "linked SwRS has at least one test marker, and at least one validation test "
+        "is defined directly for the StRS."
+    ),
+}
 
 _EARS_PLACEHOLDER = "<"
 _USER_NEED_PLACEHOLDER = "<stakeholder need in the stakeholder's language>"
@@ -483,6 +502,13 @@ def init_requirements(path: Path, force: bool = False) -> Path:
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": f"{level}.schema.yaml",
             "title": f"okfreq {level} requirement profile",
+            "description": (
+                "StRS records stakeholder intent and does not carry implementation "
+                "or source coverage fields. Stakeholder test coverage is computed "
+                "from linked SwRS according to configuration."
+                if tier == "StRS"
+                else "SwRS defines observable software behavior and its traceability."
+            ),
             "allOf": [
                 {"$ref": "base.schema.yaml"},
                 {"type": "object", "properties": properties, "required": required},
@@ -555,7 +581,20 @@ def load_config(root: Path) -> dict[str, Any]:
     data.setdefault("lifecycle", {}).setdefault("values", list(LIFECYCLES))
     data.setdefault("id_policy", "scope-prefix-sequence")
     data.setdefault("generated_fields", sorted(SUPPORTED_GENERATED_FIELDS))
+    data.setdefault("strs_test_coverage_mode", "linked-swrs")
+    _strs_test_coverage_mode(data)
     return data
+
+
+def _strs_test_coverage_mode(config: dict[str, Any]) -> str:
+    """Return the configured StRS test-coverage rule."""
+    mode = str(config.get("strs_test_coverage_mode", "linked-swrs"))
+    if mode not in STRS_TEST_COVERAGE_MODES:
+        allowed = ", ".join(STRS_TEST_COVERAGE_MODES)
+        raise RequirementError(
+            f"unsupported strs_test_coverage_mode: {mode}; expected one of: {allowed}"
+        )
+    return mode
 
 
 def _id_pattern(config: dict[str, Any]) -> re.Pattern[str]:
@@ -847,7 +886,8 @@ def marker_scan(root: Path) -> dict[str, Any]:
         >>> with TemporaryDirectory() as directory:
         ...     root = init_requirements(Path(directory) / "requirements")
         ...     sorted(marker_scan(root))
-        ['duplicates', 'implemented', 'missing_ids', 'non_leaf', 'tested', 'warnings']
+        ['duplicates', 'implemented', 'missing_ids', 'non_leaf', 'tested',
+         'validation_tests', 'warnings']
     """
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-003
     config = load_config(root)
@@ -865,6 +905,7 @@ def marker_scan(root: Path) -> dict[str, Any]:
     result: dict[str, Any] = {
         "implemented": {},
         "tested": {},
+        "validation_tests": {},
         "duplicates": [],
         "non_leaf": [],
         "missing_ids": [],
@@ -913,7 +954,14 @@ def marker_scan(root: Path) -> dict[str, Any]:
                         if identifier not in requirements:
                             result["missing_ids"].append(identifier)
                             continue
-                        if requirements[identifier][1].get("type") not in leaf_levels:
+                        requirement_type = requirements[identifier][1].get("type")
+                        if requirement_type not in leaf_levels:
+                            if target == "tested" and requirement_type == "StRS":
+                                validation_locations = result["validation_tests"].setdefault(
+                                    identifier, []
+                                )
+                                validation_locations.append(relative)
+                                continue
                             result["non_leaf"].append(identifier)
                             continue
                         locations = result[target].setdefault(identifier, [])
@@ -1188,6 +1236,41 @@ def report(root: Path) -> dict[str, Any]:
     implemented = set(trace["implemented"]) & set(coverage_targets)
     tested = set(trace["tested"]) & set(coverage_targets)
     fully_traceable = implemented & tested
+    strs_test_coverage_mode = _strs_test_coverage_mode(config)
+    stakeholder_coverage: dict[str, dict[str, Any]] = {}
+    for identifier, (_, data, _) in requirements.items():
+        if data.get("type") != "StRS":
+            continue
+        linked_swrs = sorted(
+            child
+            for child in graph_result["derived_by"].get(identifier, [])
+            if child in requirements and requirements[child][1].get("type") == "SwRS"
+        )
+        linked_swrs_report = [
+            {"id": child, "status": "covered" if child in tested else "missing"}
+            for child in linked_swrs
+        ]
+        validation_files = trace["validation_tests"].get(identifier, [])
+        linked_swrs_covered = bool(linked_swrs) and all(child in tested for child in linked_swrs)
+        validation_defined = bool(validation_files)
+        covered = linked_swrs_covered and (
+            strs_test_coverage_mode == "linked-swrs" or validation_defined
+        )
+        stakeholder_coverage[identifier] = {
+            "status": "covered" if covered else "missing",
+            "mode": strs_test_coverage_mode,
+            "linked_swrs": linked_swrs_report,
+            "validation_tests": {
+                "status": "defined" if validation_defined else "missing",
+                "files": validation_files,
+                "count": len(validation_files),
+            },
+        }
+
+    stakeholder_total = len(stakeholder_coverage)
+    stakeholder_covered = sum(
+        coverage["status"] == "covered" for coverage in stakeholder_coverage.values()
+    )
 
     def percentage(count: int, total: int) -> float:
         """Return a percentage rounded to two decimal places."""
@@ -1198,33 +1281,49 @@ def report(root: Path) -> dict[str, Any]:
         source_links = trace["implemented"].get(identifier, [])
         test_links = trace["tested"].get(identifier, [])
         coverage_target = identifier in coverage_targets
-        requirement_records.append(
-            {
-                "id": identifier,
-                "path": file.relative_to(project_path(root)).as_posix(),
-                "text": text,
-                "frontmatter": data,
-                "scope": data.get("scope"),
-                "tier": data.get("tier", data.get("type")),
-                "derives_from": data.get("derives_from", []) or [],
-                "coverage_target": coverage_target,
-                "implementation": {
-                    "status": "covered" if source_links else "missing",
-                    "files": source_links,
-                    "count": len(source_links),
-                },
-                "tests": {
-                    "status": "covered" if test_links else "missing",
-                    "files": test_links,
-                    "count": len(test_links),
-                },
-                "execution": {"status": "not_collected", "results": []},
-                "diagnostics": {
-                    "exempted": data.get("annotation_exemption") is True,
-                    "errors": [error for error in errors if identifier in error],
-                },
-            }
-        )
+        stakeholder_details = stakeholder_coverage.get(identifier)
+        implementation = {
+            "status": "not_applicable"
+            if stakeholder_details
+            else ("covered" if source_links else "missing"),
+            "files": [] if stakeholder_details else source_links,
+            "count": 0 if stakeholder_details else len(source_links),
+        }
+        tests = {
+            "status": stakeholder_details["status"]
+            if stakeholder_details
+            else ("covered" if test_links else "missing"),
+            "files": (
+                stakeholder_details["validation_tests"]["files"]
+                if stakeholder_details
+                else test_links
+            ),
+            "count": (
+                stakeholder_details["validation_tests"]["count"]
+                if stakeholder_details
+                else len(test_links)
+            ),
+        }
+        record: dict[str, Any] = {
+            "id": identifier,
+            "path": file.relative_to(project_path(root)).as_posix(),
+            "text": text,
+            "frontmatter": data,
+            "scope": data.get("scope"),
+            "tier": data.get("tier", data.get("type")),
+            "derives_from": data.get("derives_from", []) or [],
+            "coverage_target": coverage_target,
+            "implementation": implementation,
+            "tests": tests,
+            "execution": {"status": "not_collected", "results": []},
+            "diagnostics": {
+                "exempted": data.get("annotation_exemption") is True,
+                "errors": [error for error in errors if identifier in error],
+            },
+        }
+        if stakeholder_details:
+            record["stakeholder_test_coverage"] = stakeholder_details
+        requirement_records.append(record)
 
     scopes: dict[str, dict[str, Any]] = {}
     configured_scopes = config.get("scopes", {})
@@ -1271,9 +1370,11 @@ def report(root: Path) -> dict[str, Any]:
         },
         "coverage_definition": {
             "population": "configured leaf requirements without annotation exemptions",
-            "source": "at least one @implements_req marker",
-            "tests": "at least one @tests_req marker",
+            "source": "at least one @implements_req marker for each SwRS coverage target",
+            "tests": "at least one @tests_req marker for each SwRS coverage target",
             "combined": "at least one source marker and one test marker",
+            "stakeholder_tests": STRS_TEST_COVERAGE_DESCRIPTIONS[strs_test_coverage_mode],
+            "stakeholder_test_coverage_mode": strs_test_coverage_mode,
         },
         "totals": {
             "requirements": len(requirements),
@@ -1284,6 +1385,12 @@ def report(root: Path) -> dict[str, Any]:
             "source_coverage_percent": percentage(len(implemented), total),
             "test_coverage_percent": percentage(len(tested), total),
             "combined_coverage_percent": percentage(len(fully_traceable), total),
+        },
+        "stakeholder_test_coverage": {
+            "mode": strs_test_coverage_mode,
+            "requirements": stakeholder_total,
+            "covered": stakeholder_covered,
+            "coverage_percent": percentage(stakeholder_covered, stakeholder_total),
         },
         "scopes": scopes,
         "requirements": requirement_records,
@@ -1298,6 +1405,7 @@ def report(root: Path) -> dict[str, Any]:
             "warnings": trace["warnings"],
             "missing_implementation": sorted(missing_implementation),
             "missing_tests": sorted(missing_tests),
+            "validation_tests": trace["validation_tests"],
             "exemptions": exemptions,
         },
         "legacy": {
@@ -1318,6 +1426,7 @@ def report(root: Path) -> dict[str, Any]:
                 "warnings": trace["warnings"],
                 "missing_implementation": sorted(missing_implementation),
                 "missing_tests": sorted(missing_tests),
+                "validation_tests": trace["validation_tests"],
                 "exemptions": exemptions,
             },
             "lifecycle": lifecycle,
@@ -1360,6 +1469,7 @@ def report_schema() -> dict[str, Any]:
             "execution_evidence",
             "coverage_definition",
             "totals",
+            "stakeholder_test_coverage",
             "scopes",
             "requirements",
         ],
@@ -1387,7 +1497,13 @@ def report_schema() -> dict[str, Any]:
                     "description": {"type": "string"},
                 },
             },
-            "coverage_definition": {"type": "object"},
+            "coverage_definition": {
+                "type": "object",
+                "properties": {
+                    "stakeholder_test_coverage_mode": {"enum": list(STRS_TEST_COVERAGE_MODES)},
+                    "stakeholder_tests": {"type": "string"},
+                },
+            },
             "totals": {
                 "type": "object",
                 "required": [
@@ -1409,6 +1525,16 @@ def report_schema() -> dict[str, Any]:
                     "source_coverage_percent": {"type": "number", "minimum": 0, "maximum": 100},
                     "test_coverage_percent": {"type": "number", "minimum": 0, "maximum": 100},
                     "combined_coverage_percent": {"type": "number", "minimum": 0, "maximum": 100},
+                },
+            },
+            "stakeholder_test_coverage": {
+                "type": "object",
+                "required": ["mode", "requirements", "covered", "coverage_percent"],
+                "properties": {
+                    "mode": {"enum": list(STRS_TEST_COVERAGE_MODES)},
+                    "requirements": {"type": "integer", "minimum": 0},
+                    "covered": {"type": "integer", "minimum": 0},
+                    "coverage_percent": {"type": "number", "minimum": 0, "maximum": 100},
                 },
             },
             "scopes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/scope"}},
@@ -1464,6 +1590,9 @@ def report_schema() -> dict[str, Any]:
                     "coverage_target": {"type": "boolean"},
                     "implementation": {"$ref": "#/$defs/linkage"},
                     "tests": {"$ref": "#/$defs/linkage"},
+                    "stakeholder_test_coverage": {
+                        "$ref": "#/$defs/stakeholder_requirement_coverage"
+                    },
                     "execution": {
                         "type": "object",
                         "required": ["status", "results"],
@@ -1479,9 +1608,37 @@ def report_schema() -> dict[str, Any]:
                 "type": "object",
                 "required": ["status", "files", "count"],
                 "properties": {
-                    "status": {"enum": ["covered", "missing"]},
+                    "status": {"enum": ["covered", "missing", "not_applicable"]},
                     "files": {"type": "array", "items": {"type": "string"}},
                     "count": {"type": "integer", "minimum": 0},
+                },
+            },
+            "stakeholder_requirement_coverage": {
+                "type": "object",
+                "required": ["status", "mode", "linked_swrs", "validation_tests"],
+                "properties": {
+                    "status": {"enum": ["covered", "missing"]},
+                    "mode": {"enum": list(STRS_TEST_COVERAGE_MODES)},
+                    "linked_swrs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["id", "status"],
+                            "properties": {
+                                "id": {"type": "string"},
+                                "status": {"enum": ["covered", "missing"]},
+                            },
+                        },
+                    },
+                    "validation_tests": {
+                        "type": "object",
+                        "required": ["status", "files", "count"],
+                        "properties": {
+                            "status": {"enum": ["defined", "missing"]},
+                            "files": {"type": "array", "items": {"type": "string"}},
+                            "count": {"type": "integer", "minimum": 0},
+                        },
+                    },
                 },
             },
         },
@@ -1514,6 +1671,7 @@ def write_markdown_report(root: Path, destination: Path) -> None:
 
     data = report(root)
     totals = data["totals"]
+    stakeholder_totals = data["stakeholder_test_coverage"]
     lines = [
         "# Requirements report",
         "",
@@ -1523,10 +1681,12 @@ def write_markdown_report(root: Path, destination: Path) -> None:
         "",
         f"- Requirements: {totals['requirements']} "
         f"({totals['coverage_target_requirements']} coverage targets)",
-        f"- Source coverage: {totals['source_coverage_percent']}% "
+        f"- SwRS source coverage: {totals['source_coverage_percent']}% "
         f"({totals['implemented']}/{totals['coverage_target_requirements']})",
-        f"- Test-link coverage: {totals['test_coverage_percent']}% "
+        f"- SwRS test-link coverage: {totals['test_coverage_percent']}% "
         f"({totals['tested']}/{totals['coverage_target_requirements']})",
+        f"- StRS test coverage: {stakeholder_totals['coverage_percent']}% "
+        f"({stakeholder_totals['covered']}/{stakeholder_totals['requirements']})",
         f"- Combined traceability: {totals['combined_coverage_percent']}% "
         f"({totals['fully_traceable']}/{totals['coverage_target_requirements']})",
         "",
@@ -1540,15 +1700,6 @@ def write_markdown_report(root: Path, destination: Path) -> None:
             f"| {scope} | {values['requirements']} | {values['source_coverage_percent']}% | "
             f"{values['test_coverage_percent']}% | {values['combined_coverage_percent']}% |"
         )
-    lines.extend(
-        [
-            "",
-            "## By requirement",
-            "",
-            "| Scope | Tier | ID | Name | Source | Tests |",
-            "| --- | --- | --- | --- | --- | --- |",
-        ]
-    )
     requirements = sorted(
         data["requirements"],
         key=lambda requirement: (
@@ -1557,7 +1708,41 @@ def write_markdown_report(root: Path, destination: Path) -> None:
             requirement["id"].casefold(),
         ),
     )
-    for requirement in requirements:
+    stakeholder_requirements = [
+        requirement for requirement in requirements if requirement["tier"] == "StRS"
+    ]
+    lines.extend(
+        [
+            "",
+            "## By stakeholder requirement",
+            "",
+            "| Scope | Tier | ID | Name | Tests |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+    )
+    for requirement in stakeholder_requirements:
+        name = str(requirement["frontmatter"].get("title", requirement["id"]))
+        lines.append(
+            f"| {requirement['scope']} | {requirement['tier']} | "
+            f"{requirement['id']} | {name} | "
+            f"{status_emoji(requirement['tests']['status'])} {requirement['tests']['status']} |"
+        )
+    mode = stakeholder_totals["mode"]
+    coverage_description = STRS_TEST_COVERAGE_DESCRIPTIONS[mode]
+    coverage_sentence = coverage_description[0].lower() + coverage_description[1:]
+    coverage_note = f"*Note: current configuration is that {coverage_sentence}*"
+    lines.extend(
+        [
+            "",
+            coverage_note,
+            "",
+            "## By software requirement",
+            "",
+            "| Scope | Tier | ID | Name | Source | Tests |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for requirement in (item for item in requirements if item["coverage_target"]):
         name = str(requirement["frontmatter"].get("title", requirement["id"]))
         lines.append(
             f"| {requirement['scope']} | {requirement['tier']} | "

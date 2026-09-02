@@ -129,6 +129,12 @@ requirements.
 atomically and supports preview modes. Reports, indexes, and scope indexes are
 also generated artifacts and should be regenerated rather than manually edited.
 
+StRS documents do not have source coverage. The generated report gives StRS its
+own stakeholder-test coverage record, computed from linked SwRS and the
+configured `strs_test_coverage_mode`. A direct `@tests_req StRS-ID` marker in a
+test file counts as a defined validation test when the
+`linked-swrs-and-validation-test` mode is selected.
+
 ## Marker fields
 
 The default marker keywords are:
@@ -149,10 +155,10 @@ For example:
 ```
 
 The keywords and accepted ID pattern are configured in `config.yml`. `trace`
-reports implementation references, test references, unknown IDs, repeated
-same-file markers, non-leaf references, and scan warnings. Projects may
-configure other levels; markers on non-leaf levels are reported separately and
-do not count as leaf coverage.
+reports implementation references, test references, direct StRS validation-test
+references, unknown IDs, repeated same-file markers, non-leaf references, and
+scan warnings. Projects may configure other levels; implementation markers on
+non-leaf levels do not count as leaf coverage.
 
 ```{admonition} Markers are file-level references
 :class: warning
@@ -170,11 +176,14 @@ the test runner for those stronger checks.
 
 The current traceability report parses `@tests_req` markers, but it does not
 read test-runner output or determine whether a referenced test passed, failed,
-was skipped, or ran at all. Its test-link and combined coverage values are
-therefore linkage metrics only. In theory, true requirement coverage requires
-successful validation tests, connected to the requirement and executed in the
-relevant validation run. Until test-result ingestion is implemented, treat
-reported test coverage as `not_collected` execution evidence.
+was skipped, or ran at all. Its SwRS test-link coverage and configured StRS
+coverage are therefore linkage metrics only. In theory, true requirement
+coverage requires successful validation tests, connected to the requirement and
+executed in the relevant validation run. Until test-result ingestion is
+implemented, treat the report's execution evidence as `not_collected`.
+
+Read [What `okfreq` coverage really means](../explanation/okfreq-coverage-boundaries.md)
+for the rationale, limitations, and evidence model behind this behavior.
 ```
 
 ## Extending the model

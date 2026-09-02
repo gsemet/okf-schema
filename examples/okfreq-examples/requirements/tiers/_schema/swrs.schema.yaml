@@ -1,6 +1,7 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: swrs.schema.yaml
 title: okfreq swrs requirement profile
+description: SwRS defines observable software behavior and its traceability.
 allOf:
 - $ref: base.schema.yaml
 - type: object

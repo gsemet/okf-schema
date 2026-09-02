@@ -13,6 +13,7 @@
     "execution_evidence",
     "coverage_definition",
     "totals",
+    "stakeholder_test_coverage",
     "scopes",
     "requirements"
   ],
@@ -74,7 +75,18 @@
       }
     },
     "coverage_definition": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "stakeholder_test_coverage_mode": {
+          "enum": [
+            "linked-swrs",
+            "linked-swrs-and-validation-test"
+          ]
+        },
+        "stakeholder_tests": {
+          "type": "string"
+        }
+      }
     },
     "totals": {
       "type": "object",
@@ -120,6 +132,36 @@
           "maximum": 100
         },
         "combined_coverage_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "stakeholder_test_coverage": {
+      "type": "object",
+      "required": [
+        "mode",
+        "requirements",
+        "covered",
+        "coverage_percent"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "linked-swrs",
+            "linked-swrs-and-validation-test"
+          ]
+        },
+        "requirements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "covered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage_percent": {
           "type": "number",
           "minimum": 0,
           "maximum": 100
@@ -244,6 +286,9 @@
         "tests": {
           "$ref": "#/$defs/linkage"
         },
+        "stakeholder_test_coverage": {
+          "$ref": "#/$defs/stakeholder_requirement_coverage"
+        },
         "execution": {
           "type": "object",
           "required": [
@@ -275,7 +320,8 @@
         "status": {
           "enum": [
             "covered",
-            "missing"
+            "missing",
+            "not_applicable"
           ]
         },
         "files": {
@@ -287,6 +333,76 @@
         "count": {
           "type": "integer",
           "minimum": 0
+        }
+      }
+    },
+    "stakeholder_requirement_coverage": {
+      "type": "object",
+      "required": [
+        "status",
+        "mode",
+        "linked_swrs",
+        "validation_tests"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "covered",
+            "missing"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "linked-swrs",
+            "linked-swrs-and-validation-test"
+          ]
+        },
+        "linked_swrs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "covered",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "validation_tests": {
+          "type": "object",
+          "required": [
+            "status",
+            "files",
+            "count"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "defined",
+                "missing"
+              ]
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     }

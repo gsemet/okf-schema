@@ -3,6 +3,7 @@ levels:
   StRS: {folder: strs, prefix: StRS, derives_from: []}
   SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS]}
 id_policy: scope-prefix-sequence
+strs_test_coverage_mode: linked-swrs
 lifecycle:
   values: [draft, proposed, approved, deprecated, superseded]
 markers:
