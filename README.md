@@ -88,15 +88,6 @@ Schema extensions supported:
 
 For detailed information on `$ref` support and schema composition, see the [full documentation](https://okf-schema.readthedocs.io/en/stable/).
 
-## Why Python ?
-
-`okf-schema` is implemented in Python for several reasons:
-
-- **Cross-platform**: Python runs on Windows, macOS, and Linux without modification.
-- **Easily installable**: Python packages can be installed via `uv`, making setup straightforward.
-- **Default scripting language for Skill**: Writing skills arround `okf-schema` is straighforward
-  and portable to every agent and coding environment.
-
 ## Installation
 
 Use UV to install this tool, or to use in your skill:
@@ -105,17 +96,19 @@ Use UV to install this tool, or to use in your skill:
 uv tool install okf-schema
 ```
 
+This installs the `okf-schema`, `okfkb` (Knowledge base), and `okfreq` (Requirements) commands.
+
 ## Use Cases
 
 The package serves **three distinct use cases**:
 
 - **Use Case 1 — Generic OKF**: Build, maintain, and validate OKF bundles with JSON Schema.
 - **Use Case 2 — `okfkb`**: Maintain an opinionated knowledge base for empirical findings, hypotheses, and concepts.
-- **Use Case 3 — Standalone Markdown**: Validate individual Markdown files against JSON Schemas without a full bundle.
+- **Use Case 3 — `okfreq`**: Manage and trace software requirements, linking them to implementation and test evidence.
+- **Use Case 4 — Standalone Markdown**: Validate individual Markdown files against JSON Schemas without a full bundle.
 
-`okfreq` is a separate requirements subset documented alongside the generic
-workflow. It is not a fourth generic validation mode: use the dedicated
-`okfreq` command and requirements schemas when the artifacts are requirements.
+`okfreq` and `okfkb` are separate subsets documented alongside the generic
+workflow.
 
 ### Use Case 1: Build, Maintain & Validate OKF Bundles
 
@@ -143,20 +136,7 @@ okf-schema list --path my-bundle/bundle
 okf-schema backlinks --path my-bundle/bundle concepts/react-pattern
 ```
 
-**Key Commands:**
-
-| Command | Purpose |
-|---------|---------|
-| `init <name>` | Create new bundle directory structure |
-| `new --path <dir> --name <name>` | Create new concept file with frontmatter template |
-| `validate --path <bundle>` | Validate bundle structure, frontmatter, and schemas |
-| `validate --path <bundle> --strict` | Fail on warnings in addition to errors |
-| `lint --path <bundle>` | Flatten lists, inline block styles, auto-update links |
-| `index --path <bundle>` | Regenerate `index.md` files for all directories |
-| `list --path <bundle>` | List all concepts in bundle |
-| `show --path <bundle> <concept>` | Display frontmatter + body of a concept |
-| `stats --path <bundle>` | Show bundle statistics |
-| `backlinks --path <bundle> <target>...` | Find concepts linking to target(s) |
+More information in the documentation: [OKF-Schema CLI](https://okf-schema.readthedocs.io/en/stable/reference/cli.html).
 
 ### Use Case 2: Knowledge-base subset (`okfkb`)
 
@@ -183,14 +163,14 @@ okfkb query "type:finding confidence:>=high tag:cache" my-knowledge-base
 okfkb query "finding[tag=cache] -> concept -> principle" my-knowledge-base
 ```
 
-**For full KB documentation**, see the [OKF-KB Design Choices](https://okf-schema.readthedocs.io/en/stable/explanation/okfkb-choices.html) and [HW Debugging Workflow Tutorial](https://okf-schema.readthedocs.io/en/stable/tutorials/okfkb-hw-debugging-workflow.html).
+**For full KB documentation**, see the [OKFKB CLI](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html), [OKF-KB Design Choices](https://okf-schema.readthedocs.io/en/stable/explanation/okfkb-choices.html) and [HW Debugging Workflow Tutorial](https://okf-schema.readthedocs.io/en/stable/tutorials/okfkb-hw-debugging-workflow.html).
 
 **Agent skills** complement the CLI: `okf-schema` handles tool mechanics,
 `okfkb` teaches and routes the knowledge lifecycle, and `okfkb-gardening` runs
 explicit, autonomous KB maintenance. See [Agent Skills](skills/README.md) and
 [Maintain an OKFKB with agent skills](docs/source/how-to/maintain-okfkb-with-skills.md).
 
-### Requirements subset (`okfreq`)
+### Use Case 3: Requirements subset (`okfreq`)
 
 `okfreq` is an independent, requirements-focused layer built on the same
 generic OKF mechanics. It is intended for requirements repositories, not for
@@ -222,7 +202,7 @@ generic OKF, `okfkb`, and `okfreq`.
 See the complete [`okfreq` CLI reference](docs/source/reference/okfreq-cli.md)
 for every command and option.
 
-### Use Case 3: Validate Standalone Markdown Files
+### Use Case 4: Validate Standalone Markdown Files
 
 Validate individual markdown files (or collections) against JSON schemas without needing a full OKF bundle.
 
