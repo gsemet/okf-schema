@@ -44,7 +44,7 @@ expression come from `config.yml`.
 | Command | Purpose |
 |---|---|
 | `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields. `--check` lists changed files; `--diff` prints previews; both are read-only. |
-| `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with source, linked-test, and combined traceability coverage. |
+| `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. |
 
 Without `--output`, report data is printed to standard output. Generated
 artifacts should be regenerated rather than edited manually.
@@ -64,3 +64,4 @@ body, stable ID, UUID, and unrelated frontmatter.
 - [Configuration](okfreq-configuration) — hierarchy, scopes, markers, and generated fields.
 - [Frontmatter](okfreq-frontmatter) — authored and generated field ownership.
 - [Requirements traceability tutorial](../tutorials/okfreq-traceability) — end-to-end workflow.
+- [Coverage boundaries](../explanation/okfreq-coverage-boundaries) — why test execution and pass/fail results are not parsed yet.

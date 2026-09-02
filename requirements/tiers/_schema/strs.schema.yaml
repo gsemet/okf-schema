@@ -3,7 +3,8 @@ $id: strs.schema.yaml
 title: okfreq stakeholder requirement profile
 description: >-
   StRS records a stakeholder-observable outcome and the need behind it. It
-  does not carry implementation or test coverage fields.
+  does not carry implementation or source coverage fields. Stakeholder test
+  coverage is computed in reports from linked SwRS according to configuration.
 allOf:
   - $ref: base.schema.yaml
   - type: object

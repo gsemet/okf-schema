@@ -27,9 +27,11 @@
   },
   "coverage_definition": {
     "population": "configured leaf requirements without annotation exemptions",
-    "source": "at least one @implements_req marker",
-    "tests": "at least one @tests_req marker",
-    "combined": "at least one source marker and one test marker"
+    "source": "at least one @implements_req marker for each SwRS coverage target",
+    "tests": "at least one @tests_req marker for each SwRS coverage target",
+    "combined": "at least one source marker and one test marker",
+    "stakeholder_tests": "An StRS is considered as covered when it is linked to at least one SwRS and every linked SwRS has at least one test marker.",
+    "stakeholder_test_coverage_mode": "linked-swrs"
   },
   "totals": {
     "requirements": 3,
@@ -40,6 +42,12 @@
     "source_coverage_percent": 100.0,
     "test_coverage_percent": 100.0,
     "combined_coverage_percent": 100.0
+  },
+  "stakeholder_test_coverage": {
+    "mode": "linked-swrs",
+    "requirements": 1,
+    "covered": 1,
+    "coverage_percent": 100.0
   },
   "scopes": {
     "Core": {
@@ -81,12 +89,12 @@
       "derives_from": [],
       "coverage_target": false,
       "implementation": {
-        "status": "missing",
+        "status": "not_applicable",
         "files": [],
         "count": 0
       },
       "tests": {
-        "status": "missing",
+        "status": "covered",
         "files": [],
         "count": 0
       },
@@ -97,6 +105,25 @@
       "diagnostics": {
         "exempted": false,
         "errors": []
+      },
+      "stakeholder_test_coverage": {
+        "status": "covered",
+        "mode": "linked-swrs",
+        "linked_swrs": [
+          {
+            "id": "SwRS-CORE-001",
+            "status": "covered"
+          },
+          {
+            "id": "SwRS-CORE-002",
+            "status": "covered"
+          }
+        ],
+        "validation_tests": {
+          "status": "missing",
+          "files": [],
+          "count": 0
+        }
       }
     },
     {
@@ -223,6 +250,7 @@
     "warnings": [],
     "missing_implementation": [],
     "missing_tests": [],
+    "validation_tests": {},
     "exemptions": []
   },
   "legacy": {
@@ -251,6 +279,7 @@
       "warnings": [],
       "missing_implementation": [],
       "missing_tests": [],
+      "validation_tests": {},
       "exemptions": []
     },
     "lifecycle": {

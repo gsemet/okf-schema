@@ -29,6 +29,10 @@ requirements/
   the project workflow. They are build artifacts, not requirements-bundle content.
 ```
 
+For the rationale behind these linkage-based coverage values and the current
+absence of test execution results, see [What `okfreq` coverage really
+means](../explanation/okfreq-coverage-boundaries.md).
+
 Every `okfreq` command accepts either the project root or the bundle root and
 resolves `config.yml` itself. The `levels[].folder` values are relative to
 `tiers/`. A scope's optional `folder` is relative to its level folder, while
@@ -40,6 +44,7 @@ levels:
   StRS: {folder: strs, prefix: StRS, derives_from: []}
   SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS]}
 id_policy: scope-prefix-sequence
+strs_test_coverage_mode: linked-swrs
 lifecycle:
   values: [draft, proposed, approved, deprecated, superseded]
 markers:
@@ -58,6 +63,7 @@ scopes:
 | `version` | Configuration contract version. |
 | `levels` | Maps each level to its document folder, ID prefix, and allowed parent levels. Additional levels use the same generic derivation rules. |
 | `id_policy` | Allocation strategy. `scope-prefix-sequence` is currently supported; `okfreq new` rejects unsupported values. Existing documents are never renumbered. |
+| `strs_test_coverage_mode` | StRS test-coverage rule. Choose `linked-swrs` or `linked-swrs-and-validation-test`; the default is `linked-swrs`. |
 | `lifecycle.values` | Allowed lifecycle values. The built-in values distinguish draft, proposed, approved, deprecated, and superseded requirements. |
 | `markers` | Implementation/test marker keywords and the regular expression used to recognise IDs. Use a pattern with an `id` named group, or make the entire match the ID. |
 | `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `implemented_in_files`, and `tested_in_files`; unsupported values fail explicitly. |
@@ -67,6 +73,37 @@ A scope entry may name individual files as well as directories, and it may point
 at non-Python deliverables. When a requirement is satisfied by shipped prompt or
 data content rather than by executable code, add that location to the scope and
 place the marker in the file itself instead of forcing a misleading code marker.
+
+### StRS test-coverage modes
+
+The configured mode affects only the stakeholder-level test coverage shown in
+generated reports. It does not change SwRS source coverage or SwRS test-link
+coverage.
+
+With the default mode:
+
+```yaml
+strs_test_coverage_mode: linked-swrs
+```
+
+an StRS is covered when it derives at least one SwRS and every linked SwRS has a
+configured `@tests_req` marker. With the stricter mode:
+
+```yaml
+strs_test_coverage_mode: linked-swrs-and-validation-test
+```
+
+the same linked-SwRS rule must be satisfied and at least one configured test
+file must directly define a validation test for the StRS:
+
+```python
+# @tests_req StRS-CORE-001
+```
+
+The marker establishes that a validation test is defined. `okfreq` does not
+parse test-runner results, so it cannot infer whether that test executed or
+passed. StRS source coverage is not computed; StRS requirements are reported
+in a separate stakeholder table without a source column.
 
 Set `id_token` when the identifier spelling differs from the frontmatter scope
 name, such as `scope: core` with `id_token: CORE`. Set `folder` to group newly

@@ -80,8 +80,10 @@ satisfied. It is not an issue title, design choice, code comment, or task.
 - **Authored derivation points upward.** Author `derives_from`; let `okfreq`
   compute reverse `derived_by` links.
 - **Leaf requirements connect to evidence.** Place `@implements_req <ID>` near
-  the relevant production behavior and `@tests_req <ID>` once in each relevant
-  test file. Do not put these markers on stakeholder or other non-leaf levels.
+   the relevant production behavior and `@tests_req <ID>` once in each relevant
+   test file. StRS never receives implementation markers; in the stricter
+   `linked-swrs-and-validation-test` mode, a direct `@tests_req <StRS-ID>` marker
+   defines a stakeholder validation test.
 - **Markers are links, not proof.** A test marker says where verification lives,
   not whether the test ran or passed. Run the project's real test suite.
 - **Coverage and reports are generated views.** Keep implementation coverage,
@@ -135,7 +137,8 @@ keep using that local file; do not replace it with this skill's fallback.
 1. Create or confirm the stakeholder outcome first. An StRS needs one
    stakeholder-observable normative behavior, the stakeholder's user need, and
    any known rationale or constraints. Do not add software scenarios or source
-   and test markers.
+   markers. Add a direct test marker only when the configured StRS coverage mode
+   requires an explicit validation test.
 2. Derive one or more SwRS requirements for independently observable software
    behaviors. Each SwRS needs a valid StRS parent, nominal and boundary/failure
    scenarios, and objective verification notes.

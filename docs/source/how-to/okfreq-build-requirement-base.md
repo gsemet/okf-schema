@@ -14,6 +14,9 @@ an export feature: the stakeholder describes the user outcome, the software
 requirement describes observable behavior, and source and test markers connect
 that behavior to evidence.
 
+For the boundary between marker linkage and executed test-result evidence, see
+[What `okfreq` coverage really means](../explanation/okfreq-coverage-boundaries.md).
+
 1. Install `okf-schema` in the project environment.
    Install it in the same development environment used by local checks so the
    command is also available in CI.
@@ -26,7 +29,10 @@ that behavior to evidence.
    this repository).
    Add scopes for each independently scanned part of the project and adjust
    `source_dirs` and `test_dirs` before scanning. Keep these mappings scoped:
-   implementation and test evidence can belong to different directories.
+   implementation and test evidence can belong to different directories. Set
+   `strs_test_coverage_mode` to `linked-swrs` for decomposition-based
+   stakeholder coverage, or to `linked-swrs-and-validation-test` when each
+   stakeholder outcome also needs a directly marked validation-test definition.
 4. Create a stakeholder requirement:
    `okfreq new strs "Export report" --description "When report export is requested, the reporting capability SHALL make a portable report available." --user-need "Users need a portable report for offline review." --project demo`.
    This creates a draft `StRS` with a generated UUID and stable ID such as

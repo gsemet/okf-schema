@@ -7,8 +7,13 @@ create a small export requirement and inspect its traceability.
 **Time:** about 15 minutes
 
 **Prerequisite:** Follow the [installation guide](../installation.md) to install
-`okf-schema` and manually add the `okfreq` skill to a small project where you
-can add a source file and a test file.
+`okf-schema` and install the `okfreq` skill in a small project where you can add
+a source file and a test file.
+
+Before using marker coverage as evidence, read [What `okfreq` coverage really
+means](../explanation/okfreq-coverage-boundaries.md). It explains why `okfreq`
+currently records requirement-to-file links rather than test execution and
+pass/fail results.
 
 ## Understand the two requirement levels
 
@@ -62,7 +67,16 @@ guidance, and folders for the two requirement levels:
 ```
 
 Open `config.yml` and confirm that the default scope scans the source and test
-directories used by your project.
+directories used by your project. The generated configuration uses this default
+for stakeholder test coverage:
+
+```yaml
+strs_test_coverage_mode: linked-swrs
+```
+
+This means an StRS is test covered when it links to at least one SwRS and all
+linked SwRS are test-link covered. StRS source coverage is not applicable and is
+not computed.
 
 ## Create the stakeholder requirement
 
@@ -165,6 +179,19 @@ Use the actual SwRS ID printed by your command. An implementation marker says
 where behavior is implemented. A test marker says where it is checked. Neither
 marker proves that the implementation is correct or that the test passed.
 
+The default StRS mode does not need a marker on the StRS itself. If the project
+selects the stricter mode, add a direct validation-test marker in a configured
+test file:
+
+```python
+# @tests_req StRS-default-001
+```
+
+With `strs_test_coverage_mode: linked-swrs-and-validation-test`, the StRS is
+covered only when all linked SwRS have test markers and this validation-test
+definition exists. The marker defines a validation test; it does not prove that
+the test ran or passed.
+
 Run your project's test suite separately.
 
 ## Inspect traceability
@@ -193,6 +220,11 @@ Finally, validate the requirement structure and prose:
 ```bash
 okfreq validate . --prose
 ```
+
+The generated report presents StRS and SwRS in separate tables. The StRS table
+has no source column because source coverage does not apply. The text below the
+table names the active `strs_test_coverage_mode` and states the exact rule used
+for each StRS result. The SwRS table retains source and test-link columns.
 
 You now have a stakeholder outcome, a derived software behavior, and explicit
 links from that behavior to implementation and test files.

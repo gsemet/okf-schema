@@ -64,6 +64,7 @@ def test_init_and_new_requirements(tmp_path: Path) -> None:
     assert validate_requirements(root) == []
     assert graph(root)["derived_by"]["StRS-default-001"] == ["SwRS-default-001"]
     assert load_config(root)["levels"]["SwRS"]["prefix"] == "SwRS"
+    assert load_config(root)["strs_test_coverage_mode"] == "linked-swrs"
 
 
 def test_new_requirement_bodies_use_distinct_tier_templates(tmp_path: Path) -> None:
@@ -361,9 +362,91 @@ def test_report_defines_marker_coverage_and_preserves_requirement_text(tmp_path:
     write_markdown_report(root, destination)
     summary = destination.read_text(encoding="utf-8")
     assert "Combined traceability: 100.0%" in summary
+    assert "## By stakeholder requirement" in summary
+    assert "| Scope | Tier | ID | Name | Tests |" in summary
+    assert "| default | StRS | StRS-default-001 | Export | ✅ covered |" in summary
+    assert (
+        "*Note: current configuration is that an StRS is considered as covered when it "
+        "is linked to at least one SwRS and every linked SwRS has at least one test "
+        "marker.*"
+    ) in summary
+    assert "### StRS test coverage" not in summary
+    assert "## By software requirement" in summary
     assert "| Scope | Tier | ID | Name | Source | Tests |" in summary
     assert "| default | SwRS | SwRS-default-001 | Write | ✅ covered | ✅ covered |" in summary
     assert "Execution" not in summary
+
+
+def test_report_computes_configured_stakeholder_test_coverage(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    strs, first_swrs = add_requirements(root)
+    second_swrs = create_requirement(
+        root,
+        "SwRS",
+        "Format",
+        "The service SHALL format the exported report.",
+        project="demo",
+        scope="default",
+        origin="native",
+        derives_from=[strs.stem],
+    )
+    source = tmp_path / "src"
+    tests = tmp_path / "tests"
+    source.mkdir()
+    tests.mkdir()
+    for requirement in (first_swrs, second_swrs):
+        (source / f"{requirement.stem}.py").write_text(
+            f"# @implements_req {requirement.stem}\n", encoding="utf-8"
+        )
+        (tests / f"test_{requirement.stem}.py").write_text(
+            f"# @tests_req {requirement.stem}\n", encoding="utf-8"
+        )
+
+    data = report(root)
+    stakeholder = next(item for item in data["requirements"] if item["id"] == strs.stem)
+    assert stakeholder["implementation"] == {"status": "not_applicable", "files": [], "count": 0}
+    assert stakeholder["tests"]["status"] == "covered"
+    assert stakeholder["stakeholder_test_coverage"]["linked_swrs"] == [
+        {"id": first_swrs.stem, "status": "covered"},
+        {"id": second_swrs.stem, "status": "covered"},
+    ]
+    assert data["stakeholder_test_coverage"] == {
+        "mode": "linked-swrs",
+        "requirements": 1,
+        "covered": 1,
+        "coverage_percent": 100.0,
+    }
+
+    config = root / "config.yml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            "strs_test_coverage_mode: linked-swrs",
+            "strs_test_coverage_mode: linked-swrs-and-validation-test",
+        ),
+        encoding="utf-8",
+    )
+    strict_data = report(root)
+    strict_stakeholder = next(
+        item for item in strict_data["requirements"] if item["id"] == strs.stem
+    )
+    assert strict_stakeholder["tests"]["status"] == "missing"
+    assert strict_stakeholder["stakeholder_test_coverage"]["validation_tests"] == {
+        "status": "missing",
+        "files": [],
+        "count": 0,
+    }
+
+    (tests / "test_stakeholder_validation.py").write_text(
+        f"# @tests_req {strs.stem}\n", encoding="utf-8"
+    )
+    covered_data = report(root)
+    covered_stakeholder = next(
+        item for item in covered_data["requirements"] if item["id"] == strs.stem
+    )
+    assert covered_stakeholder["tests"]["status"] == "covered"
+    assert marker_scan(root)["validation_tests"][strs.stem] == [
+        "tests/test_stakeholder_validation.py"
+    ]
 
 
 def test_cli_lifecycle_and_new(tmp_path: Path) -> None:
@@ -499,6 +582,21 @@ def test_invalid_config_and_missing_parent_are_rejected(tmp_path: Path) -> None:
     requirement = tiers_path(valid) / "strs" / "broken.md"
     requirement.write_text("---\ntype: StRS\nid: broken\n---\n", encoding="utf-8")
     assert validate_requirements(valid)
+
+
+def test_invalid_stakeholder_test_coverage_mode_is_rejected(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    config = root / "config.yml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            "strs_test_coverage_mode: linked-swrs",
+            "strs_test_coverage_mode: unsupported",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RequirementError, match="unsupported strs_test_coverage_mode"):
+        load_config(root)
 
 
 def test_custom_markers_and_missing_directories(tmp_path: Path) -> None:

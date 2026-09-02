@@ -22,14 +22,7 @@ folders such as `strs/` and `swrs/`. Requirement documents live only under
 
 ## While editing
 
-- Create requirements with `okfreq new` so IDs, UUIDs, and folders follow the configuration.
-- Preserve comments, Markdown body text, unknown frontmatter, IDs, and UUIDs.
-- Do not hand-edit `derived_by`, coverage fields, indexes, or reports.
-- Never renumber existing IDs or UUIDs, and never claim coverage without markers or evidence.
-- Put implementation and test markers only on leaf software requirements, not
   on stakeholder or other non-leaf levels.
-- Do not change lifecycle or approval state as an incidental edit.
-
 ## Tier-specific authoring formats
 
 - For an StRS, pass a stakeholder-observable `SHALL` statement as

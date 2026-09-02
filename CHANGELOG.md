@@ -5,6 +5,10 @@
 - **skills**: install packaged agent skills by family
 - **okfkb**: maintain canonical derivation links
 
+### Fix
+
+- rework StRS requirement coverage
+
 ## v0.11.1 (2026-08-31)
 
 ### Fix

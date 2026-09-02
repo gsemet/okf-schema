@@ -8,4 +8,5 @@ Understand the design choices and philosophy behind OKF-Schema and the opinionat
 design-principles
 okfkb-choices
 okfreq-choices
+okfreq-coverage-boundaries
 ```
