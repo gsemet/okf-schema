@@ -25,8 +25,8 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 
 | Command | Purpose |
 |---|---|
-| `okfreq validate [PATH] [--json] [--prose]` | Validate metadata, configuration, IDs, hierarchy, exemptions, and derivation links. Prose findings are advisory. |
-| `okfreq lint [PATH] [--prose]` | Run the same read-only structural checks with optional EARS prose findings. |
+| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation links, and optionally annotated file targets. Prose and skipped-root findings are advisory. |
+| `okfreq lint [PATH] [--prose] [--check-links] [--project-root DIR]` | Run the same read-only structural checks with optional EARS prose and file-link checks. |
 | `okfreq index [PATH]` | Print the stable requirement ID index. |
 | `okfreq search QUERY [PATH]` | Search IDs, titles, and descriptions. |
 | `okfreq in-file FILE` | Print one requirement document. |
@@ -38,6 +38,24 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 `trace` separates valid leaf coverage, unknown IDs, repeated markers in one
 file, non-leaf markers, and scan warnings. Marker spellings and the ID regular
 expression come from `config.yml`.
+
+### Check annotated file targets
+
+`okfreq init` writes `x-okf-link` annotations into the generated requirement
+schemas, but checking is deliberately opt-in:
+
+```bash
+okfreq validate . --check-links --project-root .
+```
+
+The `--project-root` option controls `project-relative` source and test paths.
+Without it, the containing Git root of each requirement document is used. The
+checker does not use the current working directory or an editor workspace as an
+implicit root. Requirement relationships use case-sensitive Markdown filename
+stems; source and test evidence uses exact project-relative paths. `E10` reports
+malformed annotations, missing exact files, root escapes, and ambiguous stems.
+`W15` reports a skipped check when a required root or filename-stem workspace is
+unavailable. Warnings do not make `okfreq lint` fail on their own.
 
 ## Generated coverage and reports
 

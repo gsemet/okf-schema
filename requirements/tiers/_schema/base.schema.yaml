@@ -48,17 +48,26 @@ properties:
     type: array
     items:
       type: string
-    description: Authored IDs of higher-level requirements.
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+    description: Authored parent IDs; file navigation uses matching Markdown filename stems.
   derived_by:
     type: array
     items:
       type: string
-    description: Generated reverse links computed from derives_from.
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+    description: Generated reverse IDs; file navigation uses matching Markdown filename stems.
   depends_on:
     type: array
     items:
       type: string
-    description: Authored prerequisite or peer requirement IDs.
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+    description: Authored dependency IDs; file navigation uses matching Markdown filename stems.
   external_id:
     type: string
     minLength: 1

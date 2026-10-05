@@ -72,6 +72,26 @@ def test_scaffold_kb_creates_layout_creates_all_schema_files(tmp_path: Path) -> 
         assert (target / "_schema" / name).is_file(), f"Missing schema file: {name}"
 
 
+def test_scaffold_kb_declares_shared_file_link_metadata(tmp_path: Path) -> None:
+    """New KB schemas expose navigation and derivation semantics without new value types."""
+    target = tmp_path / "knowledge"
+    scaffold_kb(target)
+    schema = yaml.safe_load((target / "_schema" / "Base.schema.yaml").read_text(encoding="utf-8"))
+    for field, resolution in {
+        "derived_from": "bundle-relative-stem",
+        "derives_to": "bundle-relative-stem",
+        "links": "bundle-relative",
+        "backlinks": "bundle-relative",
+    }.items():
+        property_schema = schema["properties"][field]
+        assert property_schema["type"] == "array"
+        assert property_schema["items"]["type"] == "string"
+        assert property_schema["items"]["x-okf-link"] == {
+            "resolution": resolution,
+            "syntax": "plain",
+        }
+
+
 def test_scaffold_kb_creates_layout_creates_index_md(tmp_path: Path) -> None:
     """Creates index.md at the KB root."""
     target = tmp_path / "kb"

@@ -19,6 +19,7 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py
 tested_in_files:
+- tests/test_file_links.py
 - tests/test_okfreq.py
 ---
 
@@ -42,6 +43,24 @@ When a requirement bundle is validated, okfreq SHALL check schemas, identities, 
 - WHEN validation runs with prose checks enabled
 - THEN the tool reports a prose warning without changing the successful
   structural-validation exit status
+
+### Scenario: Check requirement navigation and implementation evidence
+
+- GIVEN annotated `derives_from`, `derived_by`, or `depends_on` requirement IDs with matching
+  Markdown basenames, and project-relative `implemented_in_files`/`tested_in_files` paths
+- WHEN `okfreq validate` or `okfreq lint` runs with `--check-links --project-root .`
+- THEN the base file-link API checks targets using filename-stem and project-relative semantics
+  while the requirement graph continues to validate frontmatter IDs independently
+
+### Scenario: Keep target checks explicitly opt-in
+
+- GIVEN an existing requirements bundle whose local schemas may not contain annotations
+- WHEN validation runs without `--check-links`
+- THEN existing schema and graph validation remains unchanged, without migrating the bundle
+
+Missing exact files and ambiguous stems report `E10`; unavailable roots or unresolved basename
+lookups report `W15` skips. External tracker IDs remain ordinary strings. The shared resolution
+contract belongs to `SwRS-OKFSCHEMA-CORE-007`, not to a separate requirements implementation.
 
 ### Verification notes
 

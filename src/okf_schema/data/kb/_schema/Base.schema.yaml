@@ -70,20 +70,26 @@ properties:
       Authored canonical bundle-relative, extensionless paths of documents
       from which this document was derived.
     type: array
-    items: { type: string }
+    items:
+      type: string
+      x-okf-link: {resolution: bundle-relative-stem, syntax: plain}
   derives_to:
     description: >-
       Generated canonical bundle-relative, extensionless paths of documents
       derived from this document. Computed from their derived_from fields.
     type: array
-    items: { type: string }
+    items:
+      type: string
+      x-okf-link: {resolution: bundle-relative-stem, syntax: plain}
   links:
     type: array
     items:
       type: string
+      x-okf-link: {resolution: bundle-relative, syntax: plain}
     description: "Bundle-relative paths this concept links to"
   backlinks:
     type: array
     items:
       type: string
+      x-okf-link: {resolution: bundle-relative, syntax: plain}
     description: "Bundle-relative paths of concepts that link to this one"

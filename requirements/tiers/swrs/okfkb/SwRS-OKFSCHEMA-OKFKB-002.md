@@ -45,6 +45,9 @@ overwriting existing authored files.
 - THEN the target contains the required schemas, type-aligned layer
   directories, indexes, and guidance needed for subsequent knowledge
   operations, including `playbooks/` for `Playbook` documents
+  and shared `x-okf-link` annotations: `links`/`backlinks` string items use
+  `bundle-relative`/`plain`, while `derived_from`/`derives_to` string items use
+  `bundle-relative-stem`/`plain`
 
 ### Scenario: Install into existing content
 

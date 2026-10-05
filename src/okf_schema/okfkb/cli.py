@@ -255,18 +255,36 @@ def update(
 
 @kb.command()
 @click.argument("path", default=".", type=click.Path())
-def validate(path: str) -> None:
+@click.option("--check-links", is_flag=True, help="Check schema-annotated file targets.")
+@click.option(
+    "--project-root", type=click.Path(path_type=Path), help="Root for project-relative targets."
+)
+def validate(
+    path: str,
+    check_links: bool = False,
+    project_root: Path | None = None,
+) -> None:
     """Validate a knowledge base with strict mode (warnings as errors).
+
+    .. versionchanged:: 0.13.0
+        Optional annotated file checks reuse the generic validation API.
 
     This is equivalent to running ``okf-schema validate --strict``.
 
     Args:
         path:
             Root directory of the knowledge-base bundle to validate.
+        check_links:
+            Whether to check schema-annotated file targets.
+        project_root:
+            Explicit root for project-relative targets.
+
+    Examples:
+        okfkb validate knowledge --check-links --project-root .
     """
     target = Path(path)
     try:
-        report = validate_bundle(target)
+        report = validate_bundle(target, check_links=check_links, project_root=project_root)
     except (FileNotFoundError, NotADirectoryError) as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)

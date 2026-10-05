@@ -56,6 +56,7 @@ Validate an OKF bundle against its schemas.
 
 ```bash
 okf-schema validate --path BUNDLE [--schema-db DIR] [--strict]
+	[--check-links] [--project-root DIR]
 ```
 
 | Option | Required | Default | Description |
@@ -63,6 +64,8 @@ okf-schema validate --path BUNDLE [--schema-db DIR] [--strict]
 | `--path` | ✅ | — | Root directory of the OKF bundle. |
 | `--schema-db` | — | `_schema/` inside bundle | Override schema directory. |
 | `--strict` | — | `False` | Treat warnings as errors. |
+| `--check-links` | — | `False` | Check opt-in `x-okf-link` annotations. |
+| `--project-root` | — | — | Explicit root for `project-relative` targets. |
 
 ---
 
@@ -72,6 +75,7 @@ Validate standalone markdown files without requiring an OKF bundle.
 
 ```bash
 okf-schema validate-md --input 'notes/**/*.md' --schemas-dir ./schemas [--strict]
+	[--check-links] [--bundle-root DIR] [--project-root DIR]
 ```
 
 | Option | Required | Description |
@@ -79,6 +83,75 @@ okf-schema validate-md --input 'notes/**/*.md' --schemas-dir ./schemas [--strict
 | `--input` | ✅ | Glob for markdown files. Repeat the option to supply multiple patterns. |
 | `--schemas-dir` | ✅ | Directory containing `<type>.schema.{json,json5,yaml,yml}` files. |
 | `--strict` | — | Treat warnings as errors. |
+| `--check-links` | — | Check opt-in `x-okf-link` annotations. |
+| `--bundle-root` | — | Root for `bundle-relative`, `bundle-relative-stem`, and `filename-stem` targets. |
+| `--project-root` | — | Explicit root for `project-relative` targets. |
+
+## `x-okf-link` annotations
+
+Schemas may attach the non-validating `x-okf-link` annotation to a string schema,
+including an array's `items` schema. It lets parsers and editors distinguish a
+single file link or a list of file links from ordinary string values, without
+changing the JSON Schema type or guessing from property names. See
+[Declare file links](../how-to/write-custom-schema.md)
+for a complete schema and matching frontmatter example. It has two required keys:
+
+```yaml
+type: string
+x-okf-link:
+  resolution: project-relative
+  syntax: plain
+```
+
+For example, a schema can describe a scalar design file and a list of source
+files while keeping both values as ordinary strings:
+
+```yaml
+properties:
+  design:
+    type: string
+    x-okf-link: {resolution: document-relative, syntax: plain}
+  implemented_in_files:
+    type: array
+    items:
+      type: string
+      x-okf-link: {resolution: project-relative, syntax: plain}
+```
+
+The matching frontmatter is then unambiguous to a parser or editor:
+
+```yaml
+design: ../design/export.md
+implemented_in_files:
+  - src/export.py
+  - src/report.py
+```
+
+`resolution` is one of `document-relative`, `bundle-relative`,
+`bundle-relative-stem`, `project-relative`, or `filename-stem`. Document-relative paths start at the
+Markdown document's parent directory. Bundle-relative paths start at the bundle
+root. Bundle-relative stems resolve a precise extensionless Markdown path:
+`findings/cache-observation` means `findings/cache-observation.md` under the
+bundle root, not a basename search. Project-relative paths use `--project-root`, then the document's containing
+Git root; they never fall back to the current working directory or an editor
+workspace. Filename stems search Markdown basenames inside the bundle, without
+the `.md` suffix, and matching is case-sensitive. Duplicate stems are errors.
+
+`syntax` is either `plain` or `wikilink`. Wikilinks may include a heading or
+block fragment and a display label, such as `[[notes.md#heading|Read this]]`.
+Only the target file is checked; fragment existence is not checked. Exact paths
+keep their extensions and do not receive an automatic `.md` suffix.
+Only `bundle-relative-stem` appends `.md` to the full relative target.
+
+Checking is disabled by default, so ordinary JSON Schema validation is unchanged.
+With `--check-links`, missing exact targets, root escapes, ambiguous stems, and
+malformed annotations produce `E10`. An unavailable root or an unresolved stem
+produces `W15`, explicitly identifying the skipped field and reason. Bundle and
+project-relative paths reject absolute paths and symlink escapes; document-relative
+paths may use `../`.
+The generic API owns this behavior and both opinionated layers reuse it.
+New scaffolds annotate their default link fields; existing schemas and bundles
+are left unchanged, with no migration required.
 
 ---
 

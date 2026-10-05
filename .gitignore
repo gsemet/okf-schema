@@ -215,6 +215,7 @@ tempCodeRunnerFile.py
 
 
 .agents/changes/
+.github/changes/
 examples/agentic-knowledge
 
 # ai-guidelines advisory operation locks

@@ -19,14 +19,14 @@ notes. Unknown properties are allowed and must be preserved.
 | `tier` | yes | authored | Level label used by the requirements hierarchy. |
 | `lifecycle` | yes | authored | One of `draft`, `proposed`, `approved`, `deprecated`, or `superseded`. |
 | `origin` | yes | authored | Source of the requirement, such as `native`, `imported`, or a tool name. |
-| `derives_from` | conditional | authored | IDs of higher-level requirements. Native `SwRS` requirements need at least one `StRS` ID. |
+| `derives_from` | conditional | authored | IDs of higher-level requirements, with case-sensitive Markdown filename-stem navigation hints. Native `SwRS` requirements need at least one `StRS` ID. |
 | `depends_on` | no | authored | Semantic prerequisite or dependency IDs. This is not generated coverage. |
 | `verification_method` | no | authored | Controlled method used to verify the requirement, for example `test`, `analysis`, `inspection`, or `demonstration`. |
 | `verification_criteria` | no | authored | Optional pass criteria that make verification concrete. |
 | `user_need` | StRS | authored | Stakeholder outcome preserved separately from the normative StRS behavior. `okfreq new strs` leaves an explicit placeholder when `--user-need` is omitted. |
 | `annotation_exemption` | SwRS | authored | Whether implementation and test marker coverage is intentionally exempted. New SwRS documents default to `false`. |
 | `exemption_reason` | SwRS | authored | Conditional justification required when `annotation_exemption` is `true`. Explain why repository source/test coverage is not applicable and point to external justification or verification documents when available. |
-| `external_id` | no | authored | Identifier of the corresponding requirement in an external system. |
+| `external_id` | no | authored | Identifier of the corresponding requirement in an external system. It is not a local file reference. |
 | `external_url` | no | authored | URI of the corresponding requirement in an external system. |
 
 ## Tier-specific Markdown bodies
@@ -115,8 +115,8 @@ between authored exemption metadata and generated coverage.
 | Field | Ownership | Meaning |
 |---|---|---|
 | `derived_by` | generated | Reverse links computed from other requirements’ `derives_from` fields. Do not author this as the source of truth. |
-| `implemented_in_files` | generated or external tool | SwRS-only source files containing implementation markers. It is optional and must never be invented. |
-| `tested_in_files` | generated or external tool | SwRS-only test files containing test markers. It is optional and must never be invented. |
+| `implemented_in_files` | generated or external tool | SwRS-only project-relative source paths containing implementation markers. It is optional and must never be invented. |
+| `tested_in_files` | generated or external tool | SwRS-only project-relative test paths containing test markers. It is optional and must never be invented. |
 
 The schema is selected from the `type` value. Common fields are defined in
 `tiers/_schema/base.schema.yaml`; `type: StRS` is validated by
@@ -128,6 +128,90 @@ requirements.
 `okfreq update-coverage` may update only the coverage fields it owns. It writes
 atomically and supports preview modes. Reports, indexes, and scope indexes are
 also generated artifacts and should be regenerated rather than manually edited.
+
+### File-link annotations
+
+These fields apply the generic `okf-schema` contract; `okfreq` does not own a
+separate file-link type or resolution engine. New requirement scaffolds contain
+the annotations below. Existing requirement schemas and documents are not
+migrated or rewritten.
+
+Requirement values are strings, so a consumer needs schema metadata to know
+which values it can open as files. For example, this `SwRS` frontmatter records
+the implementation file, its test, its parent requirement, and an external
+tracker ID without changing any of their YAML types:
+
+```yaml
+---
+type: SwRS
+id: SwRS-demo-001
+derives_from:
+  - StRS-demo-001
+implemented_in_files:
+  - src/report/export.py
+tested_in_files:
+  - tests/test_export.py
+external_id: DOORS-4821
+---
+```
+
+The generated schema tells the consumer how to interpret each value:
+
+```yaml
+implemented_in_files:
+  type: array
+  items:
+    type: string
+    x-okf-link: {resolution: project-relative, syntax: plain}
+tested_in_files:
+  type: array
+  items:
+    type: string
+    x-okf-link: {resolution: project-relative, syntax: plain}
+derives_from:
+  type: array
+  items:
+    type: string
+    x-okf-link: {resolution: filename-stem, syntax: plain}
+```
+
+With a project containing `src/report/export.py`, `tests/test_export.py`, and
+a requirement file named `StRS-demo-001.md`, the first two values resolve to
+exact project-relative files and `StRS-demo-001` navigates by Markdown
+filename stem. `DOORS-4821` remains an external identifier. The file-link
+annotations guide navigation; they do not replace the existing requirement-ID
+validation or prove that a source file implements the requirement.
+
+Link checking is opt-in:
+
+```bash
+okfreq validate . --check-links --project-root .
+okfreq lint . --check-links --project-root .
+```
+
+The `okf-schema` repository applies these annotations to its own `requirements/`
+bundle. For example, `SwRS-OKFSCHEMA-CORE-007` derives from
+`StRS-OKFSCHEMA-CORE-003`; its generated implementation evidence points to
+`src/okf_schema/file_links.py`, and its test evidence points to
+`tests/test_file_links.py`. From the repository root, check those targets with:
+
+```bash
+okfreq validate requirements --check-links --project-root . --prose
+```
+
+The StRS states why consumers need recognizable file references without changing
+value types. The SwRS specifies the shared API, resolution modes, diagnostics,
+and opt-in behavior; KB and requirements SwRS describe their applied conventions.
+This is an explicitly maintained repository bundle, not an automatic migration
+of other existing bundles.
+
+If no project root is supplied, `okfreq` uses the containing Git root for
+project-relative paths. It never infers an editor workspace or uses the current
+working directory as a fallback. Missing exact targets and ambiguous filename
+stems are `E10` errors. A missing workspace root or unresolved filename stem is
+reported as `W15` and skipped, because the CLI cannot infer which workspace the
+author intended. `--check-links` does not check heading or block fragments in
+wikilinks; it checks only the target file.
 
 StRS documents do not have source coverage. The generated report gives StRS its
 own stakeholder-test coverage record, computed from linked SwRS and the

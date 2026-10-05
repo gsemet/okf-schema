@@ -556,6 +556,16 @@ def test_init_creates_split_layout_with_guideline(tmp_path: Path) -> None:
     assert (root / "tiers" / "swrs").is_dir()
     assert not (root / "strs").exists()
 
+    base_schema = (root / "tiers" / "_schema" / "base.schema.yaml").read_text(encoding="utf-8")
+    strs_schema = (root / "tiers" / "_schema" / "strs.schema.yaml").read_text(encoding="utf-8")
+    swrs_schema = (root / "tiers" / "_schema" / "swrs.schema.yaml").read_text(encoding="utf-8")
+    assert "description: Document type; selects which tier profile applies." in base_schema
+    assert "description: Upstream requirement IDs this one is derived from." in base_schema
+    assert "x-okf-link:" in base_schema
+    assert "description: The stakeholder need this requirement formalizes." in strs_schema
+    assert "description: Generated source paths." in swrs_schema
+    assert "x-okf-link:" in swrs_schema
+
 
 def test_guidelines_are_not_loaded_as_requirements(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)

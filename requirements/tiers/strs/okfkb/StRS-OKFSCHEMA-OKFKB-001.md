@@ -43,3 +43,5 @@ or allowing automated maintenance to silently replace human judgment.
   appropriate higher knowledge layer.
 - Promotion or consolidation decisions that require judgment remain explicit and
   reviewable by a human.
+- Consumers must be able to navigate from stable knowledge to its Finding files and inspect
+  other file links without guessing their roots or changing evidence values.

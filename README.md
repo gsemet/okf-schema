@@ -51,7 +51,7 @@ a validated, searchable knowledge bundle by adding:
 | **Schema-driven frontmatter validation** | Every concept's YAML frontmatter is checked against a JSONSchema. Invalid fields, missing required keys, or wrong types are reported as structured errors. |
 | **Auto-discovered schemas** | Schemas live inside the bundle under `_schema/` (e.g. `_schema/concept.schema.yaml`). The `type` field in a concept's frontmatter tells `okf-schema` which schema file to load. A concept with `type: concept` is validated against `_schema/concept.schema.yaml`. Schemas can be written in **YAML**, **JSON**, or **JSON5** (JSON with comments and trailing commas). |
 | **Bundle integrity checks** | Detects broken internal links, missing `index.md` files, malformed `log.md` entries, and reserved-file violations. |
-| **Safe linting** | Normalizes YAML frontmatter by flattening nested lists and converting block-style to inline notation while preserving comments and custom quotes via `ruamel.yaml`. Also auto-updates `links` and `backlinks` fields from markdown body content. |
+| **Safe linting** | Normalizes YAML frontmatter by flattening nested lists and converting block-style to inline notation while preserving inline and block comments, key order, and custom quotes via `ruamel.yaml`. Also auto-updates `links` and `backlinks` fields from markdown body content. |
 | **Analytics** | Bundle statistics. |
 
 See a real schema definition in [`examples/ai-llm-knowledge-base/_schema/concept.schema.yaml`](examples/ai-llm-knowledge-base/_schema/concept.schema.yaml).
@@ -85,6 +85,50 @@ Schema extensions supported:
 - `.schema.yaml` — YAML (human-friendly, supports comments and anchors)
 - `.schema.json` — JSON (strict syntax, widely supported by editors)
 - `.schema.json5` — JSON5 (JSON with comments, trailing commas, and unquoted keys)
+
+Schemas may also use the non-validating `x-okf-link` annotation when a parser
+needs to distinguish a file reference from ordinary text. This matters when a
+frontmatter value has the same JSON type as prose: an editor can treat the
+following as a link without changing the value type or guessing from the
+property name:
+
+```yaml
+# artifact.schema.yaml
+properties:
+  design:
+    type: string
+    x-okf-link: {resolution: document-relative, syntax: plain}
+  related_notes:
+    type: array
+    items:
+      type: string
+      x-okf-link: {resolution: filename-stem, syntax: wikilink}
+```
+
+```yaml
+# artifact.md
+design: ../design/export.md
+related_notes:
+  - '[[Export-design#Decisions|Export design]]'
+```
+
+The consumer now knows that `design` is one document-relative file and that
+each `related_notes` value is a wikilink to a Markdown filename stem. The
+annotation supports document-relative, bundle-relative, project-relative,
+extensionless bundle-relative Markdown paths (`bundle-relative-stem`), and
+case-sensitive filename-stem resolution, plus plain and Obsidian wikilink
+syntax. Checking is opt-in with `--check-links`; provide `--project-root` or
+`--bundle-root` when the relevant root is not implicit. See the
+[CLI reference](https://okf-schema.readthedocs.io/en/stable/reference/cli.html)
+for resolution rules and `E10`/`W15` diagnostics.
+
+The generic API owns this feature. New generic scaffolds annotate `links` and
+`backlinks`; new KB scaffolds also annotate `derived_from` and `derives_to`;
+new requirement scaffolds annotate derivation and source/test references.
+Existing bundles and schemas are not migrated. See
+[KB evidence links](docs/source/how-to/setup-okfkb.md) and
+[requirement evidence links](docs/source/reference/okfreq-frontmatter.md) for
+the applied examples.
 
 For detailed information on `$ref` support and schema composition, see the [full documentation](https://okf-schema.readthedocs.io/en/stable/).
 

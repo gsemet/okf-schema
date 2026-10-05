@@ -15,8 +15,7 @@ derives_from:
 annotation_exemption: false
 exemption_reason:
 derived_by: []
-implemented_in_files:
-- src/okf_schema/data/kb/skills/okfkb-distill/SKILL.md
+implemented_in_files: []
 tested_in_files: []
 ---
 

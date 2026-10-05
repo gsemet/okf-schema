@@ -10,11 +10,14 @@ allOf:
   properties:
     type:
       const: StRS
+      description: Fixed document type for stakeholder requirements.
     tier:
       const: StRS
+      description: Fixed tier for stakeholder requirements.
     user_need:
       type: string
       minLength: 1
+      description: The stakeholder need this requirement formalizes.
   required:
   - type
   - tier

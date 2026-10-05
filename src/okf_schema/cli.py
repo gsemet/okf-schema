@@ -204,6 +204,7 @@ def init(
         "    type: array\n"
         "    items:\n"
         "      type: string\n"
+        "      x-okf-link: {resolution: bundle-relative, syntax: plain}\n"
         "    description: >-\n"
         "      Bundle-relative paths of concepts this file links to.\n"
         "      Automatically maintained by ``okf-schema lint --links``.\n"
@@ -211,6 +212,7 @@ def init(
         "    type: array\n"
         "    items:\n"
         "      type: string\n"
+        "      x-okf-link: {resolution: bundle-relative, syntax: plain}\n"
         "    description: >-\n"
         "      Bundle-relative paths of concepts that link to this file.\n"
         "      Automatically maintained by ``okf-schema lint --links``.\n"
@@ -312,12 +314,26 @@ def new(
     default=False,
     help="Treat warnings as errors (exit 1 if any warning is present).",
 )
+@click.option(
+    "--check-links",
+    is_flag=True,
+    default=False,
+    help="Check x-okf-link targets in loaded schemas.",
+)
+@click.option(
+    "--project-root",
+    type=click.Path(file_okay=False, dir_okay=True),
+    default=None,
+    help="Explicit project root for project-relative x-okf-link targets.",
+)
 @click.pass_context
 def validate(
     ctx: click.Context,
     bundle_path: str,
     schema_db: str | None,
     strict: bool,
+    check_links: bool,
+    project_root: str | None,
 ) -> None:
     """Validate an OKF bundle.
 
@@ -330,13 +346,23 @@ def validate(
             Optional directory containing schemas that override the bundle schemas.
         strict:
             Whether warnings should cause validation to fail.
+        check_links:
+            Whether to check opt-in ``x-okf-link`` targets.
+        project_root:
+            Explicit root for project-relative file links.
 
     Examples:
         okf-schema validate --path bundle
         okf-schema validate --path bundle --strict
+        okf-schema validate --path bundle --check-links --project-root project
     """
     try:
-        report = validate_bundle(bundle_path, schema_db=schema_db)
+        report = validate_bundle(
+            bundle_path,
+            schema_db=schema_db,
+            check_links=check_links,
+            project_root=project_root,
+        )
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(1)
@@ -408,12 +434,33 @@ def validate(
     default=False,
     help="Treat warnings as errors (exit 1 if any warning is present).",
 )
+@click.option(
+    "--check-links",
+    is_flag=True,
+    default=False,
+    help="Check x-okf-link targets in loaded schemas.",
+)
+@click.option(
+    "--bundle-root",
+    type=click.Path(file_okay=False, dir_okay=True),
+    default=None,
+    help="Bundle root for bundle-relative and filename-stem targets.",
+)
+@click.option(
+    "--project-root",
+    type=click.Path(file_okay=False, dir_okay=True),
+    default=None,
+    help="Explicit project root for project-relative x-okf-link targets.",
+)
 @click.pass_context
 def validate_md(
     ctx: click.Context,
     input_patterns: tuple[str, ...],
     schemas_dir: str,
     strict: bool,
+    check_links: bool,
+    bundle_root: str | None,
+    project_root: str | None,
 ) -> None:
     """Validate standalone markdown files against JSON schemas.
 
@@ -429,13 +476,26 @@ def validate_md(
             Directory containing the JSON or YAML schemas.
         strict:
             Whether warnings should cause validation to fail.
+        check_links:
+            Whether to check opt-in ``x-okf-link`` targets.
+        bundle_root:
+            Bundle root for bundle-relative and filename-stem file links.
+        project_root:
+            Explicit root for project-relative file links.
 
     Examples:
         okf-schema validate-md --input 'notes/**/*.md' --schemas-dir ./schemas
         okf-schema validate-md --input '*.md' --input 'docs/**/*.md' --schemas-dir ./schemas
+        okf-schema validate-md --input '*.md' --schemas-dir ./schemas --check-links
     """
     try:
-        report = validate_markdown_files(list(input_patterns), schemas_dir)
+        report = validate_markdown_files(
+            list(input_patterns),
+            schemas_dir,
+            check_links=check_links,
+            bundle_root=bundle_root,
+            project_root=project_root,
+        )
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(1)
