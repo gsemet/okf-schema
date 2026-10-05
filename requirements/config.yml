@@ -15,8 +15,8 @@ scopes:
   core:
     id_token: CORE
     folder: core
-    source_dirs: [src/okf_schema/__init__.py, src/okf_schema/_internal, src/okf_schema/api.py, src/okf_schema/cli.py, src/okf_schema/formatter.py, src/okf_schema/schemas, src/okf_schema/validator.py]
-    test_dirs: [tests/test_api.py, tests/test_cli_core.py, tests/test_cli_remaining.py, tests/test_edge_cases.py, tests/test_formatter.py, tests/test_integration.py, tests/test_internal.py, tests/test_okf2_compliance.py, tests/test_package.py, tests/test_validator.py]
+    source_dirs: [src/okf_schema/__init__.py, src/okf_schema/_internal, src/okf_schema/api.py, src/okf_schema/cli.py, src/okf_schema/file_links.py, src/okf_schema/formatter.py, src/okf_schema/schemas, src/okf_schema/validator.py]
+    test_dirs: [tests/test_api.py, tests/test_cli_core.py, tests/test_cli_remaining.py, tests/test_edge_cases.py, tests/test_file_links.py, tests/test_formatter.py, tests/test_integration.py, tests/test_internal.py, tests/test_okf2_compliance.py, tests/test_package.py, tests/test_validator.py]
   okfkb:
     id_token: OKFKB
     folder: okfkb
@@ -26,4 +26,4 @@ scopes:
     id_token: OKFREQ
     folder: okfreq
     source_dirs: [src/okf_schema/okfreq, src/okf_schema/data/requirements]
-    test_dirs: [tests/test_okfreq.py]
+    test_dirs: [tests/test_okfreq.py, tests/test_file_links.py]

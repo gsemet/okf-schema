@@ -44,6 +44,7 @@ from okf_schema._internal.utils import (
     find_broken_links,
 )
 from okf_schema._internal.yaml import extract_frontmatter, make_yaml, parse_yaml
+from okf_schema.file_links import check_file_links
 from okf_schema.okfkb.derivations import (
     build_derivation_graph,
     content_document_paths,
@@ -576,6 +577,9 @@ def validate_concept(
     report: Report,
     bundle_root: Path,
     schemas: dict[str, dict] | None,
+    *,
+    check_links: bool = False,
+    project_root: Path | None = None,
 ) -> None:
     r"""Validate a single concept (non-reserved) ``.md`` file.
 
@@ -590,6 +594,10 @@ def validate_concept(
             Root directory of the OKF bundle.
         schemas:
             Optional schema database mapping type to schema.
+        check_links:
+            Enable opt-in ``x-okf-link`` target checking.
+        project_root:
+            Explicit project root for project-relative links.
 
     Examples:
         >>> from tempfile import TemporaryDirectory
@@ -630,6 +638,20 @@ def validate_concept(
                         f"Schema validation failed for '{path}': {err_msg}",
                         path,
                     )
+                if check_links:
+                    for diagnostic in check_file_links(
+                        frontmatter,
+                        schemas[type_str],
+                        path,
+                        bundle_root=bundle_root,
+                        project_root=project_root,
+                    ):
+                        add_finding = (
+                            report.add_error
+                            if diagnostic.severity == "error"
+                            else report.add_warning
+                        )
+                        add_finding(diagnostic.code, diagnostic.message, path)
             else:
                 report.add_warning(
                     "W6",
@@ -799,6 +821,9 @@ def _check_reserved_file_naming(
 def validate_bundle(
     bundle: Path,
     schemas: dict[str, dict] | None = None,
+    *,
+    check_links: bool = False,
+    project_root: Path | None = None,
 ) -> Report:
     """Run the full validation suite over *bundle*.
 
@@ -813,6 +838,11 @@ def validate_bundle(
             Path to the OKF bundle directory.
         schemas:
             Optional schema database mapping type to schema.
+        check_links:
+            Enable opt-in ``x-okf-link`` target checking.
+        project_root:
+            Explicit project root for project-relative links. If unavailable,
+            the containing Git root of each document is used.
 
     Returns:
         A :class:`Report` containing all errors and warnings.
@@ -838,7 +868,14 @@ def validate_bundle(
                 validate_log(path, report)
             _check_reserved_file_naming(path, report, bundle)
         else:
-            validate_concept(path, report, bundle, schemas)
+            validate_concept(
+                path,
+                report,
+                bundle,
+                schemas,
+                check_links=check_links,
+                project_root=project_root,
+            )
 
     # W14 — OKFKB computed reverse derivations are missing, stale, or based
     # on invalid authored canonical paths. Validation is deliberately read-only.
@@ -886,19 +923,31 @@ def validate_bundle(
 def validate_markdown_files(
     file_paths: list[Path],
     schemas: dict[str, dict] | None = None,
+    *,
+    check_links: bool = False,
+    bundle_root: Path | None = None,
+    project_root: Path | None = None,
 ) -> Report:
     """Validate standalone markdown files (not part of an OKF bundle).
 
     Validates each file using E1, E2, E4, E5, E7-E9 and W1, W3,
     W6-W13 rules.
-    Bundle-specific constraints (W4, E6, W5) are not applied.
-    Links are not validated since there is no common root.
+    Bundle-specific constraints (W4, E6, W5) are not applied. File-link
+    annotations are checked only when explicitly enabled and roots are supplied
+    or can be derived from the document's containing Git repository.
 
     Args:
         file_paths:
             List of markdown file paths to validate.
         schemas:
             Optional schema database mapping type to schema.
+        check_links:
+            Enable opt-in ``x-okf-link`` target checking.
+        bundle_root:
+            Optional bundle root for bundle-relative and filename-stem links.
+        project_root:
+            Explicit project root for project-relative links. If unavailable,
+            the containing Git root of each document is used.
 
     Returns:
         A :class:`Report` containing all errors and warnings.
@@ -941,6 +990,20 @@ def validate_markdown_files(
                             f"Schema validation failed for '{path}': {err_msg}",
                             path,
                         )
+                    if check_links:
+                        for diagnostic in check_file_links(
+                            frontmatter,
+                            schemas[type_str],
+                            path,
+                            bundle_root=bundle_root,
+                            project_root=project_root,
+                        ):
+                            add_finding = (
+                                report.add_error
+                                if diagnostic.severity == "error"
+                                else report.add_warning
+                            )
+                            add_finding(diagnostic.code, diagnostic.message, path)
                 else:
                     report.add_warning(
                         "W6",

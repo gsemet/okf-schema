@@ -26,12 +26,20 @@ allOf:
           identify any external justification or verification document.
       implemented_in_files:
         type: array
-        items: {type: string}
-        description: Generated source paths.
+        items:
+          type: string
+          x-okf-link:
+            resolution: project-relative
+            syntax: plain
+        description: Generated exact source-file paths relative to the project root.
       tested_in_files:
         type: array
-        items: {type: string}
-        description: Generated test paths.
+        items:
+          type: string
+          x-okf-link:
+            resolution: project-relative
+            syntax: plain
+        description: Generated exact test-file paths relative to the project root.
       verification_method:
         type: string
         description: Author-selected verification method.

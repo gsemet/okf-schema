@@ -127,7 +127,7 @@ def test_installed_wheel_commands_install_complete_families_without_source_check
     wheel_path = next(wheel_directory.glob("*.whl"))
     environment = tmp_path / "venv"
     subprocess.run(
-        ["uv", "venv", str(environment)],
+        ["uv", "venv", "--python", sys.executable, str(environment)],
         cwd=repository_root,
         check=True,
         capture_output=True,

@@ -49,7 +49,6 @@ style:
     {{ uv_run }} ruff format src tests
     {{ uv_run }} ruff check --fix src tests
 
-
 # Check formatting without modifying files
 [group("format")]
 style-check:
@@ -64,7 +63,7 @@ lint:
 # Validate the repository's generated okfreq requirement layer
 [group("lint")]
 requirements-lint:
-    {{ uv_run }} okfreq lint requirements
+    {{ uv_run }} okfreq lint requirements --check-links --project-root .
     {{ uv_run }} okfreq update-coverage requirements --check
 
 # Generate downloadable requirements traceability artifacts
@@ -103,7 +102,6 @@ docs-open:
 [linux]
 docs-open:
     xdg-open docs/_build/html/index.html
-
 
 # Clean build artifacts
 [group("clean")]
@@ -176,14 +174,15 @@ refresh-okfreq-examples:
     {{ uv_run }} okfreq trace examples/okfreq-examples/ --json
     {{ uv_run }} okfreq update-coverage examples/okfreq-examples/
     {{ uv_run }} okfreq update-coverage examples/okfreq-examples/ --check
-    {{ uv_run }} okfreq validate examples/okfreq-examples/ --prose
-    {{ uv_run }} okfreq lint examples/okfreq-examples/ --prose
+    {{ uv_run }} okfreq validate examples/okfreq-examples/ --prose \
+        --check-links --project-root examples/okfreq-examples
+    {{ uv_run }} okfreq lint examples/okfreq-examples/ --prose \
+        --check-links --project-root examples/okfreq-examples
     mkdir -p examples/okfreq-examples/dist
     {{ uv_run }} okfreq generate-report examples/okfreq-examples/ \
         --output-json examples/okfreq-examples/dist/requirements-report.json \
         --output-summary-md examples/okfreq-examples/dist/requirements-report.md
     {{ uv_run }} python -c 'import json; import re; from pathlib import Path; fixed_date="2026-09-01T00:00:00+00:00"; report_path=Path("examples/okfreq-examples/dist/requirements-report.json"); report=json.loads(report_path.read_text()); report.pop("bundle_path", None); scan=report.get("scan", {}); scan.pop("project_root", None); report["generated_at"]=fixed_date; report["generated_by"]["version"]="0.0.0-example"; report_path.write_text(json.dumps(report, indent=2) + chr(10)); markdown_path=Path("examples/okfreq-examples/dist/requirements-report.md"); markdown=markdown_path.read_text(); markdown, count=re.subn(r"(?m)^Generated: .*$", "Generated: " + fixed_date, markdown, count=1); assert count == 1; markdown_path.write_text(markdown)'
-
 
 # ── Skill Evals ──────────────────────────────────────────────────────────────
 

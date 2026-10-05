@@ -132,6 +132,82 @@ bundle. Confirm that the project-local guideline was installed, then review and
 adapt it for the repository. If initialization preserves an existing guideline,
 keep using that local file; do not replace it with this skill's fallback.
 
+## Why requirement schemas declare file links
+
+Apply the generic `okf-schema` annotation and checker; `okfreq` does not own a
+separate file-link type or resolution engine. The general contract belongs to
+the `okf-schema` skill, while this section applies it to requirements evidence.
+
+Requirement frontmatter uses strings for IDs and arrays for evidence. A parser
+or editor otherwise cannot tell whether a value is a file to open, a local
+requirement relationship, or an identifier in an external tool. `x-okf-link`
+records that meaning without changing the frontmatter shape, and without
+replacing the existing requirement-ID validation.
+
+For example, a generated schema describes exact project files separately from
+requirement filename stems:
+
+```yaml
+properties:
+   implemented_in_files:
+      type: array
+      items:
+         type: string
+         x-okf-link: {resolution: project-relative, syntax: plain}
+   tested_in_files:
+      type: array
+      items:
+         type: string
+         x-okf-link: {resolution: project-relative, syntax: plain}
+   derives_from:
+      type: array
+      items:
+         type: string
+         x-okf-link: {resolution: filename-stem, syntax: plain}
+   external_id:
+      type: string
+```
+
+The corresponding `SwRS` frontmatter might be:
+
+```yaml
+id: SwRS-demo-001
+derives_from:
+  - StRS-demo-001
+implemented_in_files:
+  - src/report/export.py
+tested_in_files:
+  - tests/test_export.py
+external_id: DOORS-4821
+```
+
+With this metadata, a consumer can open `src/report/export.py` and
+`tests/test_export.py` from the project root, navigate `StRS-demo-001` to the
+Markdown file with that exact stem, and leave `DOORS-4821` as an external
+identifier. The fields are still ordinary strings and lists of strings.
+
+`implemented_in_files` and `tested_in_files` use exact project-relative paths.
+`derives_from`, `derived_by`, and `depends_on` use case-sensitive Markdown
+filename stems without `.md`. Preserve the existing requirement-ID graph
+validation and use matching requirement IDs and basenames for file navigation.
+`external_id` is not a local-file annotation. Initialization preserves existing
+schemas, so inspect them rather than assuming they already contain these hints.
+Existing bundles are not migrated or rewritten. Do not replace their schemas
+or change authored values merely to add file-navigation annotations.
+
+```bash
+okfreq validate requirements --check-links --project-root .
+okfreq lint requirements --check-links --project-root .
+```
+
+Checks are off by default. Explicit project roots take precedence over Git
+roots; the CLI cannot infer editor workspaces. Missing exact files and
+ambiguous bundle-local stems fail with `E10`; unavailable roots and unresolved
+workspace stems produce explicit `W15` skips. A skipped check is not a verified
+link. Keep syntax separate from resolution: a `wikilink` can contain a heading
+or label, while these generated fields use `plain` strings. Use the
+`okf-schema` skill for the full annotation contract and custom scalar links.
+
 ## Author and implement requirements
 
 1. Create or confirm the stakeholder outcome first. An StRS needs one

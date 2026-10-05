@@ -8,10 +8,30 @@ allOf:
   properties:
     type:
       const: SwRS
+      description: Fixed document type for software requirements.
     tier:
       const: SwRS
+      description: Fixed tier for software requirements.
     annotation_exemption:
       type: boolean
+      description: True when this requirement is exempt from coverage
+        annotations.
+    implemented_in_files:
+      type: array
+      description: Generated source paths.
+      items:
+        type: string
+        x-okf-link:
+          resolution: project-relative
+          syntax: plain
+    tested_in_files:
+      type: array
+      description: Generated test paths.
+      items:
+        type: string
+        x-okf-link:
+          resolution: project-relative
+          syntax: plain
   required:
   - type
   - tier

@@ -41,6 +41,8 @@ from okf_schema._internal.utils import (
     resolve_link,
 )
 from okf_schema._internal.yaml import extract_frontmatter, parse_yaml
+from okf_schema.file_links import FileLinkDiagnostic as FileLinkDiagnostic
+from okf_schema.file_links import check_file_links as check_file_links
 from okf_schema.formatter import FormattedResult
 from okf_schema.formatter import format_bundle as _format_bundle
 from okf_schema.formatter import lint_bundle as _lint_bundle
@@ -94,6 +96,9 @@ def _resolve_bundle(bundle_path: str | Path) -> Path:
 def validate_bundle(
     bundle_path: str | Path,
     schema_db: str | Path | None = None,
+    *,
+    check_links: bool = False,
+    project_root: str | Path | None = None,
 ) -> Report:
     """Validate an OKF bundle.
 
@@ -104,6 +109,11 @@ def validate_bundle(
             Optional directory containing JSON or YAML schema files.
             If not provided, the ``_schema`` subdirectory inside the bundle
             is used automatically when it exists.
+        check_links:
+            Enable opt-in ``x-okf-link`` target checking.
+        project_root:
+            Explicit project root for project-relative links. If unavailable,
+            the containing Git root of each document is used.
 
     Returns:
         A :class:`Report` with all errors and warnings.
@@ -119,12 +129,22 @@ def validate_bundle(
         schemas = load_schema_database(Path(schema_db))
     elif (bundle / "_schema").is_dir():
         schemas = load_schema_database(bundle / "_schema")
-    return _validate_bundle(bundle, schemas)
+    configured_project_root = Path(project_root).expanduser() if project_root is not None else None
+    return _validate_bundle(
+        bundle,
+        schemas,
+        check_links=check_links,
+        project_root=configured_project_root,
+    )
 
 
 def validate_markdown_files(
     input_patterns: list[str] | str,
     schemas_dir: str | Path | None = None,
+    *,
+    check_links: bool = False,
+    bundle_root: str | Path | None = None,
+    project_root: str | Path | None = None,
 ) -> Report:
     """Validate standalone markdown files against JSON schemas.
 
@@ -143,6 +163,13 @@ def validate_markdown_files(
             If not provided, schema validation is skipped. Because no schema
             database was requested, missing-schema (W6) warnings are not emitted.
             Schema files should be named ``<type>.schema.{json|json5|yaml|yml}``.
+        check_links:
+            Enable opt-in ``x-okf-link`` target checking.
+        bundle_root:
+            Optional bundle root for bundle-relative and filename-stem links.
+        project_root:
+            Explicit project root for project-relative links. If unavailable,
+            the containing Git root of each document is used.
 
     Returns:
         A :class:`Report` with all errors and warnings.
@@ -196,7 +223,15 @@ def validate_markdown_files(
             raise NotADirectoryError(f"Schemas path is not a directory: {schemas_path}")
         schemas = load_schema_database(schemas_path)
 
-    return _validate_markdown_files(sorted(collected_files), schemas)
+    configured_bundle_root = Path(bundle_root).expanduser() if bundle_root is not None else None
+    configured_project_root = Path(project_root).expanduser() if project_root is not None else None
+    return _validate_markdown_files(
+        sorted(collected_files),
+        schemas,
+        check_links=check_links,
+        bundle_root=configured_bundle_root,
+        project_root=configured_project_root,
+    )
 
 
 # @implements_req SwRS-OKFSCHEMA-CORE-003

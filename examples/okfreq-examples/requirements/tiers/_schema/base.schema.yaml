@@ -5,42 +5,66 @@ type: object
 properties:
   type:
     type: string
+    description: Document type; selects which tier profile applies.
   id:
     type: string
+    description: Human-readable requirement identifier, e.g. SwRS-CORE-002.
   uuid:
     type: string
     format: uuid
+    description: Stable UUIDv4 identifying this requirement across renames.
   title:
     type: string
     minLength: 1
+    description: Short, imperative summary of the requirement.
   description:
     type: string
     minLength: 1
+    description: Full requirement statement in EARS or plain prose.
   project:
     type: string
     minLength: 1
+    description: Project code this requirement belongs to.
   scope:
     type: string
     minLength: 1
+    description: Functional scope, e.g. Core, Safety, Connectivity.
   lifecycle:
     type: string
+    description: Lifecycle stage of the requirement, e.g. draft, active,
+      retired.
   origin:
     type: string
     minLength: 1
+    description: Where the requirement came from, e.g. native, imported,
+      elicited.
   tier:
     type: string
+    description: Requirement tier; must match the document's directory profile.
   derives_from:
     type: array
     items:
       type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+    description: Upstream requirement IDs this one is derived from.
   derived_by:
     type: array
     items:
       type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+    description: Downstream requirement IDs deriving this one.
   depends_on:
     type: array
     items:
       type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+    description: Other requirement IDs this one depends on.
 required:
 - type
 - id

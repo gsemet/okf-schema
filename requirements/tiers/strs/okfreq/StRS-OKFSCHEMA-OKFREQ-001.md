@@ -47,3 +47,5 @@ visible before delivery decisions are made.
 - Coverage fields and reverse relationships are generated from explicit evidence;
   they are not assertions authored by hand.
 - Lifecycle transitions remain explicit human decisions.
+- Consumers must be able to distinguish local requirement navigation, project source/test
+  evidence, and external tracker IDs while preserving existing requirement identity and values.

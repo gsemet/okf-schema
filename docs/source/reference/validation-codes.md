@@ -2,7 +2,7 @@
 
 This reference documents all validation codes returned by okf-schema's validation commands (`validate` and `validate-md`).
 
-## Error Codes (E0–E9)
+## Error Codes (E0–E10)
 
 Errors represent conformance violations that must be fixed before the validation passes.
 
@@ -227,7 +227,27 @@ Fix: add `by: <actor>` and `at: <ISO-8601-date>` to the verified entry.
 
 ---
 
-## Warning Codes (W0–W14)
+### E10: File-Link Target Invalid
+
+**Severity**: Error (only when `--check-links` is enabled)
+
+**Description**: An `x-okf-link` annotation is malformed, an exact target is
+missing, a bundle/project-relative target escapes its root, or a filename stem
+matches more than one Markdown file. The annotation is otherwise ignored by
+ordinary JSON Schema validation.
+
+**How to Fix**:
+- Use one of the documented `resolution` and `syntax` values.
+- Correct the exact path, or create the target file.
+- Use a bundle/project-relative path that stays inside its root.
+- Rename duplicate Markdown basenames or use a different relationship value.
+
+Enable the check with `okf-schema validate --check-links` or
+`okfreq validate --check-links`.
+
+---
+
+## Warning Codes (W0–W15)
 
 Warnings indicate best-practice violations or missing metadata. Validation passes with warnings unless `--strict` mode is enabled.
 
@@ -599,6 +619,26 @@ Stable code: `W14`
 
 ---
 
+### W15: File-Link Check Skipped
+
+**Severity**: Warning (only when `--check-links` is enabled)
+
+**Description**: A file-link check could not be resolved because the required
+bundle/project root is unavailable, or no Markdown file with the requested
+filename stem was found. The CLI reports the affected field and the reason
+instead of treating the unavailable workspace as a missing exact target.
+
+**How to Fix**:
+- Supply `--bundle-root` for generic standalone `validate-md` checks when
+  bundle-relative or filename-stem links are intentional.
+- Supply `--project-root` for project-relative links.
+- Ensure the intended Markdown target exists in the bundle.
+
+W15 is advisory and does not fail validation unless strict mode is enabled. It
+is never emitted when file-link checking is disabled.
+
+---
+
 ## Exit Codes
 
 | Exit Code | Meaning |
@@ -630,7 +670,7 @@ Use `--strict` in CI/CD pipelines to enforce best practices.
 
 When validating an OKF bundle, the following checks are applied:
 
-**All Markdown files**: E1, E2, E4, E5, E7-E9, W1, W2, W3, W6-W14
+**All Markdown files**: E1, E2, E4, E5, E7-E10, W1, W2, W3, W6-W15
 **Reserved files**: E3, E6
 **Bundle structure**: W4
 
@@ -642,7 +682,7 @@ Markdown concepts.
 
 When validating standalone markdown files without a bundle, the following checks are applied:
 
-**All files**: E1, E2, E4, E5, E7-E9, W1, W3, W6-W13
+**All files**: E1, E2, E4, E5, E7-E10, W1, W3, W6-W13, W15
 
 **Not applied** (bundle-specific):
 - W2 (broken links require a common root for resolution)

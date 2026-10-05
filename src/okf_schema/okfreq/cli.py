@@ -192,10 +192,21 @@ _register_new("SwRS", "swrs")
 @click.argument("path", default=".", type=click.Path())
 @click.option("--json", "as_json", is_flag=True)
 @click.option("--prose", is_flag=True, help="Enable optional prose warnings.")
+@click.option(
+    "--check-links", is_flag=True, help="Check x-okf-link targets in requirement schemas."
+)
+@click.option(
+    "--project-root",
+    type=click.Path(file_okay=False, dir_okay=True),
+    default=None,
+    help="Explicit project root for project-relative x-okf-link targets.",
+)
 def validate(
     path: str,
     as_json: bool,
     prose: bool,
+    check_links: bool,
+    project_root: str | None,
 ) -> None:
     """Validate requirements, configuration, and derivation graph.
 
@@ -209,6 +220,10 @@ def validate(
             Emit a structured JSON result.
         prose:
             Include advisory EARS prose warnings.
+        check_links:
+            Whether to check opt-in ``x-okf-link`` targets.
+        project_root:
+            Explicit root for project-relative file links.
 
     Examples:
         Validate a bundle and include prose diagnostics::
@@ -216,7 +231,12 @@ def validate(
             okfreq validate requirements --prose
     """
     try:
-        findings = validate_requirements(_root(path), prose=prose)
+        findings = validate_requirements(
+            _root(path),
+            prose=prose,
+            check_links=check_links,
+            project_root=Path(project_root) if project_root else None,
+        )
     except RequirementError as exc:
         raise _fail(exc) from exc
     warnings = [finding for finding in findings if finding.startswith("W")]
@@ -238,10 +258,29 @@ def validate(
         raise click.exceptions.Exit(1)
 
 
-def _run_validation(path: str) -> None:
-    """Run validation for commands that only need an exit status."""
+def _run_validation(
+    path: str,
+    *,
+    prose: bool = False,
+    check_links: bool = False,
+    project_root: str | None = None,
+) -> None:
+    """Run validation for commands that only need an exit status.
+
+    Warnings are always printed because link-check warnings describe checks
+    that were skipped, independently of advisory prose warnings.
+    """
     root = _root(path)
-    errors = validate_requirements(root)
+    findings = validate_requirements(
+        root,
+        prose=prose,
+        check_links=check_links,
+        project_root=Path(project_root) if project_root else None,
+    )
+    for finding in findings:
+        if finding.startswith("W"):
+            click.echo(finding)
+    errors = [finding for finding in findings if not finding.startswith("W")]
     if errors:
         raise click.ClickException("\n".join(errors))
 
@@ -249,20 +288,32 @@ def _run_validation(path: str) -> None:
 @okfreq.command()
 @click.argument("path", default=".", type=click.Path())
 @click.option("--prose", is_flag=True, help="Also report advisory EARS prose warnings.")
-def lint(path: str, prose: bool) -> None:
+@click.option(
+    "--check-links", is_flag=True, help="Check x-okf-link targets in requirement schemas."
+)
+@click.option(
+    "--project-root",
+    type=click.Path(file_okay=False, dir_okay=True),
+    default=None,
+    help="Explicit project root for project-relative x-okf-link targets.",
+)
+def lint(path: str, prose: bool, check_links: bool, project_root: str | None) -> None:
     """Run structural checks, optionally with advisory prose warnings.
+
+    .. versionchanged:: 0.13.0
+        Link-check warnings are emitted even when ``--prose`` is not enabled.
 
     Args:
         path:
             Project or requirements-bundle path.
         prose:
             Print advisory EARS prose warnings before structural validation.
+        check_links:
+            Whether to check opt-in ``x-okf-link`` targets.
+        project_root:
+            Explicit root for project-relative file links.
     """
-    if prose:
-        for finding in validate_requirements(_root(path), prose=True):
-            if finding.startswith("W"):
-                click.echo(finding)
-    _run_validation(path)
+    _run_validation(path, prose=prose, check_links=check_links, project_root=project_root)
 
 
 @okfreq.command()

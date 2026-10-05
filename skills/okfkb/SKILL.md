@@ -78,6 +78,40 @@ directly while preserving all guardrails.
 - **Outcomes describe intended deliverables**, not facts or procedures.
 - **References preserve external sources**, not locally inferred truth.
 
+## Why evidence links have schema metadata
+
+A consumer should be able to navigate from a Concept to its Findings without
+guessing whether a string is prose, a file path, or a filename stem. New KB
+schemas use the generic `okf-schema` `x-okf-link` contract to declare that
+meaning while keeping the existing arrays of strings.
+
+For example, a Concept can record:
+
+```yaml
+derived_from:
+   - findings/2026.10.05-cache-run
+links:
+   - structures/cache.md
+```
+
+The shared KB base schema annotates `derived_from` and generated `derives_to`
+items as `bundle-relative-stem`/`plain`: the evidence resolves precisely to
+`<knowledge>/findings/2026.10.05-cache-run.md`. It annotates `links` and
+`backlinks` items as `bundle-relative`/`plain`: the structure resolves to the
+exact `<knowledge>/structures/cache.md` file. After `okfkb update`, the Finding's
+generated `derives_to` can point back to the Concept using an extensionless
+bundle path. These annotations guide navigation, not promotion or evidence quality.
+
+Use `okfkb validate knowledge --check-links` to check these targets through the
+base API. The KB command is strict, so both invalid-target `E10` errors and
+skipped-check `W15` warnings fail validation. Custom project-relative evidence
+fields can use `--project-root .`; use the `okf-schema` skill for the full
+annotation contract and parser API.
+
+Do not migrate existing bundles or overwrite local schemas to add annotations.
+New scaffolds include the metadata; existing values and normal validation stay
+unchanged. Continue authoring `derived_from` and leave `derives_to` generated.
+
 ## Capture durable discoveries proactively
 
 At the end of meaningful debugging, investigation, or verification work, assess

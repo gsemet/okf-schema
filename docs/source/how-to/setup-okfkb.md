@@ -54,6 +54,72 @@ okfkb validate .
 
 Strictly checks required fields, timestamps, schema values, and link validity.
 
+## Declare navigable evidence links
+
+New KB schemas use generic `okf-schema` annotations so a parser or editor can
+recognize a list of files rather than guess from string values. `Base.schema.yaml`
+provides these annotations to Findings, Concepts, and every other KB type:
+
+```yaml
+properties:
+  derived_from:
+    type: array
+    items:
+      type: string
+      x-okf-link: {resolution: bundle-relative-stem, syntax: plain}
+  derives_to:
+    type: array
+    items:
+      type: string
+      x-okf-link: {resolution: bundle-relative-stem, syntax: plain}
+  links:
+    type: array
+    items:
+      type: string
+      x-okf-link: {resolution: bundle-relative, syntax: plain}
+  backlinks:
+    type: array
+    items:
+      type: string
+      x-okf-link: {resolution: bundle-relative, syntax: plain}
+```
+
+For example, a Concept at `knowledge/concepts/cache-policy.md` records its
+evidence using extensionless bundle paths:
+
+```yaml
+derived_from:
+  - findings/2026.10.05-cache-observation
+links:
+  - structures/cache.md
+```
+
+The consumer resolves the evidence to
+`knowledge/findings/2026.10.05-cache-observation.md` and the related structure
+to `knowledge/structures/cache.md`. After `okfkb update knowledge`, the Finding
+can contain the generated reciprocal edge:
+
+```yaml
+derives_to:
+  - concepts/cache-policy
+```
+
+The reverse link resolves to `knowledge/concepts/cache-policy.md`. Author
+`derived_from`; keep `derives_to` generated. The annotations describe file
+navigation, not whether evidence justifies a Concept or promotion.
+
+```bash
+okfkb validate knowledge --check-links
+okf-schema validate --path knowledge --strict --check-links
+```
+
+Both commands use the base API checker. The KB command treats warnings,
+including skipped `W15` checks, as failures because it always runs in strict
+mode. File-target checking remains opt-in. Existing KB schemas and files are
+not migrated; local schemas remain authoritative. Use the
+[general contract](write-custom-schema.md) for custom links such as a
+project-relative evidence attachment.
+
 ## Add the Agent Workflows
 
 Deploy the project-local capture and interactive consolidation skills:

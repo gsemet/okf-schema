@@ -44,6 +44,17 @@ operations against the resolved requirements bundle.
 - THEN the CLI exits unsuccessfully with an actionable error and avoids a partial
   write
 
+### Scenario: Declare navigable references in new requirements schemas
+
+- GIVEN an empty target for `okfreq init`
+- WHEN the requirements scaffold is generated
+- THEN string items in `derives_from`, `derived_by`, and `depends_on` declare
+  `filename-stem`/`plain` links, and `implemented_in_files`/`tested_in_files` declare
+  `project-relative`/`plain` links through the shared `x-okf-link` contract
+
+Initialization preserves existing schemas. No existing requirement IDs, value types, or bundles
+are migrated; `external_id` is not annotated as a local file link.
+
 ### Verification notes
 
 - Method: automated command-surface and failure-path tests.

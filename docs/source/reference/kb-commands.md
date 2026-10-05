@@ -204,18 +204,33 @@ Validate a knowledge base bundle with strict mode (warnings treated as errors).
 This is equivalent to running ``okf-schema validate --strict``.
 
 ```bash
-okfkb validate [PATH]
+okfkb validate [PATH] [--check-links] [--project-root DIR]
 ```
 
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `PATH` | — | `.` (current directory) | KB root directory. |
 
+| Option | Description |
+|---|---|
+| `--check-links` | Check `x-okf-link` targets using the generic base API. Disabled by default. |
+| `--project-root DIR` | Explicit project root for custom project-relative link fields. |
+
 **Example:**
 
 ```bash
 okfkb validate my-kb/
+okfkb validate my-kb/ --check-links --project-root .
 ```
+
+New default schemas annotate `links` and `backlinks` as exact bundle-relative
+paths, and `derived_from` and generated `derives_to` as extensionless
+bundle-relative Markdown paths. All values remain strings. For example,
+`derived_from: [findings/cache-run]` checks `my-kb/findings/cache-run.md`, while
+`links: [structures/cache.md]` checks that exact file. See
+[KB setup](../how-to/setup-okfkb.md) for the schema/frontmatter example.
+Existing bundles are not migrated or rewritten. `E10` reports invalid targets;
+`W15` reports skipped checks and fails this strict command.
 
 **Output (valid):**
 

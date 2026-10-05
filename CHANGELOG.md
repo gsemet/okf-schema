@@ -2,6 +2,12 @@
 
 ### Feat
 
+- describe and check navigable file links in OKF bundles
+
+## v0.12.0 (2026-09-02)
+
+### Feat
+
 - **skills**: install packaged agent skills by family
 - **okfkb**: maintain canonical derivation links
 

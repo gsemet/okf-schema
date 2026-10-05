@@ -32,6 +32,7 @@ from typing import Any
 from jsonschema import Draft202012Validator, FormatChecker
 
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml, parse_yaml
+from okf_schema.api import check_file_links
 from okf_schema.validator import load_schema_database
 
 DEFAULT_CONFIG = """version: 1
@@ -459,19 +460,80 @@ def init_requirements(path: Path, force: bool = False) -> Path:
             "title": "okfreq requirement base profile",
             "type": "object",
             "properties": {
-                "type": {"type": "string"},
-                "id": {"type": "string"},
-                "uuid": {"type": "string", "format": "uuid"},
-                "title": {"type": "string", "minLength": 1},
-                "description": {"type": "string", "minLength": 1},
-                "project": {"type": "string", "minLength": 1},
-                "scope": {"type": "string", "minLength": 1},
-                "lifecycle": {"type": "string"},
-                "origin": {"type": "string", "minLength": 1},
-                "tier": {"type": "string"},
-                "derives_from": {"type": "array", "items": {"type": "string"}},
-                "derived_by": {"type": "array", "items": {"type": "string"}},
-                "depends_on": {"type": "array", "items": {"type": "string"}},
+                "type": {
+                    "type": "string",
+                    "description": "Document type; selects which tier profile applies.",
+                },
+                "id": {
+                    "type": "string",
+                    "description": "Human-readable requirement identifier, e.g. SwRS-CORE-002.",
+                },
+                "uuid": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Stable UUIDv4 identifying this requirement across renames.",
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Short, imperative summary of the requirement.",
+                },
+                "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Full requirement statement in EARS or plain prose.",
+                },
+                "project": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Project code this requirement belongs to.",
+                },
+                "scope": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Functional scope, e.g. Core, Safety, Connectivity.",
+                },
+                "lifecycle": {
+                    "type": "string",
+                    "description": (
+                        "Lifecycle stage of the requirement, e.g. draft, active, retired."
+                    ),
+                },
+                "origin": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": (
+                        "Where the requirement came from, e.g. native, imported, elicited."
+                    ),
+                },
+                "tier": {
+                    "type": "string",
+                    "description": "Requirement tier; must match the document's directory profile.",
+                },
+                "derives_from": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "x-okf-link": {"resolution": "filename-stem", "syntax": "plain"},
+                    },
+                    "description": "Upstream requirement IDs this one is derived from.",
+                },
+                "derived_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "x-okf-link": {"resolution": "filename-stem", "syntax": "plain"},
+                    },
+                    "description": "Downstream requirement IDs deriving this one.",
+                },
+                "depends_on": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "x-okf-link": {"resolution": "filename-stem", "syntax": "plain"},
+                    },
+                    "description": "Other requirement IDs this one depends on.",
+                },
             },
             "required": [
                 "type",
@@ -490,14 +552,54 @@ def init_requirements(path: Path, force: bool = False) -> Path:
         if level == "base":
             return dump_yaml(base) + "\n"
         tier = "StRS" if level == "strs" else "SwRS"
-        properties: dict[str, Any] = {"type": {"const": tier}, "tier": {"const": tier}}
+        properties: dict[str, Any] = {
+            "type": {
+                "const": tier,
+                "description": (
+                    "Fixed document type for stakeholder requirements."
+                    if tier == "StRS"
+                    else "Fixed document type for software requirements."
+                ),
+            },
+            "tier": {
+                "const": tier,
+                "description": (
+                    "Fixed tier for stakeholder requirements."
+                    if tier == "StRS"
+                    else "Fixed tier for software requirements."
+                ),
+            },
+        }
         required = ["type", "tier"]
         if tier == "StRS":
-            properties["user_need"] = {"type": "string", "minLength": 1}
+            properties["user_need"] = {
+                "type": "string",
+                "minLength": 1,
+                "description": "The stakeholder need this requirement formalizes.",
+            }
             required.append("user_need")
         else:
-            properties["annotation_exemption"] = {"type": "boolean"}
+            properties["annotation_exemption"] = {
+                "type": "boolean",
+                "description": "True when this requirement is exempt from coverage annotations.",
+            }
             required.append("annotation_exemption")
+            properties["implemented_in_files"] = {
+                "type": "array",
+                "description": "Generated source paths.",
+                "items": {
+                    "type": "string",
+                    "x-okf-link": {"resolution": "project-relative", "syntax": "plain"},
+                },
+            }
+            properties["tested_in_files"] = {
+                "type": "array",
+                "description": "Generated test paths.",
+                "items": {
+                    "type": "string",
+                    "x-okf-link": {"resolution": "project-relative", "syntax": "plain"},
+                },
+            }
         schema = {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": f"{level}.schema.yaml",
@@ -1008,7 +1110,13 @@ def graph(root: Path) -> dict[str, Any]:
 
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-005
-def validate_requirements(root: Path, prose: bool = False) -> list[str]:
+def validate_requirements(
+    root: Path,
+    prose: bool = False,
+    *,
+    check_links: bool = False,
+    project_root: Path | None = None,
+) -> list[str]:
     """Run deterministic structural and graph checks.
 
     Args:
@@ -1017,6 +1125,11 @@ def validate_requirements(root: Path, prose: bool = False) -> list[str]:
         prose:
             When ``True``, also emit advisory ``W`` prose warnings. Advisory
             findings never make structural validation fail on their own.
+        check_links:
+            Enable opt-in ``x-okf-link`` target checking.
+        project_root:
+            Explicit project root for project-relative links. If unavailable,
+            the containing Git root of each requirement document is used.
 
     Returns:
         A list of findings. Structural errors have no ``W`` prefix.
@@ -1066,6 +1179,15 @@ def validate_requirements(root: Path, prose: bool = False) -> list[str]:
             schema_data["allOf"] = [base, *schema_data.get("allOf", [])[1:]]
             validator = Draft202012Validator(schema_data, format_checker=FormatChecker())
             errors.extend(f"{file}: {error.message}" for error in validator.iter_errors(data))
+            if check_links:
+                for diagnostic in check_file_links(
+                    data,
+                    schema_data,
+                    file,
+                    bundle_root=root,
+                    project_root=project_root,
+                ):
+                    errors.append(f"{diagnostic.code} {file}: {diagnostic.message}")
         errors.extend(f"{file}: missing {field}" for field in fields if not data.get(field))
         if data.get("id") != identifier or _id_pattern(config).fullmatch(identifier) is None:
             errors.append(f"{file}: invalid ID")

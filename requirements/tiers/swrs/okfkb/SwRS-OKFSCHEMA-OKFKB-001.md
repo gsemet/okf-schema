@@ -42,6 +42,24 @@ structured results.
 - THEN the CLI reports an actionable error and does not partially mutate the
   bundle
 
+### Scenario: Check evidence links using the base schema contract
+
+- GIVEN a Concept with `derived_from: [findings/cache-run]` and
+  `links: [structures/cache.md]`, and corresponding files inside the KB
+- WHEN `okfkb validate --check-links` runs
+- THEN base API checking resolves the extensionless evidence path as
+  `findings/cache-run.md` and the exact link as `structures/cache.md`
+
+### Scenario: Report a missing evidence target without rewriting knowledge
+
+- GIVEN an annotated evidence path whose exact Markdown target is missing
+- WHEN KB validation opts into target checks
+- THEN it reports `E10` without changing the Finding, derived document, or their values
+
+The shared contract is specified by `SwRS-OKFSCHEMA-CORE-007`. Checks remain off by default;
+existing KB schemas and documents are not migrated. Generated `derives_to` references use the same
+extensionless bundle-path rule as authored `derived_from` references.
+
 ### Verification notes
 
 - Method: automated CLI tests over fixed knowledge-base fixtures.

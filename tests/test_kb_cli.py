@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+from okf_schema._internal.models import Report
+from okf_schema.api import validate_bundle
 from okf_schema.okfkb.cli import kb
 
 # ---------------------------------------------------------------------------
@@ -229,6 +231,101 @@ def test_kb_validate_kb_validate_valid_bundle(tmp_path: Path) -> None:
     result = runner.invoke(kb, ["validate", str(target)])
     assert result.exit_code == 0, result.output
     assert "conformant" in result.output
+
+
+def test_kb_validate_forwards_file_checks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """KB checking uses the generic API with explicit link and root options."""
+    import okf_schema.okfkb.cli as cli_module
+
+    original = cli_module.validate_bundle
+    calls: list[tuple[bool, Path | None]] = []
+
+    def recording_validate(
+        path: Path,
+        *,
+        check_links: bool = False,
+        project_root: Path | None = None,
+    ) -> Report:
+        calls.append((check_links, project_root))
+        return original(path, check_links=check_links, project_root=project_root)
+
+    monkeypatch.setattr(cli_module, "validate_bundle", recording_validate)
+    runner = CliRunner()
+    target = tmp_path / "knowledge"
+    assert runner.invoke(kb, ["init", str(target)]).exit_code == 0
+    result = runner.invoke(
+        kb, ["validate", str(target), "--check-links", "--project-root", str(tmp_path)]
+    )
+    assert result.exit_code == 0, result.output
+    assert calls == [(True, tmp_path)]
+
+
+def test_kb_default_links_are_checked_by_base_api_and_cli(tmp_path: Path) -> None:
+    """Both layers check generated KB annotations, and validation never rewrites a bundle."""
+    runner = CliRunner()
+    target = tmp_path / "knowledge"
+    assert runner.invoke(kb, ["init", str(target)]).exit_code == 0
+    finding = target / "findings" / "observation.md"
+    finding.write_text(
+        "---\ntype: Finding\ntitle: Observation\ndescription: Observed cache behavior\n"
+        "confidence: high\ncontext: Measured on hardware\ngenerated: {at: '2026-10-05T10:00:00Z'}\n"
+        "derives_to: [concepts/cache]\nlinks: [concepts/cache.md]\n---\n# Observation\n",
+        encoding="utf-8",
+    )
+    concept = target / "concepts" / "cache.md"
+    concept.write_text(
+        "---\ntype: Concept\ntitle: Cache\ndescription: Cache explanation\n"
+        "generated: {at: '2026-10-05T10:00:00Z'}\nderived_from: [findings/observation]\n"
+        "derives_to: []\nbacklinks: [findings/observation.md]\n---\n# Cache\n",
+        encoding="utf-8",
+    )
+    for directory in ("findings", "concepts"):
+        (target / directory / "index.md").write_text("# Index\n", encoding="utf-8")
+    snapshot = {path: path.read_bytes() for path in target.rglob("*") if path.is_file()}
+    assert validate_bundle(target, check_links=True).errors == []
+    result = runner.invoke(kb, ["validate", str(target), "--check-links"])
+    assert result.exit_code == 0, result.output
+    assert "E10" not in result.output, result.output
+    concept.unlink()
+    assert not any(error.code == "E10" for error in validate_bundle(target).errors)
+    report = validate_bundle(target, check_links=True)
+    assert sum(error.code == "E10" for error in report.errors) == 2
+    result = runner.invoke(kb, ["validate", str(target), "--check-links"])
+    assert result.exit_code == 1
+    assert "E10" in result.output
+    assert "derives_to[0]" in result.output
+    assert "links[0]" in result.output
+    assert all(
+        path.read_bytes() == content for path, content in snapshot.items() if path != concept
+    )
+
+
+def test_kb_legacy_schema_is_not_migrated_by_file_checks(tmp_path: Path) -> None:
+    """Opt-in checks do not infer file links or upgrade older local schemas."""
+    import yaml
+
+    runner = CliRunner()
+    target = tmp_path / "knowledge"
+    assert runner.invoke(kb, ["init", str(target)]).exit_code == 0
+    schema_path = target / "_schema" / "Base.schema.yaml"
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    for field in ("derived_from", "derives_to", "links", "backlinks"):
+        schema["properties"][field]["items"].pop("x-okf-link")
+    schema_path.write_text(yaml.safe_dump(schema), encoding="utf-8")
+    finding = target / "findings" / "observation.md"
+    finding.write_text(
+        "---\ntype: Finding\ntitle: Observation\ndescription: Observed behavior\n"
+        "confidence: high\ncontext: Hardware run\ngenerated: {at: '2026-10-05T10:00:00Z'}\n"
+        "derived_from: [findings/not-present]\n"
+        "links: [concepts/not-present.md]\n---\n# Observation\n",
+        encoding="utf-8",
+    )
+    snapshot = {path: path.read_bytes() for path in target.rglob("*") if path.is_file()}
+    report = validate_bundle(target, check_links=True)
+    assert not any(error.code == "E10" for error in report.errors)
+    result = runner.invoke(kb, ["validate", str(target), "--check-links"])
+    assert "E10" not in result.output
+    assert all(path.read_bytes() == content for path, content in snapshot.items())
 
 
 def test_kb_validate_kb_validate_invalid_bundle(tmp_path: Path) -> None:

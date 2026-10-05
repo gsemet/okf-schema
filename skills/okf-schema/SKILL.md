@@ -8,7 +8,7 @@ metadata:
 
 # okf-schema
 
-**okf-schema** is a CLI tool and Python library for working with **OKF (Open Knowledge Format)** bundles — validating frontmatter metadata against JSONSchema, formatting while preserving comments, and managing bundle structure.
+**okf-schema** is a CLI tool and Python library for working with **OKF (Open Knowledge Format)** bundles — validating frontmatter metadata against JSONSchema, formatting while preserving comments, key order, and quote styles, and managing bundle structure.
 
 ## Overview
 
@@ -29,7 +29,7 @@ both locations for the same configuration.
 
 - **JSONSchema validation** of frontmatter via auto-discovered `_schema/` definitions
 - **Bundle integrity checks** (broken links, missing `index.md`, malformed `log.md`, reserved-file violations)
-- **Linting** of frontmatter: flattens nested lists and converts block-style to inline while preserving YAML comments
+- **Linting** of frontmatter: flattens nested lists and converts block-style to inline while preserving inline and block comments, key order, custom quotes, and unknown keys
 - **OKF 0.2 provenance/trust/lifecycle** validation (E7-E9, W8-W13)
 - **Bundle management** via CLI and Python API: init, list, show, stats, index
 
@@ -128,6 +128,81 @@ okf-schema validate --path my-bundle --strict
 
 Global options: `--version`, `--verbose` (`-v`), `--quiet` (`-q`).
 
+## Why schemas declare file links
+
+A parser reading frontmatter sees only a `string` or an `array` of strings. It
+cannot safely tell whether `design: ../design/export.md` is a file to open or
+ordinary text, and it cannot tell whether every item in `attachments`
+is a file reference without relying on property names. `x-okf-link` makes that
+meaning explicit for parsers, editors, and other consumers while preserving
+ordinary JSON Schema value types.
+Use the base API for all layers: `validate_bundle(..., check_links=True)` or
+`check_file_links` from `okf_schema.api` for already-parsed frontmatter. KB and
+requirements bundles apply this shared contract; they do not define it.
+
+For example, this schema describes one scalar link and two different kinds of
+link lists:
+
+```yaml
+properties:
+    design:
+        type: string
+        x-okf-link: {resolution: document-relative, syntax: plain}
+    attachments:
+        type: array
+        items:
+            type: string
+            x-okf-link: {resolution: project-relative, syntax: plain}
+    related_notes:
+        type: array
+        items:
+            type: string
+            x-okf-link: {resolution: filename-stem, syntax: wikilink}
+```
+
+The matching frontmatter can then be consumed without guessing:
+
+```yaml
+design: ../design/export.md
+attachments:
+    - reports/export.csv
+    - reports/summary.pdf
+related_notes:
+  - '[[Export-design#Decisions|Export design]]'
+```
+
+A consumer can open `design` relative to its document, resolve each
+`attachments` item from the project root, and navigate the
+`related_notes` wikilink by its Markdown filename stem. The values remain a
+string and a list of strings; the annotation supplies the missing semantics.
+
+Keep the annotation on the scalar string schema, or on an array's string
+`items` schema for a list of links. Do not infer file-link semantics from
+property names or path-like values.
+
+Both `resolution` and `syntax` are required. Resolution is `document-relative`
+(from the Markdown file's parent), `bundle-relative`, `bundle-relative-stem`, `project-relative`, or
+`filename-stem` (case-sensitive Markdown basename without `.md`). Syntax is
+independently `plain` or `wikilink`; wikilinks may contain heading/block
+fragments and labels, but only the file target is checked. Exact paths keep
+their extensions.
+Use `bundle-relative-stem` for a precise extensionless Markdown path:
+`observations/cache-run` resolves only to `<bundle>/observations/cache-run.md`.
+It preserves folders and dots and does not search for a matching basename.
+
+Checking is opt-in: `okf-schema validate --path BUNDLE --check-links
+--project-root PROJECT`. `validate-md` also accepts `--bundle-root BUNDLE`.
+Project roots use explicit input, then the containing Git root, never the
+working directory or editor workspace. The CLI searches stems only in the
+bundle: duplicate matches fail; unresolved workspace references and unavailable
+roots produce explicit `W15` skips, not proof of a valid target. Missing exact
+targets, malformed annotations, and rooted escapes produce `E10`. Do not let
+bundle/project-relative paths escape their roots, including through symlinks;
+document-relative `../` is allowed. Normal validation remains unchanged.
+New generic scaffolds annotate `links` and `backlinks`. Existing schemas and
+bundles are not migrated; read local schemas rather than assuming annotations
+are present. Use the `okfkb` and `okfreq` skills for their applied defaults.
+
 ## Knowledge Base Navigation (`okfkb`)
 
 For opinionated knowledge-base bundles (created with `okfkb init`), four extra
@@ -196,7 +271,7 @@ for c in concepts:
 
 ## Validation Rules
 
-### Errors (E0–E9)
+### Errors (E0–E10)
 
 | Code | Rule | Description |
 |------|------|-------------|
@@ -210,8 +285,9 @@ for c in concepts:
 | E7 | Generated provenance | `generated` is not a mapping with a valid `at` value |
 | E8 | Source metadata | A source lacks `resource` or duplicates another source ID |
 | E9 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
+| E10 | Annotated file link | Opt-in file target or annotation is invalid, ambiguous, or escapes its declared root |
 
-### Warnings (W0–W14)
+### Warnings (W0–W15)
 
 | Code | Rule | Description |
 |------|------|-------------|
@@ -230,6 +306,7 @@ for c in concepts:
 | W12 | Source footnote | A body footnote has no matching `sources[].id` |
 | W13 | Source resource | A local `sources[].resource` path does not resolve |
 | W14 | KB derivation graph | Authored derivation paths are invalid or computed `derives_to` is stale |
+| W15 | Skipped file-link check | Opt-in target checking lacks a root or cannot resolve a stem outside the known bundle |
 
 ## Recommended Workflows
 
@@ -259,7 +336,7 @@ Only zip or distribute the bundle once `validate --strict` reports zero errors *
 
 1. **Never invent schema fields.** If a type lacks a schema, report a W6 warning — do not hallucinate constraints.
 2. **Preserve unknown frontmatter keys.** OKF allows extensions; the linter and validator must not strip them.
-3. **Preserve YAML comments.** The linter uses ruamel.yaml round-trip mode; comments and formatting must survive.
+3. **Preserve frontmatter presentation.** The linter uses ruamel.yaml round-trip mode; comments, key order, custom quotes, and unknown keys must survive.
 4. **Broken links are permitted by spec.** Report them as W2 warnings, not errors, unless `--strict` is used.
 5. **Don't impose taxonomy.** Type values are free-form strings; okf-schema validates structure, not semantics.
 6. **Ask before assuming bundle scope.** If the user mentions a bundle but no path, ask for the directory location.
