@@ -63,7 +63,10 @@ and tests with coverage.
 
 1. Ensure `just preflight` passes locally.
 2. Write tests for new functionality.
-3. Update documentation if needed.
+3. Follow the [product maintenance contract](.github/guidelines/product-maintenance.guidelines.md):
+   update affected human docs, standalone skills, scaffold guidance, requirements,
+   concrete examples and verification together. Record evidence in the
+   [feature map](docs/source/explanation/project-feature-coverage.md).
 4. Submit your PR with a clear description.
 
 ## Release Process

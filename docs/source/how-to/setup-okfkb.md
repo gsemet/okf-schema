@@ -2,16 +2,13 @@
 
 Quick reference for initializing and using an OKF-KB.
 
-> **Want to see OKF-KB in action?**
-> See [HW Debugging Workflow Tutorial](../tutorials/okfkb-hw-debugging-workflow.md) for a real automotive debugging scenario.
->
-> **Want to understand the design philosophy?**
-> See [OKF-KB Design Choices](../explanation/okfkb-choices.md).
->
-> **Want agent-assisted maintenance?**
-> See [Maintain an OKFKB with agent skills](maintain-okfkb-with-skills.md).
+Start with the self-contained [OKFKB tutorial](../tutorials/okfkb-workflow.md)
+for the concepts, illustrations and a worked investigation. Use this page to
+look up fields and commands, the [design rationale](../explanation/okfkb-choices.md)
+for trade-offs, and the [agent-maintenance guide](maintain-okfkb-with-skills.md)
+for ongoing workflows.
 
-## Quick Start (5 Minutes)
+## Quick setup
 
 ### 1. Initialize
 
@@ -23,7 +20,7 @@ okfkb init
 
 Creates: `index.md`, `log.md`, and tier folders (`findings/`, `concepts/`, `principles/`, etc.).
 
-### 2. Agent Creates a Finding
+### 2. Record a Finding
 
 ```bash
 okfkb new-finding . --title "What was observed"
@@ -125,10 +122,12 @@ project-relative evidence attachment.
 Deploy the project-local capture and interactive consolidation skills:
 
 ```bash
-okfkb install-skills /path/to/project
+okfkb install-skills --local-agents
 ```
 
-The repository-level skills add two broader workflows:
+This installs the complete four-skill family into `.agents/skills/`. Use
+`--local-copilot` for `.github/skills/`; an explicit destination names the
+skills directory itself. Two of the workflows are:
 
 - **`okfkb`** teaches the lifecycle, chooses the right knowledge type, routes
   empirical discoveries to `okfkb-record-findings`, and navigates from stable tiers to
@@ -173,7 +172,7 @@ relevant nodes by criteria, then `get` a specific node for evidence-level detail
 
 ### Findings: `findings/YYYY.MM.DD-HH.MM-<slug>.md`
 
-Immutable raw observations. Created by agents.
+Historical observations recorded by humans or agents. The body/claim is preserved by maintenance policy.
 
 ```yaml
 type: Finding
@@ -317,7 +316,15 @@ links: []
 
 ## Linking Your Documents
 
-Add `links:` entries to connect documents:
+Author ordinary Markdown body links to connect related documents. For example,
+in `concepts/pll-timing.md`:
+
+```markdown
+See the [source inspection](../findings/actual-generated-filename.md).
+```
+
+After update, generated metadata may look like the following; these are not
+arrays to maintain manually:
 
 ```yaml
 links:
@@ -338,7 +345,7 @@ okfkb validate .
 
 Verifies:
 - Required fields present
-- Confidence values valid (`low`, `medium`, `high`)
+- Confidence values valid (`low`, `medium`, `high`, `confirmed`)
 - `generated.at` timestamps in ISO 8601 format
 - All `links:` point to existing files
 - `kb_status:` values match the type schema
@@ -346,7 +353,7 @@ Verifies:
 ## Tips for Success
 
 1. **Findings are immutable** — once created, only update lifecycle fields (`kb_status`, `contradicted_by`, `superseded_by`)
-2. **Link aggressively** — more links = more navigable KB
+2. **Link relevant evidence** — the surrounding sentence should explain the relationship
 3. **Index after batches** — run `okf-schema index` after each editing session
 4. **Use tags for filtering** — tags help agents search by domain
 5. **Review `log.md` regularly** — keep it human-readable; summarize weekly changes
@@ -360,9 +367,9 @@ Verifies:
 ## Further Reading
 
 - [OKF-KB Design Choices](../explanation/okfkb-choices.md) — Philosophy, tradeoffs, design rationale
-- [HW Debugging Workflow](../tutorials/okfkb-hw-debugging-workflow.md) — Step-by-step tutorial (automotive example)
+- [OKFKB tutorial](../tutorials/okfkb-workflow.md) — Concepts, illustrations and a fictional worked investigation
 - [Maintain an OKFKB with agent skills](maintain-okfkb-with-skills.md) — Capture, navigate, consolidate, garden, and validate
 - [Bootstrap an Existing KB](../how-to/bootstrap-knowledge-base) — Migrating legacy findings
-- [Building a Knowledge Graph](../tutorials/knowledge-graph) — Cross-linking best practices
+- [Building a Knowledge Graph](../tutorials/knowledge-graph) — Optional generic link mechanics
 - [Lint Before Commit](../how-to/lint-before-commit) — Keeping frontmatter consistent
 - [KB Commands Reference](../reference/kb-commands) — Full CLI reference

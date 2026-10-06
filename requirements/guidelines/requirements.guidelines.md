@@ -1,6 +1,8 @@
 # Requirements guidelines
 
-These guidelines govern the `okfreq` requirements layer in this repository.
+This file specializes the [shipped baseline](../../src/okf_schema/data/requirements/guidelines/requirements.guidelines.md)
+for this repository. Read and follow that baseline first: it is the same guidance
+installed into other projects. The rules below supply our paths, scopes and checks.
 
 ## Before editing
 
@@ -14,11 +16,21 @@ These guidelines govern the `okfreq` requirements layer in this repository.
 
 ## While editing
 
+- Use the frontmatter `title` verbatim as the first Markdown heading (`## Title`).
+  Keep the heading synchronized when renaming a requirement; EARS describes
+  the statement format, not the document title.
+
+- Store stakeholder requirements under `requirements/tiers/strs/<scope>/` and
   software requirements under `requirements/tiers/swrs/<scope>/`.
+- Use the filename and ID convention already established by the bundle, such as
   `SwRS-OKFSCHEMA-OKFREQ-002.md`.
+- Author parent relationships with `derives_from`; do not hand-edit generated
   `derived_by`, `implemented_in_files`, or `tested_in_files` fields.
+- For leaf software requirements, add `@implements_req <ID>` markers close to
   the implementation and `@tests_req <ID>` markers close to corresponding
-  tests. Do not use source/test markers on stakeholder or other non-leaf levels.
+  tests. Do not use source markers on stakeholder or other non-leaf levels. The project
+  uses `linked-swrs-and-validation-test`: add a direct StRS marker only to a real
+  stakeholder validation test.
 - Keep core `okf-schema`, knowledge-base `okfkb`, and requirements `okfreq`
   concerns in their configured scopes rather than combining unrelated claims.
 
@@ -41,8 +53,8 @@ Run the following from the repository root:
 
 ```console
 okfreq update-coverage requirements
-okfreq validate requirements --prose
-okfreq lint requirements --prose
+okfreq validate requirements --prose --check-links --project-root .
+okfreq lint requirements --prose --check-links --project-root .
 okfreq trace requirements --json
 ```
 
@@ -55,3 +67,26 @@ just preflight
 Do not claim complete traceability when a non-exempt leaf requirement lacks
 source or test markers, when markers reference unknown IDs, or when
 validation/tests fail.
+
+## Exercise the project contract
+
+- Keep the three supported generated fields enabled and refresh them through
+  `okfreq update-coverage`; `--check` must fail when they are stale.
+- Keep the strict StRS coverage mode and direct validation-test evidence current.
+- Maintain authored `documentation_files`, `agent_skill_files`, `example_files`,
+  dependencies and verification criteria as actual existing project evidence.
+- Review `docs/source/explanation/project-feature-coverage.md` for feature usage.
+  Use the disposable showcase for conflicting policies, external demo metadata,
+  lifecycle operations and exemptions rather than inventing live project states.
+- Follow the registered product maintenance guideline for every behavior change.
+
+## Navigation and history in this repository
+
+- Preserve the authored overview at `requirements/index.md`.
+- Run `okfreq lint requirements` to regenerate marked navigation blocks in
+  `requirements/tiers/index.md`, tier folders and all scope folders, including
+  `requirements/tiers/swrs/okfreq/index.md`.
+- Append substantive requirement changes, affected IDs/links, rationale and
+  verification results to `requirements/tiers/log.md`. Preserve earlier entries.
+- CI runs `okfreq lint requirements --check --check-links --project-root .`;
+  do not hand-maintain generated lists or treat the log as generated content.

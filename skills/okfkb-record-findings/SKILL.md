@@ -5,6 +5,13 @@ description: 'Record one immutable empirical Finding in an OKF knowledge base af
 
 # okfkb-record-findings
 
+This is a specialized workflow under the `okfkb` skill. Load the `okfkb` skill
+first, then locate its own `references/` resources by skill name rather than
+assuming that installed skills share a directory. Read
+`references/finding-quality.md` before deciding whether an observation deserves
+a durable Finding. Use `references/lifecycle-and-taxonomy.md` when the document
+type or lifecycle boundary is unclear.
+
 ## Agent configuration directory precedence
 
 When resolving project instructions or guidelines, use `.agents/` if it exists.

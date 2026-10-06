@@ -19,7 +19,7 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-007
 ---
 
-## EARS Expression
+## Recognize file references without changing knowledge values
 
 ### Normative behavior
 

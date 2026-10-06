@@ -48,6 +48,11 @@ properties:
       x-okf-link:
         resolution: filename-stem
         syntax: plain
+        id_marker: id
+        tooltip_shows_fields:
+        - description
+        preview_shows_fields:
+        - description
     description: Upstream requirement IDs this one is derived from.
   derived_by:
     type: array
@@ -56,6 +61,11 @@ properties:
       x-okf-link:
         resolution: filename-stem
         syntax: plain
+        id_marker: id
+        tooltip_shows_fields:
+        - description
+        preview_shows_fields:
+        - description
     description: Downstream requirement IDs deriving this one.
   depends_on:
     type: array
@@ -64,6 +74,7 @@ properties:
       x-okf-link:
         resolution: filename-stem
         syntax: plain
+        id_marker: id
     description: Other requirement IDs this one depends on.
 required:
 - type

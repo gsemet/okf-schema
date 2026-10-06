@@ -18,9 +18,24 @@ implemented_in_files:
 - src/okf_schema/okfreq/cli.py
 tested_in_files:
 - tests/test_okfreq.py
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
+documentation_files:
+- docs/source/reference/okfreq-cli.md
+- docs/source/reference/okfreq-configuration.md
+- docs/source/reference/okfreq-frontmatter.md
+agent_skill_files:
+- skills/okfreq/SKILL.md
+- skills/okfreq/references/operations.md
+- skills/okfreq-gardening/SKILL.md
+example_files:
+- examples/okfreq-examples/showcase.py
+- examples/okfreq-examples/README.md
 ---
 
-## EARS Expression
+## Provide requirements traceability operations
 
 ### Normative behavior
 

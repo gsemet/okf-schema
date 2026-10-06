@@ -3,8 +3,9 @@ type: SwRS
 id: SwRS-OKFSCHEMA-OKFKB-005
 uuid: 558f9c96-63b1-422c-81bb-2d8b8f8ffc86
 title: Consolidate knowledge findings
-description: The okfkb layer reviews contradictions and promotes evidence with
-  human confirmation.
+description: When findings are consolidated with okfkb-distill, the workflow
+  SHALL expose supporting and contradictory evidence and require human
+  confirmation before promotion.
 project: okf-schema
 scope: okfkb
 lifecycle: draft
@@ -15,22 +16,30 @@ derives_from:
 annotation_exemption: false
 exemption_reason:
 derived_by: []
-implemented_in_files: []
-tested_in_files: []
+implemented_in_files:
+- skills/okfkb-distill/SKILL.md
+tested_in_files:
+- tests/test_skill_resources.py
+owner: okf-schema maintainers
+verification_method: package tests and instruction inspection
+verification_criteria: The distill skill is shipped unchanged, and instruction
+  inspection confirms evidence preservation and explicit promotion confirmation.
+agent_skill_files:
+- skills/okfkb-distill/SKILL.md
 ---
 
-## EARS Expression
+## Consolidate knowledge findings
 
 ### Normative behavior
 
-When accumulated findings are reviewed for consolidation, the `okfkb` gardening
+When accumulated findings are reviewed for consolidation, the `okfkb-distill`
 workflow SHALL identify supporting and contradictory evidence and require human
 confirmation before promoting a synthesized conclusion.
 
 ### Scenario: Propose a supported consolidation
 
 - GIVEN multiple findings that support a reusable conclusion
-- WHEN the gardening workflow evaluates them
+- WHEN the distill workflow evaluates them
 - THEN it presents the evidence links and a proposed destination knowledge layer
   for human review
 
@@ -43,6 +52,6 @@ confirmation before promoting a synthesized conclusion.
 
 ### Verification notes
 
-- Method: installation tests and inspection of the packaged gardening skill.
+- Method: installation tests and inspection of the packaged distill skill.
 - Criteria: the installed workflow preserves evidence, exposes contradictions,
   and makes promotion conditional on explicit confirmation.

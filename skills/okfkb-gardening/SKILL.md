@@ -8,6 +8,20 @@ metadata:
 
 # OKFKB gardening
 
+This is the autonomous maintenance workflow under the `okfkb` skill. Load the
+`okfkb` skill first, then locate its own `references/` resources by skill name
+rather than assuming that installed skills share a directory. Load references
+by phase:
+
+- `references/navigation-and-maintenance.md` during discovery, graph repair,
+  and validation planning.
+- `references/finding-quality.md` when assessing whether an observed gap is a
+  durable Finding.
+- `references/consolidation-judgment.md` during contradiction review, promotion,
+  or stable-layer updates.
+- `references/lifecycle-and-taxonomy.md` when selecting document types or
+  interpreting mutability boundaries.
+
 ## Agent configuration directory precedence
 
 When resolving project instructions, guidelines, or requirements configuration,

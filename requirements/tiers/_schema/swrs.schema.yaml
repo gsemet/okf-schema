@@ -31,6 +31,9 @@ allOf:
           x-okf-link:
             resolution: project-relative
             syntax: plain
+            basename_marker: '@implements_req'
+            id_marker: id
+            show_line_number: true
         description: Generated exact source-file paths relative to the project root.
       tested_in_files:
         type: array
@@ -39,6 +42,9 @@ allOf:
           x-okf-link:
             resolution: project-relative
             syntax: plain
+            basename_marker: '@tests_req'
+            id_marker: id
+            show_line_number: true
         description: Generated exact test-file paths relative to the project root.
       verification_method:
         type: string

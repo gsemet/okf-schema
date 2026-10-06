@@ -145,13 +145,31 @@ Only `bundle-relative-stem` appends `.md` to the full relative target.
 
 Checking is disabled by default, so ordinary JSON Schema validation is unchanged.
 With `--check-links`, missing exact targets, root escapes, ambiguous stems, and
-malformed annotations produce `E10`. An unavailable root or an unresolved stem
+malformed annotations produce `E10`. An unavailable root or inaccessible matching candidate
 produces `W15`, explicitly identifying the skipped field and reason. Bundle and
 project-relative paths reject absolute paths and symlink escapes; document-relative
 paths may use `../`.
 The generic API owns this behavior and both opinionated layers reuse it.
 New scaffolds annotate their default link fields; existing schemas and bundles
 are left unchanged, with no migration required.
+
+An annotation may also include optional navigation metadata:
+
+```yaml
+x-okf-link:
+  resolution: project-relative
+  syntax: plain
+  basename_marker: '@implements_req'
+  id_marker: id
+```
+
+`basename_marker` records the marker prefix a consumer can search for in the
+resolved file. `id_marker` names the frontmatter field supplying the
+requirement identity, normally `id`; a basename is the filename without its
+extension. Together, these hints let an editor open directly on the line containing
+`@implements_req <requirement-id>` or `@tests_req <requirement-id>`. They are
+advisory metadata: `--check-links` resolves files but does not validate marker
+locations or test execution.
 
 ---
 

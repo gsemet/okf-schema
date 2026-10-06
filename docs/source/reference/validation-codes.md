@@ -233,7 +233,7 @@ Fix: add `by: <actor>` and `at: <ISO-8601-date>` to the verified entry.
 
 **Description**: An `x-okf-link` annotation is malformed, an exact target is
 missing, a bundle/project-relative target escapes its root, or a filename stem
-matches more than one Markdown file. The annotation is otherwise ignored by
+does not exist or matches more than one Markdown file. The annotation is otherwise ignored by
 ordinary JSON Schema validation.
 
 **How to Fix**:
@@ -624,9 +624,9 @@ Stable code: `W14`
 **Severity**: Warning (only when `--check-links` is enabled)
 
 **Description**: A file-link check could not be resolved because the required
-bundle/project root is unavailable, or no Markdown file with the requested
-filename stem was found. The CLI reports the affected field and the reason
-instead of treating the unavailable workspace as a missing exact target.
+bundle/project root is unavailable or filesystem access prevents inspection
+of the target or matching candidate. The CLI reports the affected field and
+the reason. A missing stem in an available bundle is an E10 error.
 
 **How to Fix**:
 - Supply `--bundle-root` for generic standalone `validate-md` checks when

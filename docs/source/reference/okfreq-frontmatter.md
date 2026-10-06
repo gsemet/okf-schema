@@ -33,12 +33,14 @@ notes. Unknown properties are allowed and must be preserved.
 
 `okfreq new` deliberately emits different authoring scaffolds for the two
 default levels. Angle-bracket text is an unfinished gap and should remain
-visible until it is replaced with evidence-based content.
+visible until it is replaced with evidence-based content. The first Markdown
+heading repeats the frontmatter `title`; update both together when renaming
+a requirement. EARS describes the statement format, not the document title.
 
 An StRS preserves stakeholder intent without prescribing software design:
 
 ```markdown
-## EARS Expression
+## Export portable reports
 
 ### Normative behavior
 
@@ -58,7 +60,7 @@ An StRS preserves stakeholder intent without prescribing software design:
 An SwRS describes software behavior that implementation and tests can observe:
 
 ```markdown
-## EARS Expression
+## Write CSV output
 
 ### Normative behavior
 
@@ -162,17 +164,32 @@ implemented_in_files:
   type: array
   items:
     type: string
-    x-okf-link: {resolution: project-relative, syntax: plain}
+    x-okf-link:
+      resolution: project-relative
+      syntax: plain
+      basename_marker: '@implements_req'
+      id_marker: id
+      show_line_number: true
 tested_in_files:
   type: array
   items:
     type: string
-    x-okf-link: {resolution: project-relative, syntax: plain}
+    x-okf-link:
+      resolution: project-relative
+      syntax: plain
+      basename_marker: '@tests_req'
+      id_marker: id
+      show_line_number: true
 derives_from:
   type: array
   items:
     type: string
-    x-okf-link: {resolution: filename-stem, syntax: plain}
+    x-okf-link:
+      resolution: filename-stem
+      syntax: plain
+      id_marker: id
+      tooltip_shows_fields: [description]
+      preview_shows_fields: [description]
 ```
 
 With a project containing `src/report/export.py`, `tests/test_export.py`, and
@@ -180,7 +197,16 @@ a requirement file named `StRS-demo-001.md`, the first two values resolve to
 exact project-relative files and `StRS-demo-001` navigates by Markdown
 filename stem. `DOORS-4821` remains an external identifier. The file-link
 annotations guide navigation; they do not replace the existing requirement-ID
-validation or prove that a source file implements the requirement.
+validation or prove that a source file implements the requirement. For source
+and test evidence, `basename_marker` names the marker prefix to search in the
+resolved file, while `id_marker: id` tells a consumer to use the requirement's
+`id` value. The consumer can therefore find `@implements_req <id>` or
+`@tests_req <id>` and open directly at that line. A basename is a filename
+without its extension; these hints are advisory `x-okf-link` metadata and are
+not checked by `okfreq --check-links`. `tooltip_shows_fields` and
+`preview_shows_fields` tell a consumer which linked frontmatter fields are useful
+in a hover or preview, while `show_line_number` requests line-aware source/test
+navigation. The CLI validates targets but does not render those UI elements.
 
 Link checking is opt-in:
 
@@ -208,7 +234,7 @@ of other existing bundles.
 If no project root is supplied, `okfreq` uses the containing Git root for
 project-relative paths. It never infers an editor workspace or uses the current
 working directory as a fallback. Missing exact targets and ambiguous filename
-stems are `E10` errors. A missing workspace root or unresolved filename stem is
+stems are `E10` errors. An unavailable root or inaccessible matching candidate is
 reported as `W15` and skipped, because the CLI cannot infer which workspace the
 author intended. `--check-links` does not check heading or block fragments in
 wikilinks; it checks only the target file.

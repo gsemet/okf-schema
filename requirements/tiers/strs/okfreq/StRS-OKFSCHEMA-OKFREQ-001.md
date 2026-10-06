@@ -22,9 +22,11 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFREQ-005
 - SwRS-OKFSCHEMA-OKFREQ-006
 - SwRS-OKFSCHEMA-OKFREQ-007
+- SwRS-OKFSCHEMA-OKFREQ-008
+- SwRS-OKFSCHEMA-OKFREQ-009
 ---
 
-## EARS Expression
+## Maintain auditable software requirements
 
 ### Normative behavior
 

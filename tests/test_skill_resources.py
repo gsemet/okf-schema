@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import sysconfig
@@ -52,6 +53,39 @@ def test_canonical_skills_are_importable_resources() -> None:
     assert actual_roots == sorted(_SKILL_ROOTS)
 
 
+def test_each_skill_routes_all_local_references() -> None:
+    """Every packaged reference is discoverable from its owning SKILL.md."""
+    for skill_root in _SKILL_ROOTS:
+        skill_directory = _canonical_root() / skill_root
+        references_directory = skill_directory / "references"
+        if not references_directory.is_dir():
+            continue
+
+        skill_text = (skill_directory / "SKILL.md").read_text(encoding="utf-8")
+        for reference in sorted(references_directory.rglob("*")):
+            if not reference.is_file():
+                continue
+            relative_reference = reference.relative_to(skill_directory).as_posix()
+            link_pattern = re.compile(
+                rf"\]\((?:\./)?{re.escape(relative_reference)}(?:[#?][^)]*)?\)"
+            )
+            assert link_pattern.search(skill_text), (
+                f"{skill_root}/SKILL.md does not route {relative_reference}"
+            )
+
+
+def test_installable_skills_do_not_use_cross_skill_relative_links() -> None:
+    """Installed skills resolve companion resources by skill name, not siblings."""
+    skill_names = set(_SKILL_ROOTS)
+    for skill_root in _SKILL_ROOTS:
+        skill_text = (_canonical_root() / skill_root / "SKILL.md").read_text(encoding="utf-8")
+        for other_skill in skill_names - {skill_root}:
+            pattern = re.compile(rf"\]\((?:\.\./)+{re.escape(other_skill)}/")
+            assert not pattern.search(skill_text), (
+                f"{skill_root}/SKILL.md assumes {other_skill} is an installed sibling"
+            )
+
+
 def _build_wheel(repository_root: Path, wheel_directory: Path) -> Path:
     wheel_directory.mkdir()
     subprocess.run(
@@ -64,6 +98,7 @@ def _build_wheel(repository_root: Path, wheel_directory: Path) -> Path:
     return next(wheel_directory.glob("*.whl"))
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-005
 def test_built_wheel_contains_canonical_skill_trees_unchanged(tmp_path: Path) -> None:
     """A wheel contains exactly the canonical skill files under package resources."""
     repository_root = Path(__file__).parents[1]
@@ -217,3 +252,19 @@ def test_source_checkout_commands_install_families(
     assert f"Destination: {destination}" in result.stdout
     for skill_root in skill_roots:
         assert (destination / skill_root / "SKILL.md").is_file()
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008
+def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) -> None:
+    """Operational links remain usable when the installation has no docs/source tree."""
+    from okf_schema.skill_installer import install_skill_family
+
+    destination = tmp_path / "agent-skills"
+    install_skill_family("okfreq", destination)
+    for document in destination.rglob("*.md"):
+        for target in re.findall(r"\]\(([^)]+)\)", document.read_text(encoding="utf-8")):
+            if "://" in target or target.startswith("#"):
+                continue
+            resource = (document.parent / target.split("#")[0]).resolve()
+            assert resource.is_relative_to(destination.resolve())
+            assert resource.is_file(), (document, target)

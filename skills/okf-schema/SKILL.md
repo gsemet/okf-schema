@@ -12,6 +12,17 @@ metadata:
 
 ## Overview
 
+## Progressive references
+
+Keep this entrypoint as the first read, then load only the reference that
+matches the task:
+
+| Need | Read |
+|---|---|
+| Current OKF contract | [OKF v0.2](references/okf-v0.2.md) |
+| Legacy OKF compatibility | [OKF v0.1](references/okf-v0.1.md) |
+| Source-content conversion | [Conversions guide](references/conversions.md) |
+
 ## Agent configuration directory precedence
 
 When project instructions or agent configuration are expected under `.agents/`,
@@ -140,6 +151,15 @@ Use the base API for all layers: `validate_bundle(..., check_links=True)` or
 `check_file_links` from `okf_schema.api` for already-parsed frontmatter. KB and
 requirements bundles apply this shared contract; they do not define it.
 
+Use `inspect_file_links` from `okf_schema.api` when an agent or editor needs to
+navigate valid values as well as report invalid ones. It returns one structured
+`FileLinkResult` per applicable annotated value, including `resolved_path`,
+parsed query/fragment/label components, array identity, and a `valid`,
+`invalid`, or `unavailable` status. Use `check_file_links` when only
+`FileLinkDiagnostic` errors and warnings are needed. Neither API scans marker
+lines or proves implementation or test execution; `basename_marker` and
+`id_marker` remain advisory metadata for downstream consumers.
+
 For example, this schema describes one scalar link and two different kinds of
 link lists:
 
@@ -180,6 +200,29 @@ Keep the annotation on the scalar string schema, or on an array's string
 `items` schema for a list of links. Do not infer file-link semantics from
 property names or path-like values.
 
+An annotation may include optional navigation hints:
+
+```yaml
+x-okf-link:
+    resolution: project-relative
+    syntax: plain
+    basename_marker: '@implements_req'
+    id_marker: id
+```
+
+`basename_marker` records a marker prefix a consumer can search in the resolved
+file; `id_marker` names the frontmatter field supplying the marker identity,
+normally `id`. A basename is the filename without its extension. An editor can
+use these hints to find `@implements_req <id>` or `@tests_req <id>` and open
+directly at that line. These are advisory `x-okf-link` metadata, not standard
+JSON Schema keywords: file-link checking resolves the target file but does not
+validate marker locations or test results.
+
+Consumers may also define presentation hints such as
+`tooltip_shows_fields`, `preview_shows_fields`, and `show_line_number`. These
+are advisory metadata for editors and navigation tools; the generic checker
+does not render tooltips, previews, or line-number UI.
+
 Both `resolution` and `syntax` are required. Resolution is `document-relative`
 (from the Markdown file's parent), `bundle-relative`, `bundle-relative-stem`, `project-relative`, or
 `filename-stem` (case-sensitive Markdown basename without `.md`). Syntax is
@@ -194,7 +237,7 @@ Checking is opt-in: `okf-schema validate --path BUNDLE --check-links
 --project-root PROJECT`. `validate-md` also accepts `--bundle-root BUNDLE`.
 Project roots use explicit input, then the containing Git root, never the
 working directory or editor workspace. The CLI searches stems only in the
-bundle: duplicate matches fail; unresolved workspace references and unavailable
+bundle: missing or duplicate matches fail; inaccessible candidates and unavailable
 roots produce explicit `W15` skips, not proof of a valid target. Missing exact
 targets, malformed annotations, and rooted escapes produce `E10`. Do not let
 bundle/project-relative paths escape their roots, including through symlinks;
@@ -306,7 +349,7 @@ for c in concepts:
 | W12 | Source footnote | A body footnote has no matching `sources[].id` |
 | W13 | Source resource | A local `sources[].resource` path does not resolve |
 | W14 | KB derivation graph | Authored derivation paths are invalid or computed `derives_to` is stale |
-| W15 | Skipped file-link check | Opt-in target checking lacks a root or cannot resolve a stem outside the known bundle |
+| W15 | Skipped file-link check | Opt-in target checking lacks a root or filesystem access prevents inspection |
 
 ## Recommended Workflows
 
@@ -365,7 +408,20 @@ Validation: 2 errors, 1 warning
 - W4: metrics/ — directory missing index.md
 ```
 
-## References
+## Parser integration and composed link schemas
 
-- **[OKF v0.1 Specification](./references/okf-v0.1.md)** — The base format that `okf-schema` validates and extends. All OKF structural rules (bundle layout, frontmatter syntax, reserved files, linking conventions) are defined here.
-- **[Conversions Guide](./references/conversions.md)** — Quick reference for converting existing content into OKF format (Obsidian vaults, CSV/spreadsheets, wikilinks, inline tags).
+`okf_schema.api.inspect_file_links(frontmatter, schema, document_path,
+bundle_root=..., project_root=...)` returns successful targets as well as
+`invalid` (`E10`) and `unavailable` (`W15`) values. `check_file_links` returns
+only diagnostics. `value_identity` is an escaped JSON Pointer (`/a.b` versus
+`/a/b`, array `/refs/0`, `~0` for `~`, `~1` for `/`); use it for stable matching.
+`field_path` is a human label, not an identity. No headings or marker lines are
+parsed and navigation hints remain advisory.
+
+Supported annotation locations are explicit properties, array items/prefixItems,
+local refs, allOf, applicable anyOf/oneOf branches and the selected then/else.
+Ref siblings jointly constrain applicability. Other schema keywords still
+validate normally but do not contribute link annotations; use these supported
+locations for links. A malformed null-character path produces E10. Stem indexes
+are shared only within one inspection/validation call and refreshed next time,
+so moving files cannot leave a persistent global cache stale.

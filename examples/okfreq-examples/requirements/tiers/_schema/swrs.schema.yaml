@@ -24,6 +24,9 @@ allOf:
         x-okf-link:
           resolution: project-relative
           syntax: plain
+          basename_marker: '@implements_req'
+          id_marker: id
+          show_line_number: true
     tested_in_files:
       type: array
       description: Generated test paths.
@@ -32,6 +35,9 @@ allOf:
         x-okf-link:
           resolution: project-relative
           syntax: plain
+          basename_marker: '@tests_req'
+          id_marker: id
+          show_line_number: true
   required:
   - type
   - tier

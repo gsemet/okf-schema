@@ -168,6 +168,26 @@ Both annotation keys are required:
 | `syntax` | `plain` | The string directly contains the target path or stem. |
 | `syntax` | `wikilink` | The string uses `[[target]]`, optionally with `#heading`, `#^block`, or `|label`. |
 
+Schemas may also add optional navigation hints to `x-okf-link`:
+
+| Key | Value | Meaning |
+|---|---|---|
+| `basename_marker` | `string` | Marker prefix associated with basename-based navigation in the resolved target file. A basename is the filename without its extension. |
+| `id_marker` | `string` | Frontmatter field whose value supplies the identity for navigation. `id` is the normal value when a stable frontmatter identity is available. |
+| `tooltip_shows_fields` | `array[string]` | Linked frontmatter fields that a consumer may show in a hover tooltip. |
+| `preview_shows_fields` | `array[string]` | Linked frontmatter fields that a consumer may show in a preview. |
+| `show_line_number` | `boolean` | Whether a consumer should preserve the source line for marker navigation. |
+
+These are `x-okf-link` metadata, not JSON Schema validation keywords. They let an
+editor or other consumer resolve a file and then search for a line such as
+`@implements_req SwRS-demo-001` or `@tests_req SwRS-demo-001`, opening the file
+at that line. In the requirement defaults, the marker prefix comes from
+`basename_marker` and the requirement identity comes from `id_marker: id`;
+for requirement-to-requirement links, `id_marker: id` identifies the target
+requirement's `id` line. The generic checker resolves the target file, but does
+not parse marker lines or claim that a marker proves coverage.
+Presentation hints are advisory and are not rendered by the generic CLI.
+
 Syntax and resolution are independent: `[[Export-design]]` is wikilink syntax
 with filename-stem resolution, while `[[../design/export.md]]` can use
 document-relative resolution. Exact-path modes keep their extensions; no `.md`
@@ -186,8 +206,8 @@ okf-schema validate --path bundle --check-links --project-root .
 ```
 
 The CLI checks filename stems inside the bundle; it cannot discover an editor's
-workspace. An unresolved stem or unavailable root produces `W15`, identifying
-the skipped item and the reason. A missing exact target, ambiguous bundle-local
+workspace. An unavailable root or inaccessible matching candidate produces `W15`, identifying
+the skipped item and the reason. A missing exact target or bundle-local stem, ambiguous bundle-local
 stem, malformed annotation, or rooted path escape produces `E10`. Project-root
 lookup never falls back to the current working directory or workspace folders.
 Bundle/project-relative paths reject absolute paths and escapes through `../`
@@ -257,3 +277,32 @@ Running `okf-schema index` on a bundle with this schema produces:
 - [Migrate Existing Documentation](migrate-existing-docs) — applying custom schemas to an existing docs folder.
 - [Design Principles](../explanation/design-principles) — why self-describing bundles matter.
 - [CLI Reference](../reference/cli.md) — `validate` command options.
+
+### Composed schemas and conditional links
+
+The checker follows local `$ref` definitions, object `properties`, array
+`items`/`prefixItems`, `allOf`, applicable `anyOf`/`oneOf` branches, and the
+selected branch of `if`/`then`/`else`. A referenced constraint and its siblings
+both apply; a sibling does not overwrite the definition's constraint.
+
+For example, only local-file records below require a target file:
+
+```yaml
+if:
+  properties:
+    kind: {const: local-file}
+  required: [kind]
+then:
+  properties:
+    target:
+      type: string
+      x-okf-link: {resolution: document-relative, syntax: plain}
+```
+
+Put annotations in these supported locations. Schema keywords such as
+`patternProperties`, `additionalProperties`, `dependentSchemas`, and `contains`
+do not currently contribute file-link annotations; ordinary JSON Schema
+validation still applies to those keywords. Move link declarations to explicit
+properties/items or an applicable composition branch when target inspection is
+required. External `$ref` files are inlined by the bundle schema loader; the
+direct inspection API follows local references within the supplied schema.

@@ -42,7 +42,9 @@ from okf_schema._internal.utils import (
 )
 from okf_schema._internal.yaml import extract_frontmatter, parse_yaml
 from okf_schema.file_links import FileLinkDiagnostic as FileLinkDiagnostic
+from okf_schema.file_links import FileLinkResult as FileLinkResult
 from okf_schema.file_links import check_file_links as check_file_links
+from okf_schema.file_links import inspect_file_links as inspect_file_links
 from okf_schema.formatter import FormattedResult
 from okf_schema.formatter import format_bundle as _format_bundle
 from okf_schema.formatter import lint_bundle as _lint_bundle

@@ -2,6 +2,8 @@
 
 ### Feat
 
+- **file-links**: complete navigable link metadata
+- **file-links**: expose resolvable frontmatter link results
 - describe and check navigable file links in OKF bundles
 
 ## v0.12.0 (2026-09-02)

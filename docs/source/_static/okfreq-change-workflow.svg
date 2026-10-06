@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="440" viewBox="0 0 1000 440" role="img" aria-labelledby="title desc">
+  <title id="title">Maintain requirements as expected behavior changes</title>
+  <desc id="desc">Start by inspecting the existing feature, review intended behavior, update requirement drafts, adjust relevant implementation and tests, run tests and refresh generated links, then perform read-only checks and review gaps. Record substantive decisions in the authored log.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#566b8f"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="440" rx="16" fill="#f5f3ef"/>
+  <g font-family="sans-serif" fill="#202020">
+    <text x="500" y="35" text-anchor="middle" font-size="22" font-weight="700">A requirement change is a reviewable workflow</text>
+    <text x="500" y="61" text-anchor="middle" font-size="15" fill="#4b5563">Use the same steps for a backfilled feature and for later changes.</text>
+    <g stroke="#566b8f" stroke-width="3" fill="none" marker-end="url(#arrow)">
+      <path d="M300 150 H361"/>
+      <path d="M635 150 H696"/>
+      <path d="M835 208 V263"/>
+      <path d="M700 324 H639"/>
+      <path d="M365 324 H304"/>
+    </g>
+    <g stroke="#566b8f" stroke-width="2">
+      <rect x="30" y="94" width="270" height="114" rx="12" fill="#cfe3f7"/>
+      <rect x="365" y="94" width="270" height="114" rx="12" fill="#cfe3f7"/>
+      <rect x="700" y="94" width="270" height="114" rx="12" fill="#cfe3f7"/>
+      <rect x="700" y="267" width="270" height="114" rx="12" fill="#cfe3f7"/>
+      <rect x="365" y="267" width="270" height="114" rx="12" fill="#fbf0c4"/>
+      <rect x="30" y="267" width="270" height="114" rx="12" fill="#e3eee6"/>
+    </g>
+    <g font-size="17" font-weight="700">
+      <text x="50" y="125">1 · Inspect evidence</text>
+      <text x="385" y="125">2 · Review intent</text>
+      <text x="720" y="125">3 · Update requirements</text>
+      <text x="720" y="298">4 · Link code and tests</text>
+      <text x="385" y="298">5 · Test and refresh</text>
+      <text x="50" y="298">6 · Check and review</text>
+    </g>
+    <g font-size="15" fill="#374151">
+      <text x="50" y="155">Read docs, source and tests</text>
+      <text x="50" y="179">Record gaps and assumptions</text>
+      <text x="385" y="155">Agree the expected behavior</text>
+      <text x="385" y="179">Do not infer it from code alone</text>
+      <text x="720" y="155">Draft StRS / SwRS statements</text>
+      <text x="720" y="179">Preserve existing IDs and UUIDs</text>
+      <text x="720" y="328">Change only what is needed</text>
+      <text x="720" y="352">Add markers to real evidence</text>
+      <text x="385" y="328">Run the actual test suite</text>
+      <text x="385" y="352">Refresh coverage and indexes</text>
+      <text x="50" y="328">Run read-only harness checks</text>
+      <text x="50" y="352">Review reports and open gaps</text>
+    </g>
+    <text x="500" y="417" text-anchor="middle" font-size="15" fill="#4b5563">Record substantive changes, rationale and real verification results in tiers/log.md.</text>
+  </g>
+</svg>

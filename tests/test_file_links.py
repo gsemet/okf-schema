@@ -7,7 +7,7 @@ from pathlib import Path
 from click.testing import CliRunner
 from parametrization import Parametrization
 
-from okf_schema.api import check_file_links, validate_bundle
+from okf_schema.api import check_file_links, inspect_file_links, validate_bundle
 from okf_schema.cli import cli
 from okf_schema.okfreq.cli import okfreq
 from okf_schema.okfreq.core import (
@@ -113,6 +113,37 @@ def test_bundle_relative_stem_rejects_symlink_escape(tmp_path: Path) -> None:
     )
     assert [diagnostic.code for diagnostic in diagnostics] == ["E10"]
     assert "escapes" in diagnostics[0].message
+
+
+def test_filename_stem_rechecks_symlink_containment_after_drift(tmp_path: Path) -> None:
+    """A previously internal filename-stem link is revalidated after it escapes."""
+    import pytest
+
+    bundle = tmp_path / "knowledge"
+    bundle.mkdir()
+    inside = bundle / "inside.md"
+    outside = tmp_path / "outside.md"
+    alias = bundle / "Alias.md"
+    source = bundle / "source.md"
+    inside.write_text("# Inside\n", encoding="utf-8")
+    outside.write_text("# Outside\n", encoding="utf-8")
+    source.write_text("# Source\n", encoding="utf-8")
+    try:
+        alias.symlink_to(inside)
+    except OSError as exc:
+        pytest.skip(f"Symlink creation unavailable: {exc}")
+    schema = {"properties": {"reference": _link_schema("filename-stem")}}
+
+    initial = inspect_file_links({"reference": "Alias"}, schema, source, bundle_root=bundle)
+    assert initial[0].status == "valid"
+    assert initial[0].resolved_path == inside.resolve()
+
+    alias.unlink()
+    alias.symlink_to(outside)
+    drifted = inspect_file_links({"reference": "Alias"}, schema, source, bundle_root=bundle)
+    assert drifted[0].status == "invalid"
+    assert drifted[0].code == "E10"
+    assert "escapes" in drifted[0].message
 
 
 def test_check_file_links_walks_all_of_and_array_items(tmp_path: Path) -> None:
@@ -266,6 +297,73 @@ def test_check_file_links_supports_wikilink_labels_and_fragments(tmp_path: Path)
     )
 
 
+# @tests_req StRS-OKFSCHEMA-CORE-003
+def test_inspect_file_links_exposes_successes_failures_and_suffixes(tmp_path: Path) -> None:
+    """Structured inspection preserves identity, resolution, and parsed suffix metadata."""
+    document = tmp_path / "docs" / "source.md"
+    document.parent.mkdir()
+    document.write_text("", encoding="utf-8")
+    (tmp_path / "design").mkdir()
+    target = tmp_path / "design" / "export.md"
+    target.write_text("", encoding="utf-8")
+    (tmp_path / "src").mkdir()
+    source_target = tmp_path / "src" / "feature.py"
+    source_target.write_text("", encoding="utf-8")
+    schema = {
+        "type": "object",
+        "properties": {
+            "design": _link_schema("document-relative", "wikilink"),
+            "attachments": {
+                "type": "array",
+                "items": _link_schema("project-relative"),
+            },
+        },
+    }
+
+    results = inspect_file_links(
+        {
+            "design": "[[../design/export.md?view=full#Unicode%20Heading|read this]]",
+            "attachments": ["src/feature.py", "src/missing.py"],
+        },
+        schema,
+        document,
+        project_root=tmp_path,
+    )
+
+    assert len(results) == 3
+    design, attachment, missing = results
+    assert design.status == "valid"
+    assert design.value_identity == "/design"
+    assert design.array_index is None
+    assert design.syntax == "wikilink"
+    assert design.resolution == "document-relative"
+    assert design.target == "../design/export.md"
+    assert design.resolved_path == target.resolve()
+    assert design.query == "view=full"
+    assert design.fragment == "Unicode%20Heading"
+    assert design.label == "read this"
+    assert attachment.status == "valid"
+    assert attachment.field_path == "attachments[0]"
+    assert attachment.array_index == 0
+    assert attachment.resolved_path == source_target.resolve()
+    assert missing.status == "invalid"
+    assert missing.code == "E10"
+    assert missing.severity == "error"
+    assert missing.field_path == "attachments[1]"
+    assert [
+        diagnostic.field_path
+        for diagnostic in check_file_links(
+            {
+                "design": "[[../design/export.md?view=full#Unicode%20Heading|read this]]",
+                "attachments": ["src/feature.py", "src/missing.py"],
+            },
+            schema,
+            document,
+            project_root=tmp_path,
+        )
+    ] == ["attachments[1]"]
+
+
 def test_check_file_links_traverses_tuple_prefix_and_union_schemas(tmp_path: Path) -> None:
     """Tuple, prefix, and union schema branches all apply their annotations."""
     for name in ("one.md", "two.md", "three.md", "four.md", "five.md"):
@@ -335,6 +433,133 @@ def test_check_file_links_only_traverses_applicable_union_branches(tmp_path: Pat
 
     assert len(diagnostics) == 1
     assert diagnostics[0].code == "E10"
+
+
+def test_check_file_links_uses_full_schema_branch_applicability(tmp_path: Path) -> None:
+    """Union selection honors branch constraints beyond the JSON type keyword."""
+    document = tmp_path / "source.md"
+    document.write_text("", encoding="utf-8")
+    (tmp_path / "REQ-1.md").write_text("", encoding="utf-8")
+    link = _link_schema("document-relative")
+    link["pattern"] = r"^REQ-"
+    schema = {
+        "type": "object",
+        "properties": {
+            "reference": {
+                "anyOf": [link, {"type": "string", "pattern": r"^OTHER-"}],
+            }
+        },
+    }
+
+    assert check_file_links({"reference": "OTHER-missing.md"}, schema, document) == []
+    assert check_file_links({"reference": "REQ-1.md"}, schema, document) == []
+    diagnostics = check_file_links({"reference": "REQ-missing.md"}, schema, document)
+    assert len(diagnostics) == 1
+    assert diagnostics[0].code == "E10"
+
+
+def test_check_file_links_union_branch_uses_formats_and_root_refs(tmp_path: Path) -> None:
+    """Union selection honors format checkers and local references in branches."""
+    document = tmp_path / "source.md"
+    document.write_text("", encoding="utf-8")
+    schema = {
+        "$defs": {
+            "email_link": {
+                "type": "string",
+                "format": "email",
+                "x-okf-link": {"resolution": "document-relative", "syntax": "plain"},
+            }
+        },
+        "type": "object",
+        "properties": {
+            "reference": {
+                "anyOf": [{"$ref": "#/$defs/email_link"}, {"type": "string"}],
+            }
+        },
+    }
+
+    assert check_file_links({"reference": "missing.md"}, schema, document) == []
+    diagnostics = check_file_links({"reference": "missing@example.com"}, schema, document)
+    assert len(diagnostics) == 1
+    assert diagnostics[0].code == "E10"
+    assert diagnostics[0].field_path == "reference"
+
+
+def test_check_file_links_ignores_annotations_on_false_local_refs(tmp_path: Path) -> None:
+    """A false local reference cannot make its annotation branch applicable."""
+    document = tmp_path / "source.md"
+    document.write_text("", encoding="utf-8")
+    schema = {
+        "$defs": {"never": False, "always": True},
+        "type": "object",
+        "properties": {
+            "false_annotated_ref": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/never",
+                        "x-okf-link": {
+                            "resolution": "document-relative",
+                            "syntax": "plain",
+                        },
+                    },
+                    {"type": "string"},
+                ]
+            },
+            "true_annotated_ref": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/always",
+                        "x-okf-link": {
+                            "resolution": "document-relative",
+                            "syntax": "plain",
+                        },
+                    },
+                    {"type": "string"},
+                ]
+            },
+        },
+    }
+
+    diagnostics = check_file_links(
+        {"false_annotated_ref": "missing.md", "true_annotated_ref": "missing.md"},
+        schema,
+        document,
+    )
+
+    assert [diagnostic.field_path for diagnostic in diagnostics] == ["true_annotated_ref"]
+
+
+def test_check_file_links_union_branch_handles_boolean_local_refs(tmp_path: Path) -> None:
+    """Union applicability preserves boolean local references and their siblings."""
+    document = tmp_path / "source.md"
+    document.write_text("", encoding="utf-8")
+    link = _link_schema("document-relative")
+    schema = {
+        "$defs": {"never": False, "always": True},
+        "type": "object",
+        "properties": {
+            "false_ref": {"anyOf": [{"$ref": "#/$defs/never"}, link]},
+            "true_ref": {"anyOf": [{"$ref": "#/$defs/always"}, link]},
+            "true_with_siblings": {"anyOf": [{"$ref": "#/$defs/always", "type": "string"}, link]},
+        },
+    }
+
+    diagnostics = check_file_links(
+        {
+            "false_ref": "missing.md",
+            "true_ref": "missing.md",
+            "true_with_siblings": "missing.md",
+        },
+        schema,
+        document,
+    )
+
+    assert [diagnostic.field_path for diagnostic in diagnostics] == [
+        "false_ref",
+        "true_ref",
+        "true_with_siblings",
+    ]
+    assert all(diagnostic.code == "E10" for diagnostic in diagnostics)
 
 
 def test_check_file_links_follows_local_refs_through_recursive_schemas(tmp_path: Path) -> None:
@@ -578,13 +803,13 @@ def test_check_file_links_reports_ambiguous_and_case_sensitive_stems(tmp_path: P
 
     assert ambiguous[0].code == "E10"
     assert "ambiguous" in ambiguous[0].message
-    assert case_mismatch[0].code == "W15"
+    assert case_mismatch[0].code == "E10"
 
     (bundle / "outside.md").symlink_to(tmp_path / "outside.md")
     (tmp_path / "outside.md").write_text("", encoding="utf-8")
     escaped = check_file_links({"target": "outside"}, schema, document, bundle_root=bundle)
 
-    assert escaped[0].code == "W15"
+    assert escaped[0].code == "E10"
 
 
 def test_check_file_links_does_not_fall_back_to_frontmatter_ids(tmp_path: Path) -> None:
@@ -599,7 +824,7 @@ def test_check_file_links_does_not_fall_back_to_frontmatter_ids(tmp_path: Path) 
 
     diagnostics = check_file_links({"target": "REQ-1"}, schema, document, bundle_root=bundle)
 
-    assert diagnostics[0].code == "W15"
+    assert diagnostics[0].code == "E10"
     assert "REQ-1" in diagnostics[0].message
 
 
@@ -931,10 +1156,23 @@ def test_generated_okfreq_schemas_and_link_check_preserve_requirement_semantics(
     assert base["derives_from"]["items"]["x-okf-link"] == {
         "resolution": "filename-stem",
         "syntax": "plain",
+        "id_marker": "id",
+        "tooltip_shows_fields": ["description"],
+        "preview_shows_fields": ["description"],
     }
     assert swrs["implemented_in_files"]["items"]["x-okf-link"] == {
         "resolution": "project-relative",
         "syntax": "plain",
+        "basename_marker": "@implements_req",
+        "id_marker": "id",
+        "show_line_number": True,
+    }
+    assert swrs["tested_in_files"]["items"]["x-okf-link"] == {
+        "resolution": "project-relative",
+        "syntax": "plain",
+        "basename_marker": "@tests_req",
+        "id_marker": "id",
+        "show_line_number": True,
     }
     assert "external_id" not in base
 
@@ -963,3 +1201,149 @@ def test_generated_okfreq_schemas_and_link_check_preserve_requirement_semantics(
     assert validate_requirements(root, check_links=True, project_root=tmp_path) == []
     assert graph(root)["derives_from"]["SwRS-default-001"] == ["StRS-default-001"]
     assert "EXT-2" in swrs.read_text(encoding="utf-8")
+
+
+def test_union_refs_keep_sibling_constraints_and_recursive_scope(tmp_path: Path) -> None:
+    """A weaker sibling constraint cannot make an inapplicable link branch apply."""
+    schema = {
+        "$defs": {"long": {"type": "string", "minLength": 20}},
+        "properties": {
+            "ref": {
+                "anyOf": [
+                    {"$ref": "#/$defs/long", "minLength": 1, **_link_schema("document-relative")},
+                    {"type": "string"},
+                ]
+            }
+        },
+    }
+    assert check_file_links({"ref": "missing.md"}, schema, tmp_path / "source.md") == []
+    diagnostics = check_file_links(
+        {"ref": "long-missing-target.md"}, schema, tmp_path / "source.md"
+    )
+    assert [item.code for item in diagnostics] == ["E10"]
+
+
+def test_conditional_link_checks_only_the_selected_branch(tmp_path: Path) -> None:
+    """Both conditional outcomes can declare links; inactive branches stay unchecked."""
+    schema = {
+        "$defs": {"file_kind": {"properties": {"kind": {"const": "file"}}, "required": ["kind"]}},
+        "if": {"$ref": "#/$defs/file_kind"},
+        "then": {"properties": {"file": _link_schema("document-relative")}},
+        "else": {"properties": {"fallback": _link_schema("document-relative")}},
+    }
+    data = {"kind": "file", "file": "missing.md", "fallback": "also-missing.md"}
+    assert [d.field_path for d in check_file_links(data, schema, tmp_path / "source.md")] == [
+        "file"
+    ]
+    data["kind"] = "other"
+    assert [d.field_path for d in check_file_links(data, schema, tmp_path / "source.md")] == [
+        "fallback"
+    ]
+
+
+def test_value_identity_is_an_unambiguous_json_pointer(tmp_path: Path) -> None:
+    """Literal dots, brackets, slashes and tildes cannot alias nested values."""
+    link = _link_schema("document-relative")
+    schema = {
+        "properties": {
+            "a.b": link,
+            "a": {"properties": {"b": link}},
+            "refs[0]": link,
+            "refs": {"items": link},
+            "~/": link,
+        }
+    }
+    data = {
+        "a.b": "missing.md",
+        "a": {"b": "missing.md"},
+        "refs[0]": "missing.md",
+        "refs": ["missing.md"],
+        "~/": "missing.md",
+    }
+    results = inspect_file_links(data, schema, tmp_path / "source.md")
+    assert {r.value_identity for r in results} == {"/a.b", "/a/b", "/refs[0]", "/refs/0", "/~0~1"}
+    assert len(results) == 5
+
+
+def test_malformed_target_does_not_interrupt_other_results(tmp_path: Path) -> None:
+    """A user-provided NUL produces E10 and preserves subsequent valid results."""
+    (tmp_path / "target.md").write_text("", encoding="utf-8")
+    schema = {"properties": {"refs": {"items": _link_schema("document-relative")}}}
+    results = inspect_file_links(
+        {"refs": ["bad\0.md", "target.md"]}, schema, tmp_path / "source.md"
+    )
+    assert [(r.status, r.code) for r in results] == [("invalid", "E10"), ("valid", None)]
+
+
+def test_stem_index_is_shared_across_bundle_documents_and_refreshed(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A campaign scans once while the next campaign sees newly ambiguous stems."""
+    import json
+
+    bundle = tmp_path / "bundle"
+    (bundle / "_schema").mkdir(parents=True)
+    schema = {"properties": {"refs": {"items": _link_schema("filename-stem")}}}
+    (bundle / "_schema/note.schema.json").write_text(json.dumps(schema), encoding="utf-8")
+    for name in ("a", "b", "target"):
+        (bundle / f"{name}.md").write_text(
+            "---\ntype: note\nrefs: [target, target]\n---\n", encoding="utf-8"
+        )
+    original = Path.rglob
+    scans = []
+
+    def tracked(path, pattern, *args, **kwargs):
+        if pattern == "*.md":
+            scans.append(path)
+        return original(path, pattern, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "rglob", tracked)
+    # Bundle discovery performs its own scan; link resolution adds just one
+    # more regardless of the number of documents and annotated values.
+    validate_bundle(bundle)
+    discovery_scans = scans.count(bundle.resolve())
+    scans.clear()
+    result = validate_bundle(bundle, check_links=True)
+    assert not [e for e in result.errors if e.code == "E10"]
+    assert scans.count(bundle.resolve()) == discovery_scans + 1
+    (bundle / "nested").mkdir()
+    (bundle / "nested/target.md").write_text("---\ntype: note\n---\n", encoding="utf-8")
+    result = validate_bundle(bundle, check_links=True)
+    assert any(e.code == "E10" and "ambiguous" in e.message for e in result.errors)
+    assert scans.count(bundle.resolve()) == 2 * (discovery_scans + 1)
+
+
+def test_inaccessible_exact_target_reports_skipped_and_keeps_other_results(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Filesystem failures are unavailable checks, distinct from missing targets."""
+    original = Path.resolve
+
+    def resolve(path, *args, **kwargs):
+        if path.name == "denied.md":
+            raise PermissionError("access denied")
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    (tmp_path / "target.md").write_text("", encoding="utf-8")
+    schema = {"properties": {"refs": {"items": _link_schema("document-relative")}}}
+    results = inspect_file_links(
+        {"refs": ["denied.md", "target.md"]}, schema, tmp_path / "source.md"
+    )
+    assert [(r.status, r.code) for r in results] == [("unavailable", "W15"), ("valid", None)]
+
+
+def test_unreadable_stem_index_is_explicitly_skipped(tmp_path: Path, monkeypatch) -> None:
+    """An unreadable bundle cannot be mistaken for an empty, valid index."""
+
+    def denied(path, pattern):
+        raise PermissionError("cannot list bundle")
+
+    monkeypatch.setattr(Path, "rglob", denied)
+    results = inspect_file_links(
+        {"ref": "Target"},
+        {"properties": {"ref": _link_schema("filename-stem")}},
+        tmp_path / "source.md",
+        bundle_root=tmp_path,
+    )
+    assert [(r.status, r.code) for r in results] == [("unavailable", "W15")]

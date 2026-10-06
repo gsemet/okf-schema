@@ -20,9 +20,24 @@ implemented_in_files:
 - src/okf_schema/okfkb/cli.py
 tested_in_files:
 - tests/test_kb_finding.py
+- tests/test_tutorial_okfkb.py
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
+documentation_files:
+- docs/source/tutorials/okfkb-workflow.md
+- docs/source/explanation/okfkb-choices.md
+- docs/source/reference/kb-commands.md
+agent_skill_files:
+- skills/okfkb/SKILL.md
+- skills/okfkb/references/lifecycle-and-taxonomy.md
+- skills/okfkb/references/navigation-and-maintenance.md
+example_files:
+- docs/source/tutorials/okfkb-workflow.md
 ---
 
-## EARS Expression
+## Capture immutable knowledge findings
 
 ### Normative behavior
 

@@ -75,12 +75,11 @@ and how it relates to the OKF specification.
 :::
 
 :::{grid-item-card} 🧠 Opinionated Knowledge Base
-:link: explanation/okfkb-choices
+:link: tutorials/okfkb-workflow
 :link-type: doc
 
-Learn why the `okfkb` KB format exists, how agents read frontmatter-first
-markdown, and how links, backlinks, and computed derivation reflections keep
-the graph navigable.
+Record observations, distinguish them from explanations and plans, then
+maintain a navigable evidence trail with people and coding agents.
 :::
 
 :::{grid-item-card} 📐 Requirements Traceability

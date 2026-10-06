@@ -18,9 +18,13 @@ implemented_in_files:
 - src/okf_schema/okfkb/cli.py
 tested_in_files:
 - tests/test_kb_cli.py
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
 ---
 
-## EARS Expression
+## Provide deterministic knowledge-base operations
 
 ### Normative behavior
 

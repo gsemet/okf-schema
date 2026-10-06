@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="470" viewBox="0 0 1000 470" role="img" aria-labelledby="title desc">
+  <title id="title">Authored requirements and generated traceability</title>
+  <desc id="desc">Authors maintain intent, parent relationships, source and test markers, and the log. okfreq computes reverse links, evidence paths, index blocks and reports. A separate test runner produces execution results.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#566b8f"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="470" rx="16" fill="#f5f3ef"/>
+  <g font-family="sans-serif" fill="#202020">
+    <text x="500" y="35" text-anchor="middle" font-size="22" font-weight="700">Who maintains which information?</text>
+    <text x="500" y="61" text-anchor="middle" font-size="15" fill="#4b5563">Generated links help navigation; they do not replace intent or test execution.</text>
+    <rect x="30" y="86" width="430" height="250" rx="12" fill="#cfe3f7" stroke="#566b8f" stroke-width="2"/>
+    <rect x="540" y="86" width="430" height="250" rx="12" fill="#fbf0c4" stroke="#566b8f" stroke-width="2"/>
+    <text x="52" y="117" font-size="18" font-weight="700">AUTHORED · people and agents</text>
+    <text x="562" y="117" font-size="18" font-weight="700">GENERATED · okfreq commands</text>
+    <g font-size="16">
+      <text x="52" y="155" font-weight="700">Requirement documents</text>
+      <text x="52" y="180">Title, behavior, scenarios, parent IDs</text>
+      <text x="52" y="205">Preserve stable identity and lifecycle decisions</text>
+      <text x="52" y="245" font-weight="700">Source/test comments and change history</text>
+      <text x="52" y="270">Markers refer to real code and tests</text>
+      <text x="52" y="295">tiers/log.md records meaningful changes</text>
+      <text x="562" y="155" font-weight="700">update-coverage</text>
+      <text x="562" y="180">Reverse parent links and evidence file paths</text>
+      <text x="562" y="220" font-weight="700">lint</text>
+      <text x="562" y="245">Marked index blocks; outside text is preserved</text>
+      <text x="562" y="285" font-weight="700">generate-report</text>
+      <text x="562" y="310">JSON, JSON Schema and Markdown summary</text>
+    </g>
+    <path d="M466 209 H533" fill="none" stroke="#566b8f" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="30" y="359" width="940" height="85" rx="12" fill="#e3eee6" stroke="#566b8f" stroke-width="2"/>
+    <text x="52" y="390" font-size="18" font-weight="700">EXECUTION · the project's test runner</text>
+    <text x="52" y="417" font-size="16">Run tests separately. okfreq does not ingest their run results or infer approval from markers.</text>
+  </g>
+</svg>

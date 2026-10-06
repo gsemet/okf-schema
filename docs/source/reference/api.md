@@ -55,6 +55,42 @@ modes and plain/wikilink syntax, [KB setup](../how-to/setup-okfkb.md) for
 Finding evidence, and [requirement frontmatter](okfreq-frontmatter.md) for
 implementation and test evidence.
 
+Use `inspect_file_links` when a consumer needs successful resolutions as well as
+diagnostics. It returns one `FileLinkResult` per applicable annotated value,
+including the resolved path, parsed query/fragment/label, and `valid`, `invalid`,
+or `unavailable` status:
+
+```python
+from okf_schema.api import inspect_file_links
+
+results = inspect_file_links(
+   {"evidence": ["observations/cache-run"]},
+   schema,
+   Path("bundle/concepts/cache.md"),
+   bundle_root=Path("bundle"),
+)
+for result in results:
+   print(result.field_path, result.status, result.resolved_path)
+```
+
+`check_file_links` is the compatibility-oriented projection that returns only
+the `E10` and `W15` diagnostics. Neither function scans headings, marker lines,
+or test results; navigation metadata remains advisory for downstream consumers.
+
+```{eval-rst}
+.. autofunction:: okf_schema.api.inspect_file_links
+```
+
+```{eval-rst}
+.. autoclass:: okf_schema.api.FileLinkResult
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: okf_schema.api.FileLinkDiagnostic
+   :members:
+```
+
 ## Bundle operations
 
 ```{eval-rst}
@@ -125,3 +161,21 @@ implementation and test evidence.
 .. autoclass:: okf_schema.api.DeferredRewrite
    :members:
 ```
+
+### Result identities and inspection lifetime
+
+`value_identity` is an escaped JSON Pointer: `/a.b` identifies a literal dotted
+key, `/a/b` identifies a nested key, and `/attachments/0` identifies an array
+item. `~` and `/` in keys escape as `~0` and `~1`; the document root is the empty
+string. Use this identity for editor state and matching results; `field_path`
+remains a human-readable label such as `attachments[0]` and is not a unique key.
+This replaces the provisional dotted identity in the 0.14.0 API.
+
+A local `$ref` and its siblings both constrain union applicability. Only the
+selected `then` or `else` branch contributes conditional annotations. A literal
+null character in a target produces `E10` rather than interrupting inspection.
+
+Filename-stem resolution indexes Markdown candidates once per bundle in an
+inspection or validation campaign. The index is discarded after the call, so a
+later call observes added files and newly ambiguous names. There is no global
+cache and callers do not need to invalidate editor state.

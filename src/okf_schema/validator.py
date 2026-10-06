@@ -44,7 +44,7 @@ from okf_schema._internal.utils import (
     find_broken_links,
 )
 from okf_schema._internal.yaml import extract_frontmatter, make_yaml, parse_yaml
-from okf_schema.file_links import check_file_links
+from okf_schema.file_links import _FileLinkContext, check_file_links
 from okf_schema.okfkb.derivations import (
     build_derivation_graph,
     content_document_paths,
@@ -580,6 +580,7 @@ def validate_concept(
     *,
     check_links: bool = False,
     project_root: Path | None = None,
+    _link_context: _FileLinkContext | None = None,
 ) -> None:
     r"""Validate a single concept (non-reserved) ``.md`` file.
 
@@ -645,6 +646,7 @@ def validate_concept(
                         path,
                         bundle_root=bundle_root,
                         project_root=project_root,
+                        _context=_link_context,
                     ):
                         add_finding = (
                             report.add_error
@@ -855,6 +857,7 @@ def validate_bundle(
 
     # Track directories that contain markdown files
     dirs_with_md: set[Path] = set()
+    link_context = _FileLinkContext()
 
     for path in collect_markdown_files(bundle):
         dirs_with_md.add(path.parent)
@@ -875,6 +878,7 @@ def validate_bundle(
                 schemas,
                 check_links=check_links,
                 project_root=project_root,
+                _link_context=link_context,
             )
 
     # W14 — OKFKB computed reverse derivations are missing, stale, or based
@@ -953,6 +957,7 @@ def validate_markdown_files(
         A :class:`Report` containing all errors and warnings.
     """
     report = Report()
+    link_context = _FileLinkContext()
 
     for path in sorted(file_paths):
         if not path.is_file():
@@ -997,6 +1002,7 @@ def validate_markdown_files(
                             path,
                             bundle_root=bundle_root,
                             project_root=project_root,
+                            _context=link_context,
                         ):
                             add_finding = (
                                 report.add_error

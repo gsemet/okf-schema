@@ -20,9 +20,20 @@ implemented_in_files:
 - src/okf_schema/file_links.py
 tested_in_files:
 - tests/test_file_links.py
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
+documentation_files:
+- docs/source/reference/api.md
+- docs/source/how-to/write-custom-schema.md
+agent_skill_files:
+- skills/okf-schema/SKILL.md
+example_files:
+- examples/okfreq-examples/showcase.py
 ---
 
-## EARS Expression
+## Interpret and optionally check schema-declared file references
 
 ### Normative behavior
 
@@ -43,7 +54,7 @@ document values.
 - GIVEN a missing exact target, malformed annotation, ambiguous basename, rooted escape, or
   unavailable root
 - WHEN file-target checking runs
-- THEN invalid targets produce `E10` and unavailable roots or unresolved basename searches produce
+- THEN invalid targets produce `E10` and unavailable roots or inaccessible matching candidates produce
   explicit `W15` skips, without rewriting frontmatter or claiming that skipped targets exist
 
 ### Scenario: Preserve ordinary validation and existing bundles
@@ -63,6 +74,23 @@ document values.
   not checked.
 - Bundle/project targets must stay within their roots, including through symlinks.
 - New generic default schemas annotate `links` and `backlinks` string items as exact bundle paths.
+
+### Scenario: Inspect composed links without losing field identity
+
+- GIVEN annotations in local references, applicable unions or conditional branches
+- WHEN a consumer inspects valid and invalid links
+- THEN reference and sibling constraints both apply, only the selected conditional
+  branch contributes links, and each value retains an escaped JSON Pointer identity
+  even when property names contain dots, brackets, slashes or tildes
+
+### Scenario: Bound filesystem work and tolerate malformed targets
+
+- GIVEN several documents that refer to the same filename stems
+- WHEN one bundle validation runs
+- THEN one stem index is shared across the campaign and a subsequent campaign
+  observes newly created ambiguities
+- AND a target containing a null character produces E10 without interrupting
+  results for other values
 
 ### Verification notes
 
