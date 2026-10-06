@@ -16,7 +16,7 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-006
 ---
 
-## EARS Expression
+## Validate OKF bundle structures
 
 ### Normative behavior
 

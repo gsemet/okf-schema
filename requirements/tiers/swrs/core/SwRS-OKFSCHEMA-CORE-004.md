@@ -21,9 +21,13 @@ implemented_in_files:
 - src/okf_schema/cli.py
 tested_in_files:
 - tests/test_api.py
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
 ---
 
-## EARS Expression
+## Maintain indexes and superseded links
 
 ### Normative behavior
 

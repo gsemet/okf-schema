@@ -33,13 +33,31 @@ The package has one generic foundation and two separate opinionated subsets:
 |-------|-------|---------|------------------|
 | **Generic `okf-schema`** | Any OKF bundle | `okf-schema` | Schema validation, frontmatter linting, indexing, links, bundle integrity, and the Python API. |
 | **Knowledge base `okfkb`** | Engineering knowledge | `okfkb` or `okf-schema kb` | A stratified lifecycle for immutable Findings, hypotheses, experiments, concepts, structures, principles, playbooks, and outcomes. |
-| **Requirements `okfreq`** | Stakeholder and software requirements | `okfreq` | Explicit requirement IDs, StRS/SwRS hierarchy, lifecycle, derivation, verification markers, coverage, and traceability. |
+| **Requirements `okfreq`** | Stakeholder and software requirements | `okfreq` or `okf-schema req` | Explicit requirement IDs, StRS/SwRS hierarchy, lifecycle, derivation, verification markers, coverage, and traceability. |
 
 `okfkb` and `okfreq` are not aliases and should not be mixed in one bundle:
 `okfkb` manages knowledge maturity, while `okfreq` manages requirements and
 their implementation evidence. Both subsets reuse the generic `okf-schema`
 mechanics underneath. A project can use only generic OKF, either subset, or
 both in separate bundles.
+
+## What `okfkb` and `okfreq` add to OKF-Schema
+
+Both subsets provide opinionated schemas and workflows for a specific domain:
+
+- [`okfkb`](docs/source/tutorials/okfkb-workflow.md) organizes engineering knowledge
+  into evidence-backed layers, from immutable findings to stable concepts and
+  human-governed principles.
+- [`okfreq`](docs/source/tutorials/okfreq-traceability.md) manages stakeholder
+  and software requirements, their derivation, lifecycle, source/test markers,
+  and generated traceability reports.
+
+They reuse the generic OKF mechanics while keeping their document types and
+authoring workflows separate. See the
+[OKFKB tutorial](docs/source/tutorials/okfkb-workflow.md),
+[design rationale](docs/source/explanation/okfkb-choices.md) and the
+[okfreq frontmatter reference](docs/source/reference/okfreq-frontmatter.md) for
+the detailed contracts.
 
 ## What `okf-schema` adds to OKF
 
@@ -207,7 +225,7 @@ okfkb query "type:finding confidence:>=high tag:cache" my-knowledge-base
 okfkb query "finding[tag=cache] -> concept -> principle" my-knowledge-base
 ```
 
-**For full KB documentation**, see the [OKFKB CLI](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html), [OKF-KB Design Choices](https://okf-schema.readthedocs.io/en/stable/explanation/okfkb-choices.html) and [HW Debugging Workflow Tutorial](https://okf-schema.readthedocs.io/en/stable/tutorials/okfkb-hw-debugging-workflow.html).
+**For full KB documentation**, see the [OKFKB CLI](https://okf-schema.readthedocs.io/en/stable/reference/kb-commands.html), [OKF-KB Design Choices](https://okf-schema.readthedocs.io/en/stable/explanation/okfkb-choices.html) and [self-contained OKFKB tutorial](https://okf-schema.readthedocs.io/en/stable/tutorials/okfkb-workflow.html).
 
 **Agent skills** complement the CLI: `okf-schema` handles tool mechanics,
 `okfkb` teaches and routes the knowledge lifecycle, and `okfkb-gardening` runs
@@ -531,3 +549,13 @@ knowledge base structure and schema.
 ## License
 
 MIT License — see [LICENSE](https://github.com/gsemet/okf-schema/blob/main/LICENSE) for details.
+
+## Executable feature coverage
+
+The project maintains its own [requirements feature/evidence map](docs/source/explanation/project-feature-coverage.md).
+See [requirements/index.md](requirements/index.md) folder. For concrete configuration, navigation, failure handling and lifecycle scenarios, run
+`uv run python examples/okfreq-examples/showcase.py` from the repository root.
+The [okfreq operations resource](skills/okfreq/references/operations.md) is shipped
+with the agent skill and works without this source checkout or documentation site.
+Contributors maintain these surfaces together under the
+[product maintenance contract](.github/guidelines/product-maintenance.guidelines.md).

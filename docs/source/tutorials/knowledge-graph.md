@@ -1,7 +1,11 @@
-# Link Two Documents and Explore Backlinks
+# Generic OKF: links and backlinks
 
 In this tutorial, you will connect two documents and let `okf-schema` generate
-the reverse relationship. This creates the smallest useful knowledge graph.
+the reverse relationship. This creates a two-document graph.
+
+This optional exercise covers generic OKF mechanics. For Findings, knowledge
+roles, synthesis and agent maintenance, use the self-contained
+[OKFKB tutorial](okfkb-workflow.md); you do not need to complete this page first.
 
 **Time:** about 10 minutes
 
@@ -117,5 +121,5 @@ Run `lint` after correcting the path, then validate again.
 - [Python API Reference](../reference/api.md) covers custom graph analysis.
 - [Design Principles](../explanation/design-principles.md) explains the graph
   model and guidance for document size and linking.
-- [Record Your First Finding](okfkb-first-finding.md) introduces the optional
-  opinionated OKF-KB workflow.
+- [Build and maintain an evidence-based knowledge base](okfkb-workflow.md)
+  introduces the distinct OKFKB lifecycle in one walkthrough.

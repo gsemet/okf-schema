@@ -23,9 +23,13 @@ implemented_in_files:
 tested_in_files:
 - tests/test_api.py
 - tests/test_cli_remaining.py
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
 ---
 
-## EARS Expression
+## Inspect and query bundle knowledge
 
 ### Normative behavior
 

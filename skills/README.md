@@ -136,13 +136,19 @@ explicit human agreement.
 
 ## Progressive references
 
-The [`okfkb`](okfkb/SKILL.md) skill keeps its main instructions compact and
-loads detailed references only when needed:
+The base skills keep their main instructions compact and load detailed
+references only when needed:
 
+- [OKF v0.2](okf-schema/references/okf-v0.2.md) and
+  [OKF v0.1](okf-schema/references/okf-v0.1.md) define the generic format
+  contracts; use [Conversions](okf-schema/references/conversions.md) only for
+  source migration.
 - [Lifecycle and taxonomy](okfkb/references/lifecycle-and-taxonomy.md)
 - [Finding quality](okfkb/references/finding-quality.md)
 - [Consolidation judgment](okfkb/references/consolidation-judgment.md)
 - [Navigation and maintenance](okfkb/references/navigation-and-maintenance.md)
+- [Requirements guidelines](okfreq/references/requirements.guidelines.md) is the
+  fallback for `okfreq` projects without a local guideline.
 
 For human-oriented guidance, see
 [Maintain an OKFKB with agent skills](../docs/source/how-to/maintain-okfkb-with-skills.md)

@@ -23,9 +23,13 @@ implemented_in_files:
 - src/okf_schema/okfkb/derivations.py
 tested_in_files:
 - tests/test_kb_derivations.py
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
 ---
 
-## EARS Expression
+## Materialize reciprocal knowledge derivations
 
 ### Normative behavior
 

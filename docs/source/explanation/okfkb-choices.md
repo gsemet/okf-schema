@@ -1,428 +1,181 @@
-# OKF-KB Design Choices
+# Why OKFKB separates evidence, explanations and decisions
 
-`okf-schema` provides an *opinionated* instantiation of OKF as a knowledge base (through `okfkb`,
-an alias for `okf-schema kb`).
+OKFKB is an opinionated knowledge-base profile built on the generic OKF tooling.
+Its folders and schemas distinguish empirical observations, maintained knowledge,
+investigation plans, operational procedures and agreed rules. This page explains
+the reasons and costs of those choices.
 
-This article explains the philosophy, design choices, and trade-offs behind the structure.
+For the concepts, illustrations, commands and a complete worked investigation,
+start with [Build and maintain an evidence-based knowledge base](../tutorials/okfkb-workflow.md).
+The tutorial is the single OKFKB learning path; it does not require the generic
+graph exercise first.
 
-**Core vision**: A ready-to-use KB framework optimized for **agent-driven experimental findings traceability**
-at scale in HW debugging, scientific projects, and complex engineering teams.
+## Separate document roles instead of treating every note as equivalent
 
-For step-by-step guidance on using okfkb, see:
+The same investigation can produce several kinds of statement:
 
-- [Setup OKF-KB](../how-to/setup-okfkb.md) — Quick reference and command reference
-- [HW Debugging Workflow Tutorial](../tutorials/okfkb-hw-debugging-workflow.md) — Real-world automotive debugging example
+- a trace recorded 800 microseconds under particular conditions;
+- the fixed wait may be too short;
+- the wait does not cover the measured timing in that configuration;
+- the team plans to implement and test another readiness check; and
+- the team agrees a policy for hardware-ready checks.
+
+Putting these statements in one evolving note makes their ownership and status
+harder to distinguish. A reader needs to know whether a sentence is a historical
+observation, an explanation to investigate, current understanding, planned work
+or an agreed rule. OKFKB assigns these roles to Finding, Hypothesis, Concept,
+Outcome and Principle respectively. Structure, Experiment, Playbook and Reference
+cover system relationships, repeatable tests/procedures and external sources.
+
+The comparison below shows how explicit document roles help readers distinguish
+evidence, explanations and rules. A generic graph can also be organized; OKFKB
+makes these distinctions part of the shared profile.
 
 ```{image} ../_static/generic-vs-okfkb-kb.svg
-:alt: Comparison of generic knowledge base graph structure (left, chaotic) with OKF-KB stratified layers (right, organized)
+:alt: Generic linked notes compared with OKFKB document roles for observations, explanations and agreed rules
 :width: 100%
 ```
 
-**OKF-KB organizes the elements in stratified layers**, with findings at the bottom rising through validation to principles at the top.
+These roles are not a universal maturity ladder. An Outcome is not a more
+confident Concept, and a Principle is not automatically justified by a high
+Finding count. `confidence` and each type's `kb_status` remain separate metadata.
+The type also does not validate a statement's truth.
 
----
+The cost is choosing a type and maintaining relationships between documents.
+For a small collection of unrelated notes, a simpler generic OKF bundle may be
+sufficient. The profile is useful when preserving evidence and revisiting an
+investigation matters enough to justify that structure.
 
-## What is a Knowledge Base?
+## Preserve observations while allowing explanations to change
 
-A knowledge base is a structured, interlinked collection of markdown files containing
-observations, hypotheses, validated concepts, and principles. Its purpose is to serve
-as an **external memory for coding agents** when they engage with a problem domain.
+A Finding records what was observed and believed under a specific context at
+capture time. Its body and claim should remain historical. If later evidence
+changes the conclusion, rewriting the old observation would erase what was
+actually available to the earlier investigation.
 
-Unlike a flat repository of findings or a wiki, a KB must:
+Concepts and Structures have a different job: they present the current reusable
+explanation or system model. They can change as evidence accumulates. Their
+provenance should make it possible to follow that synthesis back to the records
+that support or limit it. This avoids requiring every reader to reconstruct the
+entire investigation before using the current explanation.
 
-1. **Encode confidence levels** — distinguish raw observations from validated concepts
-2. **Support contradictions** — allow conflicting findings to coexist without requiring immediate resolution
-3. **Enable navigation by tier** — agents must quickly find the right level of abstraction
-4. **Preserve immutability** — historical records should not be rewritten
-5. **Front-load metadata** — agents decide whether to read deep based on frontmatter alone
+The CLI generates dated Finding filenames and validates metadata, but ordinary
+Markdown remains editable. Immutability is a maintenance policy reinforced by
+agent instructions, review and version control; it is not a filesystem access
+restriction. Humans and agents can both record Findings. Tools can preserve
+history only when the project's workflow respects that boundary.
 
-okfkb addresses all five by design.
+The hardware investigation below illustrates the division of work. Sessions
+capture Findings; consolidation maintains explanations and plans; readers and
+agents follow links back to the measurements. Principles remain subject to human
+agreement. These are related activities, not a required sequence for every note.
 
----
-
-## Knowledge Lifecycle
-
-In okfkb, every document has a *tier* that reflects its maturity and confidence level:
-
-| Tier | Purpose | When to Write | Confidence |
-|------|---------|---------------|------------|
-| **findings/** | Raw observations from debugging/experimentation | Agent detects anomaly, records via `okfkb new-finding` | Falsifiable |
-| **hypotheses/** | Testable propositions derived from findings | Propose explanation for contradiction | Medium |
-| **experiments/** | Planned investigations to test hypotheses | Design test; record expected outcome | Intended |
-| **concepts/** | Stable understanding promoted from findings | Multiple findings converge; confidence High | High |
-| **structures/** | Cross-cutting system patterns spanning multiple concepts | Architect describes subsystem | High |
-| **principles/** | Durable, team-agreed standards and "directions" | Human decision; replaces ad-hoc convention | Policy |
-| **outcomes/** | Planned projects or deliverables to build from knowledge | Track what you'll *build* from KB | Commitment |
-| **reference/** | External sources: papers, links, third-party docs | Archive findings backed by citations | External |
-| **playbooks/** | Operational how-to notes (orthogonal to other tiers) | Record repeatable processes | Procedural |
-
-The key insight: **each tier answers a different question an agent might ask** —
-"What did we observe?", "What's stable enough to rely on?", "What's still open?", "What must we build?"
-
-```{image} ../_static/okfkb-hw-debugging-overview-v2.png
-:alt: OKF-KB debugging overview — debug sessions feed a stratified pyramid (findings → concepts → structures → principles), navigated with search/get/read/query
+```{image} ../_static/okfkb-hw-debugging-overview-v2.svg
+:alt: Hardware investigation sessions capture Findings, consolidation produces reusable knowledge and plans, and agents navigate evidence while Principles remain human-governed
 :width: 100%
 ```
 
----
-
-## Findings: Agent-Driven Discovery
-
-Findings are the foundational tier. They are **created by agents**, not humans.
-
-They are immutable and timestamped.
-They are the raw observations that agents record during debugging or experimentation.
-
-Findings should be understood as the **local truth as this specific time with the available data**.
-They are not "corrected" retroactively; instead, new findings may contradict older ones,
-and the KB preserves the historical record.
-
-### Agent Workflow
-
-When an agent (GitHub Copilot, Cursor, Claude Code) detects an anomaly or completes
-an investigation, it will record a new finding:
-
-```bash
-# 1. Create a new finding (timestamps and paths auto-generated)
-okfkb new-finding . --title "Cache eviction ratio exceeds threshold"
-
-# 2. Agent edits the finding markdown and frontmatter
-# (agent sets confidence, links to related docs, adds context)
-
-# 3. Lint and update links/backlinks
-okfkb update
-```
-
-### Why Agents Create Findings
-
-Humans debugging a complex HW platform can find several mistakes and discover
-several observations per session.
-
-At the end of each session, agents record findings of this investigation.
-
-The KB grows with:
-
-- Exact timestamps (when was this observation made?)
-- Full context (how was the system configured when this happened?)
-- Confidence levels (how sure is the agent about this observation?)
-- Immediate links (what other findings or concepts does this relate to?)
-
-This transforms the KB into a **living experimental log**, not a summative document.
-
-### Findings are Immutable and Falsifiable
-
-Once created, a finding's **body should never be edited**.
-
-Instead:
-
-- If contradicted by a newer finding, the older finding gets a `kb_status: contradicted` frontmatter field
-  and a pointer to the contradicting finding in `contradicted_by: [findings/2026.07.05-...md]`
-- The historical record remains intact for audit and reproducibility
-- Agents can then ask: "What's the evolution of our understanding of this cache behavior?"
-
-This principle mirrors scientific lab notebooks: observations are historical records, not
-living documents that get "corrected" retroactively.
-
-### Dated Filenames: Chronological Signal
-
-Findings use the naming pattern `YYYY.MM.DD-HH.MM-<slug>.md`:
-
-```
-findings/2026.07.04-14.30-cache-eviction-anomaly.md
-findings/2026.07.03-09.15-boot-sequence-timing-issue.md
-findings/2026.07.03-08.45-ddr-initialization-hang.md
-```
-
-Two reasons:
-
-1. **Chronological sort order** — `ls findings/` shows observations in recording order;
-   agents scan recent findings first without reading file content.
-2. **Immutability signal** — a dated filename signals "this body is historical".
-   If a human or agent later decides to *edit* a finding's body (which shouldn't happen),
-   the dated filename is an instant red flag that something's wrong.
-
-## Promotion: From Findings to Concepts
-
-Over time, patterns emerge. When **multiple findings converge** on the same understanding,
-it's time to promote that understanding to a **Concept**.
-
-### Example: Cache Eviction
-
-**Day 1–3: Raw Findings**
-
-```text
-findings/2026.07.01-10.30-cache-hit-rate-drops.md
-  → confidence: low
-  → context: 400 RPS, eviction_ratio 0.75
-
-findings/2026.07.02-14.15-eviction-ratio-exceeds-0.9.md
-  → confidence: medium
-  → context: 600 RPS, eviction_ratio 0.94
-  → links: [findings/2026.07.01-10.30-cache-hit-rate-drops.md]
-
-findings/2026.07.03-09.00-root-cause-identified.md
-  → confidence: high
-  → context: LRU eviction policy + insufficient memory pool at 700+ RPS
-  → links: [findings/2026.07.02-14.15-eviction-ratio-exceeds-0.9.md]
-```
-
-**Day 4: Promotion to Concept**
-
-```text
-concepts/cache-eviction-under-load.md
-  ---
-  type: Concept
-  title: Cache LRU Eviction Becomes Aggressive Above 700 RPS
-  confidence: high
-  kb_status: active
-  derived_from: [findings/2026.07.01-10.30-cache-hit-rate-drops, ...]
-  # knowledge graph fields generated automatically — do not edit manually
-  derives_to: []
-  links: [structures/cache-subsystem.md, principles/cache-tuning-policy.md]
-  ---
-
-  # Concept: Cache LRU Eviction Under Load
-
-  When system load exceeds 700 RPS, the cache's LRU eviction policy
-  becomes too aggressive due to insufficient memory allocation...
-```
-
-### Promotion Matters
-
-Without this "compilation" step, agents re-read the same findings repeatedly,
-unable to distinguish stable knowledge from open questions.
-
-**With promotion to higher tier**, agents can navigate into the KB, understanding
-naturally what is still being investigated vs. what is stable enough to rely on.
-
----
-
-## Trade-offs: Why This Design Over Alternatives?
-
-### Alternative 1: Flat Repository of Findings
-
-**Pros**: Simple, no folder structure overhead
-**Cons**:
-
-- Agents can't distinguish raw observations from validated understanding
-- No canonical path for promotion (finding → concept)
-- Search becomes expensive; agent must read every file to find relevant context
-- Confidence signals buried in prose, not frontmatter
-
-**okfkb**: Tiers enable agents to target the right level of abstraction immediately.
-
-### Alternative 2: Wiki with Manual Tags
-
-**Pros**: Familiar to most teams
-**Cons**:
-
-- Tags are loose conventions, easily violated
-- No immutability guarantee; findings get "cleaned up" retroactively
-- Backlinks are manual and drift out of sync
-- Timestamps optional, often missing
-
-**okfkb**: Folder structure enforces tier discipline; frontmatter-first guarantees
-agent consumption; lint-materialised backlinks keep navigation metadata in sync.
-
-### Alternative 3: Spreadsheet or Database
-
-**Pros**: Queryable; structured fields
-**Cons**:
-
-- Not suitable for prose + context (findings need narrative)
-- Not version-controllable (can't audit changes)
-- Markup for code/formulas awkward
-- Agents have poor native support for querying databases
-
-**okfkb**: Markdown + YAML frontmatter is agent-native; git-friendly;
-and prose context is preserved. They are also auditable and diffable.
-
-## Frontmatter-First: Optimizing for Agent Consumption
-
-Coding agents (GitHub Copilot, Cursor, Claude Code) load files into context windows in chunks.
-When a file is large, agents typically read the first 20–50 lines and decide whether to
-read further. This means **the beginning of every file is prime real estate**.
-
-okfkb exploits this by placing structured metadata at the very top:
-
-```markdown
----
-type: Finding
-title: Cache eviction too aggressive
-confidence: medium
-context: >-
-  Observed under 800 RPS load; eviction_ratio hit 0.94.
-generated:
-  at: 2026-07-04T14:30:00Z
-  by: human:alice
-tags: [cache, performance]
-links: [findings/2026.07.03-09.00-root-cause-identified.md]
-backlinks: [structures/cache-subsystem.md]
-kb_status: active
----
-
-# Finding: Cache eviction too aggressive
-...
-```
-
-An agent loading this file sees — **before reading a single word of prose** —
-the document's type, confidence, context, provenance timestamp, and how it relates to other documents.
-This is vastly better than burying metadata in headings or relying on filename conventions.
-
----
-
-## Links and Backlinks: Navigation Without the Filesystem
-
-Every okfkb file carries managed navigation arrays in its frontmatter:
-
-- **`links`** — bundle-relative paths that *this* document explicitly references
-- **`backlinks`** — paths of documents that reference *this* one
-- **`derives_to`** — computed extensionless paths of documents whose authored
-  `derived_from` points to this document
-
-When you run `okfkb update my-kb/`, the tool:
-
-1. Scans every markdown body for relative links
-2. Rewrites each document's `links`, `backlinks`, and `derives_to` metadata
-3. Writes `index.md` summaries (tables of contents)
-4. Leaves authored `derived_from` and the human-authored `log.md` unchanged
-
-**Why this matters for agents**: An agent reading `concepts/cache-subsystem.md` can immediately
-navigate to all related findings, experiments, and principles via frontmatter fields alone.
-No filesystem traversal needed. The graph is first-class data, not hidden in prose.
-
----
-
-## log.md: Temporal Entry Point
-
-`log.md` is a chronological running log of KB changes and decisions:
-
-```markdown
-## 2026-07-04
-
-### New Findings
-- `findings/2026.07.04-14.30-cache-eviction-anomaly.md`
-  Agent recorded aggressive LRU eviction at 800 RPS.
-
-### Promotions
-- `concepts/cache-eviction-under-load.md` promoted from 3 converged findings.
-
-### Decisions
-- Team decided to tune LRU pool size (see `principles/cache-tuning-policy.md`).
-```
-
-Agents reading a new KB start with `log.md` to understand **what changed recently**
-before diving into individual documents. This mirrors how developers use `CHANGELOG.md`
-or git commit history, but optimized for prose context.
-
----
-
-## Full Agent Reading Path
-
-When an agent is given access to an okfkb, the typical traversal is:
-
-```text
-log.md                    ← What changed recently?
-  ↓
-index.md                  ← What tiers exist? Overview?
-  ↓
-findings/                 ← Raw observations (most recent first)
-  2026.07.04-*.md
-  2026.07.03-*.md
-  ↓ (via links/backlinks)
-hypotheses/               ← Testable ideas derived from findings
-  ↓
-experiments/              ← Planned investigations
-  ↓
-concepts/                 ← Stable, promoted understanding
-  (cache-subsystem.md) ← which links to...
-  ↓
-structures/               ← System-level patterns
-  ↓
-principles/               ← Team standards & policies
-  ↓
-outcomes/                 ← Projects to build
-```
-
-At each step, `links` and `backlinks` guide navigation. The agent builds a mental graph
-from frontmatter alone, then dives into prose where needed.
-
----
-
-## Why a Fixed Folder Structure?
-
-The tier folders (`findings/`, `concepts/`, `principles/`, etc.) are opinionated
-*because the folder name IS the tier*.
-
-**Without structure**, agents must infer the maturity of each document from prose or custom tags.
-**With structure**, agents know instantly: `findings/` = raw obs, `concepts/` = stable knowledge.
-
-This enables fast filtering: "Show me only stable concepts" vs. "Show me what we're still investigating"
-without parsing a single document body.
-
----
-
-## Active Navigation: `search` / `get` / `read` / `query`
-
-A stratified, linked KB is only half the story — the other half is *how* an agent consumes it.
-Rather than dumping whole tier folders into a context window, okfkb exposes the KB as a small
-set of **navigation tools**, so the agent actively pulls the right granularity:
-
-- **`search`** — coarse ranked retrieval ("where might the answer be?")
-- **`get`** — exact fetch of one node ("show me exactly this")
-- **`read`** — read a whole stable tier ("give me the settled understanding")
-- **`query`** — structured selection and graph traversal ("select by criteria / follow links")
-
-This mirrors how the tiers already answer different questions: an agent typically `read`s the
-upper, stable tiers (`principles`, `concepts`) for the big picture, `query`s or `search`es to
-locate relevant nodes, and only `get`s a specific finding when it needs evidence-level detail.
-The design goal is the same as everywhere else in okfkb — **let the agent decide depth cheaply**,
-descending to raw findings only when the higher tiers are insufficient.
-
-### Why a two-flavor `query`
-
-`query` deliberately supports two small styles instead of one large query language:
-
-- A **filter DSL** over flat frontmatter (`type:finding confidence:>=high tag:pll`) — this
-  covers the overwhelmingly common case: "select nodes by tier, confidence, status, and tags."
-  Because confidence is *ordinal* (`low` < `medium` < `high` < `confirmed`), range operators
-  like `>=high` fall out naturally.
-- An **arrow traversal** (`finding[tag=pll] -> concept -> principle`) — a pocket-Cypher over
-  the `links` / `backlinks` / `derives_to` edges that already exist in frontmatter. `->`
-  follows `links`, `<-` follows `backlinks`, and `^` follows derivation. This turns the implicit
-  knowledge graph into something an agent can *walk* ("from these findings, what concepts did
-  they promote into, and what principles govern them?").
-
-We chose this over a full `MATCH … RETURN` grammar (Cypher) or SQL `SELECT` because the two
-lightweight forms cover ~80% of real navigation needs, require no graph database, and stay
-readable to non-developers. The grammar is intentionally small and **experimental** — if the
-arrow form proves too limiting, a fuller path grammar can be layered on later without changing
-the underlying frontmatter model.
-
-### Why tools, not just retrieval
-
-The alternative — a single "retrieve relevant context" step that pre-selects evidence for the
-agent — leaves the agent as a passive consumer of whatever the retriever picked. Exposing the
-tiers as explicit tools keeps the agent in control of *which* abstraction level to consult and
-*when it has enough*, which matches how these files are meant to be read: front-loaded metadata
-first, prose only where needed. This active-navigation stance is corroborated by recent memory
-research (e.g. NapMem's finding that tool-based, multi-granularity navigation outperforms passive
-retrieval over the same sources — see `reference/`).
-
----
-
-## Summary: Why This Design?
-
-okfkb's design choices converge on a single goal: **enable agents to build understanding
-from a KB as efficiently as a human would**.
-
-- **Tiers** answer different questions (observations vs. stable knowledge)
-- **Frontmatter-first** lets agents decide depth in 20 lines
-- **Immutable findings** preserve experimental truth; contradictions coexist
-- **Agent-driven creation** ensures findings are fresh and contextualized
-- **Automatic backlinks** prevent link rot and enable graph navigation
-- **Dated filenames** signal historical record integrity
-- **log.md** provides temporal context on demand
-
-Trade-offs: more structure upfront, but dramatically lower KB maintenance burden
-and much higher agent productivity at scale.
+## Distinguish contradiction from a change of scope
+
+Different results do not necessarily contradict one another. A different board,
+software revision, environment or measurement procedure may explain the change.
+Collapsing those contexts into a single confidence label loses information.
+
+When claims are incompatible under materially comparable conditions, the KB can
+retain both records and represent contradiction in lifecycle metadata. When a
+new record intentionally replaces an earlier account, supersession expresses
+that relation instead. Neither relation is a license to erase inconvenient data.
+An unresolved disagreement can motivate a Hypothesis and an Experiment rather
+than an immediate promotion or a guessed winner.
+
+This requires judgment about context and evidence quality. Schema validation
+can check permitted values and some paths; it cannot decide whether two physical
+measurements are comparable or whether a result is reproducible.
+
+## Keep navigation links distinct from derivation provenance
+
+An ordinary body link means that another document is relevant reading in that
+sentence. It does not, by itself, say that a claim was derived from that document.
+OKFKB retains ordinary Markdown links and adds authored `derived_from` provenance.
+
+Generated `links`/`backlinks` expose body references in both directions.
+Generated `derives_to` is the reciprocal view of `derived_from`. This lets a
+reader move from a conclusion to its evidence or from an observation to the
+conclusions that depend on it, without manually maintaining both edge directions.
+
+The current conventions are explicit but different: body links include `.md`
+and are relative to their source document; `derived_from` uses bundle-relative,
+extensionless document IDs. The distinction needs teaching and can cause path
+mistakes. Local schemas and opt-in target checking help make those mistakes
+visible. Generated edges remain declared provenance, not proof that the source
+supports the claim.
+
+## Promote through evidence review rather than a fixed count
+
+Repeated Findings may be copies of the same underlying observation. A collection
+of similar records can also omit relevant counter-evidence or cover only one
+configuration. Counting records cannot establish that an explanation is reusable.
+
+Consolidation therefore considers evidence quality and independence, scope,
+uncertainty, counter-evidence, existing knowledge and the value of a synthesis.
+A Concept or Structure may be justified directly from Findings when that review
+supports it; Hypotheses and Experiments are available when uncertainty requires
+further investigation. They are not mandatory intermediate paperwork.
+
+The cost is that promotion cannot be reduced to a deterministic CLI operation.
+Interactive distillation supports human review of proposed mutations. Explicitly
+invoked gardening allows autonomous maintenance of non-Principle layers under
+project rules. Neither mode guarantees correct judgment; inspect the resulting
+evidence trail and diff.
+
+## Keep governance distinct from empirical inference
+
+A measurement describes what happened. A Principle says what the team agrees
+should be done. Evidence can motivate a rule without deciding its trade-offs,
+exceptions or authority. OKFKB therefore reserves creation and modification of
+Principles for explicit human agreement.
+
+This boundary does not prohibit an agent from proposing a Principle with its
+rationale, evidence and implications. It prevents a synthesis step from silently
+turning an engineering suggestion into policy. Outcomes and Playbooks also remain
+separate: planned work is not demonstrated success, and a procedure is not a
+universal rule.
+
+## Prefer inspectable files while accepting maintenance costs
+
+Markdown bodies support explanations and evidence context alongside structured
+YAML metadata. The profile keeps documents, schema changes and relationships in
+files that can be reviewed together with the project. It does not require a graph
+database or hosted retrieval service.
+
+A database or wiki can also support structured evidence and history. Those
+systems may be preferable for concurrent editing, centralized access control,
+large-scale queries or other project constraints. File-based storage instead
+makes the project's filesystem, version control and validation harness part of
+the operating model. It requires a strategy for concurrent changes, naming,
+regeneration and keeping authored guidance current.
+
+Frontmatter is a compact entry point for selecting documents by type, status,
+context and provenance. It does not guarantee how much an agent will read or
+how well it will understand a claim. `read`, `search`, `get` and `query` offer
+different retrieval scopes; the agent still needs a sensible reading strategy
+and should stop when it has enough context for the task. Large tiers and broad
+queries can still return more text than is useful.
+
+## Separate generated views from semantic history
+
+Indexes and graph arrays are derived views. Running `okfkb update` refreshes them,
+including supported superseded-link rewrites. Review the resulting diff. The
+maintained `log.md` has another purpose: significant promotions, contradictions,
+revisions and decisions should explain what changed and why. The tool does not
+invent that history during formatting or indexing.
+
+A valid bundle establishes structural consistency within the implemented checks.
+It does not establish completeness, scientific validity, correctness of an agent's
+reasoning or that a planned Outcome succeeded. Real experiment/test execution,
+review and governance remain part of the project's workflow.
+
+For practical procedures, use the [single OKFKB tutorial](../tutorials/okfkb-workflow.md)
+and [agent-maintenance guide](../how-to/maintain-okfkb-with-skills.md).
+For exact fields and commands, use the [setup reference](../how-to/setup-okfkb.md)
+and [KB CLI reference](../reference/kb-commands.md).

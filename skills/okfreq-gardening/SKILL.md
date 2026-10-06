@@ -8,10 +8,17 @@ metadata:
 
 # okfreq gardening
 
-This specialized workflow extends the foundational
-[`okfreq` skill](../okfreq/SKILL.md). Read and apply that skill first so the
-requirements goal, StRS-to-SwRS model, project-guideline precedence, and
-traceability semantics remain in force throughout gardening.
+<!-- @implements_req SwRS-OKFSCHEMA-OKFREQ-008 -->
+
+This specialized workflow extends the foundational `okfreq` skill. Load the
+`okfreq` skill first so the requirements goal, StRS-to-SwRS model,
+project-guideline precedence, and traceability semantics remain in force
+throughout gardening. Do not assume that installed skills share a directory.
+
+If the target bundle has no local requirements guideline, use the parent skill's
+`references/requirements.guidelines.md` resource as the fallback. Locate that
+resource from the installed `okfreq` skill by skill name. Read it during Phase 1,
+after checking the project's own `AGENTS.md` and guidelines.
 
 Perform an explicit, evidence-based maintenance pass over an `okfreq` bundle.
 The primary users are coding agents working on brownfield projects where source
@@ -46,6 +53,10 @@ unrelated implementation task.
   explicit migration or import operation.
 - Preserve unrelated user work and inspect the worktree before writing.
 
+For CLI syntax, configuration, skipped link checks and report destinations, read
+the installed `okfreq` skill's `references/operations.md`; it is packaged and
+requires no access to the tool's source repository or documentation site.
+
 ## Phase 1 — Discover project rules and scope
 
 1. Resolve the bundle root. Prefer an explicit path; otherwise look for
@@ -60,11 +71,11 @@ unrelated implementation task.
 3. Confirm the bundle resolves as expected before auditing content. Run
    `okfreq validate <bundle> --prose`; a traceback or a missing-schema error means the
    layout and the tool disagree, and that drift is the first finding to fix.
-3. Read the project task runner and CI configuration to identify validation and
+4. Read the project task runner and CI configuration to identify validation and
    test commands. Do not assume a universal runner.
-4. Record configured levels, parent relationships, ID policy, lifecycle values,
+5. Record configured levels, parent relationships, ID policy, lifecycle values,
    marker keywords, generated-field ownership, and scope mappings.
-5. Inspect `git status` so pre-existing changes are not attributed to gardening.
+6. Inspect `git status` so pre-existing changes are not attributed to gardening.
 
 ## Phase 2 — Establish a read-only baseline
 
@@ -83,7 +94,7 @@ Use the following commands as appropriate:
 ```console
 okfreq status .
 okfreq validate . --prose
-okfreq lint . --prose
+okfreq lint . --prose --check
 okfreq index .
 okfreq graph . --json
 okfreq trace . --json
@@ -144,9 +155,10 @@ formats instead of applying one generic requirement template:
 
 - **StRS — stakeholder intent:** provide one stakeholder-observable `SHALL`
   statement as `--description` and the stakeholder's underlying outcome as
-  `--user-need`. Complete `EARS Expression`, `Normative behavior`, `User Need`,
+  `--user-need`. Use the frontmatter title as the first heading. Complete `Normative behavior`, `User Need`,
   and `Rationale and constraints`. Do not add SwRS scenarios, verification
-  notes, implementation markers, or test markers to an StRS.
+  notes, or implementation markers to an StRS. Add a direct validation-test
+  marker only for a real stakeholder test, as required by the configured mode.
 - **SwRS — software behavior:** provide one observable, bounded `SHALL`
   response as `--description` and at least one valid StRS parent with
   `--derives-from`. Complete nominal and boundary/failure GIVEN-WHEN-THEN
@@ -175,6 +187,12 @@ properties, authored derivations, dependencies, and verification criteria are
 unchanged. If a generated update would overwrite external ownership, stop and
 report the conflict.
 
+After reviewed requirement changes, run `okfreq lint <bundle> --diff`, then
+`okfreq lint <bundle>` to refresh tier/scope navigation. Keep authored text
+outside generated blocks. Append a dated summary to `<bundle>/tiers/log.md`
+with affected IDs, rationale, decisions and real validation evidence; never
+regenerate the log or invent entries for a no-op pass.
+
 ## Phase 6 — Lifecycle and verification audit
 
 Treat `draft`, `proposed`, `approved`, `deprecated`, and `superseded` as distinct.
@@ -198,8 +216,8 @@ Write generated reports to the project's `dist/` directory, never into the
 requirements bundle or `tiers/`:
 
 ```console
-okfreq generate-report <bundle> --output <project>/dist/requirements-report.json
-okfreq generate-report <bundle> --output <project>/dist/requirements-report.md --format markdown
+okfreq generate-report <bundle> --output-json <project>/dist/requirements-report.json \
+  --output-summary-md <project>/dist/requirements-report.md
 ```
 
 Report at least:

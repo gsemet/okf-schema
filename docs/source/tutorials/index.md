@@ -1,25 +1,23 @@
-# Tutorials and Learning Paths
+# Choose a tutorial
 
-Start with the two **Core OKF** tutorials. They teach the common document and
-link model used by the optional OKF-KB and OKFREQ workflows.
+Choose the workflow you want to use. The knowledge-base and requirements
+tutorials are self-contained; the generic exercises are not prerequisites.
 
-## Core OKF
+| Your goal | Start here |
+|---|---|
+| Structure and validate ordinary Markdown documents | [Create and validate an OKF bundle](getting-started.md) |
+| Preserve investigation evidence and maintain reusable project knowledge | [Build and maintain an evidence-based knowledge base](okfkb-workflow.md) |
+| Connect agreed software behavior to implementation and tests | [Add requirements traceability to an existing project](okfreq-traceability.md) |
 
-1. [Create and Validate Your First OKF Bundle](getting-started.md)
-   creates one structured knowledge document. About 5 minutes.
-2. [Link Two Documents and Explore Backlinks](knowledge-graph.md)
-   creates a small navigable knowledge graph. About 10 minutes.
+## Optional generic OKF exercise
 
-## Choose an optional workflow
+[Generic OKF: links and backlinks](knowledge-graph.md) focuses on ordinary body
+links and their generated reverse edges. It extends the generic bundle exercise;
+it does not introduce OKFKB Findings, synthesis or lifecycle policy. The OKFKB
+tutorial explains the relationships it needs within its own worked example.
 
-- [Record Your First Finding in OKF-KB](okfkb-first-finding.md) is for teams
-  that accumulate observations and distill them into stable knowledge.
-- [Create Your First Traceable Requirement with OKFREQ](okfreq-traceability.md)
-  is for teams that connect stakeholder intent to software, code, and tests.
-
-After the OKF-KB introduction, the
-[hardware debugging case study](okfkb-hw-debugging-workflow.md) shows the
-workflow across several investigation sessions.
+Use the [explanations](../explanation/index.md) after a walkthrough when you want
+to examine the design reasons and trade-offs.
 
 ```{toctree}
 :maxdepth: 1
@@ -27,7 +25,6 @@ workflow across several investigation sessions.
 
 getting-started
 knowledge-graph
-okfkb-first-finding
-okfkb-hw-debugging-workflow
+okfkb-workflow
 okfreq-traceability
 ```

@@ -21,7 +21,7 @@ tested_in_files:
 - tests/test_export.py
 ---
 
-## EARS Expression
+## Write CSV output
 
 ### Normative behavior
 

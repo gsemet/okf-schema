@@ -1,0 +1,240 @@
+"""Run concrete okfreq scenarios in a disposable project.
+
+Run from the repository root with ``uv run python
+examples/okfreq-examples/showcase.py``. The checked-in CSV example is preserved;
+all configuration, lifecycle changes and intentional failures stay temporary.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from click.testing import CliRunner
+from jsonschema import Draft202012Validator
+
+from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
+from okf_schema.file_links import inspect_file_links
+from okf_schema.okfreq.cli import okfreq
+from okf_schema.okfreq.core import load_requirements, report
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-008
+
+
+def run_showcase(project: Path) -> dict[str, str]:
+    """Exercise authoring, evidence, reports, navigation and recovery scenarios.
+
+    Args:
+        project:
+            An empty disposable project directory owned by this example.
+
+    Returns:
+        Scenario names with their verified outcomes.
+    """
+    project.mkdir(parents=True, exist_ok=True)
+    runner = CliRunner()
+    outcomes: dict[str, str] = {}
+
+    def command(*args: str, expected: int = 0) -> str:
+        result = runner.invoke(okfreq, list(args))
+        assert result.exit_code == expected, (args, result.output, result.exception)
+        return result.output
+
+    def edit(path: Path, updates: dict) -> None:
+        text = path.read_text(encoding="utf-8")
+        frontmatter, body = extract_frontmatter(text)
+        data = make_yaml().load(frontmatter)
+        data.update(updates)
+        path.write_text(f"---\n{dump_yaml(data)}---\n{body}", encoding="utf-8")
+
+    root = project / "requirements"
+    command("init", str(root))
+    config_path = root / "config.yml"
+    config = make_yaml().load(config_path.read_text(encoding="utf-8"))
+    config["scopes"] = {
+        "delivery": {
+            "id_token": "DELIVERY",
+            "folder": "delivery",
+            "source_dirs": ["src"],
+            "test_dirs": ["tests"],
+        }
+    }
+    config["markers"]["implements"] = "@delivers"
+    config["markers"]["tests"] = "@verifies"
+    config["strs_test_coverage_mode"] = "linked-swrs-and-validation-test"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    common = ["--path", str(root), "--scope", "delivery", "--project", "shipping"]
+    command(
+        "new",
+        "strs",
+        "Export shipping manifest",
+        *common,
+        "--description",
+        "The dispatch team SHALL receive a portable shipping manifest.",
+        "--user-need",
+        "Dispatchers need to review shipments offline.",
+    )
+    parent = "StRS-DELIVERY-001"
+    for title in ("Write a manifest", "Format a replacement manifest"):
+        command(
+            "new",
+            "swrs",
+            title,
+            *common,
+            "--description",
+            "When export is requested, the service SHALL return manifest CSV.",
+            "--derives-from",
+            parent,
+        )
+    swrs = "SwRS-DELIVERY-001"
+    replacement = "SwRS-DELIVERY-002"
+    records = load_requirements(root)
+    edit(
+        records[swrs][0],
+        {
+            "depends_on": [replacement],
+            "external_id": "DEMO-4821",
+            "external_url": "https://example.com/tracker/DEMO-4821",
+            "owner": "dispatch",
+            "verification_method": "test",
+            "verification_criteria": "The returned manifest preserves populated and empty rows.",
+        },
+    )
+    for folder in ("src", "tests"):
+        (project / folder).mkdir()
+    (project / "src/manifest.py").write_text(
+        f"# @delivers {swrs}\n# @delivers {replacement}\n", encoding="utf-8"
+    )
+    test_path = project / "tests/test_manifest.py"
+    test_path.write_text(f"# @verifies {swrs}\n# @verifies {replacement}\n", encoding="utf-8")
+    before = report(root)
+    assert before["stakeholder_test_coverage"]["covered"] == 0
+    test_path.write_text(test_path.read_text() + f"# @verifies {parent}\n", encoding="utf-8")
+    assert report(root)["stakeholder_test_coverage"]["covered"] == 1
+    outcomes["strict_stakeholder_coverage"] = (
+        "requires linked SwRS tests and a direct validation test"
+    )
+    config["strs_test_coverage_mode"] = "linked-swrs"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    test_path.write_text(f"# @verifies {swrs}\n# @verifies {replacement}\n", encoding="utf-8")
+    assert report(root)["stakeholder_test_coverage"]["covered"] == 1
+    config["strs_test_coverage_mode"] = "linked-swrs-and-validation-test"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    test_path.write_text(test_path.read_text() + f"# @verifies {parent}\n", encoding="utf-8")
+    # These markers demonstrate linkage only. Actual CSV behavior is tested in
+    # tests/test_export.py in the checked-in example, not claimed by this fixture.
+    preserved = load_requirements(root)[swrs][1]
+    command("update-coverage", str(root), "--diff")
+    command("update-coverage", str(root))
+    command("update-coverage", str(root), "--check")
+    assert load_requirements(root)[swrs][1]["owner"] == preserved["owner"]
+    command("validate", str(root), "--check-links", "--project-root", str(project))
+    for operation in ("index", "status", "scope", "graph", "trace"):
+        command(operation, str(root))
+    assert swrs in command("search", "manifest", str(root))
+    command("in-file", str(records[swrs][0]))
+    outcomes["authoring_and_navigation"] = (
+        "scoped IDs, dependencies and external metadata preserved"
+    )
+    outcomes["custom_markers_and_scopes"] = (
+        "source/test markers resolve through explicit project roots"
+    )
+
+    incoming = project / "incoming.yml"
+    incoming.write_text("version: 99\nproducer: demo-import\n", encoding="utf-8")
+    command("config-merge", str(incoming), "--path", str(root))
+    merged = make_yaml().load(config_path.read_text(encoding="utf-8"))
+    assert merged["version"] == 1 and merged["producer"] == "demo-import"
+    outcomes["config_merge"] = "destination conflicts retained; unknown keys imported"
+
+    destination = project / "dist/requirements-report.json"
+    destination.parent.mkdir()
+    command(
+        "generate-report",
+        str(root),
+        "--output-json",
+        str(destination),
+        "--output-summary-md",
+        str(destination.with_suffix(".md")),
+    )
+    payload = json.loads(destination.read_text())
+    schema = json.loads(destination.with_suffix(".schema.json").read_text())
+    Draft202012Validator(schema).validate(payload)
+    assert payload["execution_evidence"]["status"] == "not_collected"
+    outcomes["reports"] = (
+        "JSON validates against emitted schema; Markdown emitted; execution unclaimed"
+    )
+
+    def link(mode: str, syntax: str = "plain") -> dict:
+        return {"type": "string", "x-okf-link": {"resolution": mode, "syntax": syntax}}
+
+    path = records[swrs][0]
+    relative = path.relative_to(root).as_posix()
+    schema = {
+        "properties": {
+            "document": link("document-relative"),
+            "bundle": link("bundle-relative"),
+            "stem_path": link("bundle-relative-stem"),
+            "source": link("project-relative"),
+            "wiki": link("filename-stem", "wikilink"),
+        }
+    }
+    values = {
+        "document": path.name,
+        "bundle": relative,
+        "stem_path": relative[:-3],
+        "source": "src/manifest.py",
+        "wiki": f"[[{parent}#User Need|Dispatch need]]",
+    }
+    results = inspect_file_links(values, schema, path, bundle_root=root, project_root=project)
+    assert len(results) == 5 and all(r.status == "valid" for r in results)
+    values["source"] = "src/missing.py"
+    assert any(
+        r.code == "E10"
+        for r in inspect_file_links(values, schema, path, bundle_root=root, project_root=project)
+    )
+    unavailable = inspect_file_links({"bundle": relative}, schema, path)
+    assert unavailable[0].code == "W15"
+    outcomes["five_file_resolutions"] = (
+        "plain/wikilink targets resolved; missing and skipped checks separated"
+    )
+
+    body_before = extract_frontmatter(path.read_text())[1]
+    edit(
+        path,
+        {
+            "annotation_exemption": True,
+            "exemption_reason": "Demonstration of external verification policy.",
+        },
+    )
+    assert any(item["id"] == swrs for item in report(root)["marker_coverage"]["exemptions"])
+    command("archive", swrs, "--path", str(root), expected=1)
+    command("archive", swrs, "--path", str(root), "--yes")
+    assert load_requirements(root)[swrs][1]["lifecycle"] == "deprecated"
+    command("supersede", swrs, replacement, "--path", str(root), "--yes")
+    after = load_requirements(root)[swrs]
+    assert after[1]["superseded_by"] == replacement
+    assert extract_frontmatter(after[2])[1] == body_before
+    assert after[1]["uuid"] == records[swrs][1]["uuid"]
+    outcomes["exemptions_and_lifecycle"] = (
+        "explicit exemption, confirmation, supersession and stable UUID/body"
+    )
+
+    broken = root / "tiers/strs/broken.md"
+    broken.write_text("---\ntype: StRS\n---\nNo ID\n", encoding="utf-8")
+    assert "broken.md" in command("validate", str(root), expected=1)
+    broken.unlink()
+    command("lint", str(root), "--check-links", "--project-root", str(project))
+    command("lint", str(root), "--check")
+    assert (root / "tiers/swrs/delivery/index.md").is_file()
+    assert "SwRS-DELIVERY-001.md" in (root / "tiers/swrs/delivery/index.md").read_text()
+    outcomes["invalid_document_recovery"] = (
+        "missing ID fails explicitly; repair restores validation"
+    )
+    return outcomes
+
+
+if __name__ == "__main__":
+    with TemporaryDirectory(prefix="okfreq-showcase-") as directory:
+        print(json.dumps(run_showcase(Path(directory)), indent=2))

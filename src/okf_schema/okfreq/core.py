@@ -33,6 +33,7 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml, parse_yaml
 from okf_schema.api import check_file_links
+from okf_schema.file_links import _FileLinkContext
 from okf_schema.validator import load_schema_database
 
 DEFAULT_CONFIG = """version: 1
@@ -223,7 +224,7 @@ STRS_TEST_COVERAGE_DESCRIPTIONS = {
 _EARS_PLACEHOLDER = "<"
 _USER_NEED_PLACEHOLDER = "<stakeholder need in the stakeholder's language>"
 
-_STRS_BODY = """## EARS Expression
+_STRS_BODY = """## {title}
 
 ### Normative behavior
 
@@ -243,7 +244,7 @@ _STRS_BODY = """## EARS Expression
 - <known constraint, exclusion, or rationale>
 """
 
-_SWRS_BODY = """## EARS Expression
+_SWRS_BODY = """## {title}
 
 ### Normative behavior
 
@@ -276,8 +277,12 @@ def ears_body(
     description: str,
     *,
     user_need: str | None = None,
+    title: str | None = None,
 ) -> str:
     """Return the EARS scaffold for a configured level.
+
+    .. versionchanged:: 0.14.0
+        Use the requirement title as the first Markdown heading.
 
     The scaffold is deliberately full of bracketed placeholders so an agent or
     author can see exactly which parts must be filled in.
@@ -289,6 +294,9 @@ def ears_body(
             Normative EARS behavior supplied by the author.
         user_need:
             Stakeholder need for an upper-level requirement.
+        title:
+            Human-readable requirement title. Defaults to the description
+            when called directly without a title.
 
     Returns:
         A Markdown body template for the level.
@@ -299,8 +307,11 @@ def ears_body(
         True
     """
     if level.lower().startswith("sw"):
-        return _SWRS_BODY.format(description=description)
+        return _SWRS_BODY.format(
+            title=title if title is not None else description, description=description
+        )
     return _STRS_BODY.format(
+        title=title if title is not None else description,
         description=description,
         user_need=user_need or _USER_NEED_PLACEHOLDER,
     )
@@ -514,7 +525,13 @@ def init_requirements(path: Path, force: bool = False) -> Path:
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "x-okf-link": {"resolution": "filename-stem", "syntax": "plain"},
+                        "x-okf-link": {
+                            "resolution": "filename-stem",
+                            "syntax": "plain",
+                            "id_marker": "id",
+                            "tooltip_shows_fields": ["description"],
+                            "preview_shows_fields": ["description"],
+                        },
                     },
                     "description": "Upstream requirement IDs this one is derived from.",
                 },
@@ -522,7 +539,13 @@ def init_requirements(path: Path, force: bool = False) -> Path:
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "x-okf-link": {"resolution": "filename-stem", "syntax": "plain"},
+                        "x-okf-link": {
+                            "resolution": "filename-stem",
+                            "syntax": "plain",
+                            "id_marker": "id",
+                            "tooltip_shows_fields": ["description"],
+                            "preview_shows_fields": ["description"],
+                        },
                     },
                     "description": "Downstream requirement IDs deriving this one.",
                 },
@@ -530,7 +553,11 @@ def init_requirements(path: Path, force: bool = False) -> Path:
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "x-okf-link": {"resolution": "filename-stem", "syntax": "plain"},
+                        "x-okf-link": {
+                            "resolution": "filename-stem",
+                            "syntax": "plain",
+                            "id_marker": "id",
+                        },
                     },
                     "description": "Other requirement IDs this one depends on.",
                 },
@@ -589,7 +616,13 @@ def init_requirements(path: Path, force: bool = False) -> Path:
                 "description": "Generated source paths.",
                 "items": {
                     "type": "string",
-                    "x-okf-link": {"resolution": "project-relative", "syntax": "plain"},
+                    "x-okf-link": {
+                        "resolution": "project-relative",
+                        "syntax": "plain",
+                        "basename_marker": "@implements_req",
+                        "id_marker": "id",
+                        "show_line_number": True,
+                    },
                 },
             }
             properties["tested_in_files"] = {
@@ -597,7 +630,13 @@ def init_requirements(path: Path, force: bool = False) -> Path:
                 "description": "Generated test paths.",
                 "items": {
                     "type": "string",
-                    "x-okf-link": {"resolution": "project-relative", "syntax": "plain"},
+                    "x-okf-link": {
+                        "resolution": "project-relative",
+                        "syntax": "plain",
+                        "basename_marker": "@tests_req",
+                        "id_marker": "id",
+                        "show_line_number": True,
+                    },
                 },
             }
         schema = {
@@ -792,6 +831,10 @@ def merge_config(root: Path, source: Path) -> list[str]:
 def load_requirements(root: Path) -> dict[str, tuple[Path, dict[str, Any], str]]:
     """Load requirement Markdown documents keyed by stable ID.
 
+    .. versionchanged:: 0.14.0
+        Reject every discovered requirement with absent or malformed mapping
+        frontmatter or a missing string ID instead of omitting it from reports.
+
     Args:
         root:
             The bundle root returned by :func:`bundle_path`.
@@ -801,7 +844,8 @@ def load_requirements(root: Path) -> dict[str, tuple[Path, dict[str, Any], str]]
 
     Raises:
         RequirementError:
-            If two documents declare the same ID.
+            If a document cannot be indexed safely or two documents declare
+            the same ID. Reserved index/log and schema/guideline files are excluded.
 
     Examples:
         >>> from tempfile import TemporaryDirectory
@@ -812,18 +856,24 @@ def load_requirements(root: Path) -> dict[str, tuple[Path, dict[str, Any], str]]
     """
     result: dict[str, tuple[Path, dict[str, Any], str]] = {}
     for file in sorted(tiers_path(root).glob("**/*.md")):
-        if file.name in {"index.md", "log.md"} or "_schema" in file.parts:
+        if (
+            file.name in {"index.md", "log.md"}
+            or "_schema" in file.relative_to(tiers_path(root)).parts
+        ):
             continue
-        if "guidelines" in file.parts:
+        if "guidelines" in file.relative_to(tiers_path(root)).parts:
             continue
         text = file.read_text(encoding="utf-8")
         frontmatter, _ = extract_frontmatter(text)
         data = parse_yaml(frontmatter) if frontmatter is not None else None
-        if data and data.get("id"):
-            identifier = str(data["id"])
-            if identifier in result:
-                raise RequirementError(f"duplicate requirement ID: {identifier}")
-            result[identifier] = (file, data, text)
+        if not isinstance(data, dict):
+            raise RequirementError(f"{file}: missing or invalid mapping frontmatter")
+        identifier = data.get("id")
+        if not isinstance(identifier, str) or not identifier.strip():
+            raise RequirementError(f"{file}: missing or invalid requirement ID")
+        if identifier in result:
+            raise RequirementError(f"duplicate requirement ID: {identifier}")
+        result[identifier] = (file, data, text)
     return result
 
 
@@ -955,7 +1005,7 @@ def create_requirement(
     target = folder / f"{identifier}.md"
     if target.exists() or identifier in existing:
         raise RequirementError(f"requirement ID collision: {identifier}")
-    body = ears_body(level, description, user_need=user_need)
+    body = ears_body(level, description, user_need=user_need, title=title)
     _atomic_write(target, f"---\n{dump_yaml(data)}---\n\n{body}")
     return target
 
@@ -1016,6 +1066,7 @@ def marker_scan(root: Path) -> dict[str, Any]:
     requirements = load_requirements(root)
     leaf_levels = _leaf_levels(config)
     seen_markers: set[tuple[str, str, str]] = set()
+    scanned_files: set[tuple[str, Path]] = set()
     for scope, mapping in config.get("scopes", {}).items():
         if not isinstance(mapping, dict):  # pragma: no branch - malformed scope is defensive input
             continue
@@ -1036,6 +1087,10 @@ def marker_scan(root: Path) -> dict[str, Any]:
                 for file in candidate_files:
                     if not file.is_file() or "__pycache__" in file.parts:
                         continue
+                    scan_key = (_kind, file.resolve())
+                    if scan_key in scanned_files:
+                        continue
+                    scanned_files.add(scan_key)
                     text = file.read_text(encoding="utf-8", errors="ignore")
                     for match in pattern.finditer(text):
                         marker = match.group("marker")
@@ -1165,6 +1220,7 @@ def validate_requirements(
     for level in ("StRS", "SwRS"):
         if level.casefold() not in normalized_schemas:
             raise RequirementError(f"missing requirement schema for type {level}: {schemas_dir}")
+    link_context = _FileLinkContext()
     for identifier, (file, data, text) in requirements.items():
         if prose and body_is_unfilled(text):
             errors.append(f"W002 {file}: body has no filled EARS expression")
@@ -1186,6 +1242,7 @@ def validate_requirements(
                     file,
                     bundle_root=root,
                     project_root=project_root,
+                    _context=link_context,
                 ):
                     errors.append(f"{diagnostic.code} {file}: {diagnostic.message}")
         errors.extend(f"{file}: missing {field}" for field in fields if not data.get(field))

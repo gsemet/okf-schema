@@ -25,10 +25,45 @@ Read the applicable guideline before changing its scope:
 
 | Guideline | Applies to |
 |-----------|------------|
+| [`.github/guidelines/product-maintenance.guidelines.md`](.github/guidelines/product-maintenance.guidelines.md) | Every public behavior change: runtime, human docs, standalone agent skills, scaffold guidance, requirements, examples, tests and packaging |
+| [`src/okf_schema/data/requirements/guidelines/requirements.guidelines.md`](src/okf_schema/data/requirements/guidelines/requirements.guidelines.md) | Baseline requirements workflow: this project follows the same guideline it installs into other projects |
 | [`requirements/guidelines/requirements.guidelines.md`](requirements/guidelines/requirements.guidelines.md) | Requirement documents, `okfreq`, requirement traceability, and generated requirement artifacts |
 | [`.github/guidelines/git-commit-message.guidelines.md`](.github/guidelines/git-commit-message.guidelines.md) | Every Git commit message |
 | [`.github/guidelines/python-unittest.guidelines.md`](.github/guidelines/python-unittest.guidelines.md) | Python unit tests and their fixtures |
 | [`.github/guidelines/python-module-documentation.guidelines.md`](.github/guidelines/python-module-documentation.guidelines.md) | Python Docstring and typing rules |
+
+---
+
+## Product consistency contract
+
+Read the [product maintenance guideline](.github/guidelines/product-maintenance.guidelines.md)
+for every feature or behavior fix, including changes limited to packaged content.
+
+- **Human documentation:** `docs/source/` teaches users purpose, commands, outputs,
+  failure handling and limits. `README.md` routes readers to maintained entrypoints.
+- **Standalone agent skills:** `skills/` is packaged and installed outside this
+  repository. Agents must be able to operate from the installed CLI, their target
+  project and bundled references, without this tool's code or documentation site.
+  Route detail from each `SKILL.md`; verify every resource is shipped and reachable.
+- **Scaffold guidance:** `src/okf_schema/data/` supplies new-project defaults.
+  Preserve existing project policy when installing or initializing.
+- **Own requirements:** first read the [shipped requirements guideline](src/okf_schema/data/requirements/guidelines/requirements.guidelines.md),
+  then the [local overlay](requirements/guidelines/requirements.guidelines.md).
+  `requirements/` states observable contracts and links real
+  source/test evidence. Preserve identities, regenerate owned fields, and exercise
+  applicable features rather than maintaining nominal coverage alone. Run
+  `okfreq lint requirements` to refresh tier/directory navigation; append meaningful
+  authored changes and decisions to `requirements/tiers/log.md`.
+- **Concrete examples:** `examples/` demonstrates supported workflows and failures.
+  Keep generators, checked-in outputs and executable scenarios synchronized.
+- **Verification:** `tests/`, `justfile`, packaging and CI keep these surfaces working.
+
+For every change, review all six surfaces and update affected ones in the same
+change. Explain concrete reasons for any unaffected surface in the change summary.
+Maintain the [feature/evidence map](docs/source/explanation/project-feature-coverage.md).
+Use disposable examples for alternate policies, exemptions and lifecycle operations;
+do not invent live approvals or traceability evidence. Run `just preflight` and
+review its generated diffs before reporting completion.
 
 ---
 

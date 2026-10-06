@@ -8,11 +8,11 @@ standard validator continues to enforce only the schema's normal keywords.
 from __future__ import annotations
 
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path, PureWindowsPath
 from typing import Any, Literal
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 
 RESOLUTIONS = frozenset(
     {
@@ -35,9 +35,74 @@ class FileLinkDiagnostic:
     """
 
     severity: Literal["error", "warning"]
-    code: str
+    code: Literal["E10", "W15"]
     message: str
     field_path: str
+
+
+@dataclass(frozen=True)
+class ParsedFileLink:
+    """Parsed target components from a plain or wikilink value."""
+
+    target: str
+    query: str | None
+    fragment: str | None
+    label: str | None
+
+
+@dataclass(frozen=True)
+class FileLinkResult:
+    """A structured result for one annotated frontmatter value.
+
+    .. versionadded:: 0.14.0
+
+    .. versionchanged:: 0.14.0
+        ``value_identity`` is an escaped JSON Pointer, distinct from the
+        human-readable ``field_path``. Stem indexes are scoped to one inspection.
+
+    ``status`` is ``"valid"`` for a resolved target, ``"invalid"`` for an
+    ``E10`` result, and ``"unavailable"`` for a skipped ``W15`` check.
+    ``value_identity`` is the stable JSON Pointer identity used by consumers;
+    ``array_index`` is populated separately for an annotated array item.
+    """
+
+    value: Any
+    value_identity: str
+    field_path: str
+    array_index: int | None
+    syntax: str | None
+    resolution: str | None
+    target: str | None
+    normalized_target: str | None
+    resolved_path: Path | None
+    query: str | None
+    fragment: str | None
+    label: str | None
+    status: Literal["valid", "invalid", "unavailable"]
+    code: Literal["E10", "W15"] | None
+    severity: Literal["error", "warning"] | None
+    message: str
+
+
+@dataclass(frozen=True)
+class _ResolvedFileLink:
+    path: Path
+    normalized_target: str
+
+
+@dataclass
+class _FileLinkContext:
+    """Cache a bundle's Markdown candidates for one validation campaign only."""
+
+    stems: dict[Path, dict[str, list[Path]]] = field(default_factory=dict)
+
+    def candidates(self, root: Path, target: str) -> list[Path]:
+        if root not in self.stems:
+            index: dict[str, list[Path]] = {}
+            for candidate in root.rglob("*.md"):
+                index.setdefault(candidate.stem, []).append(candidate)
+            self.stems[root] = index
+        return self.stems[root].get(target, [])
 
 
 def _field_path(path: tuple[str | int, ...]) -> str:
@@ -48,6 +113,10 @@ def _field_path(path: tuple[str | int, ...]) -> str:
         else:
             result += f".{part}" if result else part
     return result or "<root>"
+
+
+def _value_identity(path: tuple[str | int, ...]) -> str:
+    return "".join("/" + str(part).replace("~", "~0").replace("/", "~1") for part in path)
 
 
 def _resolve_local_ref(root_schema: dict[str, Any], ref: str) -> Any | None:
@@ -86,7 +155,9 @@ def _branch_applies(
     if validator is None:
         return False
     try:
-        return bool(validator.evolve(schema=branch).is_valid(value))
+        # Descend from the root validator so local references keep their scope
+        # and $ref siblings remain conjunctive constraints, not dict overrides.
+        return next(validator.descend(value, branch), None) is None
     except Exception:  # noqa: BLE001
         return False
 
@@ -99,7 +170,7 @@ def _iter_annotations(
     root_schema: dict[str, Any] | None = None,
     validator: Any | None = None,
     active_refs: frozenset[tuple[str, int]] = frozenset(),
-) -> Iterator[tuple[Any, Any, str]]:
+) -> Iterator[tuple[Any, Any, tuple[str | int, ...], int | None]]:
     if not isinstance(schema, dict):
         return
 
@@ -134,7 +205,12 @@ def _iter_annotations(
         return
 
     if "x-okf-link" in schema:
-        yield schema["x-okf-link"], value, _field_path(path)
+        yield (
+            schema["x-okf-link"],
+            value,
+            path,
+            path[-1] if path and isinstance(path[-1], int) else None,
+        )
 
     properties = schema.get("properties")
     if isinstance(properties, dict) and isinstance(value, dict):
@@ -202,6 +278,18 @@ def _iter_annotations(
                     active_refs=active_refs,
                 )
 
+    if "if" in schema:
+        keyword = "then" if _branch_applies(validator, schema["if"], value) else "else"
+        if keyword in schema:
+            yield from _iter_annotations(
+                schema[keyword],
+                value,
+                path,
+                root_schema=root_schema,
+                validator=validator,
+                active_refs=active_refs,
+            )
+
 
 def _error(field_path: str, message: str) -> FileLinkDiagnostic:
     return FileLinkDiagnostic("error", "E10", f"{message} at '{field_path}'", field_path)
@@ -242,23 +330,40 @@ def _parse_value(
     value: Any,
     syntax: str,
     field_path: str,
-) -> str | FileLinkDiagnostic:
+) -> ParsedFileLink | FileLinkDiagnostic:
     if not isinstance(value, str):
         return _error(field_path, "file-link value must be a string")
-    if syntax == "plain":
-        return value
-    if not value.startswith("[[") or not value.endswith("]]"):
+    label: str | None = None
+    target_with_suffix = value
+    if syntax == "wikilink":
+        if not value.startswith("[[") or not value.endswith("]]"):
+            return _error(
+                field_path,
+                "wikilink value must use [[target]], [[target#fragment]], "
+                "or [[target|label]] syntax",
+            )
+        content = value[2:-2]
+        target_with_suffix, separator, label_value = content.partition("|")
+        label = label_value if separator else None
+        target_with_suffix = target_with_suffix.strip()
+
+    fragment_index = target_with_suffix.find("#")
+    path_and_query = (
+        target_with_suffix if fragment_index < 0 else target_with_suffix[:fragment_index]
+    )
+    fragment = None if fragment_index < 0 else target_with_suffix[fragment_index + 1 :]
+    query_index = path_and_query.find("?")
+    target = path_and_query if query_index < 0 else path_and_query[:query_index]
+    query = None if query_index < 0 else path_and_query[query_index + 1 :]
+    target = target.strip()
+    if "\x00" in target:
+        return _error(field_path, "file-link target contains a null character")
+    if not target:
         return _error(
             field_path,
-            "wikilink value must use [[target]], [[target#fragment]], or [[target|label]] syntax",
+            "wikilink target is empty" if syntax == "wikilink" else "file-link target is empty",
         )
-
-    content = value[2:-2]
-    target_with_fragment = content.split("|", 1)[0].strip()
-    target = target_with_fragment.split("#", 1)[0].strip()
-    if not target:
-        return _error(field_path, "wikilink target is empty")
-    return target
+    return ParsedFileLink(target, query, fragment, label)
 
 
 def _root_path(path: Path | None) -> Path | None:
@@ -300,14 +405,14 @@ def _reject_absolute(target: str, field_path: str) -> FileLinkDiagnostic | None:
     return None
 
 
-def _check_exact_target(
+def _resolve_exact_target(
     target: str,
     resolution: str,
     document_path: Path,
     bundle_root: Path | None,
     project_root: Path | None,
     field_path: str,
-) -> FileLinkDiagnostic | None:
+) -> _ResolvedFileLink | FileLinkDiagnostic:
     absolute_error = _reject_absolute(target, field_path)
     if absolute_error is not None:
         return absolute_error
@@ -326,19 +431,25 @@ def _check_exact_target(
         )
 
     filename = f"{target}.md" if resolution == "bundle-relative-stem" else target
-    candidate = (root / filename).resolve(strict=False)
+    try:
+        candidate = (root / filename).resolve(strict=False)
+        is_file = candidate.is_file()
+    except (OSError, RuntimeError) as exc:
+        return _skipped(field_path, f"target '{target}' could not be inspected: {exc}")
     if resolution != "document-relative" and not _within(candidate, root):
         return _error(field_path, f"target '{target}' escapes its {resolution} root")
-    if not candidate.is_file():
+    if not is_file:
         return _error(field_path, f"target '{target}' does not resolve to a file")
-    return None
+    normalized_target = f"{target}.md" if resolution == "bundle-relative-stem" else target
+    return _ResolvedFileLink(candidate, normalized_target)
 
 
-def _check_filename_stem(
+def _resolve_filename_stem(
     target: str,
     bundle_root: Path | None,
     field_path: str,
-) -> FileLinkDiagnostic | None:
+    context: _FileLinkContext | None = None,
+) -> _ResolvedFileLink | FileLinkDiagnostic:
     absolute_error = _reject_absolute(target, field_path)
     if absolute_error is not None:
         return absolute_error
@@ -350,29 +461,242 @@ def _check_filename_stem(
         )
 
     matches: list[Path] = []
-    for candidate in root.rglob("*.md"):
-        if candidate.stem != target or not candidate.is_file():
-            continue
+    escaped = False
+    unavailable = False
+    try:
+        candidates = (context or _FileLinkContext()).candidates(root, target)
+    except OSError as exc:
+        return _skipped(field_path, f"bundle could not be inspected: {exc}")
+    for candidate in candidates:
         try:
+            if not candidate.is_file():
+                continue
             resolved = candidate.resolve()
-        except OSError:
+        except (OSError, RuntimeError):
+            unavailable = True
             continue
         if _within(resolved, root):
             matches.append(resolved)
+        else:
+            escaped = True
 
     if not matches:
-        return _skipped(
+        if unavailable:
+            return _skipped(
+                field_path,
+                f"the matching Markdown file for '{target}' could not be resolved; "
+                "the workspace may be unavailable",
+            )
+        return _error(
             field_path,
-            f"no Markdown file with basename '{target}' was found in the bundle; "
-            "the workspace may be unavailable",
+            f"filename stem '{target}' escapes its filename-stem root"
+            if escaped
+            else f"filename stem '{target}' was not found",
         )
+    matches = list(dict.fromkeys(matches))
     if len(matches) > 1:
         locations = ", ".join(str(path.relative_to(root)) for path in sorted(matches))
         return _error(
             field_path,
             f"filename stem '{target}' is ambiguous in the bundle ({locations})",
         )
-    return None
+    return _ResolvedFileLink(matches[0], target)
+
+
+def _check_exact_target(
+    target: str,
+    resolution: str,
+    document_path: Path,
+    bundle_root: Path | None,
+    project_root: Path | None,
+    field_path: str,
+) -> FileLinkDiagnostic | None:
+    result = _resolve_exact_target(
+        target,
+        resolution,
+        document_path,
+        bundle_root,
+        project_root,
+        field_path,
+    )
+    return result if isinstance(result, FileLinkDiagnostic) else None
+
+
+def _check_filename_stem(
+    target: str,
+    bundle_root: Path | None,
+    field_path: str,
+) -> FileLinkDiagnostic | None:
+    result = _resolve_filename_stem(target, bundle_root, field_path)
+    return result if isinstance(result, FileLinkDiagnostic) else None
+
+
+def _result_for_diagnostic(
+    value: Any,
+    value_identity: str,
+    field_path: str,
+    array_index: int | None,
+    *,
+    syntax: str | None,
+    resolution: str | None,
+    target: str | None,
+    query: str | None = None,
+    fragment: str | None = None,
+    label: str | None = None,
+    diagnostic: FileLinkDiagnostic,
+) -> FileLinkResult:
+    return FileLinkResult(
+        value=value,
+        value_identity=value_identity,
+        field_path=field_path,
+        array_index=array_index,
+        syntax=syntax,
+        resolution=resolution,
+        target=target,
+        normalized_target=target,
+        resolved_path=None,
+        query=query,
+        fragment=fragment,
+        label=label,
+        status="unavailable" if diagnostic.code == "W15" else "invalid",
+        code=diagnostic.code,
+        severity=diagnostic.severity,
+        message=diagnostic.message,
+    )
+
+
+def inspect_file_links(
+    frontmatter: dict[str, Any],
+    schema: dict[str, Any],
+    document_path: Path,
+    *,
+    bundle_root: Path | None = None,
+    project_root: Path | None = None,
+    _context: _FileLinkContext | None = None,
+) -> list[FileLinkResult]:
+    """Inspect every ``x-okf-link`` value, including successful values.
+
+    .. versionadded:: 0.14.0
+
+    Args:
+        frontmatter:
+            Parsed document frontmatter to inspect.
+        schema:
+            JSON Schema containing optional ``x-okf-link`` annotations.
+        document_path:
+            Markdown document whose frontmatter is being checked.
+        bundle_root:
+            Bundle root for bundle-relative and filename-stem references.
+        project_root:
+            Explicit project root for project-relative references. When it is
+            unavailable, the containing Git root of *document_path* is used.
+
+    Returns:
+        One structured result for each applicable annotated value. Successful
+        results include their resolved path and parsed suffix components.
+    """
+    context = _context or _FileLinkContext()
+    results: list[FileLinkResult] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    try:
+        validator: Any | None = Draft202012Validator(
+            schema,
+            format_checker=FormatChecker(),
+        )
+    except Exception:  # noqa: BLE001
+        validator = None
+    for annotation, value, path, array_index in _iter_annotations(
+        schema,
+        frontmatter,
+        validator=validator,
+    ):
+        field_path = _field_path(path)
+        value_identity = _value_identity(path)
+        parsed_annotation = _parse_annotation(annotation, field_path)
+        if isinstance(parsed_annotation, FileLinkDiagnostic):
+            results.append(
+                _result_for_diagnostic(
+                    value,
+                    value_identity,
+                    field_path,
+                    array_index,
+                    syntax=None,
+                    resolution=None,
+                    target=None,
+                    diagnostic=parsed_annotation,
+                )
+            )
+            continue
+        resolution, syntax = parsed_annotation
+        parsed_value = _parse_value(value, syntax, field_path)
+        if isinstance(parsed_value, FileLinkDiagnostic):
+            results.append(
+                _result_for_diagnostic(
+                    value,
+                    value_identity,
+                    field_path,
+                    array_index,
+                    syntax=syntax,
+                    resolution=resolution,
+                    target=None,
+                    diagnostic=parsed_value,
+                )
+            )
+            continue
+        key = (value_identity, resolution, syntax, parsed_value.target)
+        if key in seen:
+            continue
+        seen.add(key)
+        resolved = (
+            _resolve_filename_stem(parsed_value.target, bundle_root, field_path, context)
+            if resolution == "filename-stem"
+            else _resolve_exact_target(
+                parsed_value.target,
+                resolution,
+                document_path,
+                bundle_root,
+                project_root,
+                field_path,
+            )
+        )
+        if isinstance(resolved, FileLinkDiagnostic):
+            results.append(
+                _result_for_diagnostic(
+                    value,
+                    value_identity,
+                    field_path,
+                    array_index,
+                    syntax=syntax,
+                    resolution=resolution,
+                    target=parsed_value.target,
+                    query=parsed_value.query,
+                    fragment=parsed_value.fragment,
+                    label=parsed_value.label,
+                    diagnostic=resolved,
+                )
+            )
+            continue
+        results.append(
+            FileLinkResult(
+                value=value,
+                value_identity=value_identity,
+                field_path=field_path,
+                array_index=array_index,
+                syntax=syntax,
+                resolution=resolution,
+                target=parsed_value.target,
+                normalized_target=resolved.normalized_target,
+                resolved_path=resolved.path,
+                query=parsed_value.query,
+                fragment=parsed_value.fragment,
+                label=parsed_value.label,
+                status="valid",
+                code=None,
+                severity=None,
+                message="",
+            )
+        )
+    return results
 
 
 def check_file_links(
@@ -382,6 +706,7 @@ def check_file_links(
     *,
     bundle_root: Path | None = None,
     project_root: Path | None = None,
+    _context: _FileLinkContext | None = None,
 ) -> list[FileLinkDiagnostic]:
     """Check all ``x-okf-link`` annotations that apply to *frontmatter*.
 
@@ -401,9 +726,9 @@ def check_file_links(
             unavailable, the containing Git root of *document_path* is used.
 
     Returns:
-        Errors for malformed annotations, missing exact targets, ambiguous
-        stems, and root escapes; warnings for checks that cannot be resolved
-        without an available root or workspace.
+        Errors for malformed annotations, missing exact targets, missing or
+        ambiguous stems, and root escapes; warnings for checks that cannot be
+        resolved because a root or matching candidate is unavailable.
 
     .. versionchanged:: 0.13.0
         Local ``$ref`` targets and applicable union branches are followed
@@ -415,41 +740,15 @@ def check_file_links(
         []
     """
     # @implements_req SwRS-OKFSCHEMA-CORE-007
-    diagnostics: list[FileLinkDiagnostic] = []
-    seen: set[tuple[str, str, str]] = set()
-    try:
-        validator: Any | None = Draft202012Validator(schema)
-    except Exception:  # noqa: BLE001
-        validator = None
-    for annotation, value, field_path in _iter_annotations(
-        schema,
-        frontmatter,
-        validator=validator,
-    ):
-        parsed_annotation = _parse_annotation(annotation, field_path)
-        if isinstance(parsed_annotation, FileLinkDiagnostic):
-            diagnostics.append(parsed_annotation)
-            continue
-        resolution, syntax = parsed_annotation
-        parsed_value = _parse_value(value, syntax, field_path)
-        if isinstance(parsed_value, FileLinkDiagnostic):
-            diagnostics.append(parsed_value)
-            continue
-        key = (field_path, resolution, parsed_value)
-        if key in seen:
-            continue
-        seen.add(key)
-        if resolution == "filename-stem":
-            diagnostic = _check_filename_stem(parsed_value, bundle_root, field_path)
-        else:
-            diagnostic = _check_exact_target(
-                parsed_value,
-                resolution,
-                document_path,
-                bundle_root,
-                project_root,
-                field_path,
-            )
-        if diagnostic is not None:
-            diagnostics.append(diagnostic)
-    return diagnostics
+    return [
+        FileLinkDiagnostic(result.severity, result.code, result.message, result.field_path)
+        for result in inspect_file_links(
+            frontmatter,
+            schema,
+            document_path,
+            bundle_root=bundle_root,
+            project_root=project_root,
+            _context=_context,
+        )
+        if result.severity is not None and result.code is not None
+    ]

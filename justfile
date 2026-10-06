@@ -46,24 +46,24 @@ test-fast:
 # Format code with ruff
 [group("format")]
 style:
-    {{ uv_run }} ruff format src tests
-    {{ uv_run }} ruff check --fix src tests
+    {{ uv_run }} ruff format src tests examples/okfreq-examples/showcase.py
+    {{ uv_run }} ruff check --fix src tests examples/okfreq-examples/showcase.py
 
 # Check formatting without modifying files
 [group("format")]
 style-check:
-    {{ uv_run }} ruff format --check src tests
-    {{ uv_run }} ruff check src tests
+    {{ uv_run }} ruff format --check src tests examples/okfreq-examples/showcase.py
+    {{ uv_run }} ruff check src tests examples/okfreq-examples/showcase.py
 
 # Run linters (ruff)
 [group("lint")]
 lint:
-    {{ uv_run }} ruff check src tests
+    {{ uv_run }} ruff check src tests examples/okfreq-examples/showcase.py
 
 # Validate the repository's generated okfreq requirement layer
 [group("lint")]
 requirements-lint:
-    {{ uv_run }} okfreq lint requirements --check-links --project-root .
+    {{ uv_run }} okfreq lint requirements --check --check-links --project-root .
     {{ uv_run }} okfreq update-coverage requirements --check
 
 # Generate downloadable requirements traceability artifacts
@@ -146,7 +146,9 @@ refresh-okfkb-example:
 
 [group("build")]
 refresh-okfreq-examples:
-    rm -rf examples/okfreq-examples/requirements/
+    {{ uv_run }} python examples/okfreq-examples/showcase.py
+    # Rebuild fixtures while retaining their authored change history.
+    {{ uv_run }} python -c 'import shutil; from pathlib import Path; root=Path("examples/okfreq-examples/requirements"); parents=[root, root/"tiers"]; keep={root/"tiers", root/"tiers/log.md"}; entries=[p for parent in parents if parent.is_dir() for p in parent.iterdir() if p not in keep]; [(shutil.rmtree(p) if p.is_dir() and not p.is_symlink() else p.unlink()) for p in entries]'
     {{ uv_run }} okfreq init --force examples/okfreq-examples/requirements/
     {{ uv_run }} python -c 'from pathlib import Path; p=Path("examples/okfreq-examples/requirements/config.yml"); t=p.read_text(); t=t.replace("  default: {source_dirs: [src], test_dirs: [tests]}", "  Core: {id_token: CORE, source_dirs: [src], test_dirs: [tests]}"); assert "  Core: {id_token: CORE, source_dirs: [src], test_dirs: [tests]}" in t; p.write_text(t)'
     test -f examples/okfreq-examples/requirements/tiers/strs/StRS-CORE-001.md || \

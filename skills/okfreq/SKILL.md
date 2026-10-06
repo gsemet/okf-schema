@@ -8,6 +8,8 @@ metadata:
 
 # okfreq
 
+<!-- @implements_req SwRS-OKFSCHEMA-OKFREQ-008 -->
+
 Use `okfreq` to maintain a living requirements specification beside the code.
 Its goal is to keep stakeholder intent connected to observable software
 behavior, implementation, tests, and reviewable gap reports as the project
@@ -17,6 +19,18 @@ appropriate workflow.
 This skill explains the **requirements and traceability lifecycle**. Use the
 `okf-schema` skill for generic OKF conformance, schemas, frontmatter mechanics,
 or implementation details of the underlying tool.
+
+## Progressive references
+
+Keep this entrypoint as the first read. The packaged operations reference is
+self-contained: agents need the installed CLI and target project, not this
+package's source code or documentation website. For local policy, a local
+`<bundle>/guidelines/requirements.guidelines.md` always takes precedence.
+
+| Need | Read |
+|---|---|
+| Commands, backfilling existing features, harness setup, reports, or troubleshooting | [Standalone operations](references/operations.md) |
+| Baseline authoring and validation when no local guideline exists | [Requirements guidelines](references/requirements.guidelines.md) |
 
 ## Installation
 
@@ -153,17 +167,32 @@ properties:
       type: array
       items:
          type: string
-         x-okf-link: {resolution: project-relative, syntax: plain}
+         x-okf-link:
+            resolution: project-relative
+            syntax: plain
+            basename_marker: '@implements_req'
+            id_marker: id
+            show_line_number: true
    tested_in_files:
       type: array
       items:
          type: string
-         x-okf-link: {resolution: project-relative, syntax: plain}
+         x-okf-link:
+            resolution: project-relative
+            syntax: plain
+            basename_marker: '@tests_req'
+            id_marker: id
+            show_line_number: true
    derives_from:
       type: array
       items:
          type: string
-         x-okf-link: {resolution: filename-stem, syntax: plain}
+         x-okf-link:
+            resolution: filename-stem
+            syntax: plain
+            id_marker: id
+            tooltip_shows_fields: [description]
+            preview_shows_fields: [description]
    external_id:
       type: string
 ```
@@ -186,6 +215,29 @@ With this metadata, a consumer can open `src/report/export.py` and
 Markdown file with that exact stem, and leave `DOORS-4821` as an external
 identifier. The fields are still ordinary strings and lists of strings.
 
+The optional navigation hints make the next editor action deterministic:
+`basename_marker` records the marker prefix to search for in the resolved source
+or test file, and `id_marker: id` says to use the requirement's `id` value as
+the marker identity. A consumer can then find `@implements_req <id>` or
+`@tests_req <id>` and open directly on that line. For a requirement link,
+`id_marker: id` identifies the target frontmatter `id` line. A basename means
+the filename without its extension. These hints are `x-okf-link` metadata for
+consumers; `okfreq --check-links` verifies target files but does not scan marker
+lines or treat them as proof of implementation or test success.
+
+New bundles created by `okfreq init` also include advisory display hints:
+`tooltip_shows_fields` and `preview_shows_fields` suggest that a consumer show
+the linked requirement's `description`, while `show_line_number` requests the
+source or test marker line in a navigation target. The CLI does not render
+tooltips or previews itself; editors and other consumers decide how to present
+these hints. Existing schemas are preserved and are not migrated automatically.
+
+When an agent needs structured navigation data, use
+`okf_schema.api.inspect_file_links` to obtain successful resolutions and
+diagnostics together. Use `check_file_links` for validation-only workflows.
+Neither API executes tests or treats a marker as proof beyond the configured
+traceability report.
+
 `implemented_in_files` and `tested_in_files` use exact project-relative paths.
 `derives_from`, `derived_by`, and `depends_on` use case-sensitive Markdown
 filename stems without `.md`. Preserve the existing requirement-ID graph
@@ -201,14 +253,18 @@ okfreq lint requirements --check-links --project-root .
 ```
 
 Checks are off by default. Explicit project roots take precedence over Git
-roots; the CLI cannot infer editor workspaces. Missing exact files and
-ambiguous bundle-local stems fail with `E10`; unavailable roots and unresolved
-workspace stems produce explicit `W15` skips. A skipped check is not a verified
+roots; the CLI cannot infer editor workspaces. Missing exact files and missing or
+ambiguous bundle-local stems fail with `E10`; unavailable roots and inaccessible
+candidates produce explicit `W15` skips. A skipped check is not a verified
 link. Keep syntax separate from resolution: a `wikilink` can contain a heading
 or label, while these generated fields use `plain` strings. Use the
 `okf-schema` skill for the full annotation contract and custom scalar links.
 
 ## Author and implement requirements
+
+Use the frontmatter `title` as the first Markdown heading (`## Title`),
+keeping them synchronized when renaming a requirement. EARS is the statement
+format, not a generic document heading.
 
 1. Create or confirm the stakeholder outcome first. An StRS needs one
    stakeholder-observable normative behavior, the stakeholder's user need, and
@@ -253,3 +309,13 @@ lifecycle changes explicitly approved, validation and test results, and any
 remaining gaps. Do not claim complete traceability when a non-exempt leaf lacks
 source or test evidence, markers reference unknown IDs, or validation/tests
 failed or did not run.
+
+## Maintain OKF navigation and history
+
+After editing requirements run `okfreq lint <bundle>` to refresh marked indexes
+at the tiers root and every tier/scope directory. Preserve authored text outside
+the generated blocks and the optional bundle-root overview. Use `--diff` for a
+read-only preview and `--check` for CI; lint otherwise writes generated navigation.
+Append meaningful changes, affected IDs, rationale and actual verification to
+`<bundle>/tiers/log.md`, preserving history. Logs are authored, never generated.
+Read the bundled operations reference for marker delimiters and exact commands.

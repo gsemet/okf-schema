@@ -21,7 +21,7 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFKB-006
 ---
 
-## EARS Expression
+## Maintain trustworthy engineering knowledge
 
 ### Normative behavior
 

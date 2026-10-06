@@ -19,8 +19,8 @@ requirements/
     ├── _schema/base.schema.yaml
     ├── _schema/strs.schema.yaml
     ├── _schema/swrs.schema.yaml
-    ├── index.md
-    ├── log.md
+    ├── index.md               generated navigation block + authored introduction
+    ├── log.md                 authored dated change history
     ├── strs/                  stakeholder requirements
     └── swrs/                  software requirements
 
@@ -65,7 +65,7 @@ scopes:
 | `id_policy` | Allocation strategy. `scope-prefix-sequence` is currently supported; `okfreq new` rejects unsupported values. Existing documents are never renumbered. |
 | `strs_test_coverage_mode` | StRS test-coverage rule. Choose `linked-swrs` or `linked-swrs-and-validation-test`; the default is `linked-swrs`. |
 | `lifecycle.values` | Allowed lifecycle values. The built-in values distinguish draft, proposed, approved, deprecated, and superseded requirements. |
-| `markers` | Implementation/test marker keywords and the regular expression used to recognise IDs. Use a pattern with an `id` named group, or make the entire match the ID. |
+| `markers` | Implementation/test marker keywords and the regular expression used to recognise IDs. The entire match is the requirement ID. |
 | `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `implemented_in_files`, and `tested_in_files`; unsupported values fail explicitly. |
 | `scopes` | Per-scope ID token, requirement subfolder, and source/test ownership. Keep `source_dirs` and `test_dirs` separate. |
 

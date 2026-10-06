@@ -1,5 +1,8 @@
 # Maintain an OKFKB with agent skills
 
+For the concepts, illustrations and worked example, start with the
+[self-contained OKFKB tutorial](../tutorials/okfkb-workflow.md).
+
 OKFKB combines deterministic CLI operations with agent skills that understand
 how empirical knowledge matures. The CLI validates files and maintains indexes;
 the skills decide whether an observation should become a Finding, when evidence
@@ -23,17 +26,17 @@ deployed into a project with `okfkb install-skills`.
 
 ## Where the skills are installed
 
-When you run `okfkb install-skills /path/to/project`, the skills are copied into
-the target project's agent-customization directory:
+Choose a destination your agent discovers:
 
-```text
-/path/to/project/.agents/skills/
-├── okfkb-record-findings/SKILL.md
-└── okfkb-distill/SKILL.md
+```bash
+okfkb install-skills --local-agents   # .agents/skills/
+okfkb install-skills --local-copilot  # .github/skills/
 ```
 
-If `.agents/` is absent but `.github/` already exists, installation uses
-`.github/skills/` instead. When neither exists, it creates `.agents/`.
+Each command installs the full family: `okfkb`, `okfkb-record-findings`,
+`okfkb-distill` and `okfkb-gardening`. Without a destination selector the default
+is `~/.copilot/skills`. An explicit destination is the skills directory itself;
+it is not a project root from which another directory is inferred.
 
 This keeps the skills available to coding agents working in that project. The
 knowledge documents remain in the project knowledge base; installing the skills
@@ -46,16 +49,16 @@ workflows:
 
 ```bash
 okfkb init knowledge
-okfkb install-skills .
+okfkb install-skills --local-agents
 ```
 
 Ensure the project `AGENTS.md` points to its KB guidelines and prescribed
 maintenance commands. The skills read these local rules before mutating the KB;
 they do not assume every project uses the same `just`, `make`, or shell targets.
 
-Make the repository-level `okfkb` and `okfkb-gardening` skills available through
-your agent environment. The former teaches and routes; the latter performs the
-periodic autonomous pass.
+The installed `okfkb` skill teaches and routes; `okfkb-gardening` performs
+the explicitly requested autonomous pass. The scaffold does not install a local
+guideline file; create and register project guidance separately.
 
 ## 2. Capture discoveries while working
 

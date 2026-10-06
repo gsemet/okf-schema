@@ -21,7 +21,7 @@ tested_in_files:
 - tests/rust_export_test.rs
 ---
 
-## EARS Expression
+## Format Rust CSV rows
 
 ### Normative behavior
 

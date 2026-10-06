@@ -21,7 +21,7 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-005
 ---
 
-## EARS Expression
+## Maintain and inspect OKF bundles
 
 ### Normative behavior
 

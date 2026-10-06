@@ -65,7 +65,6 @@ def init(path: str, force: bool) -> None:
         force:
             Whether to overwrite files that already exist.
 
-    # @implements_req SwRS-OKFSCHEMA-OKFKB-002
     """
     target = Path(path)
     try:

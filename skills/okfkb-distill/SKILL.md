@@ -5,6 +5,17 @@ description: 'Interactively consolidate OKF Findings, resolve contradictions, an
 
 # okfkb-distill
 
+<!-- @implements_req SwRS-OKFSCHEMA-OKFKB-005 -->
+
+This is a specialized workflow under the `okfkb` skill. Load the `okfkb` skill
+first, then locate its own `references/` resources by skill name rather than
+assuming that installed skills share a directory:
+
+- `references/consolidation-judgment.md` for contradiction, supersession,
+  promotion, and stable-document updates.
+- `references/lifecycle-and-taxonomy.md` when choosing a target document type or
+  lifecycle transition.
+
 ## Agent configuration directory precedence
 
 When resolving project instructions or guidelines, use `.agents/` if it exists.

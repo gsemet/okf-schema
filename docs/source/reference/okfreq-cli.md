@@ -26,7 +26,7 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 | Command | Purpose |
 |---|---|
 | `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation links, and optionally annotated file targets. Prose and skipped-root findings are advisory. |
-| `okfreq lint [PATH] [--prose] [--check-links] [--project-root DIR]` | Run the same read-only structural checks with optional EARS prose and file-link checks. |
+| `okfreq lint [PATH] [--prose] [--check-links] [--project-root DIR] [--check|--diff]` | Validate, then regenerate requirement-directory navigation. `--check` fails on stale indexes without writing; `--diff` previews changes. |
 | `okfreq index [PATH]` | Print the stable requirement ID index. |
 | `okfreq search QUERY [PATH]` | Search IDs, titles, and descriptions. |
 | `okfreq in-file FILE` | Print one requirement document. |
@@ -39,10 +39,47 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 file, non-leaf markers, and scan warnings. Marker spellings and the ID regular
 expression come from `config.yml`.
 
+Every non-reserved Markdown document under `tiers/` must have mapping
+frontmatter and a non-empty string `id`. Missing or malformed documents fail
+with their file path before indexing or reporting; they are never silently
+omitted from requirement counts. Repair them rather than deleting them to
+make validation pass. `index.md`, `log.md`, schemas and guidelines are excluded.
+
+### Maintain requirement navigation and history
+
+`okfreq lint requirements` validates first, then creates or refreshes
+`tiers/index.md`, every configured tier's index, and every scope/ancestor index
+needed to reach the requirements. For example, `tiers/swrs/okfreq/index.md`
+lists the scope's requirements with their IDs, titles and descriptions; parent
+indexes link to child indexes.
+
+```bash
+okfreq lint requirements --diff   # preview, no writes
+okfreq lint requirements          # refresh generated navigation
+okfreq lint requirements --check  # fail if navigation is missing or stale
+```
+
+The generator owns only the block between `<!-- okfreq:index:start -->` and
+`<!-- okfreq:index:end -->`. It preserves all authored content outside the block,
+including frontmatter and existing introductions. A new block is appended to an
+existing index without replacing its content. Broken delimiters fail before any
+index is written. Requirement mutations and coverage generation remain separate.
+`okfreq index` continues to print requirement IDs; it does not generate files.
+
+An optional `requirements/index.md` is a human-authored overview and is preserved.
+Agents maintain dated change records in `requirements/tiers/log.md` (singular):
+affected requirements, rationale, decisions and verification evidence. Lint
+never rewrites logs or invents change history.
+
 ### Check annotated file targets
 
 `okfreq init` writes `x-okf-link` annotations into the generated requirement
-schemas, but checking is deliberately opt-in:
+schemas. The defaults include filename-stem links for requirement relationships,
+project-relative links for generated source and test evidence, marker navigation
+hints, requirement description hints for tooltips/previews, and line-number
+hints for source/test markers. These presentation hints are advisory: `okfreq`
+does not render the UI. Existing schemas are preserved and are not migrated.
+Checking targets is deliberately opt-in:
 
 ```bash
 okfreq validate . --check-links --project-root .
@@ -55,17 +92,19 @@ implicit root. Requirement relationships use case-sensitive Markdown filename
 stems; source and test evidence uses exact project-relative paths. `E10` reports
 malformed annotations, missing exact files, root escapes, and ambiguous stems.
 `W15` reports a skipped check when a required root or filename-stem workspace is
-unavailable. Warnings do not make `okfreq lint` fail on their own.
+unavailable. A missing stem in a known bundle is `E10`. Warnings do not make `okfreq lint` fail on their own.
 
 ## Generated coverage and reports
 
 | Command | Purpose |
 |---|---|
-| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields. `--check` lists changed files; `--diff` prints previews; both are read-only. |
+| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields. `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
 | `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. |
 
-Without `--output`, report data is printed to standard output. Generated
-artifacts should be regenerated rather than edited manually.
+Without output options, the command writes JSON, JSON Schema and Markdown
+under the resolved bundle's parent directory in `dist/` and prints their paths.
+Use explicit output paths when reports must live in the project root's `dist/`.
+Generated artifacts should be regenerated rather than edited manually.
 
 ## Lifecycle changes
 

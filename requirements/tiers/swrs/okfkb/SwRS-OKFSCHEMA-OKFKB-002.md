@@ -28,9 +28,14 @@ tested_in_files:
 - tests/test_kb_patterns.py
 - tests/test_kb_scaffold.py
 - tests/test_skill_installer.py
+depends_on: []
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
 ---
 
-## EARS Expression
+## Scaffold and install knowledge bases
 
 ### Normative behavior
 

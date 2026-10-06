@@ -17,7 +17,7 @@ derived_by:
 - SwRS-CORE-002
 ---
 
-## EARS Expression
+## Export a report
 
 ### Normative behavior
 

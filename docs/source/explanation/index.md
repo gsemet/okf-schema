@@ -9,4 +9,5 @@ design-principles
 okfkb-choices
 okfreq-choices
 okfreq-coverage-boundaries
+project-feature-coverage
 ```

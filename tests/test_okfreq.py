@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
+from parametrization import Parametrization
 
 from okf_schema.okfreq.cli import okfreq
 from okf_schema.okfreq.core import (
@@ -97,6 +98,8 @@ def test_new_requirement_bodies_use_distinct_tier_templates(tmp_path: Path) -> N
 
     strs_text = strs.read_text(encoding="utf-8")
     swrs_text = swrs.read_text(encoding="utf-8")
+    assert "\n## Export reports\n" in strs_text
+    assert "\n## Write CSV output\n" in swrs_text
     assert stakeholder_behavior in strs_text
     assert "## User Need\n\n" + user_need in strs_text
     assert "### Rationale and constraints" in strs_text
@@ -272,6 +275,7 @@ def test_marker_scan_ignores_markers_inside_source_strings_and_cache_files(
     assert "Unknown-2" not in result["missing_ids"]
 
 
+# @tests_req StRS-OKFSCHEMA-OKFREQ-001
 def test_report_and_cli_surface(tmp_path: Path) -> None:
     # @tests_req SwRS-OKFSCHEMA-OKFREQ-004
     # @tests_req SwRS-OKFSCHEMA-OKFREQ-001
@@ -562,9 +566,16 @@ def test_init_creates_split_layout_with_guideline(tmp_path: Path) -> None:
     assert "description: Document type; selects which tier profile applies." in base_schema
     assert "description: Upstream requirement IDs this one is derived from." in base_schema
     assert "x-okf-link:" in base_schema
+    assert "tooltip_shows_fields:" in base_schema
+    assert "preview_shows_fields:" in base_schema
     assert "description: The stakeholder need this requirement formalizes." in strs_schema
     assert "description: Generated source paths." in swrs_schema
     assert "x-okf-link:" in swrs_schema
+    assert "show_line_number: true" in swrs_schema
+
+    guideline = (root / "guidelines" / "requirements.guidelines.md").read_text(encoding="utf-8")
+    assert "## Generated navigation metadata" in guideline
+    assert "x-okf-link" in guideline
 
 
 def test_guidelines_are_not_loaded_as_requirements(tmp_path: Path) -> None:
@@ -780,6 +791,9 @@ def test_missing_frontmatter_and_missing_graph_target(tmp_path: Path) -> None:
     plain = tiers_path(root) / "strs" / "plain.md"
     plain.write_text("plain body", encoding="utf-8")
     assert "strs" in str(plain)
+    with pytest.raises(RequirementError, match="plain.md"):
+        load_requirements(root)
+    plain.unlink()
     create_requirement(
         root,
         "StRS",
@@ -916,7 +930,7 @@ def test_cli_validation_and_graph_failures(tmp_path: Path) -> None:
     assert runner.invoke(okfreq, ["lint", str(root)]).exit_code == 1
     assert runner.invoke(okfreq, ["graph", str(root)]).exit_code == 0
     assert runner.invoke(okfreq, ["graph", str(root), "--json"]).exit_code == 0
-    assert runner.invoke(okfreq, ["update-coverage", str(root), "--check"]).exit_code == 0
+    assert runner.invoke(okfreq, ["update-coverage", str(root), "--check"]).exit_code == 1
     assert runner.invoke(okfreq, ["update-coverage", str(root), "--diff"]).exit_code == 0
     assert runner.invoke(okfreq, ["init", str(root)]).exit_code != 0
     assert (
@@ -1031,3 +1045,65 @@ def test_duplicate_ids_are_rejected(tmp_path: Path) -> None:
     )
     with pytest.raises(RequirementError, match="duplicate"):
         load_requirements(root)
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case("no_frontmatter", text="# Broken\n")
+@Parametrization.case("bad_yaml", text="---\ntitle: [\n---\n")
+@Parametrization.case("non_mapping", text="---\n- value\n---\n")
+@Parametrization.case("missing_id", text="---\ntype: StRS\n---\n")
+@Parametrization.case("non_string_id", text="---\nid: 42\n---\n")
+def test_unindexable_requirements_fail_validation_and_reporting(tmp_path: Path, text: str) -> None:
+    """Invalid documents cannot disappear from validation, reports or generated updates."""
+    root = make_bundle(tmp_path)
+    broken = root / "tiers/strs/broken.md"
+    broken.write_text(text, encoding="utf-8")
+    for operation in (validate_requirements, report, update_coverage):
+        with pytest.raises(RequirementError, match="broken.md"):
+            operation(root)
+    for command in ("validate", "lint", "status"):
+        result = CliRunner().invoke(okfreq, [command, str(root)])
+        assert result.exit_code != 0
+        assert "broken.md" in result.output
+        assert "Traceback" not in result.output
+    assert broken.read_text(encoding="utf-8") == text
+
+
+def test_coverage_check_detects_drift_without_writing_then_succeeds(tmp_path: Path) -> None:
+    """CI can distinguish stale generated metadata from a synchronized bundle."""
+    root = make_bundle(tmp_path)
+    paths = add_requirements(root)
+    before = {p: p.read_bytes() for p in paths}
+    runner = CliRunner()
+    result = runner.invoke(okfreq, ["update-coverage", str(root), "--check"])
+    assert result.exit_code == 1
+    assert {p: p.read_bytes() for p in paths} == before
+    assert runner.invoke(okfreq, ["update-coverage", str(root), "--diff"]).exit_code == 0
+    assert {p: p.read_bytes() for p in paths} == before
+    assert runner.invoke(okfreq, ["update-coverage", str(root)]).exit_code == 0
+    assert runner.invoke(okfreq, ["update-coverage", str(root), "--check"]).exit_code == 0
+
+
+def test_overlapping_scope_paths_do_not_invent_duplicate_markers(tmp_path: Path) -> None:
+    """Scanning the same file through two scopes is not a repeated marker in that file."""
+    from okf_schema._internal.yaml import dump_yaml, make_yaml
+
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    config = load_config(root)
+    config["scopes"]["second"] = config["scopes"]["default"].copy()
+    (root / "config.yml").write_text(
+        dump_yaml(make_yaml().load(dump_yaml(config))), encoding="utf-8"
+    )
+    source = tmp_path / "src"
+    tests = tmp_path / "tests"
+    source.mkdir()
+    tests.mkdir()
+    marker = "# @implements_req SwRS-default-001\n"
+    file = source / "implementation.py"
+    file.write_text(marker, encoding="utf-8")
+    scan = marker_scan(root)
+    assert scan["implemented"]["SwRS-default-001"] == ["src/implementation.py"]
+    assert scan["duplicates"] == []
+    file.write_text(marker * 2, encoding="utf-8")
+    assert marker_scan(root)["duplicates"] == ["SwRS-default-001"]

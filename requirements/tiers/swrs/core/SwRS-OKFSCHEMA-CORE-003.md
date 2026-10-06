@@ -24,9 +24,13 @@ implemented_in_files:
 tested_in_files:
 - tests/test_api.py
 - tests/test_formatter.py
+owner: okf-schema maintainers
+verification_method: test
+verification_criteria: Focused regression tests and the complete project
+  preflight pass.
 ---
 
-## EARS Expression
+## Normalize bundle formatting
 
 ### Normative behavior
 

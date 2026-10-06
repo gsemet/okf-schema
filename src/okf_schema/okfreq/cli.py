@@ -56,6 +56,13 @@ class _HelpGroup(click.Group):
 
     command_class = _HelpCommand
 
+    def invoke(self, ctx: click.Context) -> Any:
+        """Render domain failures consistently for every requirements command."""
+        try:
+            return super().invoke(ctx)
+        except RequirementError as exc:
+            raise _fail(exc) from exc
+
 
 def _root(path: str) -> Path:
     """Resolve a command-line path to its requirements bundle root."""
@@ -288,6 +295,8 @@ def _run_validation(
 @okfreq.command()
 @click.argument("path", default=".", type=click.Path())
 @click.option("--prose", is_flag=True, help="Also report advisory EARS prose warnings.")
+@click.option("--check", is_flag=True, help="Fail on stale indexes without writing them.")
+@click.option("--diff", "show_diff", is_flag=True, help="Preview index changes without writing.")
 @click.option(
     "--check-links", is_flag=True, help="Check x-okf-link targets in requirement schemas."
 )
@@ -297,8 +306,19 @@ def _run_validation(
     default=None,
     help="Explicit project root for project-relative x-okf-link targets.",
 )
-def lint(path: str, prose: bool, check_links: bool, project_root: str | None) -> None:
-    """Run structural checks, optionally with advisory prose warnings.
+def lint(
+    path: str,
+    prose: bool,
+    check_links: bool,
+    project_root: str | None,
+    check: bool,
+    show_diff: bool,
+) -> None:
+    """Validate requirements and refresh generated navigation indexes.
+
+    .. versionchanged:: 0.14.0
+        Refresh all requirement-directory indexes, preserving authored content.
+        ``--check`` and ``--diff`` preview changes without writing.
 
     .. versionchanged:: 0.13.0
         Link-check warnings are emitted even when ``--prose`` is not enabled.
@@ -312,8 +332,26 @@ def lint(path: str, prose: bool, check_links: bool, project_root: str | None) ->
             Whether to check opt-in ``x-okf-link`` targets.
         project_root:
             Explicit root for project-relative file links.
+        check:
+            Exit non-zero if generated index blocks are stale, without writing.
+        show_diff:
+            Display the proposed index changes without writing.
+
+    Examples:
+        Refresh navigation, then verify it in CI::
+
+            okfreq lint requirements
+            okfreq lint requirements --check
     """
+    from okf_schema.okfreq.navigation import lint_indexes
+
+    if check and show_diff:
+        raise click.UsageError("Use either --check or --diff, not both")
     _run_validation(path, prose=prose, check_links=check_links, project_root=project_root)
+    changed = lint_indexes(_root(path), check=check, show_diff=show_diff)
+    click.echo(f"{len(changed)} indexes {'would change' if check or show_diff else 'updated'}")
+    if check and changed:
+        raise click.exceptions.Exit(1)
 
 
 @okfreq.command()
@@ -476,6 +514,9 @@ def coverage(
 ) -> None:
     """Explicitly update generated coverage fields.
 
+    .. versionchanged:: 0.14.0
+        ``--check`` exits non-zero when generated metadata is stale.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -491,6 +532,8 @@ def coverage(
     """
     changed = update_coverage(_root(path), check=check, show_diff=show_diff)
     click.echo(f"{len(changed)} files {'would change' if check or show_diff else 'updated'}")
+    if check and changed:
+        raise click.exceptions.Exit(1)
 
 
 @okfreq.command("graph")

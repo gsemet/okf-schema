@@ -87,3 +87,15 @@ configuration is `requirements/config.yml`, its documents are under
 For an existing or brownfield requirements base, use the `okfreq-gardening`
 skill from the repository's `skills/okfreq-gardening/SKILL.md` package to audit
 gaps and configuration drift while preserving authored requirement content.
+
+## Maintain navigation and record changes
+
+After authoring or moving requirements, run `okfreq lint <bundle>`. It generates
+navigation blocks in `tiers/index.md`, configured tier folders and every scope
+ancestor. Keep your introduction outside the markers; an optional bundle-root
+`index.md` remains an authored overview. Use `--diff` for a read-only preview and
+`--check` for CI. `okfreq index` prints IDs rather than generating these files.
+
+After substantive changes, append a dated record to `<bundle>/tiers/log.md`:
+which requirements changed, why, decisions/open questions and actual validation
+results. Keep previous entries. Lint never generates the authored log.
