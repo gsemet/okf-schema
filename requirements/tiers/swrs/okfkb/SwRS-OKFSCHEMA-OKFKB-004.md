@@ -16,8 +16,8 @@ annotation_exemption: false
 exemption_reason:
 derived_by: []
 implemented_in_files:
-- src/okf_schema/okfkb/navigate.py
 - src/okf_schema/okfkb/cli.py
+- src/okf_schema/okfkb/navigate.py
 tested_in_files:
 - tests/test_kb_navigate.py
 - tests/test_tutorial_okfkb.py

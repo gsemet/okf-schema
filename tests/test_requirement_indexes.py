@@ -7,7 +7,13 @@ from click.testing import CliRunner
 from parametrization import Parametrization
 
 from okf_schema.okfreq.cli import okfreq
-from okf_schema.okfreq.core import RequirementError, create_requirement, init_requirements
+from okf_schema.okfreq.core import (
+    RequirementError,
+    create_requirement,
+    init_requirements,
+    load_requirements,
+    update_coverage,
+)
 from okf_schema.okfreq.navigation import lint_indexes
 
 # @tests_req SwRS-OKFSCHEMA-OKFREQ-009
@@ -70,6 +76,29 @@ def test_lint_generates_all_ancestors_and_preserves_authored_material(tmp_path: 
     assert log.read_bytes() == original[log]
     assert lint_indexes(root, check=True) == []
     assert runner.invoke(okfreq, ["lint", str(root), "--check"]).exit_code == 0
+
+
+def test_coverage_evidence_paths_are_sorted(tmp_path: Path) -> None:
+    root = _bundle(tmp_path)
+    config_path = root / "config.yml"
+    config = config_path.read_text(encoding="utf-8")
+    config = config.replace("source_dirs: [src]", "source_dirs: [src/z.py, src/a.py]")
+    config = config.replace("test_dirs: [tests]", "test_dirs: [tests/z.py, tests/a.py]")
+    config_path.write_text(config, encoding="utf-8")
+
+    for path, marker in (
+        (tmp_path / "src/z.py", "@implements_req"),
+        (tmp_path / "src/a.py", "@implements_req"),
+        (tmp_path / "tests/z.py", "@tests_req"),
+        (tmp_path / "tests/a.py", "@tests_req"),
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {marker} SwRS-default-001\n", encoding="utf-8")
+
+    assert update_coverage(root)
+    requirement = load_requirements(root)["SwRS-default-001"][1]
+    assert requirement["implemented_in_files"] == ["src/a.py", "src/z.py"]
+    assert requirement["tested_in_files"] == ["tests/a.py", "tests/z.py"]
 
 
 def test_index_previews_are_read_only_and_preserve_text_after_block(tmp_path: Path) -> None:

@@ -17,8 +17,8 @@ annotation_exemption: false
 exemption_reason:
 derived_by: []
 implemented_in_files:
-- src/okf_schema/okfreq/core.py
 - src/okf_schema/okfreq/cli.py
+- src/okf_schema/okfreq/core.py
 tested_in_files:
 - tests/test_okfreq.py
 owner: okf-schema maintainers

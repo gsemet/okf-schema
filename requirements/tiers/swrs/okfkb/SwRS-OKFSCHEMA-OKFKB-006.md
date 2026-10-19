@@ -19,8 +19,8 @@ exemption_reason:
 derived_by: []
 implemented_in_files:
 - src/okf_schema/formatter.py
-- src/okf_schema/validator.py
 - src/okf_schema/okfkb/derivations.py
+- src/okf_schema/validator.py
 tested_in_files:
 - tests/test_kb_derivations.py
 owner: okf-schema maintainers

@@ -16,10 +16,10 @@ annotation_exemption: false
 exemption_reason:
 derived_by: []
 implemented_in_files:
-- src/okf_schema/okfkb/patterns.py
 - src/okf_schema/okfkb/cli.py
-- src/okf_schema/okfkb/scaffold.py
 - src/okf_schema/okfkb/install.py
+- src/okf_schema/okfkb/patterns.py
+- src/okf_schema/okfkb/scaffold.py
 - src/okf_schema/skill_installer.py
 tested_in_files:
 - tests/test_integration.py

@@ -1326,8 +1326,8 @@ def update_coverage(
         if str(requirements[identifier][1].get("type")) == "SwRS":
             available_updates.update(
                 {
-                    "implemented_in_files": scan["implemented"].get(identifier, []),
-                    "tested_in_files": scan["tested"].get(identifier, []),
+                    "implemented_in_files": sorted(scan["implemented"].get(identifier, [])),
+                    "tested_in_files": sorted(scan["tested"].get(identifier, [])),
                 }
             )
         updates = {
