@@ -94,8 +94,8 @@ To publish a release, maintainers shall:
 
 4. **Publish a GitHub Release**: Draft a release from the tag in
    [Releases](https://github.com/gsemet/okf-schema/releases) and publish it.
-   The `publish.yml` workflow updates its notes from `CHANGELOG.md`, runs
-   preflight, then builds and uploads to PyPI.
+   The `publish.yml` workflow extracts `release-notes/vX.Y.Z.md` for the tag,
+   runs preflight, then builds and uploads the package to PyPI.
 
 5. **Verify**: Check [PyPI](https://pypi.org/project/okf-schema/) for the new
    version.
