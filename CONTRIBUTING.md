@@ -79,20 +79,24 @@ To publish a release, maintainers shall:
 
 1. **Ensure `main` is green**: Verify the latest commit passes CI.
 
-2. **Create and push a tag**:
+2. **Prepare release notes**: Add a reviewed `vX.Y.Z` section to `CHANGELOG.md`.
+   The published release workflow extracts that section and updates the GitHub
+   Release notes before it publishes the package.
+
+3. **Create and push a tag**:
    ```bash
    git checkout main
    git pull origin main
-   git tag v0.2.0
-   git push origin v0.2.0
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
    ```
 
-3. **Create a GitHub Release**: Go to
-   [Releases](https://github.com/gsemet/okf-schema/releases) and draft a new
-   release from the tag. The `publish.yml` workflow will automatically build
-   and upload to PyPI once the release is published.
+4. **Publish a GitHub Release**: Draft a release from the tag in
+   [Releases](https://github.com/gsemet/okf-schema/releases) and publish it.
+   The `publish.yml` workflow updates its notes from `CHANGELOG.md`, runs
+   preflight, then builds and uploads to PyPI.
 
-4. **Verify**: Check [PyPI](https://pypi.org/project/okf-schema/) for the new
+5. **Verify**: Check [PyPI](https://pypi.org/project/okf-schema/) for the new
    version.
 
 ## Evaluation
