@@ -1,4 +1,4 @@
-"""Extract the release notes section for a tag from CHANGELOG.md."""
+"""Select the reviewed release notes file for an exact Git tag."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def main() -> None:
-    """Write the matching changelog section without its version heading."""
+    """Copy the notes file whose name exactly matches the release tag."""
     if len(sys.argv) != 3:
         raise SystemExit("usage: extract-release-notes.py TAG OUTPUT")
 
@@ -16,16 +16,13 @@ def main() -> None:
     if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
         raise SystemExit(f"invalid release tag: {tag}")
 
-    changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
-    sections = re.split(r"(?m)^## ", changelog)
-    section = next((item for item in sections if item.startswith(f"{tag} ")), None)
-    if section is None:
-        raise SystemExit(f"CHANGELOG.md has no section for {tag}")
+    notes_path = Path("release-notes") / f"{tag}.md"
+    if not notes_path.is_file():
+        raise SystemExit(f"release notes file not found: {notes_path}")
 
-    _, _, body = section.partition("\n")
-    body = body.strip()
+    body = notes_path.read_text(encoding="utf-8").strip()
     if not body:
-        raise SystemExit(f"CHANGELOG.md has empty release notes for {tag}")
+        raise SystemExit(f"release notes file is empty: {notes_path}")
     Path(output).write_text(body + "\n", encoding="utf-8")
 
 

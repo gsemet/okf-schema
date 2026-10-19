@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate release notes from CHANGELOG.md
+      - name: Prepare release notes for this tag
         run: >-
           python .github/scripts/extract-release-notes.py
           "$GITHUB_REF_NAME" "$RUNNER_TEMP/release-notes.md"

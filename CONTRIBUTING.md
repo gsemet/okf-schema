@@ -79,9 +79,10 @@ To publish a release, maintainers shall:
 
 1. **Ensure `main` is green**: Verify the latest commit passes CI.
 
-2. **Prepare release notes**: Add a reviewed `vX.Y.Z` section to `CHANGELOG.md`.
-   The published release workflow extracts that section and updates the GitHub
-   Release notes before it publishes the package.
+2. **Prepare release notes**: Add a reviewed `release-notes/vX.Y.Z.md` file.
+   The published release workflow extracts the exact tag-named file and updates
+   the GitHub Release notes before it publishes the package. `CHANGELOG.md` is
+   generated from conventional commits by Commitizen.
 
 3. **Create and push a tag**:
    ```bash

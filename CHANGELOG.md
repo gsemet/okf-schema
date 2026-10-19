@@ -1,27 +1,9 @@
-## v0.13.0 (2026-10-19)
+## Unreleased
 
-### New Features
+### Feat
 
-- Validate opt-in `x-okf-link` frontmatter references, with structured inspection results for
-  valid, invalid, and unavailable targets.
-- Generate requirement-directory navigation with `okfreq lint`; use `--check` to detect stale
-  indexes and `--diff` to preview updates.
-
-### Enhancements
-
-- Reject malformed requirement documents instead of silently omitting them from reports, and
-  report stale generated coverage with `okfreq update-coverage --check`.
-- Add `x-okf-link` hints to generated requirement schemas for file navigation. They guide editors
-  and consumers; they do not migrate existing schemas or prove coverage.
-- Expand the packaged skills with installation-safe resource routes and detailed operations
-  references; add end-to-end OKFKB and OKFREQ tutorials.
-
-### Examples
-
-- Run `okf-schema validate --path bundle --check-links` or `okfreq validate bundle --check-links`
-  to check references in a bundle.
-- Run `okfreq lint requirements` to refresh requirement indexes, or add `--check` in CI to fail
-  when indexes are stale.
+- **file-links**: expose resolvable frontmatter link results
+- describe and check navigable file links in OKF bundles
 
 ## v0.12.0 (2026-09-02)
 
