@@ -37,9 +37,9 @@ example_files:
 - examples/okfreq-examples/README.md
 derived_by: []
 implemented_in_files:
-- skills/okfreq/SKILL.md
-- skills/okfreq-gardening/SKILL.md
 - examples/okfreq-examples/showcase.py
+- skills/okfreq-gardening/SKILL.md
+- skills/okfreq/SKILL.md
 tested_in_files:
 - tests/test_examples.py
 - tests/test_skill_resources.py
