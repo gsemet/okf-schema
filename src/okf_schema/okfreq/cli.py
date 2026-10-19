@@ -316,7 +316,7 @@ def lint(
 ) -> None:
     """Validate requirements and refresh generated navigation indexes.
 
-    .. versionchanged:: 0.14.0
+    .. versionchanged:: 0.13.0
         Refresh all requirement-directory indexes, preserving authored content.
         ``--check`` and ``--diff`` preview changes without writing.
 
@@ -514,7 +514,7 @@ def coverage(
 ) -> None:
     """Explicitly update generated coverage fields.
 
-    .. versionchanged:: 0.14.0
+    .. versionchanged:: 0.13.0
         ``--check`` exits non-zero when generated metadata is stale.
 
     Args:

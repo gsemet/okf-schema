@@ -5,17 +5,39 @@ on:
     types: [published]
 
 jobs:
+  release-notes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate release notes from CHANGELOG.md
+        run: >-
+          python .github/scripts/extract-release-notes.py
+          "$GITHUB_REF_NAME" "$RUNNER_TEMP/release-notes.md"
+
+      - name: Update GitHub Release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY"
+          --notes-file "$RUNNER_TEMP/release-notes.md"
+
   preflight:
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
 
   publish:
-    needs: preflight
+    needs: [preflight, release-notes]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     environment:
       name: pypi
       url: https://pypi.org/p/okf-schema
-    permissions:
-      id-token: write
     steps:
       - uses: actions/checkout@v4
 

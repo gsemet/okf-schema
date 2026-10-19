@@ -38,7 +38,7 @@ def lint_indexes(
 ) -> list[Path]:
     """Refresh generated requirement navigation without rewriting authored content.
 
-    .. versionadded:: 0.14.0
+    .. versionadded:: 0.13.0
 
     Args:
         root:

@@ -281,7 +281,7 @@ def ears_body(
 ) -> str:
     """Return the EARS scaffold for a configured level.
 
-    .. versionchanged:: 0.14.0
+    .. versionchanged:: 0.13.0
         Use the requirement title as the first Markdown heading.
 
     The scaffold is deliberately full of bracketed placeholders so an agent or
@@ -831,7 +831,7 @@ def merge_config(root: Path, source: Path) -> list[str]:
 def load_requirements(root: Path) -> dict[str, tuple[Path, dict[str, Any], str]]:
     """Load requirement Markdown documents keyed by stable ID.
 
-    .. versionchanged:: 0.14.0
+    .. versionchanged:: 0.13.0
         Reject every discovered requirement with absent or malformed mapping
         frontmatter or a missing string ID instead of omitting it from reports.
 

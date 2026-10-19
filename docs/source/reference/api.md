@@ -169,7 +169,6 @@ key, `/a/b` identifies a nested key, and `/attachments/0` identifies an array
 item. `~` and `/` in keys escape as `~0` and `~1`; the document root is the empty
 string. Use this identity for editor state and matching results; `field_path`
 remains a human-readable label such as `attachments[0]` and is not a unique key.
-This replaces the provisional dotted identity in the 0.14.0 API.
 
 A local `$ref` and its siblings both constrain union applicability. Only the
 selected `then` or `else` branch contributes conditional annotations. A literal

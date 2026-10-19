@@ -54,9 +54,9 @@ class ParsedFileLink:
 class FileLinkResult:
     """A structured result for one annotated frontmatter value.
 
-    .. versionadded:: 0.14.0
+    .. versionadded:: 0.13.0
 
-    .. versionchanged:: 0.14.0
+    .. versionchanged:: 0.13.0
         ``value_identity`` is an escaped JSON Pointer, distinct from the
         human-readable ``field_path``. Stem indexes are scoped to one inspection.
 
@@ -576,7 +576,7 @@ def inspect_file_links(
 ) -> list[FileLinkResult]:
     """Inspect every ``x-okf-link`` value, including successful values.
 
-    .. versionadded:: 0.14.0
+    .. versionadded:: 0.13.0
 
     Args:
         frontmatter:
