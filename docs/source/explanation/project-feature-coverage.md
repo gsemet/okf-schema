@@ -24,6 +24,7 @@ capabilities to real usage and executable demonstrations.
 | Knowledge-base learning path | The single OKFKB tutorial teaches document roles and both existing illustrations, then executes capture, bounded synthesis, derivation and navigation. `tests/test_tutorial_okfkb.py` checks the actual snippets and preservation of recorded Finding bodies. |
 | Existing-project adoption | The traceability tutorial runs an existing CSV feature, backfills reviewed drafts, links evidence and exercises its actual task-runner recipes. `tests/test_tutorial_okfreq.py` executes the published snippets in a disposable project. |
 | Schema files that yield no schema | `SwRS-OKFSCHEMA-CORE-008`: `load_schema_database_with_diagnostics` reports empty files as `I1` and unparsable or non-mapping files as `W17` for all schema formats; covered by `tests/test_validator.py`, `tests/test_api.py`, `tests/test_cli_core.py` and `tests/test_okfreq.py`. |
+| OKF 0.2 lifecycle staleness (W11, W16) | SwRS-OKFSCHEMA-CORE-006 scenarios; `tests/test_okf2_compliance.py` covers bare dates, offset datetimes, YAML timestamp objects, unparseable values and the no-offset refusal; `tests/test_api.py` covers `stale` in `list`/`show`. |
 | Standalone agent distribution | `okfreq install-skills` ships the operations guide, setup skill and gardening skill; wheel tests install resources without the source checkout. |
 
 ## Try the concrete scenarios

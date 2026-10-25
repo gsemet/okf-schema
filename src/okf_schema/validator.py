@@ -4,17 +4,18 @@ Implements conformance error (E1-E9) and best-practice warning (W1-W17)
 rules. :func:`validate_bundle` is the main entry point for a bundle;
 :func:`validate_markdown_files` validates documents without bundle-level rules.
 
-OKF 0.2 additions (E7-E9, W8-W13):
+OKF 0.2 additions (E7-E9, W8-W13, W16):
   E7 – `generated` block present but `at` field missing
   E8 – `sources` entry missing required `resource` field
   E9 – `verified` entry missing required `by` or `at` field
   W8  – Deprecated `timestamp` field; use `generated.at` instead
   W9  – Deprecated body `# Citations` section; use `sources` frontmatter
   W10 – Malformed actor string in `verified[].by`
-  W11 – File is stale (`stale_after` date has passed)
+  W11 – File is stale (`stale_after` date or instant has passed)
   W12 – Footnote `[^id]` with no matching `sources[].id`
   W13 – Broken path in path-form `resource` or `sources[].resource`
   W14 – Invalid authored OKFKB derivation or stale computed `derives_to`
+  W16 – `stale_after` cannot be parsed, so staleness is not checked
 
 Schema loading diagnostics (see :func:`load_schema_database_with_diagnostics`):
   I1  – Informational: schema file is empty (type stays without schema)
@@ -32,7 +33,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, cast
 
@@ -378,18 +379,74 @@ def _derive_trust_tier(frontmatter: dict) -> str:
     return "machine-confirmed" if has_machine else "unverified"
 
 
-def _is_stale(frontmatter: dict) -> bool:
-    """Return ``True`` when today ≥ the ``stale_after`` date in *frontmatter*."""
-    stale_after = frontmatter.get("stale_after")
-    if not stale_after:
-        return False
-    stale_str = str(stale_after).strip()
-    if not ISO8601_DATE_RE.match(stale_str):
-        return False
+_FRACTION_RE = re.compile(r"\.(\d+)")
+
+
+def _parse_stale_after(value: object) -> date | datetime | None:
+    """Parse a ``stale_after`` value into a comparable date or aware instant.
+
+    Accepts a bare ISO date (kept for backward compatibility), an ISO 8601
+    datetime string with an explicit UTC offset (``Z`` or ``±HH:MM``), and
+    ``date``/``datetime`` objects. A datetime without an offset names a
+    different instant in every timezone, so it is rejected rather than guessed.
+
+    Args:
+        value:
+            Raw ``stale_after`` frontmatter value.
+
+    Returns:
+        A :class:`~datetime.date` for a bare date, a timezone-aware
+        :class:`~datetime.datetime` for an instant, or ``None`` when the value
+        cannot be interpreted.
+    """
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None and value.utcoffset() is not None else None
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if ISO8601_DATE_RE.match(text):
+        try:
+            return date.fromisoformat(text)
+        except ValueError:
+            return None
+    if text[-1:] in ("Z", "z"):
+        text = text[:-1] + "+00:00"
+    # Python 3.10 ``fromisoformat`` only accepts 3 or 6 fractional digits.
+    text = _FRACTION_RE.sub(lambda m: "." + m.group(1)[:6].ljust(6, "0"), text, count=1)
     try:
-        return date.today() >= date.fromisoformat(stale_str)
+        parsed = datetime.fromisoformat(text)
     except ValueError:
+        return None
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return None
+    return parsed
+
+
+def _is_stale(frontmatter: dict) -> bool:
+    """Return ``True`` when the ``stale_after`` date or instant has been reached.
+
+    A bare date is stale from the start of that day (local calendar day, as
+    before). A datetime with a UTC offset is compared as an instant against the
+    current UTC time. Absent or unparseable values are never stale; use
+    :func:`_has_unparseable_stale_after` to detect the latter.
+    """
+    stale_after = frontmatter.get("stale_after")
+    parsed = _parse_stale_after(stale_after)
+    if parsed is None:
         return False
+    if isinstance(parsed, datetime):
+        return datetime.now(timezone.utc) >= parsed
+    return date.today() >= parsed
+
+
+def _has_unparseable_stale_after(frontmatter: dict) -> bool:
+    """Return ``True`` when ``stale_after`` is set but cannot be interpreted."""
+    stale_after = frontmatter.get("stale_after")
+    if stale_after is None or stale_after == "":
+        return False
+    return _parse_stale_after(stale_after) is None
 
 
 def _validate_okf2_generated(
@@ -575,13 +632,26 @@ def _validate_okf2_lifecycle(
     frontmatter: dict,
     report: Report,
 ) -> None:
-    """Validate OKF 0.2 lifecycle fields `status` and `stale_after` (W11)."""
-    if _is_stale(frontmatter):
-        stale_after = frontmatter.get("stale_after")
+    """Validate OKF 0.2 lifecycle fields `status` and `stale_after` (W11, W16).
+
+    W11 — ``stale_after`` (bare date or ISO 8601 datetime with UTC offset) has passed.
+    W16 — ``stale_after`` cannot be parsed, so the staleness check is disabled.
+    """
+    stale_after = frontmatter.get("stale_after")
+    if _has_unparseable_stale_after(frontmatter):
+        report.add_warning(
+            "W16",
+            f"File '{path}' has an unparseable stale_after value '{stale_after}'; "
+            "staleness is not checked. "
+            "Fix: use an ISO 8601 datetime with a UTC offset such as "
+            "'2026-12-31T00:00:00Z' (a bare date 'YYYY-MM-DD' is also accepted).",
+            path,
+        )
+    elif _is_stale(frontmatter):
         report.add_warning(
             "W11",
-            f"File '{path}' is stale: stale_after date '{stale_after}' has passed. "
-            "Fix: update content and set a new 'stale_after' date, or remove the field.",
+            f"File '{path}' is stale: stale_after '{stale_after}' has passed. "
+            "Fix: update content and set a new 'stale_after' value, or remove the field.",
             path,
         )
 
@@ -657,7 +727,7 @@ def validate_concept(
 ) -> None:
     r"""Validate a single concept (non-reserved) ``.md`` file.
 
-    Checks E1, E2, E4, E5, E7-E9, W1, W2, W3, W6-W13.
+    Checks E1, E2, E4, E5, E7-E9, W1, W2, W3, W6-W13, W16.
 
     Args:
         path:
@@ -1008,7 +1078,7 @@ def validate_markdown_files(
     """Validate standalone markdown files (not part of an OKF bundle).
 
     Validates each file using E1, E2, E4, E5, E7-E9 and W1, W3,
-    W6-W13 rules.
+    W6-W13 and W16 rules.
     Bundle-specific constraints (W4, E6, W5) are not applied. File-link
     annotations are checked only when explicitly enabled and roots are supplied
     or can be derived from the document's containing Git repository.

@@ -174,7 +174,8 @@ The `validate-md` command checks the following (unless noted as bundle-only):
 | **W8** | Legacy `timestamp` is absent | Run bundle lint or migrate it to `generated.at` |
 | **W9** | Legacy `# Citations` section is absent | Use `sources` and footnotes |
 | **W10** | Verification actors are well formed | Use `<prefix>:<identifier>` |
-| **W11** | Content is not stale | Refresh or revise `stale_after` |
+| **W11** | Content is not stale | Refresh or revise `stale_after` (ISO 8601 datetime with offset, e.g. `2026-12-31T00:00:00Z`) |
+| **W16** | `stale_after` is parseable | Use a datetime with a UTC offset, or a bare date |
 | **W12** | Footnotes match source IDs | Add the corresponding `sources[].id` |
 | **W13** | Local source resources resolve | Correct `sources[].resource` |
 | **W17** | Every file in `--schemas-dir` parses as a mapping | Fix the syntax of the named schema file |

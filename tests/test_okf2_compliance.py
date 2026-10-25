@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+
+from parametrization import Parametrization
 
 from okf_schema._internal.models import Report
 from okf_schema.validator import (
     _derive_trust_tier,
     _is_stale,
+    _parse_stale_after,
     _validate_okf2_generated,
     _validate_okf2_lifecycle,
     _validate_okf2_sources,
@@ -111,6 +115,54 @@ def test_is_stale_invalid_date_format_returns_false() -> None:
 def test_is_stale_value_error_returns_false() -> None:
     # Non-ISO date that matches regex but fails fromisoformat
     assert _is_stale({"stale_after": "2026-99-99"}) is False
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="past_z", value="2026-01-01T00:00:00Z", expected=True)
+@Parametrization.case(name="past_lowercase_z", value="2026-01-01t00:00:00z", expected=True)
+@Parametrization.case(name="past_offset", value="2026-01-01T00:00:00+02:00", expected=True)
+@Parametrization.case(name="past_fraction", value="2026-01-01T00:00:00.5Z", expected=True)
+@Parametrization.case(name="past_space_separator", value="2026-01-01 00:00:00+00:00", expected=True)
+@Parametrization.case(name="future_z", value="2099-12-31T00:00:00Z", expected=False)
+@Parametrization.case(name="future_offset", value="2099-12-31T00:00:00-05:00", expected=False)
+@Parametrization.case(name="past_date_object", value=date(2000, 1, 1), expected=True)
+@Parametrization.case(name="future_date_object", value=date(2099, 1, 1), expected=False)
+@Parametrization.case(
+    name="past_aware_datetime_object",
+    value=datetime(2000, 1, 1, tzinfo=timezone.utc),
+    expected=True,
+)
+@Parametrization.case(
+    name="future_aware_datetime_object",
+    value=datetime(2099, 1, 1, tzinfo=timezone.utc),
+    expected=False,
+)
+@Parametrization.case(name="naive_string_not_guessed", value="2000-01-01T00:00:00", expected=False)
+@Parametrization.case(name="naive_datetime_object", value=datetime(2000, 1, 1), expected=False)
+def test_is_stale_datetime_forms(value: object, expected: bool) -> None:
+    assert _is_stale({"stale_after": value}) is expected
+
+
+def test_is_stale_compares_instants_across_offsets() -> None:
+    """The same wall-clock time is a different instant in each offset."""
+    soon = datetime.now(timezone.utc) + timedelta(hours=1)
+    ahead = soon.astimezone(timezone(timedelta(hours=14)))
+    behind = (datetime.now(timezone.utc) - timedelta(hours=1)).astimezone(
+        timezone(timedelta(hours=-12))
+    )
+    assert _is_stale({"stale_after": ahead.isoformat()}) is False
+    assert _is_stale({"stale_after": behind.isoformat()}) is True
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="word", value="not-a-date")
+@Parametrization.case(name="bad_calendar_date", value="2026-99-99")
+@Parametrization.case(name="naive_datetime", value="2026-01-01T00:00:00")
+@Parametrization.case(name="number", value=20260101)
+@Parametrization.case(name="boolean", value=True)
+@Parametrization.case(name="list", value=["2026-01-01"])
+def test_parse_stale_after_rejects_unusable_values(value: object) -> None:
+    assert _parse_stale_after(value) is None
 
 
 # ---------------------------------------------------------------------------
@@ -417,6 +469,43 @@ def test_validate_okf2_lifecycle_past_stale_after_emits_w11(tmp_path: Path) -> N
     assert any(f.code == "W11" for f in report.warnings)
 
 
+def test_validate_okf2_lifecycle_past_datetime_stale_after_emits_w11(tmp_path: Path) -> None:
+    """W11: past stale_after ISO 8601 datetime with UTC offset."""
+    path = tmp_path / "f.md"
+    path.touch()
+    report = Report()
+    _validate_okf2_lifecycle(path, {"stale_after": "2026-01-01T00:00:00Z"}, report)
+    assert [f.code for f in report.warnings] == ["W11"]
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="typo", value="tomorrow")
+@Parametrization.case(name="naive_datetime", value="2026-01-01T00:00:00")
+@Parametrization.case(name="number", value=2026)
+def test_validate_okf2_lifecycle_unparseable_stale_after_emits_w16(
+    tmp_path: Path, value: object
+) -> None:
+    """W16: stale_after present but unusable, so the staleness check is not silently disabled."""
+    path = tmp_path / "f.md"
+    path.touch()
+    report = Report()
+    _validate_okf2_lifecycle(path, {"stale_after": value}, report)
+    assert [f.code for f in report.warnings] == ["W16"]
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="absent", frontmatter={})
+@Parametrization.case(name="null", frontmatter={"stale_after": None})
+@Parametrization.case(name="empty", frontmatter={"stale_after": ""})
+@Parametrization.case(name="valid_future", frontmatter={"stale_after": "2099-12-31T00:00:00Z"})
+def test_validate_okf2_lifecycle_no_w16(tmp_path: Path, frontmatter: dict) -> None:
+    path = tmp_path / "f.md"
+    path.touch()
+    report = Report()
+    _validate_okf2_lifecycle(path, frontmatter, report)
+    assert report.warnings == []
+
+
 # ---------------------------------------------------------------------------
 # Integration: validate_concept with OKF 0.2 fields
 # ---------------------------------------------------------------------------
@@ -479,6 +568,19 @@ def test_validate_concept_okf2_stale_concept_emits_w11(tmp_path: Path) -> None:
     report = Report()
     validate_concept(path, report, tmp_path, None)
     assert any(f.code == "W11" for f in report.warnings)
+
+
+def test_validate_concept_okf2_unquoted_datetime_stale_after_emits_w11(tmp_path: Path) -> None:
+    """W11: an unquoted YAML timestamp (parsed to a datetime) is compared as an instant."""
+    path = tmp_path / "concept.md"
+    path.write_text(
+        "---\ntype: concept\ntitle: T\ndescription: D\n"
+        'generated:\n  at: "2026-01-01T00:00:00Z"\n'
+        "stale_after: 2026-01-01T00:00:00Z\n---\n"
+    )
+    report = Report()
+    validate_concept(path, report, tmp_path, None)
+    assert [f.code for f in report.warnings if f.code in {"W11", "W16"}] == ["W11"]
 
 
 # ---------------------------------------------------------------------------

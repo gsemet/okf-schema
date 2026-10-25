@@ -21,6 +21,12 @@
   paths, scopes and checks. The gardening skill gained a user-approved
   simplification phase.
 - Verification: see the pull request for the preflight result.
+- Extended [SwRS-OKFSCHEMA-CORE-006](swrs/core/SwRS-OKFSCHEMA-CORE-006.md)
+  with two scenarios: `stale_after` is compared as an instant when it is an ISO
+  8601 datetime with a UTC offset (the OKF 0.2 form; bare dates still work), and
+  a value that cannot be parsed now reports the new warning W16 instead of
+  silently disabling the staleness check. The ID, UUID and normative statement
+  are unchanged.
 
 ## 2026-10-19
 
