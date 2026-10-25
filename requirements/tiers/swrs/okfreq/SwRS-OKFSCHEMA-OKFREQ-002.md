@@ -70,10 +70,18 @@ or SwRS authoring format without changing existing requirements.
 - THEN the first Markdown heading repeats the frontmatter title verbatim,
   rather than using a generic EARS label
 
+### Scenario: Never reuse a requirement number
+
+- GIVEN requirements of a level and scope whose highest number is N, or a retired ID
+  with a higher number recorded in `retired_ids`
+- WHEN a requirement file is deleted and the user runs `okfreq new` for that level and scope
+- THEN the new ID uses one more than the highest number among existing and retired IDs,
+  so a number freed by deletion is never handed out again
+
 ### Verification notes
 
 - Method: automated creation tests for both tiers, hierarchy failures, and ID
-  allocation collisions.
+  allocation collisions and allocation after a deletion.
 - Criteria: each created document validates, StRS and SwRS bodies use distinct
   formats, missing StRS intent remains explicit, tier-inappropriate fields are
   rejected, and failed creation leaves existing documents unchanged.

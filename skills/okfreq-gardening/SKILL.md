@@ -205,7 +205,10 @@ okfreq archive REQUIREMENT-ID --yes
 okfreq supersede OLD-ID REPLACEMENT-ID --yes
 ```
 
-Archive never deletes. Supersession requires a real replacement target. Do not
+Archive never deletes. Supersession requires a real replacement target. A draft
+that was never published may be discarded with `okfreq retire ID --yes`, which
+records the ID in `retired_ids` so the number is never reused; do not delete
+requirement files by hand. Do not
 mutate lifecycle state merely because prose, coverage, or indexes changed.
 
 ## Phase 6b — Simplify and restructure
@@ -219,7 +222,8 @@ example IDs and a proposed mapping from old to new requirements.
 Restructuring (merging, superseding or archiving requirements) changes the
 contract: do it only after the user approves the proposed mapping. Without
 approval, report the proposal and stop this phase. Never delete a published
-requirement; supersede or archive it.
+requirement; supersede or archive it. Use `okfreq retire` only for drafts that
+were never published.
 
 ## Phase 7 — Reports and final validation
 

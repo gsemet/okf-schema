@@ -19,11 +19,13 @@ from __future__ import annotations
 
 import datetime
 import difflib
+import io
 import json
 import os
 import re
 import tempfile
 import uuid
+from collections.abc import Iterable
 from importlib.metadata import PackageNotFoundError, version
 from importlib.resources import as_file, files
 from pathlib import Path
@@ -50,6 +52,7 @@ markers:
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, implemented_in_files, tested_in_files]
+retired_ids: []
 scopes:
   default: {source_dirs: [src], test_dirs: [tests]}
 """
@@ -725,7 +728,18 @@ def load_config(root: Path) -> dict[str, Any]:
     data.setdefault("generated_fields", sorted(SUPPORTED_GENERATED_FIELDS))
     data.setdefault("strs_test_coverage_mode", "linked-swrs")
     _strs_test_coverage_mode(data)
+    data["retired_ids"] = _retired_ids(data)
     return data
+
+
+def _retired_ids(config: dict[str, Any]) -> list[str]:
+    """Return the validated ``retired_ids`` list, empty when it is not configured."""
+    value = config.get("retired_ids")
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
+        raise RequirementError("invalid retired_ids: expected a list of requirement ID strings")
+    return [str(item) for item in value]
 
 
 def _strs_test_coverage_mode(config: dict[str, Any]) -> str:
@@ -815,7 +829,12 @@ def merge_config(root: Path, source: Path) -> list[str]:
         """
         for key, value in incoming.items():
             name = f"{prefix}.{key}" if prefix else str(key)
-            if (
+            if not prefix and key == "retired_ids" and isinstance(value, list):
+                # A retired number is retired for good: union, never a conflict.
+                incoming_ids = _retired_ids({"retired_ids": value})
+                kept = _retired_ids(destination)
+                destination[key] = kept + [item for item in incoming_ids if item not in kept]
+            elif (
                 key not in destination
             ):  # pragma: no branch - both merge outcomes are covered by callers
                 destination[key] = value
@@ -878,6 +897,29 @@ def load_requirements(root: Path) -> dict[str, tuple[Path, dict[str, Any], str]]
     return result
 
 
+def _next_number(prefix: str, scope_token: str, identifiers: Iterable[str]) -> int:
+    """Return one more than the highest number used for ``prefix`` and ``scope_token``.
+
+    Args:
+        prefix:
+            Level prefix of the IDs, such as ``SwRS-PROJECT``.
+        scope_token:
+            Scope token of the IDs, such as ``CORE``.
+        identifiers:
+            Existing and retired requirement IDs; unrelated IDs are ignored.
+
+    Returns:
+        ``1`` when no ID matches, otherwise the highest matching number plus one.
+
+    Examples:
+        >>> _next_number("SwRS", "CORE", ["SwRS-CORE-001", "SwRS-CORE-140", "SwRS-API-900"])
+        141
+    """
+    pattern = re.compile(rf"{re.escape(prefix)}-{re.escape(scope_token)}-(\d+)")
+    numbers = [int(m.group(1)) for item in identifiers if (m := pattern.fullmatch(item))]
+    return max(numbers, default=0) + 1
+
+
 def create_requirement(
     root: Path,
     level: str,
@@ -891,6 +933,11 @@ def create_requirement(
     user_need: str | None = None,
 ) -> Path:
     """Create a native requirement using configured level and ID rules.
+
+    .. versionchanged:: 0.14.0
+        The number is one more than the highest number ever used in the level
+        prefix and scope, counting existing requirements and ``retired_ids``.
+        A deleted requirement's number is never handed out again.
 
     The document body is an EARS scaffold for the level, so the author or agent
     can see which parts still need to be written.
@@ -975,9 +1022,7 @@ def create_requirement(
             raise RequirementError(f"{level} cannot derive from {parent_type}")
     prefix = str(level_config.get("prefix", level))
     scope_token = str(scope_config.get("id_token", scope_name))
-    number = 1
-    while f"{prefix}-{scope_token}-{number:03d}" in existing:
-        number += 1
+    number = _next_number(prefix, scope_token, [*existing, *config["retired_ids"]])
     identifier = f"{prefix}-{scope_token}-{number:03d}"
     data: dict[str, Any] = {
         "type": level,
@@ -1009,6 +1054,122 @@ def create_requirement(
     body = ears_body(level, description, user_need=user_need, title=title)
     _atomic_write(target, f"---\n{dump_yaml(data)}---\n\n{body}")
     return target
+
+
+def _log_retirement(root: Path, identifier: str, title: str, reason: str | None) -> None:
+    """Append a retirement entry to the tier ``log.md`` under today's date."""
+    log = tiers_path(root) / "log.md"
+    today = datetime.date.today().isoformat()
+    entry = f"- Retired {identifier} ({title}); the number is never reused."
+    if reason:
+        entry += f" Reason: {reason}"
+    lines = log.read_text(encoding="utf-8").splitlines() if log.is_file() else ["# Update Log"]
+    heading = f"## {today}"
+    if heading in lines:
+        start = lines.index(heading) + 1
+        end = next((i for i in range(start, len(lines)) if lines[i].startswith("## ")), len(lines))
+        while end > start and not lines[end - 1].strip():
+            end -= 1
+        lines[end:end] = ["", entry] if end == start else [entry]
+    else:
+        first = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
+        block = [heading, "", entry, ""]
+        lines[first:first] = block if first < len(lines) else ["", *block[:-1]]
+    _atomic_write(log, "\n".join(lines).rstrip("\n") + "\n")
+
+
+def retire_requirement(root: Path, identifier: str, *, reason: str | None = None) -> Path:
+    """Delete a never-published draft requirement and retire its ID for good.
+
+    The ID is added to ``retired_ids`` in ``config.yml`` before the file is
+    removed, so a failure never leaves a number free for reuse. An entry is
+    appended to ``tiers/log.md``. Published requirements are retired with
+    ``archive`` or ``supersede`` instead, which keep the document.
+
+    .. versionadded:: 0.14.0
+
+    Args:
+        root:
+            The bundle root.
+        identifier:
+            ID of the requirement to delete.
+        reason:
+            Optional explanation recorded in the change log.
+
+    Returns:
+        The path of the deleted requirement document.
+
+    Raises:
+        RequirementError:
+            If the ID is unknown, the requirement is not a ``draft``, another
+            requirement derives from, depends on or is superseded by it, or a
+            source or test marker still references it. Nothing is changed.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     stakeholder = create_requirement(
+        ...         root, "StRS", "Draft", "The tool SHALL work.", project="p",
+        ...         scope="default", origin="native",
+        ...     )
+        ...     retire_requirement(root, "StRS-default-001") == stakeholder
+        ...     load_config(root)["retired_ids"]
+        True
+        ['StRS-default-001']
+    """
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-011
+    requirements = load_requirements(root)
+    if identifier not in requirements:
+        raise RequirementError(f"unknown requirement: {identifier}")
+    file, data, _ = requirements[identifier]
+    if data.get("lifecycle") != "draft":
+        raise RequirementError(
+            f"{identifier} is {data.get('lifecycle')}, not draft; "
+            "use archive or supersede to retire a published requirement"
+        )
+    references = sorted(
+        other
+        for other, (_, other_data, _) in requirements.items()
+        if other != identifier
+        and (
+            identifier in (other_data.get("derives_from") or [])
+            or identifier in (other_data.get("depends_on") or [])
+            or other_data.get("superseded_by") == identifier
+        )
+    )
+    if references:
+        raise RequirementError(f"cannot retire {identifier}: referenced by {', '.join(references)}")
+    markers = marker_scan(root)
+    marked = sorted(
+        {
+            location
+            for kind in ("implemented", "tested", "validation_tests")
+            for location in markers[kind].get(identifier, [])
+        }
+    )
+    if marked:
+        raise RequirementError(
+            f"cannot retire {identifier}: referenced by markers in {', '.join(marked)}"
+        )
+    config_file = root / "config.yml"
+    # Round-trip edit: comments, quoting and flow style of the project config survive.
+    yaml = make_yaml()
+    config = yaml.load(config_file.read_text(encoding="utf-8"))
+    if not isinstance(config, dict):
+        raise RequirementError(f"invalid configuration: {config_file}")
+    retired = _retired_ids(config)
+    if identifier not in retired:
+        if "retired_ids" in config and config["retired_ids"] is not None:
+            config["retired_ids"].append(identifier)
+        else:
+            config["retired_ids"] = [identifier]
+        buffer = io.StringIO()
+        yaml.dump(config, buffer)
+        _atomic_write(config_file, buffer.getvalue())
+    file.unlink()
+    _log_retirement(root, identifier, str(data.get("title", "")), reason)
+    return file
 
 
 def _render_frontmatter(text: str, updates: dict[str, Any]) -> str:
@@ -1249,6 +1410,7 @@ def validate_requirements(
             )
     errors.extend(schema_findings)
     link_context = _FileLinkContext()
+    retired = set(config["retired_ids"])
     for identifier, (file, data, text) in requirements.items():
         if prose and body_is_unfilled(text):
             errors.append(f"W002 {file}: body has no filled EARS expression")
@@ -1280,6 +1442,10 @@ def validate_requirements(
             uuid.UUID(str(data.get("uuid")))
         except (ValueError, AttributeError, TypeError):
             errors.append(f"{file}: invalid UUID")
+        if identifier in retired:
+            errors.append(
+                f"{file}: ID {identifier} is listed in retired_ids and must not be reused"
+            )
         if data.get("lifecycle") not in config["lifecycle"]["values"]:
             errors.append(f"{file}: invalid lifecycle")
         if data.get("type") not in config["levels"]:

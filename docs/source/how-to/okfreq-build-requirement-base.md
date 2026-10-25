@@ -99,7 +99,8 @@ The baseline guideline installed into the project explains the rules the
 specification follows. Requirements describe what the code does today, anchored
 by marker pairs; one SwRS is one observable behaviour with a scenario for each
 refusal and boundary; a rule shared by many features is written once and cited
-with `depends_on`; IDs are created by `okfreq new`, never reused, and retired
+with `depends_on`; IDs are created by `okfreq new`, never reused (a draft that
+was never published is discarded with `okfreq retire`), and published
 requirements are archived or superseded rather than deleted. A project may
 override these rules only in its own guideline section.
 

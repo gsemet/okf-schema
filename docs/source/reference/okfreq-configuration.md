@@ -52,6 +52,7 @@ markers:
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, implemented_in_files, tested_in_files]
+retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
 ```
@@ -67,6 +68,7 @@ scopes:
 | `lifecycle.values` | Allowed lifecycle values. The built-in values distinguish draft, proposed, approved, deprecated, and superseded requirements. |
 | `markers` | Implementation/test marker keywords and the regular expression used to recognise IDs. The entire match is the requirement ID. |
 | `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `implemented_in_files`, and `tested_in_files`; unsupported values fail explicitly. |
+| `retired_ids` | IDs that were deleted with `okfreq retire` and must never be allocated again. Optional list of ID strings, written by `okfreq retire`; `okfreq new` numbers after the highest of the existing and retired IDs, `okfreq validate` rejects a document with a listed ID, and `okfreq import`/`config-merge` take the union of both lists. |
 | `scopes` | Per-scope ID token, requirement subfolder, and source/test ownership. Keep `source_dirs` and `test_dirs` separate. |
 
 A scope entry may name individual files as well as directories, and it may point

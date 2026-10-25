@@ -29,6 +29,7 @@ from okf_schema.okfreq.core import (
     load_requirements,
     marker_scan,
     merge_config,
+    retire_requirement,
     update_coverage,
     validate_requirements,
     write_json_report,
@@ -651,6 +652,51 @@ def archive(
     if not yes:
         raise click.ClickException("archive is destructive to lifecycle state; pass --yes")
     _change_lifecycle(_root(path), target, "deprecated")
+
+
+@okfreq.command()
+@click.argument("target")
+@click.option("--path", default=".", type=click.Path())
+@click.option("--reason", help="Why the draft is discarded; recorded in the change log.")
+@click.option("--yes", is_flag=True, help="Confirm the deletion.")
+def retire(
+    target: str,
+    path: str,
+    reason: str | None,
+    yes: bool,
+) -> None:
+    """Delete the never-published draft TARGET and retire its ID forever.
+
+    The ID is recorded in ``retired_ids`` of ``config.yml`` and in the tier
+    ``log.md``, so ``okfreq new`` never allocates that number again. Refused
+    when TARGET is not a draft or when another requirement or a source or test
+    marker references it; use ``archive`` or ``supersede`` for published
+    requirements.
+
+    .. versionadded:: 0.14.0
+
+    Args:
+        target:
+            Stable ID of the draft requirement to delete.
+        path:
+            Project or requirements-bundle path.
+        reason:
+            Optional explanation appended to the change log entry.
+        yes:
+            Confirm the deletion.
+
+    Examples:
+        Discard a draft that was merged into another requirement::
+
+            okfreq retire SwRS-example-007 --path requirements \
+                --reason "Merged into SwRS-example-003" --yes
+    """
+    if not yes:
+        raise click.ClickException("retire deletes the requirement file; pass --yes")
+    root = _root(path)
+    retire_requirement(root, target, reason=reason)
+    click.echo(f"Retired {target}; its number will not be reused")
+    click.echo("Run okfreq update-coverage and okfreq lint to refresh generated fields.")
 
 
 @okfreq.command()
