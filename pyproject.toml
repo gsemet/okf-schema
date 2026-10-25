@@ -1,6 +1,6 @@
 [project]
 name = "okf-schema"
-dynamic = ["version"]
+version = "0.13.0"
 description = "CLI tool and Python library for working with OKF (Open Knowledge Format) bundles"
 authors = [{ name = "Gaetan Semet", email = "gaetan@xeberon.net" }]
 requires-python = ">=3.10"
@@ -56,13 +56,11 @@ dev = [
     "sphinx-copybutton>=0.5.2",
     "sphinxcontrib-mermaid>=1.0.0",
 ]
+release = ["commitizen>=4.9.1"]
 
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.hatch.version]
-source = "vcs"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/okf_schema", "skills"]
@@ -103,10 +101,12 @@ indent-style = "space"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version_provider = "scm"
+version_provider = "uv"
 tag_format = "v$version"
-changelog_file = "CHANGELOG.md"
-update_changelog_on_bump = true
+version_scheme = "semver"
+major_version_zero = false
+bump_pattern = '^(BREAKING[\- ]CHANGE|\w+!|feat|fix|refactor|perf|chore|docs|style|test|build|ci|revert)(\(.+\))?(!)?(:|\s)'
+bump_map = { "^.+!" = "MAJOR", "^BREAKING[\\- ]CHANGE" = "MAJOR", "^feat" = "MINOR", "^.*" = "PATCH" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

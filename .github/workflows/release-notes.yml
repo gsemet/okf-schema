@@ -1,0 +1,59 @@
+name: Generate release notes (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing version tag to generate a draft release for"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - name: Require the default branch
+        env:
+          WORKFLOW_REF: ${{ github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: test "$WORKFLOW_REF" = "refs/heads/$DEFAULT_BRANCH"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify release ancestry and absence of a release
+        env:
+          TARGET_TAG: ${{ inputs.tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$TARGET_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git merge-base --is-ancestor "refs/tags/$TARGET_TAG^{commit}" "origin/$DEFAULT_BRANCH"
+          if gh release view "$TARGET_TAG" >/dev/null 2>&1; then
+            echo "A release already exists; refusing to overwrite its notes." >&2
+            exit 1
+          fi
+      - uses: astral-sh/setup-uv@v5
+      - name: Generate release notes
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          TARGET_TAG: ${{ inputs.tag }}
+        run: uv run python scripts/release_notes.py --to-ref "$TARGET_TAG"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes-${{ inputs.tag }}
+          path: release-notes.md
+          if-no-files-found: error
+      - name: Create a draft release without publishing the package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_TAG: ${{ inputs.tag }}
+        run: gh release create "$TARGET_TAG" --verify-tag --draft --title "$TARGET_TAG" --notes-file release-notes.md
