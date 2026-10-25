@@ -512,7 +512,7 @@ for finding in [*report.errors, *report.warnings]:
 
 ## Agent Skills
 
-The repository provides six complementary skills:
+The repository provides eight complementary skills:
 
 | Skill | Concise purpose |
 |---|---|
@@ -521,6 +521,8 @@ The repository provides six complementary skills:
 | [`okfkb-record-findings`](skills/okfkb-record-findings/SKILL.md) | Capture one dated, immutable empirical Finding after an investigation. |
 | [`okfkb-distill`](skills/okfkb-distill/SKILL.md) | Interactively reconcile contradictions and propose evidence-backed promotions. |
 | [`okfkb-gardening`](skills/okfkb-gardening/SKILL.md) | Perform explicitly invoked, zero-prompt consolidation, graph repair, stale-knowledge review, and project-prescribed validation. |
+| [`okfreq`](skills/okfreq/SKILL.md) | Teach and route the living-requirements lifecycle from stakeholder intent to source, tests and reports. |
+| [`okfreq-setup`](skills/okfreq-setup/SKILL.md) | Take a project with no requirements bundle to one pull request that installs okfreq and specifies its current behaviour, without questions. |
 | [`okfreq-gardening`](skills/okfreq-gardening/SKILL.md) | Maintain requirement traceability, generated coverage, lifecycle, and health reports without conflating requirements with OKFKB knowledge. |
 
 See [`skills/README.md`](skills/README.md) for selection guidance and the

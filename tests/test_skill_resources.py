@@ -22,6 +22,7 @@ _SKILL_ROOTS = (
     "okfkb-record-findings",
     "okfreq",
     "okfreq-gardening",
+    "okfreq-setup",
 )
 
 
@@ -186,7 +187,7 @@ def test_installed_wheel_commands_install_complete_families_without_source_check
     destinations = {
         "okf-schema": ("okf-schema",),
         "okfkb": ("okfkb", "okfkb-distill", "okfkb-gardening", "okfkb-record-findings"),
-        "okfreq": ("okfreq", "okfreq-gardening"),
+        "okfreq": ("okfreq", "okfreq-gardening", "okfreq-setup"),
     }
     nested_files = {
         "okf-schema": "references/okf-v0.2.md",
@@ -268,3 +269,28 @@ def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) ->
             resource = (document.parent / target.split("#")[0]).resolve()
             assert resource.is_relative_to(destination.resolve())
             assert resource.is_file(), (document, target)
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: Path) -> None:
+    """The setup skill ships with the okfreq family and states its stop rules and delivery."""
+    from okf_schema.skill_installer import install_skill_family
+
+    destination = tmp_path / "agent-skills"
+    install_skill_family("okfreq", destination)
+    skill = destination / "okfreq-setup" / "SKILL.md"
+    text = skill.read_text(encoding="utf-8")
+
+    assert text.startswith("---\nname: okfreq-setup\n")
+    for required in (
+        "## Stop rules",
+        "okfreq init requirements",
+        "okfreq-gardening",
+        "Never merge",
+        "requirements/guidelines/requirements.guidelines.md",
+    ):
+        assert required in text
+    for target in re.findall(r"\]\(([^)]+)\)", text):
+        if "://" in target or target.startswith("#"):
+            continue
+        assert (skill.parent / target.split("#")[0]).resolve().is_file(), target

@@ -39,7 +39,7 @@ scopes:
     id_token: OKFREQ
     folder: okfreq
     source_dirs: [src/okf_schema/okfreq, src/okf_schema/data/requirements,
-        skills/okfreq, skills/okfreq-gardening,
+        skills/okfreq, skills/okfreq-gardening, skills/okfreq-setup,
         examples/okfreq-examples/showcase.py]
     test_dirs: [tests/test_okfreq.py, tests/test_file_links.py,
         tests/test_examples.py, tests/test_skill_resources.py,

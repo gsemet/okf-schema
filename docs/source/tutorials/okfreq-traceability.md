@@ -336,8 +336,9 @@ uv run okfreq install-skills --local-agents
 ```
 
 For GitHub Copilot project skills, use `--local-copilot` instead. Both install
-`okfreq` and `okfreq-gardening`. Use the first for ongoing requirement work;
-use gardening for an explicitly requested drift audit. Skill instructions guide
+`okfreq`, `okfreq-setup` and `okfreq-gardening`. Use `okfreq` for ongoing
+requirement work; use `okfreq-setup` once, to create a baseline in a project
+without a bundle; use gardening for an explicitly requested drift audit. Skill instructions guide
 the agent but do not establish correctness or approval.
 
 Add the following to the project's existing `AGENTS.md` or equivalent persistent

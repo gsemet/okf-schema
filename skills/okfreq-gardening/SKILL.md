@@ -208,6 +208,19 @@ okfreq supersede OLD-ID REPLACEMENT-ID --yes
 Archive never deletes. Supersession requires a real replacement target. Do not
 mutate lifecycle state merely because prose, coverage, or indexes changed.
 
+## Phase 6b — Simplify and restructure
+
+Measure whether the bundle has grown too fine or repetitive for the local
+guideline's granularity rule: several SwRS that are scenarios of one behaviour,
+the same rule repeated per feature, near-duplicates across scopes, or SwRS that
+describe internals rather than observable behaviour. Report the counts with
+example IDs and a proposed mapping from old to new requirements.
+
+Restructuring (merging, superseding or archiving requirements) changes the
+contract: do it only after the user approves the proposed mapping. Without
+approval, report the proposal and stop this phase. Never delete a published
+requirement; supersede or archive it.
+
 ## Phase 7 — Reports and final validation
 
 Generate separate metrics rather than a composite score:
