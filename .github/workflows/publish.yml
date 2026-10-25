@@ -1,58 +1,78 @@
-name: Publish
+name: Release
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      tag:
+        description: "Existing version tag to publish"
+        required: true
+        type: string
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing version tag to publish"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
-  release-notes:
+  package:
+    environment: pypi
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Prepare release notes for this tag
-        run: >-
-          python .github/scripts/extract-release-notes.py
-          "$GITHUB_REF_NAME" "$RUNNER_TEMP/release-notes.md"
-
-      - name: Update GitHub Release notes
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+          lfs: true
+      - uses: astral-sh/setup-uv@v5
+      - name: Verify release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Expected a stable vX.Y.Z release tag" >&2
+            exit 1
+          fi
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")"
+          git merge-base --is-ancestor HEAD "origin/${{ github.event.repository.default_branch }}"
+          expected_tag="v$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          if [[ "$RELEASE_TAG" != "$expected_tag" ]]; then
+            echo "Release tag $RELEASE_TAG does not match project version $expected_tag" >&2
+            exit 1
+          fi
+          python3 -c 'import tomllib; p=tomllib.load(open("pyproject.toml", "rb")); l=tomllib.load(open("uv.lock", "rb")); raise SystemExit(next(x for x in l["package"] if x["name"] == "okf-schema")["version"] != p["project"]["version"])'
+      - name: Generate user-facing release notes
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY"
-          --notes-file "$RUNNER_TEMP/release-notes.md"
-
-  preflight:
-    uses: ./.github/workflows/ci.yml
-    permissions:
-      contents: read
-
-  publish:
-    needs: [preflight, release-notes]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    environment:
-      name: pypi
-      url: https://pypi.org/p/okf-schema
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: uv run python scripts/release_notes.py --to-ref "$RELEASE_TAG"
+      - name: Upload validated notes
+        uses: actions/upload-artifact@v4
         with:
-          python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: "latest"
-
-      - name: Build package
-        run: uv build
-
+          name: release-notes-${{ env.RELEASE_TAG }}
+          path: release-notes.md
+          if-no-files-found: error
+      - run: uv build
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+      - name: Attach distributions to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          body_path: release-notes.md
+          draft: false
+          files: dist/*

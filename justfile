@@ -221,3 +221,15 @@ eval-grade-okf-schema iteration="":
 [group('eval')]
 eval-view-okf-schema:
     bash skills-evals/eval-viewer.sh
+
+# Generate user-facing notes for an exact Git range with gh copilot.
+release-notes FROM_REF TO_REF OUTPUT="release-notes.md":
+    uv run python scripts/release_notes.py --from-ref "{{ FROM_REF }}" --to-ref "{{ TO_REF }}" --output "{{ OUTPUT }}"
+
+# Compute the next version and create a signed-off version commit, without tagging.
+bump-version:
+    uv run --group release python scripts/version.py
+
+# Set X.Y.Z and create a signed-off version commit, without tagging.
+version VERSION:
+    uv run --group release python scripts/version.py "{{ VERSION }}"

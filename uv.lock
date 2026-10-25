@@ -864,6 +864,7 @@ wheels = [
 
 [[package]]
 name = "okf-schema"
+version = "0.13.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -898,6 +899,9 @@ dev = [
     { name = "sphinxcontrib-mermaid" },
     { name = "ty" },
 ]
+release = [
+    { name = "commitizen" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -927,6 +931,7 @@ dev = [
     { name = "sphinxcontrib-mermaid", specifier = ">=1.0.0" },
     { name = "ty" },
 ]
+release = [{ name = "commitizen", specifier = ">=4.9.1" }]
 
 [[package]]
 name = "packaging"

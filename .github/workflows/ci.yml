@@ -79,3 +79,32 @@ jobs:
 
       - name: Run preflight
         run: uv run --no-sync -- just preflight
+
+  tag-release:
+    needs: [preflight, cross-platform]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+      - name: Tag a committed version bump
+        id: tag
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: uv run --group release python scripts/version.py --tag-before "$BEFORE_SHA"
+      # PyPI Trusted Publishing cannot use a reusable workflow, so dispatch publish.yml.
+      - name: Start the release workflow
+        if: steps.tag.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+        run: gh workflow run publish.yml --ref main -f tag="$RELEASE_TAG"
