@@ -247,7 +247,7 @@ Enable the check with `okf-schema validate --check-links` or
 
 ---
 
-## Warning Codes (W0–W15, W17)
+## Warning Codes (W0–W17)
 
 Warnings indicate best-practice violations or missing metadata. Validation passes with warnings unless `--strict` mode is enabled.
 
@@ -524,18 +524,24 @@ Stable code: `W10`
 
 **Severity**: Warning (OKF 0.2)
 
-**Description**: The `stale_after` date has passed, meaning the document may contain
-outdated information.
+**Description**: The `stale_after` date or instant has been reached, meaning the
+document may contain outdated information. OKF 0.2 defines `stale_after` as an
+ISO 8601 datetime with an explicit UTC offset (`Z` or `±HH:MM`), compared as an
+instant against the current time in UTC. A bare `YYYY-MM-DD` date is still
+accepted and is stale from the start of that day. Unquoted YAML timestamps are
+handled the same way as quoted strings. A value that cannot be interpreted is
+reported as W16 instead.
 
 **Example**:
 ```yaml
-stale_after: "2025-01-01"   # past date → W11
+stale_after: 2025-01-01T00:00:00Z   # past instant → W11
+stale_after: "2025-01-01"           # past date (legacy form) → W11
 ```
 
 **How to Fix**:
-Either update the content and set a new `stale_after` date, or remove the field:
+Either update the content and set a new `stale_after` value, or remove the field:
 ```yaml
-stale_after: "2027-01-01"   # updated future date
+stale_after: 2027-01-01T00:00:00Z   # updated future instant
 ```
 
 Stable code: `W11`
@@ -636,6 +642,34 @@ the reason. A missing stem in an available bundle is an E10 error.
 
 W15 is advisory and does not fail validation unless strict mode is enabled. It
 is never emitted when file-link checking is disabled.
+
+---
+
+### W16: Unparseable `stale_after`
+
+**Severity**: Warning (OKF 0.2)
+
+**Description**: `stale_after` is present but is not a bare ISO date or an ISO 8601
+datetime with an explicit UTC offset, so the staleness check (W11) cannot run and
+the concept would otherwise be treated as fresh without any signal. Typical causes
+are a typo (`tomorrow`), a datetime without an offset such as
+`2026-12-31T00:00:00` (it names a different instant in every timezone, so it is not
+guessed), or a non-string value such as a number. An empty or null `stale_after` is
+treated as absent and does not trigger W16.
+
+**Example**:
+```yaml
+stale_after: 2026-12-31T00:00:00      # no UTC offset → W16
+stale_after: tomorrow                  # not a date → W16
+```
+
+**How to Fix**:
+Write the value as an ISO 8601 datetime with an offset, or remove the field:
+```yaml
+stale_after: 2026-12-31T00:00:00Z
+```
+
+Stable code: `W16`
 
 ---
 
@@ -741,7 +775,7 @@ Use `--strict` in CI/CD pipelines to enforce best practices.
 
 When validating an OKF bundle, the following checks are applied:
 
-**All Markdown files**: E1, E2, E4, E5, E7-E10, W1, W2, W3, W6-W15
+**All Markdown files**: E1, E2, E4, E5, E7-E10, W1, W2, W3, W6-W16
 **Schema directory**: W17, I1 (reported for every schema file that yields no schema)
 **Reserved files**: E3, E6
 **Bundle structure**: W4
@@ -754,7 +788,7 @@ Markdown concepts.
 
 When validating standalone markdown files without a bundle, the following checks are applied:
 
-**All files**: E1, E2, E4, E5, E7-E10, W1, W3, W6-W13, W15
+**All files**: E1, E2, E4, E5, E7-E10, W1, W3, W6-W13, W15, W16
 **Schema directory** (`--schemas-dir`): W17, I1
 
 **Not applied** (bundle-specific):

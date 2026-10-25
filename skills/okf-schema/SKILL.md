@@ -330,7 +330,7 @@ for c in concepts:
 | E9 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
 | E10 | Annotated file link | Opt-in file target or annotation is invalid, ambiguous, or escapes its declared root |
 
-### Warnings (W0–W15, W17)
+### Warnings (W0–W17)
 
 | Code | Rule | Description |
 |------|------|-------------|
@@ -345,11 +345,12 @@ for c in concepts:
 | W8 | Legacy timestamp | Migrate `timestamp` to `generated.at` with `okf-schema lint` |
 | W9 | Legacy citations section | Move citations into `sources` and use footnotes |
 | W10 | Actor syntax | A `verified[].by` actor is not `<prefix>:<identifier>` |
-| W11 | Stale content | `stale_after` is in the past |
+| W11 | Stale content | `stale_after` (ISO 8601 datetime with UTC offset, or bare date) is in the past |
 | W12 | Source footnote | A body footnote has no matching `sources[].id` |
 | W13 | Source resource | A local `sources[].resource` path does not resolve |
 | W14 | KB derivation graph | Authored derivation paths are invalid or computed `derives_to` is stale |
 | W15 | Skipped file-link check | Opt-in target checking lacks a root or filesystem access prevents inspection |
+| W16 | Unparseable `stale_after` | Value is not an ISO 8601 datetime with UTC offset (or bare date), so W11 cannot run; fix or remove it |
 | W17 | Unusable schema file | `schema file '<name>' cannot be parsed: <reason>`: syntax error, unreadable, or not a mapping; the type has no schema |
 
 ### Informational (I1)

@@ -531,6 +531,19 @@ def test_list_bundle_stale_concept_has_stale_true(tmp_path: Path) -> None:
     assert any(c.stale for c in concepts)
 
 
+def test_list_bundle_datetime_stale_after_has_stale_true(tmp_path: Path) -> None:
+    """OKF 0.2: a past ISO 8601 datetime with UTC offset marks the concept stale."""
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "old.md").write_text(
+        "---\ntype: concept\ntitle: Old\ndescription: Old\n"
+        "stale_after: 2026-01-01T00:00:00Z\n---\n\n# Old\n",
+        encoding="utf-8",
+    )
+    concepts = list_bundle(bundle)
+    assert [c.stale for c in concepts] == [True]
+
+
 # ---------------------------------------------------------------------------
 # show_bundle
 # ---------------------------------------------------------------------------

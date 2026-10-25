@@ -58,7 +58,9 @@ properties:
     type: string
     enum: [draft, stable, deprecated]
   stale_after:
-    description: ISO 8601 date after which the document is considered stale.
+    description: >-
+      ISO 8601 datetime with a UTC offset (for example 2026-12-31T00:00:00Z)
+      from which the document is considered stale. A bare date is accepted.
     type: string
   kb_status:
     description: >-
