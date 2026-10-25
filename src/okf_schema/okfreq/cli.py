@@ -25,6 +25,7 @@ from okf_schema.okfreq.core import (
     create_requirement,
     graph,
     init_requirements,
+    is_info_finding,
     load_requirements,
     marker_scan,
     merge_config,
@@ -247,10 +248,12 @@ def validate(
     except RequirementError as exc:
         raise _fail(exc) from exc
     warnings = [finding for finding in findings if finding.startswith("W")]
-    errors = [finding for finding in findings if not finding.startswith("W")]
+    infos = [finding for finding in findings if is_info_finding(finding)]
+    errors = [finding for finding in findings if finding not in warnings and finding not in infos]
     result = {
         "errors": errors,
         "warnings": warnings,
+        "infos": infos,
         "requirements": len(load_requirements(_root(path))),
     }
     if as_json:
@@ -261,6 +264,8 @@ def validate(
         )
         for warning in warnings:
             click.echo(warning)
+        for info in infos:
+            click.echo(info)
     if errors:
         raise click.exceptions.Exit(1)
 
@@ -285,9 +290,13 @@ def _run_validation(
         project_root=Path(project_root) if project_root else None,
     )
     for finding in findings:
-        if finding.startswith("W"):
+        if finding.startswith("W") or is_info_finding(finding):
             click.echo(finding)
-    errors = [finding for finding in findings if not finding.startswith("W")]
+    errors = [
+        finding
+        for finding in findings
+        if not finding.startswith("W") and not is_info_finding(finding)
+    ]
     if errors:
         raise click.ClickException("\n".join(errors))
 
@@ -439,7 +448,13 @@ def status(path: str) -> None:
             {
                 "requirements": len(requirements),
                 "lifecycle": lifecycle,
-                "errors": len(validate_requirements(root)),
+                "errors": len(
+                    [
+                        f
+                        for f in validate_requirements(root)
+                        if not f.startswith("W") and not is_info_finding(f)
+                    ]
+                ),
             },
             indent=2,
         )

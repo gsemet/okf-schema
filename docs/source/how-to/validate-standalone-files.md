@@ -177,6 +177,8 @@ The `validate-md` command checks the following (unless noted as bundle-only):
 | **W11** | Content is not stale | Refresh or revise `stale_after` |
 | **W12** | Footnotes match source IDs | Add the corresponding `sources[].id` |
 | **W13** | Local source resources resolve | Correct `sources[].resource` |
+| **W17** | Every file in `--schemas-dir` parses as a mapping | Fix the syntax of the named schema file |
+| **I1** (info) | Schema files are not empty; never fails, even with `--strict` | Fill or delete the named schema file |
 
 **Not checked in `validate-md`** (bundle-only):
 

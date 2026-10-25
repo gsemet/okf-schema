@@ -247,7 +247,7 @@ Enable the check with `okf-schema validate --check-links` or
 
 ---
 
-## Warning Codes (W0–W15)
+## Warning Codes (W0–W15, W17)
 
 Warnings indicate best-practice violations or missing metadata. Validation passes with warnings unless `--strict` mode is enabled.
 
@@ -639,11 +639,82 @@ is never emitted when file-link checking is disabled.
 
 ---
 
+### W17: Schema File Cannot Be Parsed
+
+**Severity**: Warning
+
+**Description**: A schema file in the schema directory (`_schema/` or the
+directory given with `--schema-db` / `--schemas-dir`) cannot be used. The file
+has a syntax error (JSON, JSON5 or YAML), cannot be read, or its top-level value
+is not a mapping (for example a list or a number). The type named by the file
+stays **without schema**, so its documents are not checked against it and
+receive `W6`. The message always carries the file name and the reason:
+
+```text
+schema file 'note.schema.json' cannot be parsed: Expecting property name enclosed in double quotes: line 2 column 1 (char 19)
+schema file 'task.schema.yaml' cannot be parsed: top-level value must be a mapping, got list
+```
+
+The finding's path is the schema file. The rule is identical for
+`.schema.json`, `.schema.json5`, `.schema.yaml` and `.schema.yml`.
+
+**How to Fix**: Correct the syntax, or make the file a mapping that holds a JSON
+Schema (`type: object`, `properties`, ...).
+
+W17 fails validation only in `--strict` mode. `okfreq validate`, `status` and
+`report` list it but never count it as an error.
+
+---
+
+## Informational Codes (I1)
+
+Informational findings explain a situation without asking for a fix. They are
+shown as `INFO`, are never counted as warnings or errors, and never fail
+validation, **not even with `--strict`**.
+
+### I1: Schema File Is Empty
+
+**Severity**: Informational
+
+**Description**: A schema file exists but holds no schema: the file is empty,
+contains only whitespace, or (JSON5, YAML) contains only comments. Plain JSON has
+no comments, so a JSON file with only a comment is a syntax error (`W17`). This is the state of
+a schema file that was just created and not filled yet. The type stays **without
+schema**, so its documents receive `W6`, and the file name is reported:
+
+```text
+schema file 'task.schema.yaml' is empty
+```
+
+The finding's path is the schema file. The rule is identical for
+`.schema.json`, `.schema.json5`, `.schema.yaml` and `.schema.yml`.
+
+**How to Fix**: Write the schema, or delete the file if the type should not have one.
+
+---
+
+### Contract for editors and other consumers
+
+Tools built on okf-schema should show the same outcomes for the same file:
+
+| File content | Code | Message | Type has schema |
+|--------------|------|---------|-----------------|
+| Empty or whitespace-only (any format), or comments only (JSON5, YAML) | `I1` (info) | `schema file '<name>' is empty` | No |
+| Syntax error or unreadable file | `W17` (warning) | `schema file '<name>' cannot be parsed: <parser error>` | No |
+| Valid syntax but top-level value is not a mapping | `W17` (warning) | `schema file '<name>' cannot be parsed: top-level value must be a mapping, got <type>` | No |
+| A mapping | none | none | Yes |
+
+`<name>` is the file name without its directory. From Python,
+`okf_schema.validator.load_schema_database_with_diagnostics` returns the same
+findings as `Finding` records with `code`, `message` and `path`.
+
+---
+
 ## Exit Codes
 
 | Exit Code | Meaning |
 |-----------|---------|
-| **0** | Validation passed (no errors; warnings allowed unless `--strict` mode) |
+| **0** | Validation passed (no errors; warnings allowed unless `--strict` mode; informational findings never fail) |
 | **1** | Validation failed (errors found, or warnings in `--strict` mode) |
 
 ---
@@ -671,6 +742,7 @@ Use `--strict` in CI/CD pipelines to enforce best practices.
 When validating an OKF bundle, the following checks are applied:
 
 **All Markdown files**: E1, E2, E4, E5, E7-E10, W1, W2, W3, W6-W15
+**Schema directory**: W17, I1 (reported for every schema file that yields no schema)
 **Reserved files**: E3, E6
 **Bundle structure**: W4
 
@@ -683,6 +755,7 @@ Markdown concepts.
 When validating standalone markdown files without a bundle, the following checks are applied:
 
 **All files**: E1, E2, E4, E5, E7-E10, W1, W3, W6-W13, W15
+**Schema directory** (`--schemas-dir`): W17, I1
 
 **Not applied** (bundle-specific):
 - W2 (broken links require a common root for resolution)

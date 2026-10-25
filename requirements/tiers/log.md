@@ -2,6 +2,15 @@
 
 ## 2026-10-25
 
+- Added [SwRS-OKFSCHEMA-CORE-008](swrs/core/SwRS-OKFSCHEMA-CORE-008.md): schema files
+  that yield no schema are now reported instead of skipped silently. An empty or
+  comment-only file is informational `I1`; a syntax error, unreadable file or
+  non-mapping content is warning `W17` (`W16` is reserved elsewhere). The scenarios
+  also fix that the legacy `load_schema_database` stays silent. Coverage fields were
+  regenerated with `okfreq update-coverage`, which also added the new requirement to
+  the derived list of StRS-OKFSCHEMA-CORE-001. Verification: see the pull request for
+  the preflight result.
+
 - Added [SwRS-OKFSCHEMA-OKFREQ-010](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-010.md)
   for the new `okfreq-setup` skill, which delivers a baseline of current
   behaviour in one pull request, and added the skill to the `okfreq` scope's

@@ -440,6 +440,53 @@ def test_validate_validate_warnings_only_no_strict_exits_0() -> None:
     assert "warning" in result.output.lower()
 
 
+def _bundle_with_schema_files(tmp_path: Path, schema_files: dict[str, str]) -> Path:
+    """Create a one-concept bundle whose ``_schema`` directory holds *schema_files*."""
+    bundle = tmp_path / "bundle"
+    (bundle / "_schema").mkdir(parents=True)
+    (bundle / "index.md").write_text("---\nokf_version: '0.2'\n---\n# Index\n")
+    (bundle / "log.md").write_text("# Log\n")
+    (bundle / "a.md").write_text(
+        "---\ntype: task\ntitle: A\ndescription: d\n"
+        "generated:\n  at: 2026-01-01T00:00:00Z\n---\nBody\n"
+    )
+    for name, text in schema_files.items():
+        (bundle / "_schema" / name).write_text(text)
+    return bundle
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-008
+def test_validate_empty_schema_file_is_info_and_passes_strict(tmp_path: Path) -> None:
+    """An empty schema file is shown as INFO and does not fail --strict."""
+    bundle = _bundle_with_schema_files(tmp_path, {"task.schema.yaml": "# todo\n"})
+    result = CliRunner().invoke(cli, ["validate", "--path", str(bundle), "--strict"])
+    assert "INFO" in result.output
+    assert "[I1] schema file 'task.schema.yaml' is empty" in result.output
+    # The concept's type has no schema, so W6 is the only warning left.
+    assert "[W17]" not in result.output
+
+
+def test_validate_unparsable_schema_file_warns_w17(tmp_path: Path) -> None:
+    """A syntax error in a schema file is W17: shown, passes by default, fails --strict."""
+    bundle = _bundle_with_schema_files(tmp_path, {"note.schema.json": '{"type": "object",'})
+    plain = CliRunner().invoke(cli, ["validate", "--path", str(bundle)])
+    strict = CliRunner().invoke(cli, ["validate", "--path", str(bundle), "--strict"])
+    assert plain.exit_code == 0
+    assert "WARNING [W17] schema file 'note.schema.json' cannot be parsed: " in plain.output
+    assert strict.exit_code == 1
+
+
+def test_validate_info_alone_does_not_fail_strict(tmp_path: Path) -> None:
+    """With a usable schema for the concept type, an empty extra schema file only informs."""
+    bundle = _bundle_with_schema_files(
+        tmp_path,
+        {"task.schema.json": '{"type": "object"}', "other.schema.yaml": ""},
+    )
+    result = CliRunner().invoke(cli, ["validate", "--path", str(bundle), "--strict"])
+    assert result.exit_code == 0, result.output
+    assert "[I1] schema file 'other.schema.yaml' is empty" in result.output
+
+
 def test_validate_validate_not_a_directory() -> None:
     """validate exits 2 when path is a file (Click usage error)."""
     runner = CliRunner()

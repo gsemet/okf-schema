@@ -10,5 +10,6 @@
 - [SwRS-OKFSCHEMA-CORE-005 — Inspect and query bundle knowledge](SwRS-OKFSCHEMA-CORE-005.md) — When a user inspects an OKF bundle, okf-schema SHALL provide deterministic list, show, search, graph, backlink, and statistics results without modifying the bundle.
 - [SwRS-OKFSCHEMA-CORE-006 — Validate OKF 0.2 provenance and lifecycle](SwRS-OKFSCHEMA-CORE-006.md) — When OKF 0.2 metadata is validated, okf-schema SHALL enforce provenance, verification, lifecycle, resource, trust-tier, and staleness rules with actionable findings.
 - [SwRS-OKFSCHEMA-CORE-007 — Interpret and optionally check schema-declared file references](SwRS-OKFSCHEMA-CORE-007.md) — When annotated file targets are explicitly checked, the base okf-schema API SHALL resolve applicable x-okf-link string annotations and report invalid or skipped targets without modifying document values.
+- [SwRS-OKFSCHEMA-CORE-008 — Report schema files that yield no schema](SwRS-OKFSCHEMA-CORE-008.md) — When a schema file in a schema database is empty, cannot be parsed or is not a mapping, okf-schema SHALL report it with the file name and leave the type without schema, as informational I1 for an empty file and as warning W17 otherwise.
 
 <!-- okfreq:index:end -->

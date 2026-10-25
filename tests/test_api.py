@@ -1852,3 +1852,33 @@ def test_update_bundle_superseded_rewrite_body_with_non_matching_links(tmp_path:
     text = (bundle / "source.md").read_text(encoding="utf-8")
     assert "[Old](new.md)" in text
     assert "[Other](other.md)" in text  # preserved
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-008
+def test_validate_bundle_reports_schema_load_diagnostics(tmp_path: Path) -> None:
+    """validate_bundle surfaces I1 in ``infos`` and W17 in ``warnings`` with the file path."""
+    schema_dir = tmp_path / "schemas"
+    schema_dir.mkdir()
+    (schema_dir / "empty.schema.yaml").write_text("")
+    (schema_dir / "broken.schema.json").write_text("{")
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    report = validate_bundle(bundle, schema_db=schema_dir)
+    assert [(f.code, f.path) for f in report.infos] == [("I1", schema_dir / "empty.schema.yaml")]
+    assert [(f.code, f.path) for f in report.warnings] == [
+        ("W17", schema_dir / "broken.schema.json")
+    ]
+    assert report.is_conformant
+
+
+def test_validate_markdown_files_reports_schema_load_diagnostics(tmp_path: Path) -> None:
+    """validate_markdown_files surfaces the same diagnostics."""
+    schema_dir = tmp_path / "schemas"
+    schema_dir.mkdir()
+    (schema_dir / "empty.schema.json5").write_text("")
+    (schema_dir / "list.schema.yaml").write_text("- a\n")
+    doc = tmp_path / "doc.md"
+    doc.write_text("---\ntype: x\ntitle: T\ndescription: d\n---\n")
+    report = validate_markdown_files(str(doc), schemas_dir=schema_dir)
+    assert [f.code for f in report.infos] == ["I1"]
+    assert [f.code for f in report.warnings if f.code == "W17"] == ["W17"]

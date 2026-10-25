@@ -288,7 +288,7 @@ def validate(
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
-    if report.is_conformant and not report.warnings:
+    if report.is_conformant and not report.warnings and not report.infos:
         click.echo("Bundle is conformant (0 errors, 0 warnings).")
         return
 
@@ -301,6 +301,10 @@ def validate(
         path_str = str(finding.path) if finding.path else "<bundle>"
         by_file.setdefault(path_str, {"errors": [], "warnings": []})
         by_file[path_str]["warnings"].append(f"[{finding.code}] {finding.message}")
+    for finding in report.infos:
+        path_str = str(finding.path) if finding.path else "<bundle>"
+        by_file.setdefault(path_str, {"errors": [], "warnings": []})
+        by_file[path_str].setdefault("infos", []).append(f"[{finding.code}] {finding.message}")
 
     for path_str in sorted(by_file):
         click.echo(f"\n{path_str}")
@@ -308,6 +312,8 @@ def validate(
             click.echo(f"  ERROR   {msg}", err=True)
         for msg in by_file[path_str]["warnings"]:
             click.echo(f"  WARNING {msg}", err=True)
+        for msg in by_file[path_str].get("infos", []):
+            click.echo(f"  INFO    {msg}", err=True)
 
     error_count = len(report.errors)
     warning_count = len(report.warnings)
@@ -324,6 +330,8 @@ def validate(
             err=True,
         )
         sys.exit(1)
+    else:
+        click.echo("\nBundle is conformant (0 errors, 0 warnings).")
 
 
 def _node_to_dict(node: navigate.KbNode) -> dict:

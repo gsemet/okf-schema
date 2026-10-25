@@ -34,7 +34,8 @@ from jsonschema import Draft202012Validator, FormatChecker
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml, parse_yaml
 from okf_schema.api import check_file_links
 from okf_schema.file_links import _FileLinkContext
-from okf_schema.validator import load_schema_database
+from okf_schema.validator import load_schema_database as load_schema_database  # noqa: F401
+from okf_schema.validator import load_schema_database_with_diagnostics
 
 DEFAULT_CONFIG = """version: 1
 levels:
@@ -1164,6 +1165,25 @@ def graph(root: Path) -> dict[str, Any]:
     }
 
 
+def is_info_finding(finding: str) -> bool:
+    """Return whether a :func:`validate_requirements` finding is informational.
+
+    Args:
+        finding:
+            One finding string returned by :func:`validate_requirements`.
+
+    Returns:
+        ``True`` for ``I<number>`` findings, which never fail validation.
+
+    Examples:
+        >>> is_info_finding("I1 a.schema.yaml: schema file 'a.schema.yaml' is empty")
+        True
+        >>> is_info_finding("W17 a.schema.yaml: cannot be parsed")
+        False
+    """
+    return re.match(r"I\d+ ", finding) is not None
+
+
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-005
 def validate_requirements(
     root: Path,
@@ -1187,7 +1207,9 @@ def validate_requirements(
             the containing Git root of each requirement document is used.
 
     Returns:
-        A list of findings. Structural errors have no ``W`` prefix.
+        A list of findings. Structural errors have no ``W`` or ``I`` code
+        prefix. Schema files that yield no schema are reported as ``W17``
+        (unparsable or not a mapping) or ``I1`` (empty, informational).
 
     Examples:
         >>> from tempfile import TemporaryDirectory
@@ -1215,11 +1237,17 @@ def validate_requirements(
     base_schema = schemas_dir / "base.schema.yaml"
     if not base_schema.is_file():
         raise RequirementError(f"missing requirement schema: {base_schema}")
-    schemas = load_schema_database(schemas_dir)
+    schemas, schema_diagnostics = load_schema_database_with_diagnostics(schemas_dir)
+    schema_findings = [f"{item.code} {item.path}: {item.message}" for item in schema_diagnostics]
     normalized_schemas = {name.casefold(): schema for name, schema in schemas.items()}
     for level in ("StRS", "SwRS"):
         if level.casefold() not in normalized_schemas:
-            raise RequirementError(f"missing requirement schema for type {level}: {schemas_dir}")
+            problems = "; ".join(schema_findings)
+            raise RequirementError(
+                f"missing requirement schema for type {level}: {schemas_dir}"
+                + (f" ({problems})" if problems else "")
+            )
+    errors.extend(schema_findings)
     link_context = _FileLinkContext()
     for identifier, (file, data, text) in requirements.items():
         if prose and body_is_unfilled(text):
@@ -1387,7 +1415,11 @@ def report(root: Path) -> dict[str, Any]:
     requirements = load_requirements(root)
     trace = marker_scan(root)
     graph_result = graph(root)
-    errors = validate_requirements(root)
+    errors = [
+        item
+        for item in validate_requirements(root)
+        if not item.startswith("W") and not is_info_finding(item)
+    ]
     lifecycle: dict[str, int] = {}
     for _, data, _ in requirements.values():
         value = str(data.get("lifecycle", "invalid"))
