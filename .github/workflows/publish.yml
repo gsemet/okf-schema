@@ -75,4 +75,4 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           body_path: release-notes.md
           draft: false
-          files: dist/*
+          files: dist/okf_schema-*
