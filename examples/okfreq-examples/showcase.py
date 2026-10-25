@@ -221,6 +221,20 @@ def run_showcase(project: Path) -> dict[str, str]:
         "explicit exemption, confirmation, supersession and stable UUID/body"
     )
 
+    draft_args = ("new", "swrs", "Discarded draft", *common, "--derives-from", parent)
+    draft_args += ("--description", "When asked, the service SHALL write a draft.")
+    command(*draft_args)
+    draft = "SwRS-DELIVERY-003"
+    command("retire", draft, "--path", str(root), expected=1)
+    command("retire", replacement, "--path", str(root), "--yes", expected=1)
+    command("retire", draft, "--path", str(root), "--reason", "Merged", "--yes")
+    assert draft not in load_requirements(root)
+    assert draft in config_path.read_text(encoding="utf-8")
+    assert "SwRS-DELIVERY-004.md" in command(*draft_args)
+    outcomes["retired_ids_are_never_reused"] = (
+        "referenced or unconfirmed retirement refused; the retired number is skipped"
+    )
+
     broken = root / "tiers/strs/broken.md"
     broken.write_text("---\ntype: StRS\n---\nNo ID\n", encoding="utf-8")
     assert "broken.md" in command("validate", str(root), expected=1)

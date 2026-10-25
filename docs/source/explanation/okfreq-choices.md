@@ -32,7 +32,9 @@ The in-source and in-tests marker vocabulary defaults
 to `@implements_req` and `@tests_req`.
 `okfreq` only interoperates through stable IDs and preserved metadata.
 Lifecycle changes are explicit so a draft cannot silently become approved,
-and archive operations never delete a document.
+and archive operations never delete a document. Only `okfreq retire` deletes,
+and only a never-published draft; it records the ID so its number is never
+allocated again.
 
 See the [setup guide](../how-to/okfreq-build-requirement-base.md) and the
 [beginner tutorial](../tutorials/okfreq-traceability.md) for usage.

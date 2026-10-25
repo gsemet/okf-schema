@@ -243,7 +243,7 @@ the `okfkb` knowledge tiers. It provides:
 - authored `derives_from` relationships with generated reverse links;
 - `@implements_req` and `@tests_req` markers for implementation and test
   traceability; and
-- validation, coverage, graph, report, archive, and supersession commands.
+- validation, coverage, graph, report, archive, supersession, and draft-retirement commands.
 
 Initialize and validate a requirements bundle with:
 

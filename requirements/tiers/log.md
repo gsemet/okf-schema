@@ -11,6 +11,18 @@
   the derived list of StRS-OKFSCHEMA-CORE-001. Verification: see the pull request for
   the preflight result.
 
+- Added [SwRS-OKFSCHEMA-OKFREQ-011](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-011.md)
+  for the new `okfreq retire` command and extended
+  [SwRS-OKFSCHEMA-OKFREQ-002](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-002.md) with a
+  scenario: `okfreq new` now numbers after the highest number ever used in a
+  level prefix and scope, counting the new `retired_ids` list of `config.yml`,
+  so a deleted requirement's number is never allocated again. Validation rejects
+  a requirement whose ID is retired, and config merge takes the union of
+  `retired_ids`. The shipped baseline guideline and the okfreq skills describe
+  when to retire a draft instead of deleting it; the local overlay needs no
+  change because it specializes only paths, scopes and checks. This
+  repository's `retired_ids` is empty: no requirement has been discarded.
+- Verification: see the pull request for the preflight result.
 - Added [SwRS-OKFSCHEMA-OKFREQ-010](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-010.md)
   for the new `okfreq-setup` skill, which delivers a baseline of current
   behaviour in one pull request, and added the skill to the `okfreq` scope's

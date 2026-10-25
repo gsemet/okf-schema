@@ -61,6 +61,8 @@ The showcase creates a temporary shipping-manifest project and verifies:
 - all five file-resolution modes, wikilink labels/fragments, E10 failures and W15 skips;
 - index/search/in-file/scope/graph/trace/status and schema-validated JSON reports;
 - explicit exemptions, confirmed archive/supersede and preserved UUIDs/bodies;
+- retirement of a never-published draft, refused when unconfirmed or referenced, and
+  an ID allocator that skips the retired number;
 - a missing-ID failure followed by repaired validation.
 
 Its marker fixtures demonstrate scanning, not execution of shipping software.

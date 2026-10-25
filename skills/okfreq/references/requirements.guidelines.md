@@ -11,6 +11,10 @@ repository layout applies to another project.
 - Read the project's AGENTS.md, `<bundle>/config.yml`, and all schemas under
   `<bundle>/tiers/_schema/` before editing.
 - Preserve stable IDs, UUIDs, authored intent, comments, unknown metadata and bodies.
+- An ID is never reused: `okfreq new` numbers after the highest number ever used,
+  including `retired_ids` in `config.yml`. Discard a never-published draft with
+  `okfreq retire ID --yes`, never by deleting the file; published requirements are
+  archived or superseded.
 - Use `okfreq new strs` for stakeholder intent and user need; use `new swrs`
   for one observable behavior with a valid parent and nominal/failure scenarios.
 - Complete scaffold placeholders before review. Prose warnings remain advisory.

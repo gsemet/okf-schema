@@ -76,6 +76,7 @@ markers:
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, implemented_in_files, tested_in_files]
+retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
 ```
@@ -144,6 +145,13 @@ The CLI checks files; it does not render tooltips or find marker lines for edito
 | Inspect marker evidence | `okfreq trace . --json` |
 | Archive explicitly | `okfreq archive ID --path . --yes` sets `deprecated`, never deletes. |
 | Supersede explicitly | `okfreq supersede OLD NEW --path . --yes` preserves identity and records replacement. |
+| Discard a never-published draft | `okfreq retire ID --path . --reason TEXT --yes` deletes it, lists the ID in `retired_ids` of `config.yml` and logs it in `tiers/log.md`. It refuses a non-draft, a requirement referenced by `derives_from`, `depends_on`, `superseded_by` or a marker, and a missing `--yes`; resolve the reference first. Afterwards run `update-coverage` and `lint`. |
+
+`okfreq new` numbers after the highest number ever used in the level prefix and
+scope, counting `retired_ids`; a number is never reused. Never delete a requirement
+file by hand (the highest number would be allocated again): use `retire` for a
+draft, `archive` or `supersede` for anything published. `validate` reports a
+document whose ID is listed in `retired_ids`.
 
 Only run lifecycle mutations when authorized. Preview/review config and authored
 changes before applying; preserve imported requirements unless their migration

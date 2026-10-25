@@ -116,6 +116,39 @@ Generated artifacts should be regenerated rather than edited manually.
 Lifecycle mutations require explicit `--yes`. They preserve the requirement
 body, stable ID, UUID, and unrelated frontmatter.
 
+## Retire a draft
+
+| Command | Purpose |
+|---|---|
+| `okfreq retire TARGET [--path PATH] [--reason TEXT] --yes` | Delete a never-published draft, add its ID to `retired_ids` in `config.yml` and append an entry to `tiers/log.md`. |
+
+Use `retire` for a draft that was never published, for example one merged into
+another requirement. A published requirement is archived or superseded instead,
+because other documents, commits and reviews may cite it.
+
+`retire` changes nothing and exits non-zero when `--yes` is absent, the ID is
+unknown, the requirement is not a `draft`, another requirement lists it in
+`derives_from` or `depends_on` or as `superseded_by`, or a configured source or
+test marker still names it. The error says which. After a successful retirement,
+run `okfreq update-coverage` and `okfreq lint` to refresh generated fields and
+indexes of the parents that lost a child.
+
+`okfreq new` allocates one more than the highest number ever used for the level
+prefix and scope, counting existing requirements and retired IDs, so the retired
+number, and any number freed by a deletion below the highest, is never handed out
+again:
+
+```console
+$ okfreq new swrs "Palette search" … --scope palette    # SwRS-…-PALETTE-140
+$ okfreq retire SwRS-…-PALETTE-140 --reason "Merged into 139" --yes
+Retired SwRS-…-PALETTE-140; its number will not be reused
+$ okfreq new swrs "Palette filters" … --scope palette   # SwRS-…-PALETTE-141
+```
+
+Deleting a file by hand records nothing: a number freed below the highest is
+still skipped, but the highest one would be allocated again. Use `retire`.
+`okfreq validate` reports an error for a requirement whose ID is in `retired_ids`.
+
 ## See also
 
 - [Configuration](okfreq-configuration) — hierarchy, scopes, markers, and generated fields.

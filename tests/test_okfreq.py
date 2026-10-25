@@ -21,6 +21,7 @@ from okf_schema.okfreq.core import (
     marker_scan,
     merge_config,
     report,
+    retire_requirement,
     tiers_path,
     update_coverage,
     validate_requirements,
@@ -1146,3 +1147,230 @@ def test_status_and_report_do_not_count_schema_warnings_as_errors(tmp_path: Path
 
     assert report(root)["legacy"]["schema_health"]["errors"] == 0
     assert '"errors": 0' in CliRunner().invoke(okfreq, ["status", str(root)]).output
+
+
+def make_swrs(root: Path, title: str = "Write") -> Path:
+    return create_requirement(
+        root,
+        "SwRS",
+        title,
+        "The service writes CSV output.",
+        project="demo",
+        scope="default",
+        origin="native",
+        derives_from=["StRS-default-001"],
+    )
+
+
+def test_new_requirement_never_reuses_a_deleted_number(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    second = make_swrs(root, "Second")
+    third = make_swrs(root, "Third")
+    assert third.name == "SwRS-default-003.md"
+    # A gap in the middle is not refilled, and the highest number moves on.
+    second.unlink()
+    assert make_swrs(root, "Fourth").name == "SwRS-default-004.md"
+    # Deleting the highest number without retiring it is the documented limit.
+    assert load_config(root)["retired_ids"] == []
+
+
+def test_retire_records_id_deletes_file_and_logs(tmp_path: Path) -> None:
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-011
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    draft = make_swrs(root, "Draft")
+    before = (tiers_path(root) / "log.md").read_text(encoding="utf-8")
+
+    assert retire_requirement(root, "SwRS-default-002", reason="merged into 001") == draft
+
+    assert not draft.exists()
+    assert load_config(root)["retired_ids"] == ["SwRS-default-002"]
+    log = (tiers_path(root) / "log.md").read_text(encoding="utf-8")
+    assert log.startswith(before.rstrip("\n"))
+    assert "- Retired SwRS-default-002 (Draft); the number is never reused. Reason: merged" in log
+    # The retired number was the highest, yet it is not handed out again.
+    assert make_swrs(root, "Next").name == "SwRS-default-003.md"
+    assert validate_requirements(root) == []
+
+
+def test_retire_appends_to_todays_log_section_and_creates_missing_log(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    make_swrs(root, "First")
+    make_swrs(root, "Second")
+    retire_requirement(root, "SwRS-default-002")
+    retire_requirement(root, "SwRS-default-003")
+    lines = (tiers_path(root) / "log.md").read_text(encoding="utf-8").splitlines()
+    assert sum(line.startswith("## ") for line in lines) == 1
+    assert [line for line in lines if line.startswith("- ")] == [
+        "- Retired SwRS-default-002 (First); the number is never reused.",
+        "- Retired SwRS-default-003 (Second); the number is never reused.",
+    ]
+    (tiers_path(root) / "log.md").unlink()
+    make_swrs(root, "Third")
+    retire_requirement(root, "SwRS-default-004")
+    assert (
+        (tiers_path(root) / "log.md").read_text(encoding="utf-8").startswith("# Update Log\n\n## ")
+    )
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="derives_from", field="derives_from", match="referenced by SwRS-default-002"
+)
+@Parametrization.case(name="depends_on", field="depends_on", match="referenced by SwRS-default-002")
+def test_retire_refuses_a_referenced_requirement(tmp_path: Path, field: str, match: str) -> None:
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    child = make_swrs(root, "Child")
+    child.write_text(
+        child.read_text(encoding="utf-8").replace(
+            "derives_from:\n- StRS-default-001\n",
+            "derives_from:\n- StRS-default-001\n"
+            + (
+                "- SwRS-default-001\n"
+                if field == "derives_from"
+                else "depends_on:\n- SwRS-default-001\n"
+            ),
+        ),
+        encoding="utf-8",
+    )
+    # SwRS-default-001 is a draft with a referencing requirement.
+    before = (root / "config.yml").read_text(encoding="utf-8")
+    with pytest.raises(RequirementError, match=match):
+        retire_requirement(root, "SwRS-default-001")
+    assert (root / "config.yml").read_text(encoding="utf-8") == before
+    assert "SwRS-default-001" in load_requirements(root)
+
+
+def test_retire_refuses_unknown_published_and_marked_requirements(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    root = make_bundle(project)
+    add_requirements(root)
+    with pytest.raises(RequirementError, match="unknown requirement"):
+        retire_requirement(root, "SwRS-default-099")
+    approved = tiers_path(root) / "swrs" / "SwRS-default-001.md"
+    approved.write_text(
+        approved.read_text(encoding="utf-8").replace("lifecycle: draft", "lifecycle: approved"),
+        encoding="utf-8",
+    )
+    with pytest.raises(RequirementError, match="use archive or supersede"):
+        retire_requirement(root, "SwRS-default-001")
+    approved.write_text(
+        approved.read_text(encoding="utf-8").replace("lifecycle: approved", "lifecycle: draft"),
+        encoding="utf-8",
+    )
+    (project / "src").mkdir()
+    (project / "src" / "app.py").write_text(
+        "# @implements_req SwRS-default-001\n", encoding="utf-8"
+    )
+    with pytest.raises(RequirementError, match=r"markers in src/app\.py"):
+        retire_requirement(root, "SwRS-default-001")
+    assert approved.exists()
+    assert load_config(root)["retired_ids"] == []
+
+
+def test_validation_flags_a_requirement_with_a_retired_id(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    config = root / "config.yml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            "retired_ids: []", "retired_ids: [SwRS-default-001]"
+        )
+    )
+    findings = validate_requirements(root)
+    assert any("SwRS-default-001 is listed in retired_ids" in finding for finding in findings)
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="not_a_list", value="retired_ids: SwRS-default-001")
+@Parametrization.case(name="non_string_item", value="retired_ids: [1]")
+def test_malformed_retired_ids_are_rejected(tmp_path: Path, value: str) -> None:
+    root = make_bundle(tmp_path)
+    config = root / "config.yml"
+    config.write_text(config.read_text(encoding="utf-8").replace("retired_ids: []", value))
+    with pytest.raises(RequirementError, match="invalid retired_ids"):
+        load_config(root)
+
+
+def test_scaffold_config_declares_empty_retired_ids_and_merge_unions_them(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    assert "retired_ids: []" in (root / "config.yml").read_text(encoding="utf-8")
+    config = root / "config.yml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace("retired_ids: []", "retired_ids: [A-1]")
+    )
+    source = tmp_path / "import.yml"
+    source.write_text("retired_ids: [A-1, B-2]\ncustom: true\n", encoding="utf-8")
+    assert merge_config(root, source) == []
+    merged = load_config(root)
+    assert merged["retired_ids"] == ["A-1", "B-2"]
+    assert merged["custom"] is True
+
+
+def test_cli_retire_requires_confirmation_and_reports_refusals(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    draft = make_swrs(root, "Draft")
+    runner = CliRunner()
+    refused = runner.invoke(okfreq, ["retire", "SwRS-default-002", "--path", str(root)])
+    assert refused.exit_code != 0
+    assert "pass --yes" in refused.output
+    assert draft.exists()
+    unknown = runner.invoke(okfreq, ["retire", "SwRS-default-099", "--path", str(root), "--yes"])
+    assert unknown.exit_code != 0
+    assert "unknown requirement" in unknown.output
+    done = runner.invoke(
+        okfreq,
+        ["retire", "SwRS-default-002", "--path", str(root), "--reason", "duplicate", "--yes"],
+    )
+    assert done.exit_code == 0, done.output
+    assert "Retired SwRS-default-002" in done.output
+    assert not draft.exists()
+    again = runner.invoke(
+        okfreq,
+        [
+            "new",
+            "swrs",
+            "Next",
+            "--description",
+            "The service SHALL write.",
+            "--project",
+            "demo",
+            "--derives-from",
+            "StRS-default-001",
+            "--path",
+            str(root),
+        ],
+    )
+    assert again.exit_code == 0
+    assert "SwRS-default-003.md" in again.output
+
+
+def test_retire_preserves_comments_and_formatting_of_an_existing_config(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    config = root / "config.yml"
+    original = config.read_text(encoding="utf-8").replace("retired_ids: []\n", "")
+    config.write_text("# project policy\n" + original, encoding="utf-8")
+    retire_requirement(root, "SwRS-default-001")
+    text = config.read_text(encoding="utf-8")
+    assert text.startswith("# project policy\n" + original.rstrip("\n"))
+    assert text.endswith("retired_ids:\n- SwRS-default-001\n")
+
+
+def test_retired_numbers_of_other_scopes_and_wide_numbers_are_handled(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    config = root / "config.yml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            "retired_ids: []", "retired_ids: [StRS-other-900, StRS-default-1200, junk]"
+        ),
+        encoding="utf-8",
+    )
+    created = create_requirement(
+        root, "StRS", "Wide", "A user can export.", project="demo", scope="default", origin="native"
+    )
+    assert created.name == "StRS-default-1201.md"
