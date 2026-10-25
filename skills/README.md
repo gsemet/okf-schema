@@ -31,9 +31,12 @@ subset, both subsets, or only generic OKF bundles.
 | [`okfkb-record-findings`](okfkb-record-findings/SKILL.md) | Record one immutable empirical Finding after an investigation. | A debugging or investigation session produced one durable observation. |
 | [`okfkb-distill`](okfkb-distill/SKILL.md) | Interactively review Findings, contradictions, experiments, and promotions. | A human is ready to consolidate a batch of Findings. |
 | [`okfreq`](okfreq/SKILL.md) | Understand and route the living-requirements lifecycle from stakeholder intent through software behavior to source, tests, and reports. | The task concerns setting up, authoring, implementing, tracing, or maintaining `okfreq` requirements. |
+| [`okfreq-setup`](okfreq-setup/SKILL.md) | Install okfreq in a project with no requirements bundle and deliver, in one pull request and without questions, a baseline that specifies every current behaviour, anchored to the code by markers and covered by tests. | The user asks to set up, install, bootstrap, or adopt `okfreq` in a project that has no bundle yet. |
 | [`okfreq-gardening`](okfreq-gardening/SKILL.md) | Audit and safely improve requirement traceability, hierarchy, coverage, and configuration. | The user explicitly asks to garden, audit, refresh, or reconcile an `okfreq` bundle. |
 
-The `okfreq-gardening` skill is the requirements-oriented workflow. It operates
+The `okfreq-setup` skill runs once per project, when there is no bundle: it ends
+with a pull request and hands over to `okfreq-gardening`, which is the recurring
+requirements-oriented workflow. Both operate
 on `okfreq` bundles and must not be used to classify or promote `okfkb`
 knowledge documents. The `okfkb` skill is the knowledge-base router; it is not
 the requirements subset.
@@ -98,6 +101,19 @@ create requirements  derive StRS → SwRS   trace markers
                       okfreq-gardening
                       audit + reconcile
 ```
+
+`okfreq-setup` sits in front of this path. It runs once, in a project with no
+bundle, and applies the same baseline guideline that `okfreq init` installs:
+
+```text
+  okfreq-setup ──> requirements/guidelines/requirements.guidelines.md <── okfreq-gardening
+  (once, no          (project guideline: wins over every skill)         (recurring, asks
+   questions)                                                            before restructuring)
+```
+
+Precedence is the project guideline first, then `okfreq-setup`, then `okfreq` and
+`okfreq-gardening`. Each skill works without the others; `okfreq` is the CLI
+reference they rely on when installed.
 
 Use this requirements flow only for an `okfreq` bundle. Do not place
 requirements in the `okfkb` knowledge tiers merely because both formats use

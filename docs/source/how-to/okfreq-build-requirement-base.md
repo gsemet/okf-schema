@@ -84,9 +84,31 @@ configuration is `requirements/config.yml`, its documents are under
 `requirements/tiers/`, and its requirements-specific guidance is in
 `requirements/guidelines/requirements.guidelines.md`.
 
+To go from a project with no requirements bundle to a reviewable baseline in one
+step, ask your agent to use the `okfreq-setup` skill (installed with
+`okfreq install-skills`). It installs okfreq, initialises `requirements/`,
+specifies every current behaviour as StRS and SwRS, adds `@implements_req` and
+`@tests_req` markers, adds tests for untested behaviour and opens one pull
+request, without asking you questions. It stops if a bundle already exists, and
+it never merges. Behaviour that looks wrong is specified as it is, marked
+"Known issue", and listed in the final report as a bug candidate. Review the
+pull request like any other: the markers show where evidence is linked, not that
+the specification is right.
+
+The baseline guideline installed into the project explains the rules the
+specification follows. Requirements describe what the code does today, anchored
+by marker pairs; one SwRS is one observable behaviour with a scenario for each
+refusal and boundary; a rule shared by many features is written once and cited
+with `depends_on`; IDs are created by `okfreq new`, never reused, and retired
+requirements are archived or superseded rather than deleted. A project may
+override these rules only in its own guideline section.
+
 For an existing or brownfield requirements base, use the `okfreq-gardening`
 skill from the repository's `skills/okfreq-gardening/SKILL.md` package to audit
 gaps and configuration drift while preserving authored requirement content.
+When the bundle has grown too fine or repetitive, the gardening skill proposes a
+mapping to merge or supersede requirements and waits for your approval before
+restructuring.
 
 ## Maintain navigation and record changes
 

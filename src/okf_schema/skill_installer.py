@@ -33,7 +33,7 @@ SKILL_FAMILIES: Mapping[str, tuple[str, ...]] = MappingProxyType(
             "okfkb-gardening",
             "okfkb-record-findings",
         ),
-        "okfreq": ("okfreq", "okfreq-gardening"),
+        "okfreq": ("okfreq", "okfreq-gardening", "okfreq-setup"),
     }
 )
 

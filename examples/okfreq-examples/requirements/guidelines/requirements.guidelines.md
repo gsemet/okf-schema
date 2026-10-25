@@ -19,9 +19,38 @@ Requirement documents live only under `tiers/`.
 - Read the bundle's `config.yml` and every schema under `tiers/_schema/`.
 - Use `okfreq` for creation, validation, indexing, traceability, and lifecycle changes.
 - Read `okfreq --help` for the authoritative command options.
-- When backfilling an existing feature, inspect agreed documentation, source and
-  tests first. Propose intended behavior with evidence and open questions;
-  do not assume every implemented detail is a desired requirement.
+- When backfilling an existing feature, specify what the code does today (see
+  "Anchored to the code"), from the source, the tests and the documentation.
+
+## Anchored to the code
+
+- Requirements state what the software does today, never the desired state.
+- A behaviour that looks wrong is still specified as it behaves, with a line
+  "Known issue: …" in the SwRS. The fix changes the code, the test and the SwRS
+  in the same change.
+- The anchor is the marker pair: `@implements_req` at the code that produces the
+  behaviour, `@tests_req` at the test that checks it. When marked code or tests
+  move, the markers move in the same change.
+- A requirement never names a backlog item or ticket; the ticket names the
+  requirement.
+
+## Granularity
+
+- One SwRS is one observable behaviour, with all its scenarios: the nominal
+  case, each refusal and each boundary. Do not split them into several SwRS.
+- A rule shared by many features (a refusal, a validation, a limit) is written
+  once and cited by `depends_on`; it is not repeated per feature.
+- Settings, commands and buttons are scenarios of the behaviour they drive, not
+  SwRS of their own, unless the project guideline says otherwise.
+- An StRS is a user use case; a scope usually has 3 to 8.
+- A project may set a finer or coarser rule in its own guideline section.
+
+## Identities
+
+- Never reuse or hand-allocate an ID; create with `okfreq new`.
+- `okfreq new` may give a deleted requirement's number to a new one. Retire
+  published requirements with `okfreq archive` or `okfreq supersede`, never by
+  deleting the file.
 
 ## While editing
 
@@ -56,9 +85,10 @@ preserved and are not migrated by `okfreq init`.
   generated normative behavior, user need, and rationale/constraints sections.
   Do not add SwRS scenarios or verification notes.
 - For an SwRS, pass one observable, bounded `SHALL` response as `--description`
-  and at least one valid StRS ID with `--derives-from`. Complete both generated
-  GIVEN-WHEN-THEN scenarios and the objective verification notes. Do not add an
-  StRS user-need or stakeholder-constraints section.
+  and at least one valid StRS ID with `--derives-from`. Complete the generated
+  GIVEN-WHEN-THEN scenarios, adding one per refusal or boundary of the same
+  behaviour, and the objective verification notes. Do not add an StRS user-need
+  or stakeholder-constraints section.
 - Replace every angle-bracket placeholder before review. A remaining placeholder
   is an explicit gap, not content to delete or silently reinterpret.
 

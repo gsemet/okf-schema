@@ -1,5 +1,18 @@
 # Update Log
 
+## 2026-10-25
+
+- Added [SwRS-OKFSCHEMA-OKFREQ-010](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-010.md)
+  for the new `okfreq-setup` skill, which delivers a baseline of current
+  behaviour in one pull request, and added the skill to the `okfreq` scope's
+  source folders. The shipped baseline guideline now states that requirements
+  describe current behaviour (bugs as "Known issue"), one SwRS per observable
+  behaviour with a scenario per refusal or boundary, shared rules written once,
+  and IDs never reused. The local overlay needs no change: it specializes only
+  paths, scopes and checks. The gardening skill gained a user-approved
+  simplification phase.
+- Verification: see the pull request for the preflight result.
+
 ## 2026-10-19
 
 - Consolidated the first-Finding introduction and hardware narrative into the

@@ -96,6 +96,7 @@ def test_end_to_end_workflow_install_skills_keeps_families_isolated(tmp_path: Pa
     assert not (kb_destination / "okfreq" / "SKILL.md").exists()
     assert (req_destination / "okfreq" / "SKILL.md").is_file()
     assert (req_destination / "okfreq-gardening" / "SKILL.md").is_file()
+    assert (req_destination / "okfreq-setup" / "SKILL.md").is_file()
     assert not (req_destination / "okfkb" / "SKILL.md").exists()
     assert not (tmp_path / "AGENTS.md").exists()
     assert not (tmp_path / "guidelines").exists()

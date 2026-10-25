@@ -23,7 +23,7 @@ capabilities to real usage and executable demonstrations.
 | Inspection and recovery | The showcase exercises index/search/in-file/scope/graph/trace/status, a missing-ID failure, target failure, skipped-root warning and repaired validation. |
 | Knowledge-base learning path | The single OKFKB tutorial teaches document roles and both existing illustrations, then executes capture, bounded synthesis, derivation and navigation. `tests/test_tutorial_okfkb.py` checks the actual snippets and preservation of recorded Finding bodies. |
 | Existing-project adoption | The traceability tutorial runs an existing CSV feature, backfills reviewed drafts, links evidence and exercises its actual task-runner recipes. `tests/test_tutorial_okfreq.py` executes the published snippets in a disposable project. |
-| Standalone agent distribution | `okfreq install-skills` ships the operations guide and gardening skill; wheel tests install resources without the source checkout. |
+| Standalone agent distribution | `okfreq install-skills` ships the operations guide, setup skill and gardening skill; wheel tests install resources without the source checkout. |
 
 ## Try the concrete scenarios
 

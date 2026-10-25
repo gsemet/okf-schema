@@ -112,7 +112,7 @@ satisfied. It is not an issue title, design choice, code comment, or task.
 | Intent | Action |
 |---|---|
 | Understand what belongs in requirements | Apply the core model and distinguish stakeholder outcomes from software behavior. |
-| Set up a requirements base | Run `okfreq init <project>` and review the generated configuration, schemas, and local guideline before authoring. |
+| Set up a requirements base | Use the `okfreq-setup` skill when it is installed; otherwise run `okfreq init <project>` and review the generated configuration, schemas, and local guideline before authoring. |
 | Capture stakeholder intent | Create an StRS with a stakeholder-observable `SHALL` statement and a preserved `--user-need`. |
 | Refine intent into software behavior | Create an SwRS with one bounded `SHALL` response and at least one valid StRS `--derives-from` parent. |
 | Implement a software requirement | Change code and focused tests together, add source/test markers near the evidence, run tests, then refresh coverage explicitly. |

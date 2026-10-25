@@ -42,7 +42,7 @@ def test_skill_families_are_exact_and_immutable() -> None:
             "okfkb-gardening",
             "okfkb-record-findings",
         ),
-        "okfreq": ("okfreq", "okfreq-gardening"),
+        "okfreq": ("okfreq", "okfreq-gardening", "okfreq-setup"),
     }
     with pytest.raises(TypeError):
         SKILL_FAMILIES["other"] = ("other",)  # type: ignore[index]
