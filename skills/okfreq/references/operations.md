@@ -154,7 +154,9 @@ configured hierarchy. Missing scan directories make coverage incomplete.
 
 For structural errors repair the indicated file, do not delete it to reduce the
 error count. For `E10` fix the target, filename ambiguity, or annotation; for
-`W15` provide the correct root or restore access. For stale coverage preview and
+`W15` provide the correct root or restore access. For `W17` (a requirement schema file
+that is unparsable or not a mapping) repair the named file; `I1` (an empty schema file) is
+informational and does not fail validation. For stale coverage preview and
 regenerate it. Execute the project's actual tests separately and report their
 results independently from marker percentages. For broad drift audits locate
 the installed `okfreq-gardening` skill by name.

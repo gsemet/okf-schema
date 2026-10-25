@@ -28,6 +28,7 @@ from okf_schema._internal.models import (
     BundleStats,
     ConceptDetail,
     ConceptSummary,
+    Finding,
     IndexUpdate,
     Report,
     SearchResult,
@@ -48,7 +49,12 @@ from okf_schema.file_links import inspect_file_links as inspect_file_links
 from okf_schema.formatter import FormattedResult
 from okf_schema.formatter import format_bundle as _format_bundle
 from okf_schema.formatter import lint_bundle as _lint_bundle
-from okf_schema.validator import _derive_trust_tier, _is_stale, load_schema_database
+from okf_schema.validator import (
+    _derive_trust_tier,
+    _is_stale,
+    load_schema_database,
+    load_schema_database_with_diagnostics,
+)
 from okf_schema.validator import validate_bundle as _validate_bundle
 from okf_schema.validator import validate_markdown_files as _validate_markdown_files
 
@@ -118,7 +124,9 @@ def validate_bundle(
             the containing Git root of each document is used.
 
     Returns:
-        A :class:`Report` with all errors and warnings.
+        A :class:`Report` with all errors, warnings and informational notes.
+        Schema files that yield no schema are reported as ``I1`` (empty) or
+        ``W17`` (unparsable or not a mapping).
 
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
@@ -127,17 +135,20 @@ def validate_bundle(
     """
     bundle = _resolve_bundle(bundle_path)
     schemas = None
+    diagnostics: list[Finding] = []
     if schema_db is not None:
-        schemas = load_schema_database(Path(schema_db))
+        schemas, diagnostics = load_schema_database_with_diagnostics(Path(schema_db))
     elif (bundle / "_schema").is_dir():
-        schemas = load_schema_database(bundle / "_schema")
+        schemas, diagnostics = load_schema_database_with_diagnostics(bundle / "_schema")
     configured_project_root = Path(project_root).expanduser() if project_root is not None else None
-    return _validate_bundle(
+    report = _validate_bundle(
         bundle,
         schemas,
         check_links=check_links,
         project_root=configured_project_root,
     )
+    report.add_schema_diagnostics(diagnostics)
+    return report
 
 
 def validate_markdown_files(
@@ -174,7 +185,9 @@ def validate_markdown_files(
             the containing Git root of each document is used.
 
     Returns:
-        A :class:`Report` with all errors and warnings.
+        A :class:`Report` with all errors, warnings and informational notes.
+        Schema files that yield no schema are reported as ``I1`` (empty) or
+        ``W17`` (unparsable or not a mapping).
 
     Raises:
         FileNotFoundError: When *schemas_dir* does not exist (if provided).
@@ -217,23 +230,26 @@ def validate_markdown_files(
 
     # Load schemas if provided
     schemas = None
+    diagnostics: list[Finding] = []
     if schemas_dir is not None:
         schemas_path = Path(schemas_dir).expanduser().resolve()
         if not schemas_path.exists():
             raise FileNotFoundError(f"Schemas directory does not exist: {schemas_path}")
         if not schemas_path.is_dir():
             raise NotADirectoryError(f"Schemas path is not a directory: {schemas_path}")
-        schemas = load_schema_database(schemas_path)
+        schemas, diagnostics = load_schema_database_with_diagnostics(schemas_path)
 
     configured_bundle_root = Path(bundle_root).expanduser() if bundle_root is not None else None
     configured_project_root = Path(project_root).expanduser() if project_root is not None else None
-    return _validate_markdown_files(
+    report = _validate_markdown_files(
         sorted(collected_files),
         schemas,
         check_links=check_links,
         bundle_root=configured_bundle_root,
         project_root=configured_project_root,
     )
+    report.add_schema_diagnostics(diagnostics)
+    return report
 
 
 # @implements_req SwRS-OKFSCHEMA-CORE-003

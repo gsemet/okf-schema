@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from parametrization import Parametrization
+
 from okf_schema.validator import (
     _has_block_lists,
     _has_nested_lists,
     load_schema_database,
+    load_schema_database_with_diagnostics,
     validate_against_schema,
     validate_bundle,
     validate_concept,
@@ -92,6 +95,88 @@ def test_load_schema_database_skips_oserror(tmp_path: Path) -> None:
     (tmp_path / "bad.schema.json").mkdir()
     schemas = load_schema_database(tmp_path)
     assert schemas == {}
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-008
+@Parametrization.autodetect_parameters()
+@Parametrization.case("json_empty", filename="t.schema.json", text="")
+@Parametrization.case("json_blank", filename="t.schema.json", text="  \n")
+@Parametrization.case("json5_empty", filename="t.schema.json5", text="")
+@Parametrization.case("json5_blank", filename="t.schema.json5", text="\n\n")
+@Parametrization.case("json5_comments", filename="t.schema.json5", text="// todo\n/* x */")
+@Parametrization.case("yaml_doc_marker", filename="t.schema.yaml", text="---\n")
+@Parametrization.case("yaml_empty", filename="t.schema.yaml", text="")
+@Parametrization.case("yaml_comments", filename="t.schema.yaml", text="# nothing yet\n")
+@Parametrization.case("yml_comments", filename="t.schema.yml", text="# nothing yet\n")
+def test_diagnostics_report_empty_schema_file_as_info(
+    tmp_path: Path, filename: str, text: str
+) -> None:
+    """An empty schema file is I1, names the file and leaves the type without schema."""
+    (tmp_path / filename).write_text(text)
+    schemas, diagnostics = load_schema_database_with_diagnostics(tmp_path)
+    assert schemas == {}
+    assert [(d.code, d.message, d.path) for d in diagnostics] == [
+        ("I1", f"schema file '{filename}' is empty", tmp_path / filename)
+    ]
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case("json_syntax", filename="t.schema.json", text='{"type": "object",')
+@Parametrization.case("json_comment_only", filename="t.schema.json", text="// todo")
+@Parametrization.case("json_non_mapping", filename="t.schema.json", text="[1, 2]")
+@Parametrization.case("json5_syntax", filename="t.schema.json5", text="not json5")
+@Parametrization.case("json5_non_mapping", filename="t.schema.json5", text="42")
+@Parametrization.case("yaml_syntax", filename="t.schema.yaml", text="{not yaml")
+@Parametrization.case("yaml_non_mapping", filename="t.schema.yaml", text="- a\n- b\n")
+def test_diagnostics_report_unparsable_schema_file_as_w17(
+    tmp_path: Path, filename: str, text: str
+) -> None:
+    """A syntax error or non-mapping content is W17 with the file filename and a reason."""
+    (tmp_path / filename).write_text(text)
+    schemas, diagnostics = load_schema_database_with_diagnostics(tmp_path)
+    assert schemas == {}
+    assert len(diagnostics) == 1
+    assert diagnostics[0].code == "W17"
+    assert diagnostics[0].message.startswith(f"schema file '{filename}' cannot be parsed: ")
+    assert len(diagnostics[0].message) > len(f"schema file '{filename}' cannot be parsed: ")
+    assert diagnostics[0].path == tmp_path / filename
+
+
+def test_diagnostics_report_unreadable_schema_file_as_w17(tmp_path: Path, monkeypatch) -> None:
+    """A schema file that cannot be read is W17 with the operating-system error."""
+    (tmp_path / "bad.schema.json").write_text("{}")
+
+    def unreadable(self: Path, *args: object, **kwargs: object) -> str:
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+    schemas, diagnostics = load_schema_database_with_diagnostics(tmp_path)
+    assert schemas == {}
+    assert [d.code for d in diagnostics] == ["W17"]
+    assert "denied" in diagnostics[0].message
+
+
+def test_diagnostics_keep_valid_schemas_and_sort_by_file(tmp_path: Path) -> None:
+    """Usable schemas load next to diagnostics, which are sorted by file name."""
+    (tmp_path / "ok.schema.json").write_text('{"type": "object"}')
+    (tmp_path / "z.schema.yaml").write_text("")
+    (tmp_path / "a.schema.json").write_text("{")
+    schemas, diagnostics = load_schema_database_with_diagnostics(tmp_path)
+    assert sorted(schemas) == ["ok"]
+    assert [d.path.name for d in diagnostics if d.path] == ["a.schema.json", "z.schema.yaml"]
+    assert load_schema_database(tmp_path) == schemas
+
+
+def test_diagnostics_accept_utf8_bom(tmp_path: Path) -> None:
+    """A UTF-8 BOM before the schema is ignored."""
+    (tmp_path / "t.schema.json").write_bytes(b'\xef\xbb\xbf{"type": "object"}')
+    schemas, diagnostics = load_schema_database_with_diagnostics(tmp_path)
+    assert list(schemas) == ["t"] and diagnostics == []
+
+
+def test_diagnostics_missing_directory_is_empty(tmp_path: Path) -> None:
+    """A missing schema directory yields no schema and no diagnostic."""
+    assert load_schema_database_with_diagnostics(tmp_path / "missing") == ({}, [])
 
 
 def test_load_schema_database_resolves_json_ref(tmp_path: Path) -> None:

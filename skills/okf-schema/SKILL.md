@@ -330,7 +330,7 @@ for c in concepts:
 | E9 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
 | E10 | Annotated file link | Opt-in file target or annotation is invalid, ambiguous, or escapes its declared root |
 
-### Warnings (W0–W15)
+### Warnings (W0–W15, W17)
 
 | Code | Rule | Description |
 |------|------|-------------|
@@ -350,6 +350,16 @@ for c in concepts:
 | W13 | Source resource | A local `sources[].resource` path does not resolve |
 | W14 | KB derivation graph | Authored derivation paths are invalid or computed `derives_to` is stale |
 | W15 | Skipped file-link check | Opt-in target checking lacks a root or filesystem access prevents inspection |
+| W17 | Unusable schema file | `schema file '<name>' cannot be parsed: <reason>`: syntax error, unreadable, or not a mapping; the type has no schema |
+
+### Informational (I1)
+
+| Code | Rule | Description |
+|------|------|-------------|
+| I1 | Empty schema file | `schema file '<name>' is empty`: empty or comment-only file; the type has no schema. Shown as `INFO`, never fails validation, even with `--strict` |
+
+An I1 or W17 file means a type is unchecked, not that its documents are valid.
+Tell the user which file to fill or fix; do not invent its content (see Guardrails).
 
 ## Recommended Workflows
 
@@ -374,6 +384,7 @@ Only zip or distribute the bundle once `validate --strict` reports zero errors *
 2. Add `title` and `x-okf-summary` to each schema for richer `index.md` generation.
 3. Run `okf-schema validate --path <bundle>` — schemas are auto-discovered.
 4. Iterate on schema definitions; JSON5 allows comments and trailing commas.
+5. A new empty schema file reports `I1`; a syntax error reports `W17` with the file name and parser error.
 
 ## Guardrails
 

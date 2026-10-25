@@ -12,7 +12,7 @@ from pathlib import Path
 
 @dataclass
 class Finding:
-    """A single validation finding (error or warning)."""
+    """A single validation finding (error, warning or informational note)."""
 
     code: str
     message: str
@@ -25,6 +25,7 @@ class Report:
 
     errors: list[Finding] = field(default_factory=list)
     warnings: list[Finding] = field(default_factory=list)
+    infos: list[Finding] = field(default_factory=list)
 
     @property
     def is_conformant(self) -> bool:
@@ -80,6 +81,55 @@ class Report:
             1
         """
         self.warnings.append(Finding(code, message, path))
+
+    def add_info(
+        self,
+        code: str,
+        message: str,
+        path: Path | None = None,
+    ) -> None:
+        """Append an informational finding to the report.
+
+        Informational findings never make a report non-conformant and are
+        never counted by ``--strict``.
+
+        Args:
+            code:
+                Stable machine-readable finding code.
+            message:
+                Human-readable explanation.
+            path:
+                Optional path associated with the finding.
+
+        Examples:
+            >>> from okf_schema._internal.models import Report
+            >>> report = Report()
+            >>> report.add_info("I1", "schema file is empty")
+            >>> report.is_conformant, len(report.infos)
+            (True, 1)
+        """
+        self.infos.append(Finding(code, message, path))
+
+    def add_schema_diagnostics(self, diagnostics: list[Finding]) -> None:
+        """Route schema-loading diagnostics to warnings or informational notes.
+
+        Args:
+            diagnostics:
+                Findings returned by
+                :func:`okf_schema.validator.load_schema_database_with_diagnostics`.
+                Codes starting with ``W`` become warnings; the others become
+                informational notes.
+
+        Examples:
+            >>> from okf_schema._internal.models import Finding, Report
+            >>> report = Report()
+            >>> report.add_schema_diagnostics([Finding("I1", "empty"), Finding("W17", "bad")])
+            >>> len(report.infos), len(report.warnings)
+            (1, 1)
+        """
+        for finding in diagnostics:
+            target = self.warnings if finding.code.startswith("W") else self.infos
+            target.append(finding)
 
 
 @dataclass

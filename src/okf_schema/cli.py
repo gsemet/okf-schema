@@ -367,7 +367,7 @@ def validate(
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(1)
 
-    if report.is_conformant and not report.warnings:
+    if report.is_conformant and not report.warnings and not report.infos:
         _echo(ctx, "Bundle is conformant (0 errors, 0 warnings).")
         ctx.exit(0)
 
@@ -381,6 +381,10 @@ def validate(
         path_str = str(finding.path) if finding.path else "<bundle>"
         by_file.setdefault(path_str, {"errors": [], "warnings": []})
         by_file[path_str]["warnings"].append(f"[{finding.code}] {finding.message}")
+    for finding in report.infos:
+        path_str = str(finding.path) if finding.path else "<bundle>"
+        by_file.setdefault(path_str, {"errors": [], "warnings": []})
+        by_file[path_str].setdefault("infos", []).append(f"[{finding.code}] {finding.message}")
 
     for path_str in sorted(by_file):
         _echo(ctx, f"\n{path_str}")
@@ -388,6 +392,8 @@ def validate(
             click.echo(f"  ERROR   {msg}", err=True)
         for msg in by_file[path_str]["warnings"]:
             click.echo(f"  WARNING {msg}", err=True)
+        for msg in by_file[path_str].get("infos", []):
+            click.echo(f"  INFO    {msg}", err=True)
 
     error_count = len(report.errors)
     warning_count = len(report.warnings)
@@ -500,7 +506,7 @@ def validate_md(
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(1)
 
-    if report.is_conformant and not report.warnings:
+    if report.is_conformant and not report.warnings and not report.infos:
         _echo(ctx, "All files validated successfully (0 errors, 0 warnings).")
         ctx.exit(0)
 
@@ -514,6 +520,10 @@ def validate_md(
         path_str = str(finding.path) if finding.path else "<unknown>"
         by_file.setdefault(path_str, {"errors": [], "warnings": []})
         by_file[path_str]["warnings"].append(f"[{finding.code}] {finding.message}")
+    for finding in report.infos:
+        path_str = str(finding.path) if finding.path else "<unknown>"
+        by_file.setdefault(path_str, {"errors": [], "warnings": []})
+        by_file[path_str].setdefault("infos", []).append(f"[{finding.code}] {finding.message}")
 
     for path_str in sorted(by_file):
         _echo(ctx, f"\n{path_str}")
@@ -521,6 +531,8 @@ def validate_md(
             click.echo(f"  ERROR   {msg}", err=True)
         for msg in by_file[path_str]["warnings"]:
             click.echo(f"  WARNING {msg}", err=True)
+        for msg in by_file[path_str].get("infos", []):
+            click.echo(f"  INFO    {msg}", err=True)
 
     error_count = len(report.errors)
     warning_count = len(report.warnings)

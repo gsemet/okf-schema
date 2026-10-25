@@ -91,6 +91,30 @@ or test results; navigation metadata remains advisory for downstream consumers.
    :members:
 ```
 
+## Schema loading diagnostics
+
+`validate_bundle` and `validate_markdown_files` report schema files that yield no
+schema: `Report.infos` receives `I1` for an empty file and `Report.warnings`
+receives `W17` for an unparsable or non-mapping file (see
+[validation codes](validation-codes.md)). Informational findings never make a
+report non-conformant. Use the loader directly to get the same findings:
+
+```python
+from pathlib import Path
+from okf_schema.validator import load_schema_database_with_diagnostics
+
+schemas, diagnostics = load_schema_database_with_diagnostics(Path("bundle/_schema"))
+for finding in diagnostics:
+   print(finding.code, finding.path, finding.message)
+```
+
+`load_schema_database` keeps its signature and returns only the mapping, skipping
+such files silently.
+
+```{eval-rst}
+.. autofunction:: okf_schema.validator.load_schema_database_with_diagnostics
+```
+
 ## Bundle operations
 
 ```{eval-rst}

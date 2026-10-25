@@ -14,6 +14,7 @@ user_need: Teams need deterministic validation of ordinary OKF bundles.
 derived_by:
 - SwRS-OKFSCHEMA-CORE-001
 - SwRS-OKFSCHEMA-CORE-006
+- SwRS-OKFSCHEMA-CORE-008
 ---
 
 ## Validate OKF bundle structures

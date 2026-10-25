@@ -228,6 +228,27 @@ project-relative links. See the
 [requirements frontmatter example](../reference/okfreq-frontmatter.md)
 for the repository's StRS/SwRS contract and its link-enabled validation command.
 
+## Check that your schema is loaded
+
+Validation tells you when a schema file yields no schema, so a new or broken file
+never makes a type silently unchecked:
+
+```console
+$ : > _schema/task.schema.yaml
+$ echo '{"type": "object",' > _schema/note.schema.json
+$ okf-schema validate --path bundle
+bundle/_schema/note.schema.json
+  WARNING [W17] schema file 'note.schema.json' cannot be parsed: Expecting property name enclosed in double quotes: line 2 column 1 (char 19)
+
+bundle/_schema/task.schema.yaml
+  INFO    [I1] schema file 'task.schema.yaml' is empty
+```
+
+An empty (or comment-only) file is informational (`I1`) and never fails `--strict`.
+A syntax error, an unreadable file or a non-mapping value is warning `W17`.
+In both cases the type stays without schema. See the
+[validation codes](../reference/validation-codes.md).
+
 ## Schema metadata for index generation
 
 `okf-schema index` reads two optional top-level fields to produce richer

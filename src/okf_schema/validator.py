@@ -1,6 +1,6 @@
 """Validate Open Knowledge Format (OKF) bundles and standalone documents.
 
-Implements conformance error (E1-E9) and best-practice warning (W1-W14)
+Implements conformance error (E1-E9) and best-practice warning (W1-W17)
 rules. :func:`validate_bundle` is the main entry point for a bundle;
 :func:`validate_markdown_files` validates documents without bundle-level rules.
 
@@ -15,6 +15,10 @@ OKF 0.2 additions (E7-E9, W8-W13):
   W12 – Footnote `[^id]` with no matching `sources[].id`
   W13 – Broken path in path-form `resource` or `sources[].resource`
   W14 – Invalid authored OKFKB derivation or stale computed `derives_to`
+
+Schema loading diagnostics (see :func:`load_schema_database_with_diagnostics`):
+  I1  – Informational: schema file is empty (type stays without schema)
+  W17 – Schema file cannot be parsed or is not a mapping (type stays without schema)
 
 Examples:
     >>> from tempfile import TemporaryDirectory
@@ -36,7 +40,7 @@ import pyjson5
 from jsonschema import Draft202012Validator
 from ruamel.yaml.error import YAMLError
 
-from okf_schema._internal.models import Report
+from okf_schema._internal.models import Finding, Report
 from okf_schema._internal.utils import (
     ISO8601_DATE_RE,
     RESERVED_FILES,
@@ -169,15 +173,122 @@ def _resolve_refs_in_schema(
     return result
 
 
+def _load_schema_file(path: Path, y: Any) -> tuple[str, dict | None, Finding | None] | None:
+    """Parse one schema file.
+
+    Returns:
+        ``None`` when *path* is not a schema file; otherwise ``(type, schema,
+        diagnostic)`` where *schema* is ``None`` if the file produced no schema.
+    """
+    name = path.name
+    for suffix in (".schema.json", ".schema.json5", ".schema.yaml", ".schema.yml"):
+        if name.endswith(suffix):
+            type_key = name[: -len(suffix)]
+            break
+    else:
+        return None
+
+    def unparsable(reason: str) -> tuple[str, None, Finding]:
+        message = f"schema file '{name}' cannot be parsed: {reason}"
+        return type_key, None, Finding("W17", message, path)
+
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+        if suffix == ".schema.json":
+            data = json.loads(text) if text.strip() else None
+        elif suffix == ".schema.json5":
+            data = pyjson5.loads(text) if text.strip() else None
+        else:
+            data = y.load(text)
+    except pyjson5.Json5DecoderException as exc:
+        reason = str(exc.args[0]) if exc.args else str(exc)
+        if reason.startswith("No JSON data found"):  # JSON5 holding only comments
+            return type_key, None, Finding("I1", f"schema file '{name}' is empty", path)
+        return unparsable(" ".join(reason.split()))
+    except (json.JSONDecodeError, YAMLError, OSError) as exc:
+        return unparsable(" ".join(str(exc).split()))
+    if data is None:
+        return type_key, None, Finding("I1", f"schema file '{name}' is empty", path)
+    if not isinstance(data, dict):
+        return unparsable(f"top-level value must be a mapping, got {type(data).__name__}")
+    return type_key, dict(data), None
+
+
+# @implements_req SwRS-OKFSCHEMA-CORE-008
+def load_schema_database_with_diagnostics(
+    schema_db: Path,
+) -> tuple[dict[str, dict], list[Finding]]:
+    """Load schema files and report every file that produced no schema.
+
+    Behaves like :func:`load_schema_database` but also returns diagnostics, so
+    that a type left without schema is never silent. The contract is the same
+    for ``.schema.json``, ``.schema.json5``, ``.schema.yaml`` and
+    ``.schema.yml``:
+
+    * An empty file, a whitespace-only file, or a JSON5 or YAML file holding only
+      comments yields ``I1`` (informational): ``schema file '<name>' is empty``.
+      It never fails validation, not even with ``--strict``.
+    * A file that cannot be parsed (JSON, JSON5 or YAML syntax error, or an
+      unreadable file) or whose top-level value is not a mapping yields warning
+      ``W17``: ``schema file '<name>' cannot be parsed: <parser error>``.
+
+    In both cases the type stays without schema. Each diagnostic carries the
+    schema file path. Diagnostics are sorted by file name.
+
+    Args:
+        schema_db:
+            Directory containing schema files.
+
+    Returns:
+        A pair of the type-to-schema mapping and the list of diagnostics, as
+        :class:`~okf_schema._internal.models.Finding` records with code
+        ``I1`` or ``W17``.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema.validator import load_schema_database_with_diagnostics
+        >>> with TemporaryDirectory() as directory:
+        ...     schema_dir = Path(directory)
+        ...     _ = (schema_dir / "task.schema.yaml").write_text("# todo")
+        ...     schemas, diagnostics = load_schema_database_with_diagnostics(schema_dir)
+        ...     schemas, [(d.code, d.message) for d in diagnostics]
+        ({}, [('I1', "schema file 'task.schema.yaml' is empty")])
+    """
+    schemas: dict[str, dict] = {}
+    diagnostics: list[Finding] = []
+    if not schema_db.is_dir():
+        return schemas, diagnostics
+
+    y = make_yaml()
+    for path in sorted(schema_db.iterdir()):
+        if not path.is_file():
+            continue
+        loaded = _load_schema_file(path, y)
+        if loaded is None:
+            continue
+        type_key, raw_schema, diagnostic = loaded
+        if diagnostic is not None:
+            diagnostics.append(diagnostic)
+        if raw_schema is not None:
+            schemas[type_key] = _resolve_refs_in_schema(raw_schema, schema_db, y)
+
+    return schemas, diagnostics
+
+
 def load_schema_database(schema_db: Path) -> dict[str, dict]:
     """Load all JSON/YAML schema files from *schema_db* into a type→schema map.
 
     Files are expected to be named ``<type>.schema.json``,
-    ``<type>.schema.json5``, or ``<type>.schema.yaml``.  The *type* key
-    is the stem before ``.schema``.
+    ``<type>.schema.json5``, ``<type>.schema.yaml`` or ``<type>.schema.yml``.
+    The *type* key is the stem before ``.schema``.
 
     ``$ref`` references to external files are resolved relative to
     *schema_db* and inlined into the loaded schema.
+
+    Empty, unparsable and non-mapping files are skipped silently. Use
+    :func:`load_schema_database_with_diagnostics` to learn why a type has no
+    schema.
 
     Args:
         schema_db:
@@ -198,45 +309,7 @@ def load_schema_database(schema_db: Path) -> dict[str, dict]:
         ...     sorted(load_schema_database(schema_dir))
         ['concept']
     """
-    schemas: dict[str, dict] = {}
-    if not schema_db.is_dir():
-        return schemas
-
-    y = make_yaml()
-    for path in schema_db.iterdir():
-        if not path.is_file():
-            continue
-        name = path.name
-        raw_schema: dict | None = None
-        if name.endswith(".schema.json"):
-            type_key = name[: -len(".schema.json")]
-            try:
-                raw_schema = json.loads(path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                continue
-        elif name.endswith(".schema.json5"):
-            type_key = name[: -len(".schema.json5")]
-            try:
-                raw_schema = pyjson5.loads(path.read_text(encoding="utf-8"))
-            except (pyjson5.Json5DecoderException, OSError):
-                continue
-        elif name.endswith(".schema.yaml") or name.endswith(".schema.yml"):
-            type_key = (
-                name[: -len(".schema.yaml")]
-                if name.endswith(".schema.yaml")
-                else name[: -len(".schema.yml")]
-            )
-            try:
-                data = y.load(path.read_text(encoding="utf-8"))
-                if isinstance(data, dict):
-                    raw_schema = dict(data)
-            except YAMLError:
-                continue
-
-        if raw_schema is not None:
-            schemas[type_key] = _resolve_refs_in_schema(raw_schema, schema_db, y)
-
-    return schemas
+    return load_schema_database_with_diagnostics(schema_db)[0]
 
 
 def validate_against_schema(
@@ -603,7 +676,7 @@ def validate_concept(
     Examples:
         >>> from tempfile import TemporaryDirectory
         >>> from pathlib import Path
-        >>> from okf_schema._internal.models import Report
+        >>> from okf_schema._internal.models import Finding, Report
         >>> with TemporaryDirectory() as directory:
         ...     path = Path(directory) / "concept.md"
         ...     _ = path.write_text("---\ntype: concept\n---\n")
@@ -732,7 +805,7 @@ def validate_index(
     Examples:
         >>> from tempfile import TemporaryDirectory
         >>> from pathlib import Path
-        >>> from okf_schema._internal.models import Report
+        >>> from okf_schema._internal.models import Finding, Report
         >>> with TemporaryDirectory() as directory:
         ...     path = Path(directory) / "index.md"
         ...     _ = path.write_text("# Index\n")

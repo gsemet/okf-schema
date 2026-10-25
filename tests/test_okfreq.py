@@ -1107,3 +1107,42 @@ def test_overlapping_scope_paths_do_not_invent_duplicate_markers(tmp_path: Path)
     assert scan["duplicates"] == []
     file.write_text(marker * 2, encoding="utf-8")
     assert marker_scan(root)["duplicates"] == ["SwRS-default-001"]
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-008
+def test_validate_reports_schema_file_diagnostics(tmp_path: Path) -> None:
+    """Extra empty or broken schema files are reported without failing validation."""
+    root = init_requirements(tmp_path)
+    schemas = root / "tiers" / "_schema"
+    (schemas / "extra.schema.yaml").write_text("# todo\n", encoding="utf-8")
+    (schemas / "broken.schema.json").write_text("{", encoding="utf-8")
+
+    findings = validate_requirements(root)
+    result = CliRunner().invoke(okfreq, ["validate", str(root)])
+
+    assert any(
+        f.startswith("I1 ") and "extra.schema.yaml" in f and "is empty" in f for f in findings
+    )
+    assert any(f.startswith("W17 ") and "broken.schema.json" in f for f in findings)
+    assert result.exit_code == 0, result.output
+    assert "0 errors, 1 warnings" in result.output
+    assert "I1 " in result.output
+
+
+def test_missing_requirement_schema_names_the_cause(tmp_path: Path) -> None:
+    """An empty required schema is explained in the error instead of vanishing."""
+    root = init_requirements(tmp_path)
+    (root / "tiers" / "_schema" / "swrs.schema.yaml").write_text("", encoding="utf-8")
+
+    with pytest.raises(RequirementError, match=r"I1 .*swrs.schema.yaml.*is empty"):
+        validate_requirements(root)
+
+
+def test_status_and_report_do_not_count_schema_warnings_as_errors(tmp_path: Path) -> None:
+    """W17 and I1 are listed by validate but are not errors in status or report."""
+    root = init_requirements(tmp_path)
+    (root / "tiers" / "_schema" / "broken.schema.json").write_text("{", encoding="utf-8")
+    (root / "tiers" / "_schema" / "empty.schema.yaml").write_text("", encoding="utf-8")
+
+    assert report(root)["legacy"]["schema_health"]["errors"] == 0
+    assert '"errors": 0' in CliRunner().invoke(okfreq, ["status", str(root)]).output

@@ -25,7 +25,7 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 
 | Command | Purpose |
 |---|---|
-| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation links, and optionally annotated file targets. Prose and skipped-root findings are advisory. |
+| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation links, and optionally annotated file targets. Prose and skipped-root findings are advisory. Requirement schema files that are unparsable or not mappings produce `W17`; empty ones produce informational `I1` (listed, never counted as errors, and `--json` has an `infos` list). |
 | `okfreq lint [PATH] [--prose] [--check-links] [--project-root DIR] [--check|--diff]` | Validate, then regenerate requirement-directory navigation. `--check` fails on stale indexes without writing; `--diff` previews changes. |
 | `okfreq index [PATH]` | Print the stable requirement ID index. |
 | `okfreq search QUERY [PATH]` | Search IDs, titles, and descriptions. |

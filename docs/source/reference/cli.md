@@ -67,6 +67,12 @@ okf-schema validate --path BUNDLE [--schema-db DIR] [--strict]
 | `--check-links` | — | `False` | Check opt-in `x-okf-link` annotations. |
 | `--project-root` | — | — | Explicit root for `project-relative` targets. |
 
+A schema file that is empty prints `INFO [I1] schema file '<name>' is empty` and
+never fails validation, even with `--strict`. A schema file that cannot be
+parsed or is not a mapping prints `WARNING [W17] schema file '<name>' cannot be
+parsed: <reason>`; `--strict` turns it into a failure. Either way the type stays
+without schema. See [validation codes](validation-codes.md).
+
 ---
 
 ## `okf-schema validate-md`
