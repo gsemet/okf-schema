@@ -324,7 +324,7 @@ For example:
 
 The keywords and accepted ID pattern are configured in `config.yml`. `trace`
 reports implementation references, test references, direct StRS validation-test
-references, unknown IDs, repeated same-file markers, non-leaf references, and
+references, unknown IDs, non-leaf references, and
 scan warnings. Projects may configure other levels; implementation markers on
 non-leaf levels do not count as leaf coverage.
 

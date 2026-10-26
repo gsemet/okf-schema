@@ -579,6 +579,70 @@ def test_init_creates_split_layout_with_guideline(tmp_path: Path) -> None:
     guideline = (root / "guidelines" / "requirements.guidelines.md").read_text(encoding="utf-8")
     assert "## Generated navigation metadata" in guideline
     assert "x-okf-link" in guideline
+    assert "The same requirement ID may appear more than once in a file" in guideline
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001
+def test_init_force_replaces_only_the_installed_guideline(tmp_path: Path) -> None:
+    """`init` keeps an edited guideline; `init --force` replaces it and spares project files."""
+    root = tmp_path / "requirements"
+    runner = CliRunner()
+    first = runner.invoke(okfreq, ["init", str(root)])
+    assert first.exit_code == 0
+    assert "Guideline installed:" in first.output
+    guideline = root / "guidelines" / "requirements.guidelines.md"
+    shipped = guideline.read_text(encoding="utf-8")
+    project = root / "guidelines" / "project.guidelines.md"
+    project.write_text("Project rules\n", encoding="utf-8")
+    config = root / "config.yml"
+    config.write_text(config.read_text(encoding="utf-8") + "# local\n", encoding="utf-8")
+
+    guideline.write_text("edited\n", encoding="utf-8")
+    assert runner.invoke(okfreq, ["init", str(root)]).exit_code != 0
+    assert guideline.read_text(encoding="utf-8") == "edited\n"
+
+    replaced = runner.invoke(okfreq, ["init", str(root), "--force"])
+    assert replaced.exit_code == 0
+    assert "Guideline replaced:" in replaced.output
+    assert guideline.read_text(encoding="utf-8") == shipped
+    assert project.read_text(encoding="utf-8") == "Project rules\n"
+    assert config.read_text(encoding="utf-8").endswith("# local\n")
+
+    again = runner.invoke(okfreq, ["init", str(root), "--force"])
+    assert "Guideline up to date:" in again.output
+
+
+def test_init_without_force_never_overwrites_the_guideline(tmp_path: Path) -> None:
+    """Without --force the initializer reports an existing guideline as kept."""
+    from okf_schema.okfreq.core import _install_guideline, initialize_bundle
+
+    root = tmp_path / "requirements"
+    initialize_bundle(root)
+    guideline = root / "guidelines" / "requirements.guidelines.md"
+    guideline.write_text("edited\n", encoding="utf-8")
+    assert initialize_bundle(root, force=True)[1] == "replaced"
+    guideline.write_text("edited\n", encoding="utf-8")
+    assert _install_guideline(root) == "kept"
+    assert guideline.read_text(encoding="utf-8") == "edited\n"
+
+
+def test_installed_guideline_carries_no_okf_schema_marker(tmp_path: Path) -> None:
+    """The packaged guideline is evidence for okf-schema; the installed copy has no marker."""
+    from okf_schema.okfreq.core import GUIDELINE_NAME
+
+    shipped = (
+        Path(__file__).parents[1] / "src/okf_schema/data/requirements/guidelines" / GUIDELINE_NAME
+    ).read_text(encoding="utf-8")
+    assert "<!-- @implements_req SwRS-OKFSCHEMA-OKFREQ-002 -->" in shipped
+    root = tmp_path / "requirements"
+    init_requirements(root)
+    for forced in (False, True):
+        if forced:
+            init_requirements(root, force=True)
+        installed = (root / "guidelines" / GUIDELINE_NAME).read_text(encoding="utf-8")
+        assert "SwRS-OKFSCHEMA" not in installed
+        assert installed.startswith(shipped.split("<!--", 1)[0])
+        assert "`@implements_req <ID>`" in installed
 
 
 def test_guidelines_are_not_loaded_as_requirements(tmp_path: Path) -> None:
@@ -666,7 +730,7 @@ def test_marker_scan_handles_non_mapping_and_non_list_scopes(tmp_path: Path) -> 
     assert marker_scan(root)["warnings"] == []
 
 
-def test_marker_scan_reports_duplicate_and_non_leaf_markers(tmp_path: Path) -> None:
+def test_marker_scan_reports_non_leaf_and_accepts_repeated_markers(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     create_requirement(
         root,
@@ -689,7 +753,9 @@ def test_marker_scan_reports_duplicate_and_non_leaf_markers(tmp_path: Path) -> N
     assert result["non_leaf"] == ["StRS-default-001"]
 
     (tmp_path / "src" / "a.py").write_text(marker * 2, encoding="utf-8")
-    assert marker_scan(root)["duplicates"] == ["StRS-default-001"]
+    repeated = marker_scan(root)
+    assert repeated["duplicates"] == []
+    assert repeated["non_leaf"] == ["StRS-default-001"]
 
 
 def test_marker_scan_uses_configured_id_pattern(tmp_path: Path) -> None:
@@ -1087,8 +1153,8 @@ def test_coverage_check_detects_drift_without_writing_then_succeeds(tmp_path: Pa
     assert runner.invoke(okfreq, ["update-coverage", str(root), "--check"]).exit_code == 0
 
 
-def test_overlapping_scope_paths_do_not_invent_duplicate_markers(tmp_path: Path) -> None:
-    """Scanning the same file through two scopes is not a repeated marker in that file."""
+def test_overlapping_scope_paths_list_a_file_once(tmp_path: Path) -> None:
+    """Scanning the same file through two scopes lists it once; repeated markers are accepted."""
     from okf_schema._internal.yaml import dump_yaml, make_yaml
 
     root = make_bundle(tmp_path)
@@ -1109,7 +1175,9 @@ def test_overlapping_scope_paths_do_not_invent_duplicate_markers(tmp_path: Path)
     assert scan["implemented"]["SwRS-default-001"] == ["src/implementation.py"]
     assert scan["duplicates"] == []
     file.write_text(marker * 2, encoding="utf-8")
-    assert marker_scan(root)["duplicates"] == ["SwRS-default-001"]
+    repeated = marker_scan(root)
+    assert repeated["duplicates"] == []
+    assert repeated["implemented"]["SwRS-default-001"] == ["src/implementation.py"]
 
 
 # @tests_req SwRS-OKFSCHEMA-CORE-008

@@ -14,7 +14,8 @@ The bundle is split into a control layer and a document layer:
 ```text
 requirements/
 ├── config.yml                 configuration (this reference)
-├── guidelines/                agent guidance installed by `okfreq init`
+├── guidelines/                requirements.guidelines.md (installed by `okfreq init`,
+│                              replaced by `--force`) and your own project guideline files
 └── tiers/
     ├── _schema/base.schema.yaml
     ├── _schema/strs.schema.yaml

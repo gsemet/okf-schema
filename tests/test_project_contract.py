@@ -27,3 +27,16 @@ def test_live_requirements_preserve_complete_real_evidence() -> None:
     stakeholder = result["stakeholder_test_coverage"]
     assert stakeholder["mode"] == "linked-swrs-and-validation-test"
     assert stakeholder["covered"] == stakeholder["requirements"]
+
+
+def test_repository_guideline_is_the_installed_shipped_text() -> None:
+    """The repository's guideline is `okfreq init` output, never hand-maintained."""
+    from okf_schema.okfreq.core import GUIDELINE_NAME, _strip_own_markers
+
+    project = Path(__file__).parents[1]
+    shipped = project / "src/okf_schema/data/requirements/guidelines" / GUIDELINE_NAME
+    installed = project / "requirements/guidelines" / GUIDELINE_NAME
+    assert installed.read_text(encoding="utf-8") == _strip_own_markers(
+        shipped.read_text(encoding="utf-8")
+    )
+    assert (project / "requirements/guidelines/project.guidelines.md").is_file()

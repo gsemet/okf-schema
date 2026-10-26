@@ -28,6 +28,7 @@ preflight:
     just requirements-lint
     just changelog
     just typecheck
+    just refresh-requirements-guideline
     just test
     just refresh-all-examples
     just requirements-report
@@ -122,6 +123,11 @@ changelog:
 [group("build")]
 build:
     {{ uv }} build
+
+# Reinstall this repository's requirements guideline from the shipped source
+[group("build")]
+refresh-requirements-guideline:
+    {{ uv_run }} okfreq init requirements --force
 
 [group("build")]
 refresh-all-examples:

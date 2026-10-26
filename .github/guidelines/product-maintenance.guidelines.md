@@ -62,13 +62,19 @@ approval. Do not claim complete traceability when any of these are missing.
 
 For all requirement work, read
 [`src/okf_schema/data/requirements/guidelines/requirements.guidelines.md`](../../src/okf_schema/data/requirements/guidelines/requirements.guidelines.md)
-as the shared baseline, then
+as the single maintained guide. Never copy its text by hand: the repository's
 [`requirements/guidelines/requirements.guidelines.md`](../../requirements/guidelines/requirements.guidelines.md)
-for this repository's paths, scopes and stricter checks. The local overlay may
-specialize the baseline, not silently replace its navigation or logging duties.
+and the example's copy are `okfreq init --force` output (the shipped text minus
+its own requirement marker), never edited. This repository's paths, scopes and
+checks live in
+[`requirements/guidelines/project.guidelines.md`](../../requirements/guidelines/project.guidelines.md),
+which init never touches. The standalone skills tell agents to read the installed
+guideline, then the project guideline.
 
-When changing the baseline, review the local overlay, standalone skill guidance,
-installed example guidance and tests in the same change. This repository must
+When changing the shared guide, run `just refresh-requirements-guideline` (preflight
+runs it; [`requirements.guidelines.README.md`](../../requirements/guidelines/requirements.guidelines.README.md)
+points editors to the source) and the example recipe, then review the project guideline, the skills that refer to it and
+tests in the same change. This repository must
 exercise the installed workflow: `okfreq lint requirements` maintains generated
 navigation at every tier/scope directory, while agents append meaningful entries
 to `requirements/tiers/log.md`. `requirements/index.md` is an authored overview.

@@ -20,11 +20,12 @@ from typing import Any
 import click
 
 from okf_schema.okfreq.core import (
+    GUIDELINE_NAME,
     RequirementError,
     bundle_path,
     create_requirement,
     graph,
-    init_requirements,
+    initialize_bundle,
     is_info_finding,
     load_requirements,
     marker_scan,
@@ -91,7 +92,11 @@ _register_install_skills(okfreq, "okfreq")
 
 @okfreq.command("init")
 @click.argument("path", default=".", type=click.Path())
-@click.option("--force", is_flag=True, help="Merge without replacing existing files.")
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Merge into a non-empty bundle and replace the installed guideline.",
+)
 def init(path: str, force: bool) -> None:
     """Initialize a requirements bundle below PATH.
 
@@ -99,12 +104,15 @@ def init(path: str, force: bool) -> None:
         path:
             Project or requirements-bundle path.
         force:
-            Merge into a non-empty directory without replacing files.
+            Merge into a non-empty directory without replacing files, except
+            ``guidelines/requirements.guidelines.md``, which is replaced by the
+            packaged text. Put project rules in another file of ``guidelines/``.
     """
     try:
-        click.echo(
-            f"Created requirements bundle at {init_requirements(Path(path).resolve(), force)}"
-        )
+        root, outcome = initialize_bundle(Path(path).resolve(), force)
+        click.echo(f"Created requirements bundle at {root}")
+        guideline = root / "guidelines" / GUIDELINE_NAME
+        click.echo(f"Guideline {outcome}: {guideline}")
     except RequirementError as exc:
         raise _fail(exc) from exc
 

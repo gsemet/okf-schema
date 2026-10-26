@@ -15,10 +15,12 @@ This specialized workflow extends the foundational `okfreq` skill. Load the
 project-guideline precedence, and traceability semantics remain in force
 throughout gardening. Do not assume that installed skills share a directory.
 
-If the target bundle has no local requirements guideline, use the parent skill's
-`references/requirements.guidelines.md` resource as the fallback. Locate that
-resource from the installed `okfreq` skill by skill name. Read it during Phase 1,
-after checking the project's own `AGENTS.md` and guidelines.
+Read the bundle's `guidelines/requirements.guidelines.md` during Phase 1, after
+checking the project's own `AGENTS.md`, then any project guideline in the same
+folder (by convention `project.guidelines.md`), which wins where it specializes
+the shared text. `okfreq init` installs the shared file; if it is missing or
+outdated, run `okfreq init <bundle> --force`, which replaces it with the
+packaged text and never touches the project files.
 
 Perform an explicit, evidence-based maintenance pass over an `okfreq` bundle.
 The primary users are coding agents working on brownfield projects where source
@@ -124,8 +126,8 @@ Run `okfreq trace . --json` and classify results:
 - `implemented` — source files containing implementation markers;
 - `tested` — test files containing test markers;
 - `missing_ids` — markers that reference no known requirement;
-- `duplicates` — the same ID marked twice inside one file; markers for one ID in
-  several distinct files are legitimate multi-file coverage, not a duplicate;
+- `duplicates` — always empty: the same ID may be marked several times in one
+  file, and in several files; the key is kept for report compatibility;
 - `non_leaf` — markers on an upper-level requirement, normally a warning;
 - `warnings` — missing or otherwise incomplete scan locations.
 

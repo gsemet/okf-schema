@@ -26,7 +26,7 @@ documentation_files:
 agent_skill_files:
 - skills/okfreq/SKILL.md
 - skills/okfreq/references/operations.md
-- skills/okfreq/references/requirements.guidelines.md
+- src/okf_schema/data/requirements/guidelines/requirements.guidelines.md
 example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md

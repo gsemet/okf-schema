@@ -70,6 +70,19 @@ operations against the resolved requirements bundle.
 Initialization preserves existing schemas. No existing requirement IDs, value types, or bundles
 are migrated; `external_id` is not annotated as a local file link.
 
+### Scenario: Install and refresh the shared guideline
+
+- GIVEN a bundle that may already contain `guidelines/requirements.guidelines.md`
+  and other guideline files
+- WHEN the user runs `okfreq init` without `--force` on a bundle that has the
+  guideline
+- THEN the guideline is left untouched and the command reports that it was kept
+- AND WHEN the user runs `okfreq init --force`, the guideline is replaced with the
+  packaged text and the command reports it as replaced (or already up to date),
+  while every other file of `guidelines/`, the configuration and the requirements
+  are preserved
+- AND a missing guideline is installed and reported as installed
+
 ### Verification notes
 
 - Method: automated command-surface and failure-path tests.

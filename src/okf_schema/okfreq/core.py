@@ -435,6 +435,24 @@ def _atomic_write(path: Path, text: str) -> None:  # pragma: no cover - OS failu
 def init_requirements(path: Path, force: bool = False) -> Path:
     """Create a complete standalone requirements bundle.
 
+    See :func:`initialize_bundle` for the guideline outcome.
+
+    Args:
+        path:
+            A project directory or an explicit bundle directory.
+        force:
+            When ``True``, merge into a non-empty directory and replace the
+            installed guideline with the packaged one.
+
+    Returns:
+        The created bundle root.
+    """
+    return initialize_bundle(path, force)[0]
+
+
+def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
+    """Create a complete standalone requirements bundle and report the guideline outcome.
+
     The bundle is split: ``config.yml``, ``guidelines/``, and generated reports
     live at the bundle root, while ``_schema/`` and the configured tier folders
     live under ``tiers/``.
@@ -443,11 +461,15 @@ def init_requirements(path: Path, force: bool = False) -> Path:
         path:
             A project directory or an explicit bundle directory.
         force:
-            When ``True``, merge into a non-empty directory without
-            replacing existing files.
+            When ``True``, merge into a non-empty directory without replacing
+            existing files, except the installed guideline, which is replaced
+            by the packaged text. Project rules belong in a separate file of
+            ``guidelines/`` (for example ``project.guidelines.md``), which
+            initialization never touches.
 
     Returns:
-        The created bundle root.
+        The bundle root and the guideline outcome: ``"installed"``, ``"replaced"``,
+        ``"up to date"`` or ``"kept"`` (an existing guideline without ``force``).
 
     Raises:
         RequirementError:
@@ -457,9 +479,9 @@ def init_requirements(path: Path, force: bool = False) -> Path:
     Examples:
         >>> from tempfile import TemporaryDirectory
         >>> with TemporaryDirectory() as directory:
-        ...     root = init_requirements(Path(directory) / "requirements")
-        ...     (root / "config.yml").is_file()
-        True
+        ...     root, outcome = initialize_bundle(Path(directory) / "requirements")
+        ...     (root / "config.yml").is_file(), outcome
+        (True, 'installed')
     """
     root = bundle_path(path)
     if root.exists() and any(root.iterdir()) and not force:
@@ -722,27 +744,60 @@ def init_requirements(path: Path, force: bool = False) -> Path:
     for destination, content in generated_files.items():
         if not destination.exists():
             _atomic_write(destination, content)
-    _install_guideline(root)
-    return root
+    return root, _install_guideline(root, replace=force)
 
 
-def _install_guideline(root: Path) -> Path | None:
+_OWN_MARKER_LINE = re.compile(
+    r"^[ \t]*(?:(?:#|//|/\*|\*|<!--)[ \t]*)?@(?:implements|tests)_req[ \t]+[A-Za-z][A-Za-z0-9_-]*"
+    r"[ \t]*(?:-->|\*/)?[ \t]*\r?\n(?:[ \t]*\r?\n)?",
+    re.MULTILINE,
+)
+
+
+def _strip_own_markers(text: str) -> str:
+    """Remove the line-level requirement markers of okf-schema's own bundle.
+
+    The packaged guideline is evidence for okf-schema's requirements, so it
+    carries markers that must not leak into the project it is installed in.
+
+    Args:
+        text:
+            The packaged guideline text.
+
+    Returns:
+        The text without marker lines (and one blank line that followed each).
+
+    Examples:
+        >>> _strip_own_markers("# T\\n\\n<!-- @implements_req SwRS-A-001 -->\\n\\nBody\\n")
+        '# T\\n\\nBody\\n'
+    """
+    return _OWN_MARKER_LINE.sub("", text)
+
+
+def _install_guideline(root: Path, replace: bool = False) -> str:
     """Copy the packaged requirements guideline into the bundle.
 
     Args:
         root:
             The bundle root.
+        replace:
+            Replace an existing guideline with the packaged text.
 
     Returns:
-        The installed guideline path, or ``None`` when it already exists.
+        ``"installed"`` when it was missing, ``"replaced"`` or ``"up to date"``
+        when ``replace`` is set, and ``"kept"`` when it exists and ``replace`` is not.
     """
     destination = root / "guidelines" / GUIDELINE_NAME
-    if destination.exists():
-        return None
+    existed = destination.exists()
+    if existed and not replace:
+        return "kept"
     source = files("okf_schema.data.requirements").joinpath("guidelines").joinpath(GUIDELINE_NAME)
     with as_file(source) as resolved:
-        _atomic_write(destination, Path(resolved).read_text(encoding="utf-8"))
-    return destination
+        text = _strip_own_markers(Path(resolved).read_text(encoding="utf-8"))
+    if existed and destination.read_text(encoding="utf-8") == text:
+        return "up to date"
+    _atomic_write(destination, text)
+    return "replaced" if existed else "installed"
 
 
 def load_config(root: Path) -> dict[str, Any]:
@@ -1334,6 +1389,7 @@ def marker_scan(root: Path) -> dict[str, Any]:
         "implemented": {},
         "tested": {},
         "validation_tests": {},
+        # Kept for report compatibility; repeated markers are accepted, so it stays empty.
         "duplicates": [],
         "non_leaf": [],
         "missing_ids": [],
@@ -1381,7 +1437,8 @@ def marker_scan(root: Path) -> dict[str, Any]:
                         relative = file.relative_to(project).as_posix()
                         occurrence = (target, identifier, relative)
                         if occurrence in seen_markers:
-                            result["duplicates"].append(identifier)
+                            # Several tests or code points in one file may carry
+                            # the same ID; the file is listed once.
                             continue
                         seen_markers.add(occurrence)
                         if identifier not in requirements:

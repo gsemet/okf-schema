@@ -58,6 +58,22 @@
   a value that cannot be parsed now reports the new warning W16 instead of
   silently disabling the staleness check. The ID, UUID and normative statement
   are unchanged.
+- Kept a single requirements guideline: the shipped text is the only maintained copy
+  and is project-independent (names, paths and commands come from the bundle's
+  configuration). `okfreq init --force` now replaces the installed
+  `guidelines/requirements.guidelines.md` with it (without `--force` an existing file
+  is kept), strips the shipped file's own requirement marker from the installed copy
+  and reports the outcome; other files of `guidelines/` are never touched. Extended
+  [SwRS-OKFSCHEMA-OKFREQ-001](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-001.md) with that
+  scenario. This bundle's rules moved to `guidelines/project.guidelines.md`; its
+  `requirements.guidelines.md` is now init output. The okfreq skills no longer embed
+  a copy and tell agents to read the installed guideline, then the project file;
+  `okfreq-setup` writes project rules to `project.guidelines.md`.
+- Extended [SwRS-OKFSCHEMA-OKFREQ-003](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-003.md) with
+  a scenario: the same requirement ID may be marked several times in one file (for
+  example beside distinct tests) and is accepted silently; the file is listed once.
+  The `duplicates` key stays in the reports, always empty, for compatibility.
+- Verification: see the pull request for the preflight result.
 
 ## 2026-10-19
 
