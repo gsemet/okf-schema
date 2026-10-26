@@ -92,7 +92,9 @@ satisfied. It is not an issue title, design choice, code comment, or task.
   requirements into bounded behavior that code can implement and tests can
   observe.
 - **Authored derivation points upward.** Author `derives_from`; let `okfreq`
-  compute reverse `derived_by` links.
+  compute reverse `derived_by` links. Likewise author `superseded_by` (through
+  `okfreq supersede OLD NEW...`) and let `okfreq` compute `supersedes`; use
+  `relates_to` for lateral links with no derivation or replacement meaning.
 - **Leaf requirements connect to evidence.** Place `@implements_req <ID>` near
    the relevant production behavior and `@tests_req <ID>` once in each relevant
    test file. StRS never receives implementation markers; in the stricter
@@ -239,7 +241,8 @@ Neither API executes tests or treats a marker as proof beyond the configured
 traceability report.
 
 `implemented_in_files` and `tested_in_files` use exact project-relative paths.
-`derives_from`, `derived_by`, and `depends_on` use case-sensitive Markdown
+`derives_from`, `derived_by`, `depends_on`, `superseded_by`, `supersedes`, and
+`relates_to` use case-sensitive Markdown
 filename stems without `.md`. Preserve the existing requirement-ID graph
 validation and use matching requirement IDs and basenames for file navigation.
 `external_id` is not a local-file annotation. Initialization preserves existing
@@ -294,7 +297,7 @@ format, not a generic document heading.
    exemptions, or lifecycle transitions.
 3. Never renumber an existing requirement. Allocate new identities through
    `okfreq new` under the configured ID policy.
-4. Never treat generated `derived_by`, `implemented_in_files`, or
+4. Never treat generated `derived_by`, `supersedes`, `implemented_in_files`, or
    `tested_in_files` as authored truth.
 5. Keep `okfreq` requirements independent from `okfkb` knowledge documents.
    They may coexist and both use OKF-compatible Markdown, but they have distinct

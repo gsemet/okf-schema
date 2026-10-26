@@ -58,8 +58,8 @@ Requirement documents live only under `tiers/`.
   requirement) with `okfreq retire <ID> --yes`, not with `rm` or `git rm`. It
   deletes the file, records the ID in `retired_ids` and appends an entry to
   `tiers/log.md`. It refuses a requirement that is not a draft or that another
-  requirement (`derives_from`, `depends_on`, `superseded_by`) or a marker still
-  references: fix those first. Then run `okfreq update-coverage` and `okfreq lint`.
+  requirement (`derives_from`, `depends_on`, `relates_to`, `superseded_by`) or a
+  marker still references: fix those first. Then run `okfreq update-coverage` and `okfreq lint`.
 - Deleting a requirement file by hand skips the record: the number stays free
   if it was the highest one. Never delete a file without `okfreq retire`.
 
@@ -72,8 +72,12 @@ Requirement documents live only under `tiers/`.
 - Store stakeholder requirements under `tiers/strs/<scope>/` and software
   requirements under `tiers/swrs/<scope>/`.
 - Use the filename and ID convention established by the bundle.
-- Author parent relationships with `derives_from`; never hand-edit generated
-  `derived_by`, `implemented_in_files`, or `tested_in_files` fields.
+- Author parent relationships with `derives_from`. Retire a published requirement
+  with `okfreq supersede OLD NEW [NEW...] --yes`, which writes the authored
+  `superseded_by` list (required, non-empty, on every `superseded` requirement and
+  only there). Link requirements that are merely connected with `relates_to`.
+  Never hand-edit generated `derived_by`, `supersedes`, `implemented_in_files`,
+  or `tested_in_files` fields.
 - For leaf software requirements, add `@implements_req <ID>` markers near the
   implementation and `@tests_req <ID>` markers near corresponding tests. Do not
   use source markers on stakeholder or other non-leaf levels. A real direct

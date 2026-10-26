@@ -25,13 +25,13 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 
 | Command | Purpose |
 |---|---|
-| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation links, and optionally annotated file targets. Prose and skipped-root findings are advisory. Requirement schema files that are unparsable or not mappings produce `W17`; empty ones produce informational `I1` (listed, never counted as errors, and `--json` has an `infos` list). |
+| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation, supersession and `relates_to` links, and optionally annotated file targets. Prose and skipped-root findings are advisory. Requirement schema files that are unparsable or not mappings produce `W17`; empty ones produce informational `I1`, and a legacy single-ID `superseded_by` produces `I2` (listed, never counted as errors, and `--json` has an `infos` list). |
 | `okfreq lint [PATH] [--prose] [--check-links] [--project-root DIR] [--check|--diff]` | Validate, then regenerate requirement-directory navigation. `--check` fails on stale indexes without writing; `--diff` previews changes. |
 | `okfreq index [PATH]` | Print the stable requirement ID index. |
 | `okfreq search QUERY [PATH]` | Search IDs, titles, and descriptions. |
 | `okfreq in-file FILE` | Print one requirement document. |
 | `okfreq scope [PATH]` | Print configured scope-to-source/test mappings as JSON. |
-| `okfreq graph [PATH] [--json]` | Show authored `derives_from` and computed `derived_by` relationships; exit non-zero for broken targets. |
+| `okfreq graph [PATH] [--json]` | Show computed `derived_by` links; `--json` adds authored `derives_from`, `superseded_by`, `relates_to` and computed `supersedes`. Exit non-zero for broken targets. |
 | `okfreq trace [PATH] [--json]` | Scan configured source and test locations for markers. |
 | `okfreq status [PATH]` | Print lifecycle counts and structural health. |
 
@@ -98,8 +98,8 @@ unavailable. A missing stem in a known bundle is `E10`. Warnings do not make `ok
 
 | Command | Purpose |
 |---|---|
-| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields. `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
-| `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. |
+| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`). `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
+| `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. Each requirement record also lists `derives_from`, `superseded_by`, the computed `supersedes` and `relates_to`. |
 
 Without output options, the command writes JSON, JSON Schema and Markdown
 under the resolved bundle's parent directory in `dist/` and prints their paths.
@@ -111,7 +111,7 @@ Generated artifacts should be regenerated rather than edited manually.
 | Command | Purpose |
 |---|---|
 | `okfreq archive TARGET [--path PATH] --yes` | Set the target lifecycle to `deprecated` without deleting it. |
-| `okfreq supersede TARGET REPLACEMENT [--path PATH] --yes` | Set the target to `superseded` and record `superseded_by`. Both IDs must exist and must differ. |
+| `okfreq supersede TARGET REPLACEMENT [REPLACEMENT...] [--path PATH] --yes` | Set the target to `superseded` and write `superseded_by` as the list of replacements, replacing any previous value. Every ID must exist, a replacement must not be the target or repeat, and the replacements must not make `superseded_by` cyclic; otherwise nothing is written. Run `okfreq update-coverage` afterwards to refresh `supersedes`. |
 
 Lifecycle mutations require explicit `--yes`. They preserve the requirement
 body, stable ID, UUID, and unrelated frontmatter.
@@ -128,7 +128,7 @@ because other documents, commits and reviews may cite it.
 
 `retire` changes nothing and exits non-zero when `--yes` is absent, the ID is
 unknown, the requirement is not a `draft`, another requirement lists it in
-`derives_from` or `depends_on` or as `superseded_by`, or a configured source or
+`derives_from`, `depends_on` or `relates_to` or in `superseded_by`, or a configured source or
 test marker still names it. The error says which. After a successful retirement,
 run `okfreq update-coverage` and `okfreq lint` to refresh generated fields and
 indexes of the parents that lost a child.

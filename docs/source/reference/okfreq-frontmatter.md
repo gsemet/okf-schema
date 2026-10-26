@@ -21,6 +21,8 @@ notes. Unknown properties are allowed and must be preserved.
 | `origin` | yes | authored | Source of the requirement, such as `native`, `imported`, or a tool name. |
 | `derives_from` | conditional | authored | IDs of higher-level requirements, with case-sensitive Markdown filename-stem navigation hints. Native `SwRS` requirements need at least one `StRS` ID. |
 | `depends_on` | no | authored | Semantic prerequisite or dependency IDs. This is not generated coverage. |
+| `superseded_by` | when `lifecycle: superseded` | authored | List of one or more requirement IDs that replace this requirement. Required and non-empty exactly when the lifecycle is `superseded`; written by `okfreq supersede`. A single ID written by earlier releases (`superseded_by: SwRS-new-001`) is still read as a one-item list. |
+| `relates_to` | no | authored | List of requirement IDs related to this one laterally, at any level or scope, for example a sibling feature or a requirement from another release. It has no derivation, supersession or coverage meaning and no generated inverse. |
 | `verification_method` | no | authored | Controlled method used to verify the requirement, for example `test`, `analysis`, `inspection`, or `demonstration`. |
 | `verification_criteria` | no | authored | Optional pass criteria that make verification concrete. |
 | `user_need` | StRS | authored | Stakeholder outcome preserved separately from the normative StRS behavior. `okfreq new strs` leaves an explicit placeholder when `--user-need` is omitted. |
@@ -112,11 +114,59 @@ it records why repository marker coverage is intentionally excluded. See the
 **Generated and externally maintained fields** section above for the distinction
 between authored exemption metadata and generated coverage.
 
+## Supersession and related requirements
+
+A superseded requirement keeps its document, ID and UUID and names its
+replacements. `okfreq supersede` writes both fields in one step:
+
+```bash
+okfreq supersede SwRS-export-001 SwRS-export-010 SwRS-export-011 --path requirements --yes
+okfreq update-coverage requirements
+```
+
+```yaml
+# SwRS-export-001.md (authored)
+lifecycle: superseded
+superseded_by:
+  - SwRS-export-010
+  - SwRS-export-011
+# SwRS-export-010.md and SwRS-export-011.md (generated)
+supersedes:
+  - SwRS-export-001
+```
+
+`okfreq validate` and `okfreq lint` fail, naming the file, when:
+
+- `lifecycle` is `superseded` and `superseded_by` is absent or empty;
+- `superseded_by` is set while the lifecycle is anything else (clear it, or
+  restore `superseded`);
+- a `superseded_by` or `relates_to` target is unknown, is the requirement itself
+  or is listed twice, or the field is not a list of IDs;
+- `superseded_by` forms a cycle (`A -> B -> A`). Chains (`A` replaced by `B`,
+  `B` replaced by `C`) are allowed.
+
+`relates_to` is deliberately one-directional and undirected in meaning: declare
+it on one side, and read it from both. No inverse field is generated, because a
+stored inverse doubles every edit and can go stale; `okfreq graph --json` shows the
+authored side only. Use `depends_on` for a prerequisite and `derives_from` for
+hierarchy; `relates_to` states only that two requirements concern each other.
+
+### Existing bundles
+
+The scalar form `superseded_by: SwRS-new-001` stays valid input. Validation
+passes and adds the informational finding `I2` suggesting the list form; nothing
+is rewritten for you. Convert by editing the field to `[SwRS-new-001]` or by
+running `okfreq supersede OLD NEW --yes` again. A requirement already marked
+`superseded` without `superseded_by` now fails validation: add the replacement.
+To maintain `supersedes`, add it to `generated_fields` in `config.yml`; bundles
+that list the fields explicitly keep their current set until you do.
+
 ## Generated and externally maintained fields
 
 | Field | Ownership | Meaning |
 |---|---|---|
 | `derived_by` | generated | Reverse links computed from other requirements’ `derives_from` fields. Do not author this as the source of truth. |
+| `supersedes` | generated | Reverse links computed from other requirements’ `superseded_by` fields: the requirements this one replaces. Written by `okfreq update-coverage` when `supersedes` is in `generated_fields`, only where it has a value (or the field is already present). Do not author it. |
 | `implemented_in_files` | generated or external tool | SwRS-only project-relative source paths containing implementation markers. It is optional and must never be invented. |
 | `tested_in_files` | generated or external tool | SwRS-only project-relative test paths containing test markers. It is optional and must never be invented. |
 
@@ -191,6 +241,14 @@ derives_from:
       tooltip_shows_fields: [description]
       preview_shows_fields: [description]
 ```
+
+`superseded_by`, `supersedes` and `relates_to` use the same array-of-strings
+definition as `derives_from`, each with the `filename-stem` annotation shown
+above. The scaffold written by `okfreq init` contains them. An existing project's
+`tiers/_schema/base.schema.yaml` is never rewritten: copy the three property
+blocks from a freshly initialized bundle when you want editor navigation for
+them, after converting any scalar `superseded_by` to a list (the array schema
+rejects a scalar).
 
 With a project containing `src/report/export.py`, `tests/test_export.py`, and
 a requirement file named `StRS-demo-001.md`, the first two values resolve to

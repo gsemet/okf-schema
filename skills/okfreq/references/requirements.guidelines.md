@@ -15,6 +15,8 @@ repository layout applies to another project.
   including `retired_ids` in `config.yml`. Discard a never-published draft with
   `okfreq retire ID --yes`, never by deleting the file; published requirements are
   archived or superseded.
+  `okfreq supersede OLD NEW... --yes` writes the authored `superseded_by` list that
+  every superseded requirement needs; `relates_to` links lateral peers.
 - Use `okfreq new strs` for stakeholder intent and user need; use `new swrs`
   for one observable behavior with a valid parent and nominal/failure scenarios.
 - Complete scaffold placeholders before review. Prose warnings remain advisory.
@@ -22,7 +24,7 @@ repository layout applies to another project.
   are legitimate when the configured coverage mode calls for validation tests;
   StRS implementation coverage is not applicable.
 - Preview `update-coverage --diff`, then regenerate owned fields. Never author
-  reverse relationships or coverage arrays by hand.
+  reverse relationships (`derived_by`, `supersedes`) or coverage arrays by hand.
 - Run validate/lint with `--prose`, inspect graph/trace, and explicitly opt into
   file checks with `--check-links --project-root <project>` when roots are known.
 - Write reports to explicit project `dist/` paths with `--output-json` and

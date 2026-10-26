@@ -277,6 +277,24 @@
             "type": "string"
           }
         },
+        "superseded_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "supersedes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relates_to": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "coverage_target": {
           "type": "boolean"
         },

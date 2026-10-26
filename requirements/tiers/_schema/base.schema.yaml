@@ -80,6 +80,42 @@ properties:
         id_marker: id
     description: Authored dependency IDs; file navigation uses matching Markdown
       filename stems.
+  superseded_by:
+    type: array
+    items:
+      type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+        id_marker: id
+        tooltip_shows_fields: [description]
+        preview_shows_fields: [description]
+    description: Authored IDs of the requirements that replace this one; required
+      when the lifecycle is superseded and forbidden otherwise.
+  supersedes:
+    type: array
+    items:
+      type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+        id_marker: id
+        tooltip_shows_fields: [description]
+        preview_shows_fields: [description]
+    description: Generated IDs of the requirements this one replaces, the inverse
+      of superseded_by.
+  relates_to:
+    type: array
+    items:
+      type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+        id_marker: id
+        tooltip_shows_fields: [description]
+        preview_shows_fields: [description]
+    description: Authored IDs of laterally related requirements; carries no
+      derivation, supersession or coverage meaning.
   external_id:
     type: string
     minLength: 1

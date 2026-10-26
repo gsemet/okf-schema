@@ -14,5 +14,6 @@
 - [SwRS-OKFSCHEMA-OKFREQ-009 — Maintain generated requirement navigation](SwRS-OKFSCHEMA-OKFREQ-009.md) — When requirement linting succeeds, okfreq SHALL refresh navigation indexes throughout the tiers tree while preserving authored text and change history.
 - [SwRS-OKFSCHEMA-OKFREQ-010 — Set up a project's requirements baseline from one skill](SwRS-OKFSCHEMA-OKFREQ-010.md) — When a user asks to set up okfreq in a project without a requirements bundle, the okfreq-setup skill SHALL direct the agent to deliver one pull request that specifies the project's current behaviour, anchored to its code and tests, without asking the user.
 - [SwRS-OKFSCHEMA-OKFREQ-011 — Retire a draft requirement permanently](SwRS-OKFSCHEMA-OKFREQ-011.md) — When a confirmed retire operation targets an unreferenced draft requirement, okfreq SHALL delete the requirement, record its ID as retired, and SHALL NOT allocate that number again.
+- [SwRS-OKFSCHEMA-OKFREQ-012 — Relate requirements by supersession and association](SwRS-OKFSCHEMA-OKFREQ-012.md) — When a requirement is superseded or related to others, okfreq SHALL record the replacing requirements in an authored superseded_by list, compute the inverse supersedes list, accept an authored relates_to list, and reject inconsistent or cyclic references.
 
 <!-- okfreq:index:end -->

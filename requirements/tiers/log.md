@@ -1,5 +1,24 @@
 # Update Log
 
+## 2026-10-26
+
+- Added [SwRS-OKFSCHEMA-OKFREQ-012](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-012.md):
+  `superseded_by` is now an authored list of replacing requirements (a superseded
+  requirement must have a non-empty one, any other lifecycle must not; unknown, self,
+  repeated and cyclic targets are rejected; the scalar written by earlier releases is
+  still read, with informational `I2`). `supersedes` is its generated inverse, kept by
+  `okfreq update-coverage` through `generated_fields` and written only where it has a
+  value. `relates_to` is a new authored list for lateral links, with no generated
+  inverse by decision: a stored inverse doubles every edit and goes stale, and readers
+  treat the link as undirected. `okfreq supersede` takes one or more replacements.
+  Extended [SwRS-OKFSCHEMA-OKFREQ-007](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-007.md) and
+  [SwRS-OKFSCHEMA-OKFREQ-004](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-004.md) with the
+  list form and the report fields. This bundle's schema gained the three `x-okf-link`
+  properties and `supersedes` joined its `generated_fields`; it supersedes nothing
+  itself, so the showcase covers the lifecycle path. Retire also refuses a requirement
+  referenced by `relates_to`.
+- Verification: see the pull request for the preflight result.
+
 ## 2026-10-25
 
 - Added [SwRS-OKFSCHEMA-CORE-008](swrs/core/SwRS-OKFSCHEMA-CORE-008.md): schema files
