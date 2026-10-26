@@ -26,8 +26,8 @@ Read the applicable guideline before changing its scope:
 | Guideline | Applies to |
 |-----------|------------|
 | [`.github/guidelines/product-maintenance.guidelines.md`](.github/guidelines/product-maintenance.guidelines.md) | Every public behavior change: runtime, human docs, standalone agent skills, scaffold guidance, requirements, examples, tests and packaging |
-| [`src/okf_schema/data/requirements/guidelines/requirements.guidelines.md`](src/okf_schema/data/requirements/guidelines/requirements.guidelines.md) | Baseline requirements workflow: this project follows the same guideline it installs into other projects |
-| [`requirements/guidelines/requirements.guidelines.md`](requirements/guidelines/requirements.guidelines.md) | Requirement documents, `okfreq`, requirement traceability, and generated requirement artifacts |
+| [`src/okf_schema/data/requirements/guidelines/requirements.guidelines.md`](src/okf_schema/data/requirements/guidelines/requirements.guidelines.md) | Single maintained requirements workflow: this project follows the same guideline it installs into other projects |
+| [`requirements/guidelines/project.guidelines.md`](requirements/guidelines/project.guidelines.md) | This repository's additions to it (paths, scopes, checks): requirement documents, `okfreq`, traceability, generated artifacts. `requirements/guidelines/requirements.guidelines.md` is the installed copy; do not edit |
 | [`.github/guidelines/git-commit-message.guidelines.md`](.github/guidelines/git-commit-message.guidelines.md) | Every Git commit message |
 | [`.github/guidelines/python-unittest.guidelines.md`](.github/guidelines/python-unittest.guidelines.md) | Python unit tests and their fixtures |
 | [`.github/guidelines/python-module-documentation.guidelines.md`](.github/guidelines/python-module-documentation.guidelines.md) | Python Docstring and typing rules |
@@ -48,7 +48,11 @@ for every feature or behavior fix, including changes limited to packaged content
 - **Scaffold guidance:** `src/okf_schema/data/` supplies new-project defaults.
   Preserve existing project policy when installing or initializing.
 - **Own requirements:** first read the [shipped requirements guideline](src/okf_schema/data/requirements/guidelines/requirements.guidelines.md),
-  then the [local overlay](requirements/guidelines/requirements.guidelines.md).
+  the only maintained copy of the shared instructions (the installed
+  `requirements/guidelines/requirements.guidelines.md` is its `okfreq init --force`
+  output, never edited), then this repository's
+  [project guideline](requirements/guidelines/project.guidelines.md), which init
+  never touches. Project paths, scopes and coverage policy come from `requirements/config.yml`.
   `requirements/` states observable contracts and links real
   source/test evidence. Preserve identities, regenerate owned fields, and exercise
   applicable features rather than maintaining nominal coverage alone. Run

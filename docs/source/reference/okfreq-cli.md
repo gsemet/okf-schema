@@ -12,7 +12,7 @@ okfreq COMMAND --help
 
 | Command | Purpose |
 |---|---|
-| `okfreq init [PATH] [--force]` | Create or merge the default requirements scaffold. Existing files are not replaced. |
+| `okfreq init [PATH] [--force]` | Create or merge the default requirements scaffold. Existing files are not replaced, except with `--force`, which replaces `guidelines/requirements.guidelines.md` with the packaged text. The command prints whether that guideline was installed, kept, replaced or already up to date. |
 | `okfreq new strs TITLE --description TEXT --project TEXT [--scope NAME] [--origin NAME] [--derives-from ID]... [--user-need TEXT] [--path PATH]` | Create a stakeholder requirement with a stable allocated ID and UUID. |
 | `okfreq new swrs TITLE --description TEXT --project TEXT --derives-from ID [--derives-from ID]... [--scope NAME] [--origin NAME] [--path PATH]` | Create a software requirement derived from one or more configured parent requirements. `--user-need` is rejected for derived levels. |
 | `okfreq import SOURCE [--path PATH]` | Merge configuration while preserving destination values on conflicts and preserving unknown keys. |
@@ -35,8 +35,10 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 | `okfreq trace [PATH] [--json]` | Scan configured source and test locations for markers. |
 | `okfreq status [PATH]` | Print lifecycle counts and structural health. |
 
-`trace` separates valid leaf coverage, unknown IDs, repeated markers in one
-file, non-leaf markers, and scan warnings. Marker spellings and the ID regular
+`trace` separates valid leaf coverage, unknown IDs, non-leaf markers, and scan
+warnings. The same ID may be marked several times in one file, for example beside
+distinct tests; the file is listed once. The `duplicates` key remains in the JSON
+reports for compatibility and is always empty. Marker spellings and the ID regular
 expression come from `config.yml`.
 
 Every non-reserved Markdown document under `tiers/` must have mapping

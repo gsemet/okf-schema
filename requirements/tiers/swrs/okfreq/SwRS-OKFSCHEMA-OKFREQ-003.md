@@ -54,11 +54,19 @@ requirement fields and Markdown bodies.
 
 ### Scenario: Encounter suspect markers
 
-- GIVEN a marker for an unknown ID, a repeated marker in one file, or a marker on
-  a non-leaf requirement
+- GIVEN a marker for an unknown ID or a marker on a non-leaf requirement
 - WHEN traceability is scanned
 - THEN `okfreq` reports the discrepancy separately without treating it as valid
   coverage evidence
+
+### Scenario: Accept repeated markers in one file
+
+- GIVEN a test file with several tests, each preceded by a marker for the same SwRS
+  identity
+- WHEN the user runs trace or coverage update
+- THEN every marker is accepted without a diagnostic and the file is listed once
+  in the generated coverage fields
+- AND the `duplicates` key of the reports remains present and empty
 
 ### Verification notes
 

@@ -192,7 +192,7 @@ def test_installed_wheel_commands_install_complete_families_without_source_check
     nested_files = {
         "okf-schema": "references/okf-v0.2.md",
         "okfkb": "references/lifecycle-and-taxonomy.md",
-        "okfreq": "references/requirements.guidelines.md",
+        "okfreq": "references/operations.md",
     }
 
     imported_module = subprocess.run(
@@ -272,6 +272,25 @@ def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) ->
 
 
 # @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
+    tmp_path: Path,
+) -> None:
+    """The guideline has one source; the skills point to the copy `okfreq init` installs."""
+    from okf_schema.skill_installer import install_skill_family
+
+    destination = tmp_path / "agent-skills"
+    install_skill_family("okfreq", destination)
+
+    assert not list(destination.rglob("requirements.guidelines.md"))
+    for name in ("okfreq", "okfreq-gardening"):
+        text = (destination / name / "SKILL.md").read_text(encoding="utf-8")
+        assert "guidelines/requirements.guidelines.md" in text
+        assert "okfreq init" in text
+        assert "project.guidelines.md" in text
+        assert "references/requirements.guidelines.md" not in text
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
 def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: Path) -> None:
     """The setup skill ships with the okfreq family and states its stop rules and delivery."""
     from okf_schema.skill_installer import install_skill_family
@@ -288,6 +307,7 @@ def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: P
         "okfreq-gardening",
         "Never merge",
         "requirements/guidelines/requirements.guidelines.md",
+        "requirements/guidelines/project.guidelines.md",
     ):
         assert required in text
     for target in re.findall(r"\]\(([^)]+)\)", text):

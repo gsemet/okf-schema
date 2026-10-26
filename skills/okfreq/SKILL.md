@@ -24,13 +24,14 @@ or implementation details of the underlying tool.
 
 Keep this entrypoint as the first read. The packaged operations reference is
 self-contained: agents need the installed CLI and target project, not this
-package's source code or documentation website. For local policy, a local
-`<bundle>/guidelines/requirements.guidelines.md` always takes precedence.
+package's source code or documentation website. The requirements guideline is
+not shipped with this skill: `okfreq init` installs it into the bundle as
+`<bundle>/guidelines/requirements.guidelines.md`, and that file is the single
+guideline to follow.
 
 | Need | Read |
 |---|---|
 | Commands, backfilling existing features, harness setup, reports, or troubleshooting | [Standalone operations](references/operations.md) |
-| Baseline authoring and validation when no local guideline exists | [Requirements guidelines](references/requirements.guidelines.md) |
 
 ## Installation
 
@@ -54,15 +55,17 @@ agent's skills directory.
    `config.yml`; its requirement documents and schemas normally live in
    `tiers/`.
 2. Read the nearest `AGENTS.md` and any requirements guideline it registers.
-3. Prefer the bundle's own
-   `<bundle>/guidelines/requirements.guidelines.md`. This in-project guideline
-   is authoritative because it can define local paths, scopes, commands, and
-   review rules.
-4. If that file is absent, read
-   [the bundled requirements guideline](references/requirements.guidelines.md)
-   as the baseline. Resolve project-specific paths, scopes, and quality commands
-   from `config.yml`, `AGENTS.md`, and the project itself rather than assuming
-   that example names apply universally.
+3. Read `<bundle>/guidelines/requirements.guidelines.md`, installed by
+   `okfreq init`, then any other guideline file in that folder (by convention
+   `project.guidelines.md`). The project files carry local paths, scopes,
+   commands, and review rules and win where they specialize the shared text.
+   Resolve project-specific paths, scopes, and quality commands from
+   `config.yml`, `AGENTS.md`, and the project itself rather than assuming that
+   example names apply universally.
+4. Never put project rules in `requirements.guidelines.md`:
+   `okfreq init <bundle> --force` replaces it with the packaged text, which is
+   how a missing or outdated copy is installed or refreshed. It leaves every
+   other file of `guidelines/` untouched.
 5. Before changing requirements, read `config.yml` and every schema under
    `tiers/_schema/`. Local configuration and schemas define the actual levels,
    hierarchy, IDs, lifecycle values, markers, scopes, and allowed fields.
@@ -96,8 +99,9 @@ satisfied. It is not an issue title, design choice, code comment, or task.
   `okfreq supersede OLD NEW...`) and let `okfreq` compute `supersedes`; use
   `relates_to` for lateral links with no derivation or replacement meaning.
 - **Leaf requirements connect to evidence.** Place `@implements_req <ID>` near
-   the relevant production behavior and `@tests_req <ID>` once in each relevant
-   test file. StRS never receives implementation markers; in the stricter
+   the relevant production behavior and `@tests_req <ID>` near each relevant
+   test. The same ID may repeat at distinct evidence points in one file.
+   StRS never receives implementation markers; in the stricter
    `linked-swrs-and-validation-test` mode, a direct `@tests_req <StRS-ID>` marker
    defines a stakeholder validation test.
 - **Markers are links, not proof.** A test marker says where verification lives,

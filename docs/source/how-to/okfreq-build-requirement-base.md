@@ -48,9 +48,8 @@ For the boundary between marker linkage and executed test-result evidence, see
 6. Ask your coding agent to implement the software requirement and add tests.
    Explicitly name the requirement ID and ask the agent to add
    `@implements_req SwRS-default-001` in the implementation and
-   `@tests_req SwRS-default-001` in the corresponding test file. Use one marker
-   per requirement ID per file, even when that file contains several relevant
-   test cases. The markers make the links discoverable without claiming that
+   `@tests_req SwRS-default-001` in the corresponding test file. Put a
+   marker beside each relevant test case; the same ID may repeat in one file. The markers make the links discoverable without claiming that
    the tests passed.
 7. Run `okfreq trace .` to inspect marker references and missing IDs, then run
    `okfreq update-coverage . --check` to preview generated coverage fields.
@@ -81,8 +80,16 @@ See the [design explanation](../explanation/okfreq-choices.md) and the
 
 For this repository, the maintained requirements bundle is `requirements/`: its
 configuration is `requirements/config.yml`, its documents are under
-`requirements/tiers/`, and its requirements-specific guidance is in
-`requirements/guidelines/requirements.guidelines.md`.
+`requirements/tiers/`, its project rules are in
+`requirements/guidelines/project.guidelines.md`, and the shared guidance is the
+installed `requirements/guidelines/requirements.guidelines.md`.
+
+Keep project rules out of the installed guideline. `okfreq init <bundle> --force`
+replaces `guidelines/requirements.guidelines.md` with the packaged text, which is
+how an existing project refreshes it; it leaves every other file of
+`guidelines/` and every requirement untouched. If you appended project sections
+to the installed file, move them to a separate file such as
+`guidelines/project.guidelines.md` before running `--force`.
 
 To go from a project with no requirements bundle to a reviewable baseline in one
 step, ask your agent to use the `okfreq-setup` skill (installed with

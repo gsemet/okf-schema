@@ -275,8 +275,8 @@ Add one test marker above the first relevant test in `tests/test_export.py`:
 # @tests_req SwRS-default-001
 ```
 
-Use one marker for each requirement ID per file. Several test cases in one file
-can address the same requirement; they do not need repeated identical markers.
+Several test cases in one file can address the same requirement. Put a marker
+beside each test that checks it; the file is listed once in the coverage fields.
 One requirement can also link to several files, and one file can address several
 requirements. Place markers in comments appropriate for the source language.
 
@@ -539,7 +539,6 @@ project's existing artifact policy.
 |---|---|
 | No discovered marker | Use `scope` to check scan paths, then check the exact ID and marker spelling. |
 | Unknown ID | Correct the marker or create the reviewed missing requirement; do not invent a link just to remove the finding. |
-| Repeated marker | Keep one occurrence of each requirement ID per file; several distinct files are legitimate evidence. |
 | Missing source/test coverage | Find real evidence, implement the missing behavior/test, or leave the gap explicit for review. Structural validity alone does not resolve it. |
 | Stale generated fields/indexes | Preview, refresh and rerun check mode. `--check` exits non-zero on drift; `--diff` previews without writing. |
 | E10 | Fix a missing/ambiguous target, malformed annotation or disallowed root escape. |

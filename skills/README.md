@@ -103,15 +103,15 @@ create requirements  derive StRS → SwRS   trace markers
 ```
 
 `okfreq-setup` sits in front of this path. It runs once, in a project with no
-bundle, and applies the same baseline guideline that `okfreq init` installs:
+bundle, and writes the project rules beside the baseline guideline that `okfreq init` installs:
 
 ```text
-  okfreq-setup ──> requirements/guidelines/requirements.guidelines.md <── okfreq-gardening
-  (once, no          (project guideline: wins over every skill)         (recurring, asks
-   questions)                                                            before restructuring)
+  okfreq-setup ──> requirements/guidelines/project.guidelines.md <── okfreq-gardening
+  (once, no          (project rules: win over every skill; beside        (recurring, asks
+   questions)         the installed requirements.guidelines.md)          before restructuring)
 ```
 
-Precedence is the project guideline first, then `okfreq-setup`, then `okfreq` and
+Precedence is the project guideline (`project.guidelines.md`) first, then `okfreq-setup`, then `okfreq` and
 `okfreq-gardening`. Each skill works without the others; `okfreq` is the CLI
 reference they rely on when installed.
 
@@ -163,8 +163,10 @@ references only when needed:
 - [Finding quality](okfkb/references/finding-quality.md)
 - [Consolidation judgment](okfkb/references/consolidation-judgment.md)
 - [Navigation and maintenance](okfkb/references/navigation-and-maintenance.md)
-- [Requirements guidelines](okfreq/references/requirements.guidelines.md) is the
-  fallback for `okfreq` projects without a local guideline.
+- The requirements guideline is not part of the skills: `okfreq init` installs it
+  as `<bundle>/guidelines/requirements.guidelines.md` (`okfreq init --force`
+  refreshes it), and the `okfreq` skills read it from there, then the project's
+  own `project.guidelines.md` beside it.
 
 For human-oriented guidance, see
 [Maintain an OKFKB with agent skills](../docs/source/how-to/maintain-okfkb-with-skills.md)

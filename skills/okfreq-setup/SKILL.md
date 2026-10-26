@@ -16,9 +16,10 @@ choice below has a fixed default. Stop only on the stop rules.
 
 ## Precedence and companions
 
-1. The project's `requirements/guidelines/requirements.guidelines.md` wins over this skill, and
-   this skill wins over the other okfreq skills. The guideline is installed in step 3; from then
-   on, read it again before each step and follow it.
+1. The project's `requirements/guidelines/project.guidelines.md` wins over this skill, and
+   this skill wins over the other okfreq skills; the installed
+   `requirements/guidelines/requirements.guidelines.md` is the shared baseline under both. Both
+   are in place after step 3; from then on, read them again before each step and follow them.
 2. Use the `okfreq` skill for how the CLI works. If it is not installed, use `okfreq --help`,
    `okfreq <command> --help` and the installed guideline.
 3. Do not use `okfreq-gardening` during setup. Name it in the final report as the recurring
@@ -51,18 +52,20 @@ choice below has a fixed default. Stop only on the stop rules.
    README, the task runner, CI, the test layout and the source layout. Note the commands that
    build, test and check.
 2. **Install** okf-schema as in the table. Commit the lock file change with the rest.
-3. **Initialise.** Run `okfreq init requirements`. Keep the generated
-   `requirements/guidelines/requirements.guidelines.md` as is, and append one section
-   `## Project rules` with: the bundle path, the okfreq command line, the scope list with what
-   each covers, the marker comment syntax for each language in the project, and the project's
-   check and test commands. Project-specific rules go only there, never in a skill.
+3. **Initialise.** Run `okfreq init requirements`. Never edit the generated
+   `requirements/guidelines/requirements.guidelines.md`: `okfreq init --force` replaces it with
+   the shipped text. Write a new `requirements/guidelines/project.guidelines.md` with: the bundle
+   path, the okfreq command line, the scope list with what each covers, the marker comment syntax
+   for each language in the project, and the project's check and test commands. Project-specific
+   rules go only there, never in a skill and never in the installed file.
 4. **Configure** `requirements/config.yml`: the scopes and scan folders from the table.
 5. **Point to it.** Add this section to `AGENTS.md`, creating the file if it does not exist:
 
    ```markdown
    ## Requirements (okfreq)
 
-   Read `requirements/guidelines/requirements.guidelines.md` before any of these: adding,
+   Read `requirements/guidelines/requirements.guidelines.md`, then
+   `requirements/guidelines/project.guidelines.md`, before any of these: adding,
    changing or fixing a behaviour; moving, renaming or deleting code or tests that carry
    `@implements_req` or `@tests_req` markers; editing anything under `requirements/`.
    Requirements state what the code does today, tied to it by those markers.
