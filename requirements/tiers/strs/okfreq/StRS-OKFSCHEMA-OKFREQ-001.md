@@ -26,6 +26,7 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFREQ-009
 - SwRS-OKFSCHEMA-OKFREQ-010
 - SwRS-OKFSCHEMA-OKFREQ-011
+- SwRS-OKFSCHEMA-OKFREQ-012
 ---
 
 ## Maintain auditable software requirements

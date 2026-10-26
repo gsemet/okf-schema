@@ -51,6 +51,13 @@ counts as separate inspectable metrics.
 - THEN the report contains separate schema, graph, coverage, and lifecycle data
   for the current bundle
 
+### Scenario: Report replacement and related requirements
+
+- GIVEN requirements that use `superseded_by` and `relates_to`
+- WHEN the graph or the JSON report is produced
+- THEN `okfreq graph --json` and each report record list `superseded_by`, the
+  computed `supersedes` and `relates_to`, and the published JSON Schema describes them
+
 ### Scenario: Report unhealthy requirements
 
 - GIVEN a bundle with a hierarchy error or missing coverage evidence

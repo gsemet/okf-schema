@@ -43,7 +43,7 @@ unrelated implementation task.
    `<bundle>/tiers/_schema/` before editing anything.
 - Preserve requirement IDs, UUIDs, authored frontmatter, unknown properties,
   YAML comments, and Markdown bodies.
-- Never hand-edit `derived_by`, `implemented_in_files`, `tested_in_files`, indexes,
+- Never hand-edit `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, indexes,
   or reports. Use explicit `okfreq` commands for generated data.
 - Never claim implementation or test coverage without source evidence and
   markers. Markers are links, not proof that tests pass.
@@ -83,8 +83,8 @@ Run the project-prescribed validation and test checks before changing files.
 Then inspect requirements frontmatter before bodies and inventory:
 
 - every requirement by ID, UUID, level, scope, origin, and lifecycle;
-- authored `derives_from` and `depends_on` relationships;
-- generated `derived_by`, implementation, and test fields;
+- authored `derives_from`, `depends_on`, `superseded_by` and `relates_to` relationships;
+- generated `derived_by`, `supersedes`, implementation, and test fields;
 - verification methods and criteria;
 - unknown producer metadata and preservation-sensitive comments;
 - source and test files covered by each configured scope.
@@ -110,7 +110,9 @@ and scan warnings as separate findings.
 2. Detect orphaned upper-level requirements and requirements whose parent level
    violates the configured hierarchy.
 3. Use `okfreq graph` to inspect reverse derivation. Rebuild generated
-   `derived_by` only through `okfreq update-coverage` after previewing it.
+   `derived_by` and `supersedes` only through `okfreq update-coverage` after
+   previewing it. Every `superseded` requirement must name its replacements in
+   `superseded_by`; report one that does not instead of guessing a replacement.
 4. Never repair an uncertain relationship by guessing. Report it as an open
    discrepancy and ask for a decision.
 5. Preserve all authored and unknown metadata while making approved repairs.
@@ -202,10 +204,11 @@ explicit and confirmed:
 
 ```console
 okfreq archive REQUIREMENT-ID --yes
-okfreq supersede OLD-ID REPLACEMENT-ID --yes
+okfreq supersede OLD-ID REPLACEMENT-ID [REPLACEMENT-ID...] --yes
 ```
 
-Archive never deletes. Supersession requires a real replacement target. A draft
+Archive never deletes. Supersession requires at least one real replacement
+target and records them all in the `superseded_by` list. A draft
 that was never published may be discarded with `okfreq retire ID --yes`, which
 records the ID in `retired_ids` so the number is never reused; do not delete
 requirement files by hand. Do not

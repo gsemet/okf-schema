@@ -214,7 +214,7 @@ def run_showcase(project: Path) -> dict[str, str]:
     assert load_requirements(root)[swrs][1]["lifecycle"] == "deprecated"
     command("supersede", swrs, replacement, "--path", str(root), "--yes")
     after = load_requirements(root)[swrs]
-    assert after[1]["superseded_by"] == replacement
+    assert after[1]["superseded_by"] == [replacement]
     assert extract_frontmatter(after[2])[1] == body_before
     assert after[1]["uuid"] == records[swrs][1]["uuid"]
     outcomes["exemptions_and_lifecycle"] = (
@@ -233,6 +233,32 @@ def run_showcase(project: Path) -> dict[str, str]:
     assert "SwRS-DELIVERY-004.md" in command(*draft_args)
     outcomes["retired_ids_are_never_reused"] = (
         "referenced or unconfirmed retirement refused; the retired number is skipped"
+    )
+
+    second_replacement = "SwRS-DELIVERY-004"
+    command("supersede", swrs, replacement, second_replacement, "--path", str(root), "--yes")
+    assert load_requirements(root)[swrs][1]["superseded_by"] == [replacement, second_replacement]
+    assert "supersedes" not in load_requirements(root)[replacement][1]
+    command("update-coverage", str(root), "--check", expected=1)
+    command("update-coverage", str(root))
+    command("update-coverage", str(root), "--check")
+    for successor in (replacement, second_replacement):
+        assert load_requirements(root)[successor][1]["supersedes"] == [swrs]
+    edit(records[swrs][0].parent / f"{replacement}.md", {"relates_to": [second_replacement]})
+    graph_result = json.loads(command("graph", str(root), "--json"))
+    assert graph_result["relates_to"][replacement] == [second_replacement]
+    assert graph_result["supersedes"][second_replacement] == [swrs]
+    assert any(record["supersedes"] == [swrs] for record in report(root)["requirements"])
+    command("supersede", replacement, swrs, "--path", str(root), "--yes", expected=1)
+    unreplaced = records[swrs][0].parent / f"{second_replacement}.md"
+    edit(unreplaced, {"lifecycle": "superseded"})
+    assert "requires a non-empty superseded_by" in command(
+        "validate", str(root), "--json", expected=1
+    )
+    edit(unreplaced, {"lifecycle": "draft"})
+    command("validate", str(root))
+    outcomes["supersession_and_relations"] = (
+        "several replacements, generated supersedes, relates_to; cycles and gaps refused"
     )
 
     broken = root / "tiers/strs/broken.md"

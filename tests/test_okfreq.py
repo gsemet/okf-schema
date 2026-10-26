@@ -9,6 +9,7 @@ import pytest
 from click.testing import CliRunner
 from parametrization import Parametrization
 
+from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.okfreq.cli import okfreq
 from okf_schema.okfreq.core import (
     RequirementError,
@@ -22,6 +23,7 @@ from okf_schema.okfreq.core import (
     merge_config,
     report,
     retire_requirement,
+    supersede_requirement,
     tiers_path,
     update_coverage,
     validate_requirements,
@@ -755,7 +757,7 @@ def test_update_coverage_rejects_unknown_generated_field(tmp_path: Path) -> None
     config = root / "config.yml"
     config.write_text(
         config.read_text(encoding="utf-8").replace(
-            "generated_fields: [derived_by, implemented_in_files, tested_in_files]",
+            "generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files]",
             "generated_fields: [unknown]",
         ),
         encoding="utf-8",
@@ -1374,3 +1376,340 @@ def test_retired_numbers_of_other_scopes_and_wide_numbers_are_handled(tmp_path: 
         root, "StRS", "Wide", "A user can export.", project="demo", scope="default", origin="native"
     )
     assert created.name == "StRS-default-1201.md"
+
+
+# --- supersession and relates_to ---------------------------------------------
+
+
+def make_family(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
+    """Return a bundle with StRS-default-001 and SwRS-default-001..003."""
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    make_swrs(root, "Second")
+    make_swrs(root, "Third")
+    paths = {path.stem: path for path in (tiers_path(root) / "swrs").glob("SwRS-*.md")}
+    return root, paths
+
+
+def set_fields(path: Path, **updates: object) -> None:
+    """Rewrite frontmatter fields of one requirement, keeping the body."""
+    frontmatter, body = extract_frontmatter(path.read_text(encoding="utf-8"))
+    data = make_yaml().load(frontmatter)
+    for key, value in updates.items():
+        if value is None:
+            data.pop(key, None)
+        else:
+            data[key] = value
+    path.write_text(f"---\n{dump_yaml(data)}---\n{body}", encoding="utf-8")
+
+
+def frontmatter_of(path: Path) -> dict:
+    return load_requirements(path.parents[2])[path.stem][1]
+
+
+def test_supersede_records_several_replacements_as_a_list(tmp_path: Path) -> None:
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-012
+    root, paths = make_family(tmp_path)
+    old = paths["SwRS-default-001"]
+    before = extract_frontmatter(old.read_text(encoding="utf-8"))[1]
+    uuid = frontmatter_of(old)["uuid"]
+    result = CliRunner().invoke(
+        okfreq,
+        ["supersede", "SwRS-default-001", "SwRS-default-002", "SwRS-default-003"]
+        + ["--path", str(root), "--yes"],
+    )
+    assert result.exit_code == 0, result.output
+    data = frontmatter_of(old)
+    assert data["lifecycle"] == "superseded"
+    assert data["superseded_by"] == ["SwRS-default-002", "SwRS-default-003"]
+    assert data["uuid"] == uuid
+    assert extract_frontmatter(old.read_text(encoding="utf-8"))[1] == before
+    assert "superseded_by:\n- SwRS-default-002\n- SwRS-default-003\n" in old.read_text("utf-8")
+    assert validate_requirements(root) == []
+
+
+def test_supersede_with_one_replacement_writes_a_list_and_replaces_a_legacy_scalar(
+    tmp_path: Path,
+) -> None:
+    root, paths = make_family(tmp_path)
+    old = paths["SwRS-default-001"]
+    set_fields(old, lifecycle="superseded", superseded_by="SwRS-default-002")
+    supersede_requirement(root, "SwRS-default-001", ["SwRS-default-003"])
+    assert frontmatter_of(old)["superseded_by"] == ["SwRS-default-003"]
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="itself", args=["SwRS-default-001"], match="cannot supersede itself")
+@Parametrization.case(name="unknown", args=["SwRS-default-009"], match="unknown replacement")
+@Parametrization.case(
+    name="repeated",
+    args=["SwRS-default-002", "SwRS-default-002"],
+    match="duplicate replacement",
+)
+@Parametrization.case(name="none", args=[], match="at least one replacement")
+def test_supersede_refuses_bad_replacements_without_writing(
+    tmp_path: Path, args: list[str], match: str
+) -> None:
+    root, paths = make_family(tmp_path)
+    before = paths["SwRS-default-001"].read_text(encoding="utf-8")
+    with pytest.raises(RequirementError, match=match):
+        supersede_requirement(root, "SwRS-default-001", args)
+    assert paths["SwRS-default-001"].read_text(encoding="utf-8") == before
+
+
+def test_supersede_refuses_a_cycle_and_an_unknown_target(tmp_path: Path) -> None:
+    root, paths = make_family(tmp_path)
+    supersede_requirement(root, "SwRS-default-001", ["SwRS-default-002"])
+    supersede_requirement(root, "SwRS-default-002", ["SwRS-default-003"])
+    before = paths["SwRS-default-003"].read_text(encoding="utf-8")
+    with pytest.raises(RequirementError, match="cycle: SwRS-default-001 -> SwRS-default-002"):
+        supersede_requirement(root, "SwRS-default-003", ["SwRS-default-001"])
+    assert paths["SwRS-default-003"].read_text(encoding="utf-8") == before
+    with pytest.raises(RequirementError, match="unknown requirement"):
+        supersede_requirement(root, "SwRS-default-009", ["SwRS-default-001"])
+    runner = CliRunner()
+    result = runner.invoke(okfreq, ["supersede", "SwRS-default-003", "--path", str(root), "--yes"])
+    assert result.exit_code != 0
+
+
+def test_cli_supersede_requires_a_replacement_and_confirmation(tmp_path: Path) -> None:
+    root, paths = make_family(tmp_path)
+    before = paths["SwRS-default-001"].read_text(encoding="utf-8")
+    runner = CliRunner()
+    assert runner.invoke(okfreq, ["supersede", "SwRS-default-001", "--path", str(root)]).exit_code
+    result = runner.invoke(
+        okfreq, ["supersede", "SwRS-default-001", "SwRS-default-002", "--path", str(root)]
+    )
+    assert result.exit_code != 0 and "--yes" in result.output
+    assert paths["SwRS-default-001"].read_text(encoding="utf-8") == before
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="superseded_without_replacement",
+    fields={"lifecycle": "superseded"},
+    expected="lifecycle superseded requires a non-empty superseded_by",
+)
+@Parametrization.case(
+    name="superseded_with_empty_list",
+    fields={"lifecycle": "superseded", "superseded_by": []},
+    expected="lifecycle superseded requires a non-empty superseded_by",
+)
+@Parametrization.case(
+    name="replacement_on_an_active_requirement",
+    fields={"superseded_by": ["SwRS-default-002"]},
+    expected="superseded_by is only valid when lifecycle is superseded",
+)
+@Parametrization.case(
+    name="unknown_replacement",
+    fields={"lifecycle": "superseded", "superseded_by": ["SwRS-default-009"]},
+    expected="unknown superseded_by target SwRS-default-009",
+)
+@Parametrization.case(
+    name="self_replacement",
+    fields={"lifecycle": "superseded", "superseded_by": ["SwRS-default-001"]},
+    expected="superseded_by must not reference the requirement itself",
+)
+@Parametrization.case(
+    name="repeated_replacement",
+    fields={"lifecycle": "superseded", "superseded_by": ["SwRS-default-002"] * 2},
+    expected="duplicate superseded_by target SwRS-default-002",
+)
+@Parametrization.case(
+    name="not_a_list_of_ids",
+    fields={"lifecycle": "superseded", "superseded_by": {"id": "SwRS-default-002"}},
+    expected="superseded_by must be a list of requirement IDs",
+)
+@Parametrization.case(
+    name="relates_to_unknown",
+    fields={"relates_to": ["SwRS-default-009"]},
+    expected="unknown relates_to target SwRS-default-009",
+)
+@Parametrization.case(
+    name="relates_to_self",
+    fields={"relates_to": ["SwRS-default-001"]},
+    expected="relates_to must not reference the requirement itself",
+)
+@Parametrization.case(
+    name="relates_to_scalar",
+    fields={"relates_to": "SwRS-default-002"},
+    expected="relates_to must be a list of requirement IDs",
+)
+@Parametrization.case(
+    name="relates_to_repeated",
+    fields={"relates_to": ["SwRS-default-002", "SwRS-default-002"]},
+    expected="duplicate relates_to target SwRS-default-002",
+)
+def test_validation_rejects_inconsistent_relations(
+    tmp_path: Path, fields: dict, expected: str
+) -> None:
+    root, paths = make_family(tmp_path)
+    set_fields(paths["SwRS-default-001"], **fields)
+    findings = validate_requirements(root)
+    assert any(expected in finding for finding in findings), findings
+    result = CliRunner().invoke(okfreq, ["validate", str(root)])
+    assert result.exit_code == 1
+    assert CliRunner().invoke(okfreq, ["lint", str(root)]).exit_code != 0
+
+
+def test_validation_rejects_a_superseded_by_cycle(tmp_path: Path) -> None:
+    root, paths = make_family(tmp_path)
+    for old, new in (("001", "002"), ("002", "003"), ("003", "001")):
+        set_fields(
+            paths[f"SwRS-default-{old}"],
+            lifecycle="superseded",
+            superseded_by=[f"SwRS-default-{new}"],
+        )
+    cycles = [f for f in validate_requirements(root) if "superseded_by cycle" in f]
+    assert len(cycles) == 1
+    assert cycles[0].endswith(
+        "SwRS-default-001 -> SwRS-default-002 -> SwRS-default-003 -> SwRS-default-001"
+    )
+
+
+def test_a_chain_of_replacements_is_valid(tmp_path: Path) -> None:
+    root, paths = make_family(tmp_path)
+    set_fields(
+        paths["SwRS-default-001"], lifecycle="superseded", superseded_by=["SwRS-default-002"]
+    )
+    set_fields(
+        paths["SwRS-default-002"], lifecycle="superseded", superseded_by=["SwRS-default-003"]
+    )
+    assert validate_requirements(root) == []
+
+
+def test_legacy_scalar_superseded_by_is_accepted_with_an_informational_finding(
+    tmp_path: Path,
+) -> None:
+    root, paths = make_family(tmp_path)
+    old = paths["SwRS-default-001"]
+    set_fields(old, lifecycle="superseded", superseded_by="SwRS-default-002")
+    # The scaffold schema declares the list form; a bundle created by an earlier release
+    # declares nothing for the field, which is what this scenario reproduces.
+    findings = validate_requirements(root)
+    assert any("is not of type 'array'" in f for f in findings)
+    schema_file = tiers_path(root) / "_schema" / "base.schema.yaml"
+    schema = make_yaml().load(schema_file.read_text(encoding="utf-8"))
+    del schema["properties"]["superseded_by"]
+    schema_file.write_text(dump_yaml(schema), encoding="utf-8")
+    findings = validate_requirements(root)
+    assert [f for f in findings if not f.startswith("I2 ")] == []
+    assert any("write a list ([SwRS-default-002])" in f for f in findings)
+    result = CliRunner().invoke(okfreq, ["validate", str(root)])
+    assert result.exit_code == 0 and "I2 " in result.output
+    assert CliRunner().invoke(okfreq, ["lint", str(root)]).exit_code == 0
+    assert graph(root)["superseded_by"]["SwRS-default-001"] == ["SwRS-default-002"]
+    assert graph(root)["supersedes"]["SwRS-default-002"] == ["SwRS-default-001"]
+    assert update_coverage(root)  # supersedes is generated; the authored scalar is untouched
+    assert "superseded_by: SwRS-default-002" in old.read_text(encoding="utf-8")
+    record = next(r for r in report(root)["requirements"] if r["id"] == "SwRS-default-001")
+    assert record["superseded_by"] == ["SwRS-default-002"]
+
+
+def test_update_coverage_generates_supersedes_and_detects_stale_values(tmp_path: Path) -> None:
+    root, paths = make_family(tmp_path)
+    update_coverage(root)
+    assert all("supersedes" not in path.read_text(encoding="utf-8") for path in paths.values())
+    supersede_requirement(root, "SwRS-default-001", ["SwRS-default-002", "SwRS-default-003"])
+    assert update_coverage(root, check=True)
+    assert update_coverage(root)
+    for replacement in ("SwRS-default-002", "SwRS-default-003"):
+        assert frontmatter_of(paths[replacement])["supersedes"] == ["SwRS-default-001"]
+    assert "supersedes" not in frontmatter_of(paths["SwRS-default-001"])
+    assert update_coverage(root, check=True) == []
+    result = CliRunner().invoke(okfreq, ["update-coverage", str(root), "--check"])
+    assert result.exit_code == 0
+    # A hand-edited value is stale, and is repaired.
+    set_fields(paths["SwRS-default-002"], supersedes=["SwRS-default-009"])
+    assert update_coverage(root, check=True) == [str(paths["SwRS-default-002"])]
+    update_coverage(root)
+    assert frontmatter_of(paths["SwRS-default-002"])["supersedes"] == ["SwRS-default-001"]
+    # Re-targeting empties the old backlink instead of dropping the field.
+    supersede_requirement(root, "SwRS-default-001", ["SwRS-default-003"])
+    update_coverage(root)
+    assert frontmatter_of(paths["SwRS-default-002"])["supersedes"] == []
+    assert frontmatter_of(paths["SwRS-default-003"])["supersedes"] == ["SwRS-default-001"]
+
+
+def test_supersedes_is_not_written_when_it_is_not_a_generated_field(tmp_path: Path) -> None:
+    root, paths = make_family(tmp_path)
+    config = root / "config.yml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace("derived_by, supersedes,", "derived_by,"),
+        encoding="utf-8",
+    )
+    supersede_requirement(root, "SwRS-default-001", ["SwRS-default-002"])
+    update_coverage(root)
+    assert "supersedes" not in frontmatter_of(paths["SwRS-default-002"])
+    assert graph(root)["supersedes"]["SwRS-default-002"] == ["SwRS-default-001"]
+
+
+def test_graph_and_report_expose_the_new_relations(tmp_path: Path) -> None:
+    from jsonschema import Draft202012Validator
+
+    from okf_schema.okfreq.core import report_schema
+
+    root, paths = make_family(tmp_path)
+    supersede_requirement(root, "SwRS-default-001", ["SwRS-default-002", "SwRS-default-003"])
+    set_fields(paths["SwRS-default-002"], relates_to=["StRS-default-001", "SwRS-default-003"])
+    result = graph(root)
+    assert result["errors"] == []
+    assert result["superseded_by"]["SwRS-default-001"] == ["SwRS-default-002", "SwRS-default-003"]
+    assert result["supersedes"]["SwRS-default-003"] == ["SwRS-default-001"]
+    assert result["relates_to"]["SwRS-default-002"] == ["StRS-default-001", "SwRS-default-003"]
+    assert result["relates_to"]["SwRS-default-003"] == []  # authored on one side only
+    cli = CliRunner().invoke(okfreq, ["graph", str(root), "--json"])
+    assert json.loads(cli.output)["supersedes"]["SwRS-default-002"] == ["SwRS-default-001"]
+    payload = report(root)
+    Draft202012Validator(report_schema()).validate(payload)
+    records = {record["id"]: record for record in payload["requirements"]}
+    assert records["SwRS-default-001"]["superseded_by"] == ["SwRS-default-002", "SwRS-default-003"]
+    assert records["SwRS-default-002"]["supersedes"] == ["SwRS-default-001"]
+    assert records["SwRS-default-002"]["relates_to"] == ["StRS-default-001", "SwRS-default-003"]
+    assert records["StRS-default-001"]["relates_to"] == []
+
+
+def test_graph_reports_unknown_relation_targets(tmp_path: Path) -> None:
+    root, paths = make_family(tmp_path)
+    set_fields(paths["SwRS-default-001"], relates_to=["nope"])
+    assert any("unknown relates_to target nope" in e for e in graph(root)["errors"])
+    assert CliRunner().invoke(okfreq, ["graph", str(root)]).exit_code == 1
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="relates_to", fields={"relates_to": ["SwRS-default-001"]})
+@Parametrization.case(
+    name="superseded_by_list",
+    fields={"lifecycle": "superseded", "superseded_by": ["SwRS-default-001"]},
+)
+@Parametrization.case(
+    name="superseded_by_legacy_scalar",
+    fields={"lifecycle": "superseded", "superseded_by": "SwRS-default-001"},
+)
+def test_retire_refuses_a_requirement_referenced_by_a_relation(
+    tmp_path: Path, fields: dict
+) -> None:
+    root, paths = make_family(tmp_path)
+    set_fields(paths["SwRS-default-002"], **fields)
+    with pytest.raises(RequirementError, match="referenced by SwRS-default-002"):
+        retire_requirement(root, "SwRS-default-001")
+    assert paths["SwRS-default-001"].exists()
+
+
+def test_scaffold_schema_annotates_the_relation_fields(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    base = make_yaml().load((tiers_path(root) / "_schema" / "base.schema.yaml").read_text("utf-8"))
+    for field in ("superseded_by", "supersedes", "relates_to"):
+        prop = base["properties"][field]
+        assert prop["type"] == "array"
+        assert prop["items"]["x-okf-link"]["resolution"] == "filename-stem"
+    assert "supersedes" in load_config(root)["generated_fields"]
+    assert "supersedes" in (root / "config.yml").read_text(encoding="utf-8")
+
+
+def test_empty_scalar_superseded_by_counts_as_missing_without_a_list_hint(tmp_path: Path) -> None:
+    root, paths = make_family(tmp_path)
+    set_fields(paths["SwRS-default-001"], lifecycle="superseded", superseded_by="")
+    findings = validate_requirements(root)
+    assert any("requires a non-empty superseded_by" in f for f in findings)
+    assert not any(f.startswith("I2 ") for f in findings)

@@ -51,7 +51,7 @@ markers:
   implements: '@implements_req'
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, implemented_in_files, tested_in_files]
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -67,7 +67,7 @@ scopes:
 | `strs_test_coverage_mode` | StRS test-coverage rule. Choose `linked-swrs` or `linked-swrs-and-validation-test`; the default is `linked-swrs`. |
 | `lifecycle.values` | Allowed lifecycle values. The built-in values distinguish draft, proposed, approved, deprecated, and superseded requirements. |
 | `markers` | Implementation/test marker keywords and the regular expression used to recognise IDs. The entire match is the requirement ID. |
-| `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `implemented_in_files`, and `tested_in_files`; unsupported values fail explicitly. |
+| `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `supersedes`, `implemented_in_files`, and `tested_in_files`; unsupported values fail explicitly. A configuration that lists the fields explicitly keeps that list: add `supersedes` to maintain the backlink of `superseded_by`. |
 | `retired_ids` | IDs that were deleted with `okfreq retire` and must never be allocated again. Optional list of ID strings, written by `okfreq retire`; `okfreq new` numbers after the highest of the existing and retired IDs, `okfreq validate` rejects a document with a listed ID, and `okfreq import`/`config-merge` take the union of both lists. |
 | `scopes` | Per-scope ID token, requirement subfolder, and source/test ownership. Keep `source_dirs` and `test_dirs` separate. |
 
@@ -130,7 +130,9 @@ validate it with `okfreq validate .`.
 
 Add a level under `levels` with a unique folder and prefix. For example, an
 architecture level could derive from `StRS` and be a parent of `SwRS`. Authored
-links use `derives_from`; reverse `derived_by` links are computed.
+links use `derives_from`; reverse `derived_by` links are computed. Replacement
+links follow the same direction: `superseded_by` is authored and `supersedes` is
+computed, while `relates_to` is authored only.
 
 Requirement documents may contain additional frontmatter fields because the
 schema allows unknown properties. Add fields such as `owner`, `safety_goal`, or

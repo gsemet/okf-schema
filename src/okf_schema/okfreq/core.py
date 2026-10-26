@@ -51,7 +51,7 @@ markers:
   implements: '@implements_req'
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, implemented_in_files, tested_in_files]
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files]
 retired_ids: []
 scopes:
   default: {source_dirs: [src], test_dirs: [tests]}
@@ -208,7 +208,9 @@ examples:
 LIFECYCLES = ("draft", "proposed", "approved", "deprecated", "superseded")
 GUIDELINE_NAME = "requirements.guidelines.md"
 DEFAULT_ID_PATTERN = r"[A-Za-z][A-Za-z0-9_-]*"
-SUPPORTED_GENERATED_FIELDS = frozenset({"derived_by", "implemented_in_files", "tested_in_files"})
+SUPPORTED_GENERATED_FIELDS = frozenset(
+    {"derived_by", "supersedes", "implemented_in_files", "tested_in_files"}
+)
 STRS_TEST_COVERAGE_MODES = (
     "linked-swrs",
     "linked-swrs-and-validation-test",
@@ -564,6 +566,54 @@ def init_requirements(path: Path, force: bool = False) -> Path:
                         },
                     },
                     "description": "Other requirement IDs this one depends on.",
+                },
+                "superseded_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "x-okf-link": {
+                            "resolution": "filename-stem",
+                            "syntax": "plain",
+                            "id_marker": "id",
+                            "tooltip_shows_fields": ["description"],
+                            "preview_shows_fields": ["description"],
+                        },
+                    },
+                    "description": (
+                        "Requirement IDs that replace this one; required when the lifecycle "
+                        "is superseded and forbidden otherwise."
+                    ),
+                },
+                "supersedes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "x-okf-link": {
+                            "resolution": "filename-stem",
+                            "syntax": "plain",
+                            "id_marker": "id",
+                            "tooltip_shows_fields": ["description"],
+                            "preview_shows_fields": ["description"],
+                        },
+                    },
+                    "description": "Generated IDs of the requirements this one replaces.",
+                },
+                "relates_to": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "x-okf-link": {
+                            "resolution": "filename-stem",
+                            "syntax": "plain",
+                            "id_marker": "id",
+                            "tooltip_shows_fields": ["description"],
+                            "preview_shows_fields": ["description"],
+                        },
+                    },
+                    "description": (
+                        "Requirement IDs this one is laterally related to; carries no "
+                        "derivation, supersession or coverage meaning."
+                    ),
                 },
             },
             "required": [
@@ -1102,7 +1152,7 @@ def retire_requirement(root: Path, identifier: str, *, reason: str | None = None
     Raises:
         RequirementError:
             If the ID is unknown, the requirement is not a ``draft``, another
-            requirement derives from, depends on or is superseded by it, or a
+            requirement derives from, depends on, relates to or is superseded by it, or a
             source or test marker still references it. Nothing is changed.
 
     Examples:
@@ -1135,7 +1185,8 @@ def retire_requirement(root: Path, identifier: str, *, reason: str | None = None
         and (
             identifier in (other_data.get("derives_from") or [])
             or identifier in (other_data.get("depends_on") or [])
-            or other_data.get("superseded_by") == identifier
+            or identifier in _listed_ids(other_data.get("relates_to"))
+            or identifier in _superseded_by_ids(other_data)
         )
     )
     if references:
@@ -1169,6 +1220,69 @@ def retire_requirement(root: Path, identifier: str, *, reason: str | None = None
         _atomic_write(config_file, buffer.getvalue())
     file.unlink()
     _log_retirement(root, identifier, str(data.get("title", "")), reason)
+    return file
+
+
+def supersede_requirement(root: Path, target: str, replacements: list[str]) -> Path:
+    """Mark ``target`` superseded by one or more replacement requirements.
+
+    Sets ``lifecycle: superseded`` and writes ``superseded_by`` as a list,
+    replacing any previous value (including the legacy scalar form). The body,
+    UUID and other metadata are preserved. Nothing is written when a check fails.
+
+    .. versionadded:: 0.15.0
+
+    Args:
+        root:
+            The bundle root.
+        target:
+            ID of the requirement to supersede.
+        replacements:
+            IDs of the requirements that replace it, in the order to record.
+
+    Returns:
+        The path of the updated requirement document.
+
+    Raises:
+        RequirementError:
+            If the target or a replacement is unknown, a replacement is the
+            target itself or is listed twice, no replacement is given, or the
+            replacements would make ``superseded_by`` cyclic.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     supersede_requirement(root, "StRS-default-001", [])
+        Traceback (most recent call last):
+        ...
+        okf_schema.okfreq.core.RequirementError: unknown requirement: StRS-default-001
+    """
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-007
+    requirements = load_requirements(root)
+    if target not in requirements:
+        raise RequirementError(f"unknown requirement: {target}")
+    if not replacements:
+        raise RequirementError("supersede needs at least one replacement requirement")
+    for replacement in replacements:
+        if replacement not in requirements:
+            raise RequirementError(f"unknown replacement requirement: {replacement}")
+        if replacement == target:
+            raise RequirementError("a requirement cannot supersede itself")
+    if len(set(replacements)) != len(replacements):
+        raise RequirementError("duplicate replacement requirement")
+    edges = {
+        identifier: [item for item in _superseded_by_ids(data) if item in requirements]
+        for identifier, (_, data, _) in requirements.items()
+    }
+    edges[target] = list(replacements)
+    for cycle in _supersession_cycles(edges):
+        if target in cycle:
+            raise RequirementError(f"superseded_by would form a cycle: {' -> '.join(cycle)}")
+    file, _, text = requirements[target]
+    _atomic_write(
+        file, _render_frontmatter(text, {"lifecycle": "superseded", "superseded_by": replacements})
+    )
     return file
 
 
@@ -1290,15 +1404,150 @@ def marker_scan(root: Path) -> dict[str, Any]:
     return result
 
 
+def _listed_ids(value: Any) -> list[str]:
+    """Return the requirement IDs held by a relation field, tolerating legacy scalars.
+
+    Args:
+        value:
+            A frontmatter value: a list of IDs, a single ID string, or anything else.
+
+    Returns:
+        The string IDs in order; a single string counts as one ID and any other
+        non-list value as none. Malformed fields are reported by validation.
+
+    Examples:
+        >>> _listed_ids(["A", "B"]), _listed_ids("A"), _listed_ids(None)
+        (['A', 'B'], ['A'], [])
+    """
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, str)]
+    return []
+
+
+def _superseded_by_ids(data: dict[str, Any]) -> list[str]:
+    """Return the IDs in ``superseded_by``, reading the legacy scalar form as one ID."""
+    return _listed_ids(data.get("superseded_by"))
+
+
+def _supersession_reverse(
+    requirements: dict[str, tuple[Path, dict[str, Any], str]],
+) -> dict[str, list[str]]:
+    """Return, for each requirement, the sorted IDs of those it replaces (``supersedes``)."""
+    reverse: dict[str, list[str]] = {identifier: [] for identifier in requirements}
+    for identifier, (_, data, _) in requirements.items():
+        for replacement in dict.fromkeys(_superseded_by_ids(data)):
+            if replacement in reverse and replacement != identifier:
+                reverse[replacement].append(identifier)
+    return {identifier: sorted(values) for identifier, values in reverse.items()}
+
+
+def _supersession_cycles(edges: dict[str, list[str]]) -> list[list[str]]:
+    """Return each cycle of the ``superseded_by`` graph once, as a closed ID path.
+
+    Args:
+        edges:
+            Mapping of requirement ID to the IDs replacing it.
+
+    Returns:
+        Cycles such as ``["A", "B", "A"]``, rotated to start at their smallest ID.
+
+    Examples:
+        >>> _supersession_cycles({"A": ["B"], "B": ["A"], "C": ["A"]})
+        [['A', 'B', 'A']]
+    """
+    cycles: dict[tuple[str, ...], list[str]] = {}
+    done: set[str] = set()
+
+    def visit(node: str, stack: list[str]) -> None:
+        """Depth-first walk recording back edges as cycles."""
+        if node in stack:
+            loop = stack[stack.index(node) :]
+            pivot = loop.index(min(loop))
+            ring = loop[pivot:] + loop[:pivot]
+            cycles.setdefault(tuple(ring), [*ring, ring[0]])
+            return
+        if node in done:
+            return
+        stack.append(node)
+        for following in edges.get(node, []):
+            if following in edges:
+                visit(following, stack)
+        stack.pop()
+        done.add(node)
+
+    for start in sorted(edges):
+        visit(start, [])
+    return [cycles[key] for key in sorted(cycles)]
+
+
+def _relation_findings(
+    requirements: dict[str, tuple[Path, dict[str, Any], str]],
+) -> list[str]:
+    """Check ``superseded_by`` and ``relates_to`` authoring rules.
+
+    Returns:
+        Error findings (no code prefix) plus ``I2`` informational findings for the
+        legacy scalar ``superseded_by`` form, which is still accepted.
+    """
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-012
+    findings: list[str] = []
+    edges: dict[str, list[str]] = {}
+    for identifier, (file, data, _) in requirements.items():
+        for field in ("superseded_by", "relates_to"):
+            value = data.get(field)
+            if value is None or isinstance(value, list):
+                shaped = value is None or all(isinstance(item, str) for item in value)
+            else:
+                shaped = field == "superseded_by" and isinstance(value, str)
+            if not shaped:
+                findings.append(f"{file}: {field} must be a list of requirement IDs")
+                continue
+            if isinstance(value, str) and value.strip():
+                findings.append(
+                    f"I2 {file}: superseded_by is a single ID; write a list "
+                    f"([{value}]) - the scalar form is still accepted"
+                )
+            ids = _listed_ids(value)
+            for target in ids:
+                if target == identifier:
+                    findings.append(f"{file}: {field} must not reference the requirement itself")
+            for target in sorted({item for item in ids if ids.count(item) > 1}):
+                findings.append(f"{file}: duplicate {field} target {target}")
+            if field == "superseded_by":
+                edges[identifier] = [
+                    target
+                    for target in dict.fromkeys(ids)
+                    if target in requirements and target != identifier
+                ]
+        replaced_by = _superseded_by_ids(data)
+        lifecycle = data.get("lifecycle")
+        if lifecycle == "superseded" and not replaced_by:
+            findings.append(f"{file}: lifecycle superseded requires a non-empty superseded_by")
+        if lifecycle != "superseded" and replaced_by:
+            findings.append(f"{file}: superseded_by is only valid when lifecycle is superseded")
+    for cycle in _supersession_cycles(edges):
+        findings.append(f"{requirements[cycle[0]][0]}: superseded_by cycle {' -> '.join(cycle)}")
+    return findings
+
+
 def graph(root: Path) -> dict[str, Any]:
-    """Return authored and computed reverse derivation edges.
+    """Return authored and computed reverse derivation and supersession edges.
+
+    .. versionchanged:: 0.15.0
+        Also return ``superseded_by``, the computed ``supersedes`` and ``relates_to``.
 
     Args:
         root:
             Bundle root containing the requirement documents.
 
     Returns:
-        Authored parent edges, computed child edges, and graph errors.
+        Authored parent edges (``derives_from``), computed child edges
+        (``derived_by``), authored replacements (``superseded_by``), their computed
+        inverse (``supersedes``), authored lateral links (``relates_to``) and graph
+        errors, including unknown ``derives_from``, ``superseded_by`` or
+        ``relates_to`` targets.
 
     Examples:
         >>> from tempfile import TemporaryDirectory
@@ -1316,12 +1565,25 @@ def graph(root: Path) -> dict[str, Any]:
                 errors.append(f"{file}: unknown derives_from target {parent}")
             else:
                 reverse[parent].append(identifier)
+    for file, data, _ in requirements.values():
+        for field in ("superseded_by", "relates_to"):
+            for target in _listed_ids(data.get(field)):
+                if target not in requirements:
+                    errors.append(f"{file}: unknown {field} target {target}")
     return {
         "derives_from": {
             identifier: data[1].get("derives_from", []) or []
             for identifier, data in requirements.items()
         },
         "derived_by": {identifier: sorted(values) for identifier, values in reverse.items()},
+        "superseded_by": {
+            identifier: _superseded_by_ids(data[1]) for identifier, data in requirements.items()
+        },
+        "supersedes": _supersession_reverse(requirements),
+        "relates_to": {
+            identifier: _listed_ids(data[1].get("relates_to"))
+            for identifier, data in requirements.items()
+        },
         "errors": errors,
     }
 
@@ -1465,6 +1727,7 @@ def validate_requirements(
         if prose and len(str(data.get("description", "")).split()) < 3:
             errors.append(f"W001 {file}: description is unusually short")
     errors.extend(graph(root)["errors"])
+    errors.extend(_relation_findings(requirements))
     return errors
 
 
@@ -1492,6 +1755,10 @@ def update_coverage(
             If ``generated_fields`` is malformed or contains unsupported
             field names.
 
+    .. versionchanged:: 0.15.0
+        Also maintains ``supersedes``, the inverse of ``superseded_by``, when it
+        is listed in ``generated_fields``.
+
     Examples:
         >>> from pathlib import Path
         >>> from tempfile import TemporaryDirectory
@@ -1514,9 +1781,14 @@ def update_coverage(
         for parent in data.get("derives_from", []) or []:
             if parent in reverse:
                 reverse[parent].append(str(data.get("id")))
+    supersedes = _supersession_reverse(requirements)
     changed: list[str] = []
     for identifier, (file, _, text) in requirements.items():
-        available_updates = {"derived_by": sorted(reverse[identifier])}
+        available_updates: dict[str, Any] = {"derived_by": sorted(reverse[identifier])}
+        if supersedes[identifier] or "supersedes" in requirements[identifier][1]:
+            # Written only where it has a value (or is already present), so a bundle
+            # that never supersedes anything gains no empty ``supersedes: []`` lines.
+            available_updates["supersedes"] = supersedes[identifier]
         if str(requirements[identifier][1].get("type")) == "SwRS":
             available_updates.update(
                 {
@@ -1689,6 +1961,9 @@ def report(root: Path) -> dict[str, Any]:
             "scope": data.get("scope"),
             "tier": data.get("tier", data.get("type")),
             "derives_from": data.get("derives_from", []) or [],
+            "superseded_by": graph_result["superseded_by"][identifier],
+            "supersedes": graph_result["supersedes"][identifier],
+            "relates_to": graph_result["relates_to"][identifier],
             "coverage_target": coverage_target,
             "implementation": implementation,
             "tests": tests,
@@ -1964,6 +2239,9 @@ def report_schema() -> dict[str, Any]:
                     "scope": {"type": ["string", "null"]},
                     "tier": {"type": ["string", "null"]},
                     "derives_from": {"type": "array", "items": {"type": "string"}},
+                    "superseded_by": {"type": "array", "items": {"type": "string"}},
+                    "supersedes": {"type": "array", "items": {"type": "string"}},
+                    "relates_to": {"type": "array", "items": {"type": "string"}},
                     "coverage_target": {"type": "boolean"},
                     "implementation": {"$ref": "#/$defs/linkage"},
                     "tests": {"$ref": "#/$defs/linkage"},

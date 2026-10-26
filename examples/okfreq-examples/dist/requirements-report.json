@@ -87,6 +87,9 @@
       "scope": "Core",
       "tier": "StRS",
       "derives_from": [],
+      "superseded_by": [],
+      "supersedes": [],
+      "relates_to": [],
       "coverage_target": false,
       "implementation": {
         "status": "not_applicable",
@@ -159,6 +162,9 @@
       "derives_from": [
         "StRS-CORE-001"
       ],
+      "superseded_by": [],
+      "supersedes": [],
+      "relates_to": [],
       "coverage_target": true,
       "implementation": {
         "status": "covered",
@@ -216,6 +222,9 @@
       "derives_from": [
         "StRS-CORE-001"
       ],
+      "superseded_by": [],
+      "supersedes": [],
+      "relates_to": [],
       "coverage_target": true,
       "implementation": {
         "status": "covered",

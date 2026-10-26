@@ -76,6 +76,47 @@ properties:
         syntax: plain
         id_marker: id
     description: Other requirement IDs this one depends on.
+  superseded_by:
+    type: array
+    items:
+      type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+        id_marker: id
+        tooltip_shows_fields:
+        - description
+        preview_shows_fields:
+        - description
+    description: Requirement IDs that replace this one; required when the
+      lifecycle is superseded and forbidden otherwise.
+  supersedes:
+    type: array
+    items:
+      type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+        id_marker: id
+        tooltip_shows_fields:
+        - description
+        preview_shows_fields:
+        - description
+    description: Generated IDs of the requirements this one replaces.
+  relates_to:
+    type: array
+    items:
+      type: string
+      x-okf-link:
+        resolution: filename-stem
+        syntax: plain
+        id_marker: id
+        tooltip_shows_fields:
+        - description
+        preview_shows_fields:
+        - description
+    description: Requirement IDs this one is laterally related to; carries no
+      derivation, supersession or coverage meaning.
 required:
 - type
 - id

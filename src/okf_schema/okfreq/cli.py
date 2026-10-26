@@ -30,6 +30,7 @@ from okf_schema.okfreq.core import (
     marker_scan,
     merge_config,
     retire_requirement,
+    supersede_requirement,
     update_coverage,
     validate_requirements,
     write_json_report,
@@ -556,7 +557,14 @@ def coverage(
 @click.argument("path", default=".", type=click.Path())
 @click.option("--json", "as_json", is_flag=True)
 def graph_command(path: str, as_json: bool) -> None:
-    """Show authored and computed derivation links.
+    """Show authored and computed derivation, supersession and relation links.
+
+    The plain output lists ``derived_by`` per requirement; ``--json`` adds
+    ``derives_from``, ``superseded_by``, ``supersedes``, ``relates_to`` and the
+    graph errors.
+
+    .. versionchanged:: 0.15.0
+        ``--json`` includes supersession and ``relates_to`` edges.
 
     Args:
         path:
@@ -701,48 +709,58 @@ def retire(
 
 @okfreq.command()
 @click.argument("target")
-@click.argument("replacement")
+@click.argument("replacements", nargs=-1, required=True)
 @click.option("--path", default=".", type=click.Path())
 @click.option("--yes", is_flag=True)
 def supersede(
     target: str,
-    replacement: str,
+    replacements: tuple[str, ...],
     path: str,
     yes: bool,
 ) -> None:
-    """Mark TARGET superseded by REPLACEMENT.
+    """Mark TARGET superseded by one or more REPLACEMENTS.
+
+    Sets ``lifecycle: superseded`` and records the replacements as the
+    ``superseded_by`` list, replacing any previous value (a legacy single ID
+    becomes a one-item list). Refused, with nothing written, when an ID is
+    unknown, a replacement is TARGET itself or is repeated, or the
+    replacements would make ``superseded_by`` cyclic. Run
+    ``okfreq update-coverage`` afterwards to refresh ``supersedes``.
+
+    .. versionchanged:: 0.15.0
+        Accepts several replacements and writes ``superseded_by`` as a list.
 
     Args:
         target:
             Stable ID of the requirement to supersede.
-        replacement:
-            Stable ID of its replacement requirement.
+        replacements:
+            Stable IDs of the requirements that replace it.
         path:
             Project or requirements-bundle path.
         yes:
             Confirm the lifecycle change.
 
     Examples:
-        Confirm a replacement relationship::
+        Confirm that one requirement is replaced by two others::
 
-            okfreq supersede SwRS-old-001 SwRS-new-001 \
+            okfreq supersede SwRS-old-001 SwRS-new-001 SwRS-new-002 \
                 --path requirements --yes
     """
     if not yes:
         raise click.ClickException("supersede requires explicit confirmation with --yes")
-    requirements = load_requirements(_root(path))
-    if replacement not in requirements:
-        raise click.ClickException(f"unknown replacement requirement: {replacement}")
-    if replacement == target:
-        raise click.ClickException("a requirement cannot supersede itself")
-    _change_lifecycle(_root(path), target, "superseded", {"superseded_by": replacement})
+    try:
+        supersede_requirement(_root(path), target, list(replacements))
+    except RequirementError as exc:
+        raise _fail(exc) from exc
+    click.echo(f"Updated {target}")
+    click.echo("Run okfreq update-coverage to refresh supersedes.")
 
 
 def _change_lifecycle(
     root: Path,
     target: str,
     lifecycle: str,
-    extra: dict[str, str] | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> None:
     """Change one requirement's lifecycle after explicit confirmation."""
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-007

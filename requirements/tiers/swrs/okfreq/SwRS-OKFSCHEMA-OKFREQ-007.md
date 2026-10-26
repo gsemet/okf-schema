@@ -18,6 +18,7 @@ exemption_reason:
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/cli.py
+- src/okf_schema/okfreq/core.py
 tested_in_files:
 - tests/test_okfreq.py
 owner: okf-schema maintainers
@@ -46,13 +47,16 @@ When a confirmed archive or supersede operation is requested, okfreq SHALL apply
 ### Scenario: Apply a confirmed lifecycle transition
 
 - GIVEN a known requirement and explicit confirmation
-- WHEN archive or supersede is requested with a valid replacement where required
-- THEN `okfreq` updates the lifecycle metadata while preserving the requirement
+- WHEN archive or supersede is requested with one or more valid replacements where
+  required
+- THEN `okfreq` updates the lifecycle metadata (a superseded requirement records
+  every replacement in its `superseded_by` list) while preserving the requirement
   document and stable UUID
 
 ### Scenario: Reject an unsafe transition
 
-- GIVEN confirmation is absent or a requirement or replacement target is unknown
+- GIVEN confirmation is absent, a requirement or replacement target is unknown, or a
+  replacement is the target itself, is repeated or would make `superseded_by` cyclic
 - WHEN a lifecycle command is invoked
 - THEN the command exits unsuccessfully and leaves every requirement unchanged
 

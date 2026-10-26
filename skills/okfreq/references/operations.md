@@ -75,7 +75,7 @@ markers:
   implements: '@implements_req'
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, implemented_in_files, tested_in_files]
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -85,7 +85,13 @@ scopes:
   Never change existing IDs or UUIDs when changing allocation settings.
 - `derives_from` is authored; `derived_by` is computed. `depends_on` is authored
   dependency metadata, not a second derivation graph.
-- Only the three listed `generated_fields` are supported. Omitting a generated
+- `superseded_by` is an authored list of the requirement IDs that replace this
+  one (write it with `okfreq supersede`, never by flipping the lifecycle alone);
+  `supersedes` is its computed inverse. `relates_to` is an authored list for
+  lateral links that mean neither derivation nor replacement; it has no inverse,
+  so declare it on one side only. A legacy scalar `superseded_by: ID` is still read
+  (validation adds the informational `I2`); convert it to a list.
+- Only the four listed `generated_fields` are supported. Omitting a generated
   field leaves it unmanaged; unsupported names fail. StRS never carries generated
   source/test file arrays, even when the setting lists those fields.
 - The default StRS mode is `linked-swrs`: every linked SwRS needs a test marker
@@ -144,8 +150,8 @@ The CLI checks files; it does not render tooltips or find marker lines for edito
 | Inspect lifecycle health | `okfreq status .` |
 | Inspect marker evidence | `okfreq trace . --json` |
 | Archive explicitly | `okfreq archive ID --path . --yes` sets `deprecated`, never deletes. |
-| Supersede explicitly | `okfreq supersede OLD NEW --path . --yes` preserves identity and records replacement. |
-| Discard a never-published draft | `okfreq retire ID --path . --reason TEXT --yes` deletes it, lists the ID in `retired_ids` of `config.yml` and logs it in `tiers/log.md`. It refuses a non-draft, a requirement referenced by `derives_from`, `depends_on`, `superseded_by` or a marker, and a missing `--yes`; resolve the reference first. Afterwards run `update-coverage` and `lint`. |
+| Supersede explicitly | `okfreq supersede OLD NEW [NEW2...] --path . --yes` sets `superseded`, writes the `superseded_by` list and preserves identity; then run `okfreq update-coverage` to refresh `supersedes`. Validation requires a non-empty `superseded_by` on every superseded requirement, forbids it otherwise, and rejects unknown, self, repeated or cyclic targets. |
+| Discard a never-published draft | `okfreq retire ID --path . --reason TEXT --yes` deletes it, lists the ID in `retired_ids` of `config.yml` and logs it in `tiers/log.md`. It refuses a non-draft, a requirement referenced by `derives_from`, `depends_on`, `relates_to`, `superseded_by` or a marker, and a missing `--yes`; resolve the reference first. Afterwards run `update-coverage` and `lint`. |
 
 `okfreq new` numbers after the highest number ever used in the level prefix and
 scope, counting `retired_ids`; a number is never reused. Never delete a requirement
