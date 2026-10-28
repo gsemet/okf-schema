@@ -1,6 +1,6 @@
 [project]
 name = "okf-schema"
-version = "0.15.1"
+version = "0.16.0"
 description = "CLI tool and Python library for working with OKF (Open Knowledge Format) bundles"
 authors = [{ name = "Gaetan Semet", email = "gaetan@xeberon.net" }]
 requires-python = ">=3.10"
