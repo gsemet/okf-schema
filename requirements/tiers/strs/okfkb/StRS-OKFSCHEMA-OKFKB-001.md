@@ -7,7 +7,7 @@ description: Teams can capture, organize, and mature engineering knowledge
   without losing evidence.
 project: okf-schema
 scope: okfkb
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: StRS
 derives_from: []
@@ -19,6 +19,7 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFKB-004
 - SwRS-OKFSCHEMA-OKFKB-005
 - SwRS-OKFSCHEMA-OKFKB-006
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Maintain trustworthy engineering knowledge

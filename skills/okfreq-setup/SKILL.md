@@ -44,6 +44,8 @@ choice below has a fixed default. Stop only on the stop rules.
 | Install, other project | `uvx --from okf-schema==<latest> okfreq`, pinned in the task runner |
 | Scopes | The project's own feature grouping: test groups or suites if they exist, else top-level feature folders. 6 to 20 scopes, `id_token` in upper case, at most 12 characters |
 | Scan folders | Each scope scans the project's source and test roots (not per-feature sub-folders), so shared files can carry markers of several scopes |
+| Owner | The requirement owner named in the user's request, else the default owner of `CODEOWNERS`, recorded as `tiers.<T>.owner_email` for each tier. Never guess one: with neither, leave it unset and report it |
+| Approval | Keep the generated `approval_lock` (`true` for StRS, `false` for SwRS). Nothing is approved during setup: every requirement is created `proposed` (it describes code that exists) and only its owner may approve it later |
 | Delivery | Push the branch and open a pull request when a remote and `gh` are available; otherwise leave the commit on the branch. Never merge, never push to the default branch |
 
 ## Steps
@@ -58,7 +60,9 @@ choice below has a fixed default. Stop only on the stop rules.
    path, the okfreq command line, the scope list with what each covers, the marker comment syntax
    for each language in the project, and the project's check and test commands. Project-specific
    rules go only there, never in a skill and never in the installed file.
-4. **Configure** `requirements/config.yml`: the scopes and scan folders from the table.
+4. **Configure** `requirements/config.yml`: the scopes and scan folders from the table. Record
+   the owner from the table as `tiers.<T>.owner_email` and confirm that each tier's
+   `approval_lock` keeps its generated value.
 5. **Point to it.** Add this section to `AGENTS.md`, creating the file if it does not exist:
 
    ```markdown
@@ -77,12 +81,14 @@ choice below has a fixed default. Stop only on the stop rules.
    them from the project's existing check command and CI.
 7. **Inventory each scope.** List every observable behaviour from the code, the tests and the
    docs, each with the file and symbol that produce it. Read code, never guess.
-8. **Write the StRS**: 3 to 8 per scope, each a user use case.
-9. **Write the SwRS**, following the guideline: one SwRS per observable behaviour with all its
-   scenarios; a rule that applies to many features (refusals, validation, limits) written once
-   and cited; behaviour that looks wrong specified as it is, with "Known issue: …". Expect about
-   one SwRS per 150 lines of product code; far more means behaviours are split, far fewer means
-   behaviours are missing.
+8. **Write the StRS**: 3 to 8 per scope, each a user use case. Create each with
+   `okfreq new strs ... --lifecycle proposed`: it describes code that already exists, so it is
+   not a `draft` proposal.
+9. **Write the SwRS** with `okfreq new swrs ... --lifecycle proposed`, following the
+   guideline: one SwRS per observable behaviour with all its scenarios; a rule that applies to
+   many features (refusals, validation, limits) written once and cited; behaviour that looks
+   wrong specified as it is, with "Known issue: …". Expect about one SwRS per 150 lines of
+   product code; far more means behaviours are split, far fewer means behaviours are missing.
 10. **Review each scope** with a reader who did not write it: every claim checked against the
     code, no bundled behaviours, no desired state. Fix what the review finds, once.
 11. **Mark.** Add `@implements_req` at the code that produces each behaviour and `@tests_req` at
@@ -94,8 +100,8 @@ choice below has a fixed default. Stop only on the stop rules.
 13. **Audit.** Check that each inventory item maps to an SwRS, an implementation marker and a
     test marker. Run `okfreq update-coverage requirements`, then every gate of step 6 and the
     project's full check and test commands. All must pass.
-14. **Deliver.** Append a dated entry to `requirements/tiers/log.md`, commit everything in one
-    commit, then deliver as in the table.
+14. **Deliver.** Check that no requirement is `draft` or `approved`. Append a dated entry to
+    `requirements/tiers/log.md`, commit everything in one commit, then deliver as in the table.
 
 When sub-agents are available, run steps 7 to 12 with one agent per scope in parallel, each in
 its own scratch directory, and the review of step 10 with a separate agent. Never let two agents
@@ -107,5 +113,7 @@ edit the same file at the same time.
 - StRS and SwRS counts per scope; implementation and test marker coverage.
 - Every known issue found, one line each with its SwRS id: these are bug candidates for the
   user to schedule.
+- The owner recorded per tier (or that none was found), and that nothing is approved: the owner
+  reviews the requirements and approves the lockable ones later.
 - Exemptions and remaining gaps.
 - Next: run `okfreq-gardening` regularly to keep the requirements in sync with the code.

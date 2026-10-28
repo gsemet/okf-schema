@@ -13,7 +13,7 @@ instructions, configuration and schemas, not from another project's examples.
 
 The bundle root owns `config.yml`, this `guidelines/` folder and an optional
 human-authored `index.md` overview. `tiers/` owns `_schema/`, `index.md`,
-`log.md` and the configured level folders, such as `strs/` and `swrs/`.
+`log.md` and the configured tier folders, such as `strs/` and `swrs/`.
 Requirement documents live only under `tiers/`.
 
 ## Before editing
@@ -26,7 +26,8 @@ Requirement documents live only under `tiers/`.
   `okfreq init <bundle> --force` replaces it with the packaged text. Put them in
   a separate file of the folder, which initialization never touches.
 - Read the bundle's `config.yml` and every schema under `tiers/_schema/`.
-- Derive levels, folders, ID prefixes, scopes, lifecycle values, marker syntax,
+- Derive tiers, folders, ID prefixes, scopes, lifecycle values, owners and
+  approval locks, marker syntax,
   evidence directories and coverage policy from that configuration. Do not
   hard-code another project's names, paths, counts or commands.
 - Use `okfreq` for creation, validation, indexing, traceability, and lifecycle changes.
@@ -99,7 +100,7 @@ Requirement documents live only under `tiers/`.
   `superseded_by` list (required, non-empty, on every `superseded` requirement and
   only there). Link requirements that are merely connected with `relates_to`.
   Never hand-edit generated `derived_by`, `supersedes`, `implemented_in_files`,
-  or `tested_in_files` fields.
+  `tested_in_files` or `default_owner_email` fields.
 - For leaf software requirements, add `@implements_req <ID>` markers near the
   implementation and `@tests_req <ID>` markers near corresponding tests. Do not
   use source markers on stakeholder or other non-leaf levels. A real direct
@@ -111,6 +112,30 @@ Requirement documents live only under `tiers/`.
   ID through configured dependency fields instead of copying its scenarios.
 - Use the project's shared vocabulary. Keep issue/backlog references outside
   normative statements so an issue's lifecycle cannot change their meaning.
+
+## Lifecycle and approval
+
+- `draft`: a proposal, not implemented yet. Requirements delivered with their
+  code start `proposed` (`okfreq new ... --lifecycle proposed`); a draft on the
+  default branch is a gap to report.
+- `proposed`: implemented, in force, not frozen. Change it with the code through
+  the usual plan and review.
+- `approved`: frozen by its owner. Never approve a requirement, change its
+  meaning, deprecate it or supersede it on your own decision. Editorial fixes that
+  keep the meaning are allowed.
+- The owner of a requirement is its `owner_email`, else its generated
+  `default_owner_email` (from `config.yml`: scope and tier, then scope, then
+  tier). Whether a tier may be approved is its `approval_lock`, which a scope can
+  override per tier. Never edit owners or locks without the owner's request.
+- When the task asks you to change an approved requirement, the owner usually
+  agreed during planning, out of your sight: proceed as if they agreed. Set
+  `approved_by` to the owner's email and `approved_on` to today's date, list the
+  approved requirements you touched in the pull or merge request, and request the
+  owner's review of those files. If nothing in the task asks for the change,
+  restore the previous content and report the conflict.
+- `okfreq validate` fails on an `approved` requirement without `approved_by` and
+  `approved_on`, or whose tier and scope are not lockable. Follow its message;
+  never silence it by downgrading the lifecycle without the owner's agreement.
 
 ## Traceability markers
 
@@ -182,7 +207,8 @@ preserved and are not migrated by `okfreq init`.
   project-relative `dist/` directory when no output policy is defined.
 - Missing or malformed requirement frontmatter and missing IDs fail explicitly;
   repair the document instead of dropping it from the reported inventory.
-- Treat `draft`, `proposed`, and `approved` as distinct lifecycle states.
+- Treat `draft`, `proposed`, and `approved` as distinct lifecycle states (see
+  "Lifecycle and approval").
 - Run the project's own test suite; a marker is a link, not proof that a test passes.
 - Run the complete project quality gate. Do not claim complete traceability
   when non-exempt leaf requirements lack source or test links, markers reference

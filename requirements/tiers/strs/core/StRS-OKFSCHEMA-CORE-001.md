@@ -6,7 +6,7 @@ title: Validate OKF bundle structures
 description: The generic CLI validates OKF bundle structure and schemas.
 project: okf-schema
 scope: core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: StRS
 derives_from: []
@@ -15,6 +15,7 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-001
 - SwRS-OKFSCHEMA-CORE-006
 - SwRS-OKFSCHEMA-CORE-008
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Validate OKF bundle structures

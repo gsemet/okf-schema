@@ -9,7 +9,7 @@ description: When a schema file in a schema database is empty, cannot be parsed
   W17 otherwise.
 project: okf-schema
 scope: core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -33,6 +33,7 @@ documentation_files:
 - docs/source/reference/api.md
 agent_skill_files:
 - skills/okf-schema/SKILL.md
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Report schema files that yield no schema

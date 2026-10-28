@@ -159,19 +159,19 @@ refresh-okfreq-examples:
     {{ uv_run }} python -c 'from pathlib import Path; p=Path("examples/okfreq-examples/requirements/config.yml"); t=p.read_text(); t=t.replace("  default: {source_dirs: [src], test_dirs: [tests]}", "  Core: {id_token: CORE, source_dirs: [src], test_dirs: [tests]}"); assert "  Core: {id_token: CORE, source_dirs: [src], test_dirs: [tests]}" in t; p.write_text(t)'
     test -f examples/okfreq-examples/requirements/tiers/strs/StRS-CORE-001.md || \
         {{ uv_run }} okfreq new strs "Export a report" --path examples/okfreq-examples/ \
-            --scope Core \
+            --scope Core --lifecycle proposed \
             --description "When export is requested, the reporting capability SHALL provide a portable report." \
             --user-need "Users need a portable report for offline review." \
             --project OKFREQXMP
     test -f examples/okfreq-examples/requirements/tiers/swrs/SwRS-CORE-001.md || \
         {{ uv_run }} okfreq new swrs "Write CSV output" --path examples/okfreq-examples/ \
-            --scope Core \
+            --scope Core --lifecycle proposed \
             --description "When export is requested, the service SHALL write the report as CSV output." \
             --project OKFREQXMP \
             --derives-from "StRS-CORE-001"
     test -f examples/okfreq-examples/requirements/tiers/swrs/SwRS-CORE-002.md || \
         {{ uv_run }} okfreq new swrs "Format Rust CSV rows" --path examples/okfreq-examples/ \
-            --scope Core \
+            --scope Core --lifecycle proposed \
             --description "When Rust export is requested, the service SHALL return the selected row as a newline-terminated CSV record." \
             --project OKFREQXMP \
             --derives-from "StRS-CORE-001"

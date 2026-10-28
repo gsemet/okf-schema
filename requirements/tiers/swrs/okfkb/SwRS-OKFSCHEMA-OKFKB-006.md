@@ -9,7 +9,7 @@ description: When an OKFKB bundle is maintained or validated, the CLI SHALL
   fields.
 project: okf-schema
 scope: okfkb
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -27,6 +27,7 @@ owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Materialize reciprocal knowledge derivations

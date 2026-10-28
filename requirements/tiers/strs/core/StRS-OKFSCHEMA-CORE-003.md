@@ -8,7 +8,7 @@ description: The OKF capability SHALL enable consumers to distinguish file
   authored value types.
 project: okf-schema
 scope: core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: StRS
 derives_from: []
@@ -17,6 +17,7 @@ user_need: Consumers need to recognize one file link or a list of file links
   without migration.
 derived_by:
 - SwRS-OKFSCHEMA-CORE-007
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Recognize file references without changing knowledge values

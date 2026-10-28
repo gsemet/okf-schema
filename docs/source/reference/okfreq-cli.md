@@ -13,8 +13,8 @@ okfreq COMMAND --help
 | Command | Purpose |
 |---|---|
 | `okfreq init [PATH] [--force]` | Create or merge the default requirements scaffold. Existing files are not replaced, except with `--force`, which replaces `guidelines/requirements.guidelines.md` with the packaged text. The command prints whether that guideline was installed, kept, replaced or already up to date. |
-| `okfreq new strs TITLE --description TEXT --project TEXT [--scope NAME] [--origin NAME] [--derives-from ID]... [--user-need TEXT] [--path PATH]` | Create a stakeholder requirement with a stable allocated ID and UUID. |
-| `okfreq new swrs TITLE --description TEXT --project TEXT --derives-from ID [--derives-from ID]... [--scope NAME] [--origin NAME] [--path PATH]` | Create a software requirement derived from one or more configured parent requirements. `--user-need` is rejected for derived levels. |
+| `okfreq new strs TITLE --description TEXT --project TEXT [--scope NAME] [--origin NAME] [--derives-from ID]... [--user-need TEXT] [--lifecycle draft\|proposed] [--path PATH]` | Create a stakeholder requirement with a stable allocated ID and UUID. `--lifecycle proposed` marks a requirement delivered with its implementation; the default is `draft`. |
+| `okfreq new swrs TITLE --description TEXT --project TEXT --derives-from ID [--derives-from ID]... [--scope NAME] [--origin NAME] [--lifecycle draft\|proposed] [--path PATH]` | Create a software requirement derived from one or more configured parent requirements. `--user-need` is rejected for derived tiers. `--lifecycle` works as for StRS. |
 | `okfreq import SOURCE [--path PATH]` | Merge configuration while preserving destination values on conflicts and preserving unknown keys. |
 | `okfreq config-merge SOURCE [--path PATH]` | Explicit spelling of the same conflict-preserving configuration merge. |
 
@@ -100,7 +100,7 @@ unavailable. A missing stem in a known bundle is `E10`. Warnings do not make `ok
 
 | Command | Purpose |
 |---|---|
-| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`). `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
+| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `default_owner_email`). `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
 | `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. Each requirement record also lists `derives_from`, `superseded_by`, the computed `supersedes` and `relates_to`. |
 
 Without output options, the command writes JSON, JSON Schema and Markdown
@@ -135,7 +135,7 @@ test marker still names it. The error says which. After a successful retirement,
 run `okfreq update-coverage` and `okfreq lint` to refresh generated fields and
 indexes of the parents that lost a child.
 
-`okfreq new` allocates one more than the highest number ever used for the level
+`okfreq new` allocates one more than the highest number ever used for the tier
 prefix and scope, counting existing requirements and retired IDs, so the retired
 number, and any number freed by a deletion below the highest, is never handed out
 again:

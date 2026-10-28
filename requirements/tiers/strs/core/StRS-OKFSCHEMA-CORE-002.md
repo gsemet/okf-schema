@@ -7,7 +7,7 @@ description: The okf-schema capability SHALL enable maintainers to author,
   normalize, navigate, and evolve OKF bundles without losing authored knowledge.
 project: okf-schema
 scope: core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: StRS
 derives_from: []
@@ -19,6 +19,7 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-003
 - SwRS-OKFSCHEMA-CORE-004
 - SwRS-OKFSCHEMA-CORE-005
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Maintain and inspect OKF bundles

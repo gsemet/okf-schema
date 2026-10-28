@@ -7,7 +7,7 @@ description: When Rust export is requested, the service SHALL return the
   selected row as a newline-terminated CSV record.
 project: OKFREQXMP
 scope: Core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:

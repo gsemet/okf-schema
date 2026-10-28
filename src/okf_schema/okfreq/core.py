@@ -32,6 +32,8 @@ from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
+from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.scalarstring import LiteralScalarString
 
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml, parse_yaml
 from okf_schema.api import check_file_links
@@ -40,177 +42,44 @@ from okf_schema.validator import load_schema_database as load_schema_database  #
 from okf_schema.validator import load_schema_database_with_diagnostics
 
 DEFAULT_CONFIG = """version: 1
-levels:
-  StRS: {folder: strs, prefix: StRS, derives_from: []}
-  SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS]}
+tiers:
+  StRS: {folder: strs, prefix: StRS, derives_from: [], approval_lock: true}
+  SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS], approval_lock: false}
 id_policy: scope-prefix-sequence
 strs_test_coverage_mode: linked-swrs
 lifecycle:
-  values: [draft, proposed, approved, deprecated, superseded]
+  field: lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files]
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
+  default_owner_email]
 retired_ids: []
 scopes:
   default: {source_dirs: [src], test_dirs: [tests]}
 """
 
-GENERATED_BASE_SCHEMA = """$schema: https://json-schema.org/draft/2020-12/schema
-$id: base.schema.yaml
-title: okfreq requirement base profile
-description: Shared frontmatter contract for every okfreq requirement.
-type: object
-properties:
-    type:
-    type: string
-    description: Configured level and schema discriminator.
-    id:
-        type: string
-        pattern: '^[A-Za-z][A-Za-z0-9_-]*$'
-        description: Stable requirement identifier.
-    uuid:
-        type: string
-        format: uuid
-        description: Stable UUID retained when the document moves or is renamed.
-    title:
-        type: string
-        minLength: 1
-        description: Concise human-readable subject.
-    description:
-        type: string
-        minLength: 1
-        description: Normative requirement statement supplied by the author.
-    project:
-        type: string
-        minLength: 1
-        description: Project or product that owns the requirement.
-    scope:
-        type: string
-        minLength: 1
-        description: Domain used for organization and evidence scanning.
-    lifecycle:
-        type: string
-        enum: [draft, proposed, approved, deprecated, superseded]
-        description: Explicit human-controlled lifecycle state.
-    origin:
-        type: string
-        minLength: 1
-        description: Producer or source, such as native or imported.
-    tier:
-        type: string
-        description: Configured level label; constrained by the tier schema.
-    derives_from:
-        type: array
-        items:
-            type: string
-        description: Authored IDs of higher-level requirements.
-    derived_by:
-        type: array
-        items:
-            type: string
-        description: Generated reverse links computed from derives_from.
-    depends_on:
-        type: array
-        items:
-            type: string
-        description: Authored prerequisite or peer requirement IDs.
-required: [type, id, uuid, title, description, project, scope, lifecycle, origin, tier]
-additionalProperties: true
-examples:
-    - type: StRS
-        id: StRS-example-001
-        uuid: 00000000-0000-4000-8000-000000000001
-        title: Example requirement
-        description: The system SHALL support the stakeholder outcome.
-        project: example
-        scope: default
-        lifecycle: draft
-        origin: native
-        tier: StRS
-"""
-
-GENERATED_STRS_SCHEMA = """$schema: https://json-schema.org/draft/2020-12/schema
-$id: strs.schema.yaml
-title: okfreq stakeholder requirement profile
-description: >-
-    StRS records a stakeholder-observable outcome and its need. It does not carry
-    implementation or source coverage fields; stakeholder test coverage is
-    computed in reports from linked SwRS according to configuration.
-allOf:
-  - $ref: base.schema.yaml
-  - type: object
-    properties:
-      type: {const: StRS}
-      tier: {const: StRS}
-      user_need: {type: string, minLength: 1}
-    required: [type, tier, user_need]
-additionalProperties: true
-examples:
-    - type: StRS
-        id: StRS-example-001
-        uuid: 00000000-0000-4000-8000-000000000001
-        title: Example requirement
-        description: The system SHALL support the stakeholder outcome.
-        project: example
-        scope: default
-        lifecycle: draft
-        origin: native
-        tier: StRS
-        user_need: Users need the stakeholder outcome.
-"""
-
-GENERATED_SWRS_SCHEMA = """$schema: https://json-schema.org/draft/2020-12/schema
-$id: swrs.schema.yaml
-title: okfreq software requirement profile
-description: SwRS defines observable software behavior derived from an StRS.
-allOf:
-  - $ref: base.schema.yaml
-  - type: object
-    properties:
-      type: {const: SwRS}
-      tier: {const: SwRS}
-      annotation_exemption: {type: boolean}
-    exemption_reason: {type: [string, 'null'], minLength: 1}
-      implemented_in_files: {type: array, items: {type: string}}
-      tested_in_files: {type: array, items: {type: string}}
-      verification_method: {type: string}
-      verification_criteria: {type: string}
-    required: [type, tier, annotation_exemption]
-        allOf:
-            - if:
-                    properties:
-                        annotation_exemption: {const: true}
-                then:
-                    required: [exemption_reason]
-                    properties:
-                        exemption_reason: {type: string, minLength: 1}
-additionalProperties: true
-examples:
-    - type: SwRS
-        id: SwRS-example-001
-        uuid: 00000000-0000-4000-8000-000000000002
-        title: Example software behavior
-        description: The service SHALL return the requested result.
-        project: example
-        scope: default
-        lifecycle: draft
-        origin: native
-        tier: SwRS
-        derives_from: [StRS-example-001]
-        annotation_exemption: false
-        exemption_reason: null
-        implemented_in_files: []
-        tested_in_files: []
-"""
-
 LIFECYCLES = ("draft", "proposed", "approved", "deprecated", "superseded")
+LIFECYCLE_DESCRIPTION = """Explicit, human-controlled lifecycle state.
+- draft: a requirement proposal that is not implemented yet. A project whose
+  requirements are delivered with the code they describe should not keep drafts
+  on its default branch.
+- proposed: implemented and in force, but not frozen. It may change through the
+  usual plan and review, without an explicit owner agreement.
+- approved: frozen by its owner. Any significant change (normative statement,
+  scenarios, criteria, deprecation or supersession) needs the owner's explicit,
+  justified agreement, recorded in approved_by and approved_on. Allowed only where
+  approval_lock is true for the requirement's tier and scope.
+- deprecated: no longer in force and not replaced; kept for history.
+- superseded: replaced by the requirements listed in superseded_by; kept for history.
+"""
 GUIDELINE_NAME = "requirements.guidelines.md"
 DEFAULT_ID_PATTERN = r"[A-Za-z][A-Za-z0-9_-]*"
 SUPPORTED_GENERATED_FIELDS = frozenset(
-    {"derived_by", "supersedes", "implemented_in_files", "tested_in_files"}
+    {"derived_by", "supersedes", "implemented_in_files", "tested_in_files", "default_owner_email"}
 )
+_EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 STRS_TEST_COVERAGE_MODES = (
     "linked-swrs",
     "linked-swrs-and-validation-test",
@@ -285,7 +154,7 @@ def ears_body(
     user_need: str | None = None,
     title: str | None = None,
 ) -> str:
-    """Return the EARS scaffold for a configured level.
+    """Return the EARS scaffold for a configured tier.
 
     .. versionchanged:: 0.13.0
         Use the requirement title as the first Markdown heading.
@@ -295,17 +164,17 @@ def ears_body(
 
     Args:
         level:
-            The configured level name, such as ``StRS`` or ``SwRS``.
+            The configured tier name, such as ``StRS`` or ``SwRS``.
         description:
             Normative EARS behavior supplied by the author.
         user_need:
-            Stakeholder need for an upper-level requirement.
+            Stakeholder need for a top-tier requirement.
         title:
             Human-readable requirement title. Defaults to the description
             when called directly without a title.
 
     Returns:
-        A Markdown body template for the level.
+        A Markdown body template for the tier.
 
     Examples:
         >>> body = ears_body("SwRS", "The tool SHALL validate the bundle.")
@@ -534,8 +403,44 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                 },
                 "lifecycle": {
                     "type": "string",
+                    "enum": list(LIFECYCLES),
+                    "description": LiteralScalarString(LIFECYCLE_DESCRIPTION),
+                },
+                "owner_email": {
+                    "type": "string",
+                    "format": "email",
                     "description": (
-                        "Lifecycle stage of the requirement, e.g. draft, active, retired."
+                        "Authored owner of this requirement. Overrides default_owner_email; "
+                        "the owner approves the requirement and any change to it once "
+                        "approved."
+                    ),
+                },
+                "default_owner_email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": (
+                        "Generated owner from config.yml: scopes.<scope>.tiers.<tier>."
+                        "owner_email, else scopes.<scope>.owner_email, else "
+                        "tiers.<tier>.owner_email. Absent when none is configured. "
+                        "owner_email, when set, replaces it."
+                    ),
+                },
+                "approved_by": {
+                    "type": "string",
+                    "format": "email",
+                    "description": (
+                        "Email of the owner who approved the current content. Required "
+                        "when the lifecycle is approved; set only on the owner's explicit "
+                        "agreement, never by an agent's own decision."
+                    ),
+                },
+                "approved_on": {
+                    "type": "string",
+                    "format": "date",
+                    "description": (
+                        "ISO date (YYYY-MM-DD) of the owner's approval of the current "
+                        "content. Required when the lifecycle is approved; updated with "
+                        "every agreed change."
                     ),
                 },
                 "origin": {
@@ -824,11 +729,18 @@ def load_config(root: Path) -> dict[str, Any]:
     data = parse_yaml((root / "config.yml").read_text(encoding="utf-8"))
     if data is None:
         raise RequirementError(f"invalid configuration: {root / 'config.yml'}")
-    data.setdefault("levels", {})
+    if "tiers" in data and "levels" in data:
+        raise RequirementError(
+            "config.yml declares both tiers and the legacy levels key; keep tiers only"
+        )
+    if "tiers" not in data and "levels" not in data:
+        data["tiers"] = {}
     data.setdefault("scopes", {"default": {"source_dirs": ["src"], "test_dirs": ["tests"]}})
     data.setdefault("markers", {"implements": "@implements_req", "tests": "@tests_req"})
     data["markers"].setdefault("id_pattern", DEFAULT_ID_PATTERN)
-    data.setdefault("lifecycle", {}).setdefault("values", list(LIFECYCLES))
+    lifecycle = data.setdefault("lifecycle", {})
+    if "values" not in lifecycle:
+        lifecycle.setdefault("field", "lifecycle")
     data.setdefault("id_policy", "scope-prefix-sequence")
     data.setdefault("generated_fields", sorted(SUPPORTED_GENERATED_FIELDS))
     data.setdefault("strs_test_coverage_mode", "linked-swrs")
@@ -867,9 +779,204 @@ def _id_pattern(config: dict[str, Any]) -> re.Pattern[str]:
         raise RequirementError(f"invalid markers.id_pattern: {exc}") from exc
 
 
+def config_tiers(config: dict[str, Any]) -> dict[str, Any]:
+    """Return the configured tiers, read from ``tiers`` or the legacy ``levels`` key.
+
+    .. versionadded:: 0.16.0
+
+    Args:
+        config:
+            A configuration returned by :func:`load_config`.
+
+    Returns:
+        Tier names mapped to their settings; empty when none is configured.
+
+    Examples:
+        >>> config_tiers({"levels": {"StRS": {"folder": "strs"}}})
+        {'StRS': {'folder': 'strs'}}
+    """
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-013
+    tiers = config.get("tiers", config.get("levels", {}))
+    return tiers if isinstance(tiers, dict) else {}
+
+
+def lifecycle_field(config: dict[str, Any]) -> str:
+    """Return the frontmatter field that holds the lifecycle state.
+
+    .. versionadded:: 0.16.0
+
+    Args:
+        config:
+            A configuration returned by :func:`load_config`.
+
+    Returns:
+        ``lifecycle.field`` from the configuration, ``"lifecycle"`` by default.
+
+    Examples:
+        >>> lifecycle_field({"lifecycle": {"field": "status"}})
+        'status'
+    """
+    lifecycle = config.get("lifecycle", {})
+    return str(lifecycle.get("field", "lifecycle")) if isinstance(lifecycle, dict) else "lifecycle"
+
+
+def lifecycle_values(root: Path, config: dict[str, Any]) -> list[str]:
+    """Return the accepted lifecycle values.
+
+    The values come from the ``enum`` of the lifecycle field in
+    ``tiers/_schema/base.schema.yaml``. A legacy ``lifecycle.values`` list in
+    ``config.yml`` still takes precedence. Without either, the built-in values apply.
+
+    .. versionadded:: 0.16.0
+
+    Args:
+        root:
+            The bundle root.
+        config:
+            A configuration returned by :func:`load_config`.
+
+    Returns:
+        The accepted lifecycle values.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = init_requirements(Path(directory) / "requirements")
+        ...     lifecycle_values(root, load_config(root))
+        ['draft', 'proposed', 'approved', 'deprecated', 'superseded']
+    """
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-013
+    lifecycle = config.get("lifecycle", {})
+    if isinstance(lifecycle, dict) and isinstance(lifecycle.get("values"), list):
+        return [str(value) for value in lifecycle["values"]]
+    schema_file = tiers_path(root) / "_schema" / "base.schema.yaml"
+    if schema_file.is_file():
+        schema = parse_yaml(schema_file.read_text(encoding="utf-8"))
+        properties = schema.get("properties", {}) if isinstance(schema, dict) else {}
+        field = properties.get(lifecycle_field(config)) if isinstance(properties, dict) else None
+        if isinstance(field, dict) and isinstance(field.get("enum"), list):
+            return [str(value) for value in field["enum"]]
+    return list(LIFECYCLES)
+
+
+def owner_policy(config: dict[str, Any], tier: str, scope: str) -> tuple[bool, str | None]:
+    """Resolve the approval lock and the default owner of a tier in a scope.
+
+    ``scopes.<scope>.tiers.<tier>`` wins over ``scopes.<scope>`` (owner only),
+    which wins over ``tiers.<tier>``. A ``null`` ``approval_lock`` counts as
+    unset. Without ``approval_lock`` anywhere, a top tier (no ``derives_from``)
+    is lockable and a derived tier is not. An unknown scope uses the tier settings.
+
+    .. versionadded:: 0.16.0
+
+    Args:
+        config:
+            A configuration returned by :func:`load_config`.
+        tier:
+            Requirement tier, such as ``StRS``.
+        scope:
+            Requirement scope, matched case-insensitively.
+
+    Returns:
+        Whether ``approved`` is allowed, and the default owner email or ``None``.
+
+    Examples:
+        >>> config = {
+        ...     "tiers": {"SwRS": {"derives_from": ["StRS"], "owner_email": "a@x.org"}},
+        ...     "scopes": {"ui": {"tiers": {"SwRS": {"approval_lock": True}}}},
+        ... }
+        >>> owner_policy(config, "SwRS", "UI")
+        (True, 'a@x.org')
+    """
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-013
+    tier_config = config_tiers(config).get(tier)
+    tier_config = tier_config if isinstance(tier_config, dict) else {}
+    scope_config: dict[str, Any] = {}
+    scopes = config.get("scopes", {})
+    if isinstance(scopes, dict):
+        for name, value in scopes.items():
+            if str(name).casefold() == scope.casefold() and isinstance(value, dict):
+                scope_config = value
+                break
+    scope_tiers = scope_config.get("tiers", {})
+    scope_tier = scope_tiers.get(tier) if isinstance(scope_tiers, dict) else None
+    scope_tier = scope_tier if isinstance(scope_tier, dict) else {}
+    # An absent or null approval_lock is unset: fall back to the broader setting.
+    lock = scope_tier.get("approval_lock")
+    if lock is None:
+        lock = tier_config.get("approval_lock")
+    if lock is None:
+        lock = not tier_config.get("derives_from")
+    owner = (
+        scope_tier.get("owner_email")
+        or scope_config.get("owner_email")
+        or tier_config.get("owner_email")
+    )
+    return lock is True, str(owner) if owner else None
+
+
+def _ownership_config_findings(config: dict[str, Any]) -> list[str]:
+    """Return configuration errors in ``approval_lock`` and ``owner_email`` settings."""
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-013
+    findings: list[str] = []
+    places: list[tuple[str, Any]] = [
+        (f"tiers.{name}", value) for name, value in config_tiers(config).items()
+    ]
+    scopes = config.get("scopes", {})
+    for name, value in scopes.items() if isinstance(scopes, dict) else []:
+        if not isinstance(value, dict):
+            continue
+        places.append((f"scopes.{name}", {"owner_email": value.get("owner_email")}))
+        scope_tiers = value.get("tiers", {})
+        for tier, tier_value in scope_tiers.items() if isinstance(scope_tiers, dict) else []:
+            places.append((f"scopes.{name}.tiers.{tier}", tier_value))
+    for path, value in places:
+        if not isinstance(value, dict):
+            continue
+        lock = value.get("approval_lock")
+        if lock is not None and not isinstance(lock, bool):
+            findings.append(f"config.yml: {path}.approval_lock must be true or false")
+        owner = value.get("owner_email")
+        if owner is not None and not _EMAIL_PATTERN.fullmatch(str(owner)):
+            findings.append(f"config.yml: {path}.owner_email is not an email address")
+    return findings
+
+
+def _approval_findings(
+    file: Path, data: dict[str, Any], config: dict[str, Any], field: str
+) -> list[str]:
+    """Check that an approved requirement is lockable and records its approval."""
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-013
+    if data.get(field) != "approved":
+        return []
+    tier = str(data.get("tier") or data.get("type") or "")
+    scope = str(data.get("scope") or "")
+    lock, default_owner = owner_policy(config, tier, scope)
+    owner = data.get("owner_email") or default_owner
+    findings: list[str] = []
+    if not lock:
+        findings.append(
+            f"{file}: lifecycle approved is not allowed for tier {tier} in scope {scope} "
+            "(approval_lock is false). Keep it proposed, or ask the owner to set "
+            "approval_lock: true for this tier or scope in config.yml."
+        )
+    missing = [name for name in ("approved_by", "approved_on") if not data.get(name)]
+    if missing:
+        findings.append(
+            f"{file}: lifecycle approved requires {' and '.join(missing)}. Only the "
+            f"requirement owner ({owner or 'owner_email or default_owner_email'}) approves "
+            "a requirement or a change to an approved one; a coding agent never decides it "
+            "alone. If the owner agreed, for example during planning, set approved_by to "
+            "the owner's email and approved_on to today's date, then request the owner's "
+            "review of this file on the pull or merge request (for example through "
+            "CODEOWNERS). Otherwise restore the previous lifecycle and content."
+        )
+    return findings
+
+
 def _leaf_levels(config: dict[str, Any]) -> set[str]:
-    """Return configured levels that are not parents of another level."""
-    levels = config.get("levels", {})
+    """Return configured tiers that are not parents of another tier."""
+    levels = config_tiers(config)
     if not isinstance(levels, dict):
         return set()
     parent_levels = {
@@ -881,11 +988,29 @@ def _leaf_levels(config: dict[str, Any]) -> set[str]:
     return {str(level) for level in levels} - parent_levels
 
 
+def _rename_legacy_levels(config: dict[str, Any]) -> None:
+    """Rename a legacy top-level ``levels`` key to ``tiers`` in place, keeping its position."""
+    if "levels" not in config or "tiers" in config:
+        return
+    position = list(config).index("levels")
+    value = config.pop("levels")
+    if isinstance(config, CommentedMap):  # keeps the key position and its comments
+        config.insert(position, "tiers", value)
+    else:
+        config["tiers"] = value
+
+
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-006
 def merge_config(root: Path, source: Path) -> list[str]:
     """Merge a configuration while preserving unknown keys.
 
-    Existing values take precedence over conflicting imported values.
+    Existing values take precedence over conflicting imported values. A legacy
+    ``levels`` key is renamed ``tiers`` on both sides before merging. When the
+    destination names its ``lifecycle.field``, an imported legacy
+    ``lifecycle.values`` list is not imported and is reported as a conflict.
+
+    .. versionchanged:: 0.16.0
+        Normalize ``levels`` to ``tiers`` and refuse a legacy lifecycle values list.
 
     Args:
         root:
@@ -899,7 +1024,8 @@ def merge_config(root: Path, source: Path) -> list[str]:
 
     Raises:
         RequirementError:
-            If the imported configuration cannot be parsed.
+            If the imported configuration cannot be parsed or declares both
+            ``tiers`` and ``levels``.
 
     Examples:
         >>> from tempfile import TemporaryDirectory
@@ -915,7 +1041,27 @@ def merge_config(root: Path, source: Path) -> list[str]:
     imported = parse_yaml(source.read_text(encoding="utf-8"))
     if imported is None:
         raise RequirementError(f"invalid configuration: {source}")
+    if "tiers" in imported and "levels" in imported:
+        raise RequirementError(
+            f"{source} declares both tiers and the legacy levels key; keep tiers only"
+        )
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-013
+    _rename_legacy_levels(current)
+    _rename_legacy_levels(imported)
     conflicts: list[str] = []
+    current_lifecycle = current.get("lifecycle")
+    imported_lifecycle = imported.get("lifecycle")
+    if (
+        isinstance(current_lifecycle, dict)
+        and "field" in current_lifecycle
+        and "values" not in current_lifecycle
+        and isinstance(imported_lifecycle, dict)
+        and "values" in imported_lifecycle
+    ):
+        # The destination takes its values from the schema enum: a legacy list
+        # would silently override it, so it is reported instead of imported.
+        imported_lifecycle.pop("values")
+        conflicts.append("lifecycle.values")
 
     def merge(
         destination: dict[str, Any],
@@ -1036,22 +1182,27 @@ def create_requirement(
     origin: str,
     derives_from: list[str] | None = None,
     user_need: str | None = None,
+    lifecycle: str = "draft",
 ) -> Path:
-    """Create a native requirement using configured level and ID rules.
+    """Create a native requirement using configured tier and ID rules.
 
     .. versionchanged:: 0.14.0
-        The number is one more than the highest number ever used in the level
+        The number is one more than the highest number ever used in the tier
         prefix and scope, counting existing requirements and ``retired_ids``.
         A deleted requirement's number is never handed out again.
 
-    The document body is an EARS scaffold for the level, so the author or agent
+    .. versionchanged:: 0.16.0
+        Accept ``lifecycle`` to create a ``proposed`` requirement delivered with
+        its implementation.
+
+    The document body is an EARS scaffold for the tier, so the author or agent
     can see which parts still need to be written.
 
     Args:
         root:
             The bundle root.
         level:
-            A configured level name, such as ``StRS`` or ``SwRS``.
+            A configured tier name, such as ``StRS`` or ``SwRS``.
         title:
             Concise statement of the requirement's subject.
         description:
@@ -1063,19 +1214,21 @@ def create_requirement(
         origin:
             ``native`` for locally authored requirements.
         derives_from:
-            Parent requirement IDs, required for derived levels.
+            Parent requirement IDs, required for derived tiers.
         user_need:
-            Optional stakeholder need, recorded for upper levels. When
+            Optional stakeholder need, recorded for top tiers. When
             omitted, the StRS scaffold retains an explicit placeholder instead
             of inventing or duplicating stakeholder intent.
+        lifecycle:
+            Initial lifecycle, ``draft`` (default) or ``proposed``.
 
     Returns:
         The created requirement path.
 
     Raises:
         RequirementError:
-            If the level is unconfigured, a parent is unknown or
-            of the wrong level, a required parent is missing, or the allocated
+            If the tier is unconfigured, a parent is unknown or
+            of the wrong tier, a required parent is missing, or the allocated
             ID would collide.
 
     Examples:
@@ -1098,11 +1251,13 @@ def create_requirement(
     """
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-002
     config = load_config(root)
+    if lifecycle not in ("draft", "proposed"):
+        raise RequirementError(f"a new requirement starts as draft or proposed, not {lifecycle}")
     if config.get("id_policy") != "scope-prefix-sequence":
         raise RequirementError(f"unsupported id_policy: {config.get('id_policy')}")
-    level_config = config.get("levels", {}).get(level)
+    level_config = config_tiers(config).get(level)
     if not isinstance(level_config, dict):
-        raise RequirementError(f"level is not configured: {level}")
+        raise RequirementError(f"tier is not configured: {level}")
     configured_scopes = config.get("scopes", {})
     scope_name = scope
     scope_config: dict[str, Any] = {}
@@ -1137,7 +1292,7 @@ def create_requirement(
         "description": description,
         "project": project,
         "scope": scope_name,
-        "lifecycle": "draft",
+        lifecycle_field(config): lifecycle,
         "origin": origin,
         "tier": level,
         "derives_from": parent,
@@ -1145,7 +1300,7 @@ def create_requirement(
     if configured_parents:
         if user_need is not None:
             raise RequirementError(f"{level} does not accept user_need")
-        # Derived levels carry annotation coverage, so record exemption intent.
+        # Derived tiers carry annotation coverage, so record exemption intent.
         data["annotation_exemption"] = False
         data["exemption_reason"] = None
     else:
@@ -1228,9 +1383,10 @@ def retire_requirement(root: Path, identifier: str, *, reason: str | None = None
     if identifier not in requirements:
         raise RequirementError(f"unknown requirement: {identifier}")
     file, data, _ = requirements[identifier]
-    if data.get("lifecycle") != "draft":
+    field = lifecycle_field(load_config(root))
+    if data.get(field) != "draft":
         raise RequirementError(
-            f"{identifier} is {data.get('lifecycle')}, not draft; "
+            f"{identifier} is {data.get(field)}, not draft; "
             "use archive or supersede to retire a published requirement"
         )
     references = sorted(
@@ -1335,8 +1491,9 @@ def supersede_requirement(root: Path, target: str, replacements: list[str]) -> P
         if target in cycle:
             raise RequirementError(f"superseded_by would form a cycle: {' -> '.join(cycle)}")
     file, _, text = requirements[target]
+    field = lifecycle_field(load_config(root))
     _atomic_write(
-        file, _render_frontmatter(text, {"lifecycle": "superseded", "superseded_by": replacements})
+        file, _render_frontmatter(text, {field: "superseded", "superseded_by": replacements})
     )
     return file
 
@@ -1350,7 +1507,10 @@ def _render_frontmatter(text: str, updates: dict[str, Any]) -> str:
     if not isinstance(data, dict):
         raise RequirementError("requirement frontmatter is not a mapping")
     for key, value in updates.items():
-        data[key] = value
+        if value is None:
+            data.pop(key, None)
+        else:
+            data[key] = value
     return f"---\n{dump_yaml(data)}---\n{body}"
 
 
@@ -1541,6 +1701,7 @@ def _supersession_cycles(edges: dict[str, list[str]]) -> list[list[str]]:
 
 def _relation_findings(
     requirements: dict[str, tuple[Path, dict[str, Any], str]],
+    lifecycle_key: str = "lifecycle",
 ) -> list[str]:
     """Check ``superseded_by`` and ``relates_to`` authoring rules.
 
@@ -1579,7 +1740,7 @@ def _relation_findings(
                     if target in requirements and target != identifier
                 ]
         replaced_by = _superseded_by_ids(data)
-        lifecycle = data.get("lifecycle")
+        lifecycle = data.get(lifecycle_key)
         if lifecycle == "superseded" and not replaced_by:
             findings.append(f"{file}: lifecycle superseded requires a non-empty superseded_by")
         if lifecycle != "superseded" and replaced_by:
@@ -1700,7 +1861,9 @@ def validate_requirements(
     """
     config = load_config(root)
     requirements = load_requirements(root)
-    errors: list[str] = []
+    errors: list[str] = _ownership_config_findings(config)
+    lifecycle_key = lifecycle_field(config)
+    accepted_lifecycles = lifecycle_values(root, config)
     fields = (
         "type",
         "id",
@@ -1709,7 +1872,7 @@ def validate_requirements(
         "description",
         "project",
         "scope",
-        "lifecycle",
+        lifecycle_field(config),
         "origin",
         "tier",
     )
@@ -1765,13 +1928,14 @@ def validate_requirements(
             errors.append(
                 f"{file}: ID {identifier} is listed in retired_ids and must not be reused"
             )
-        if data.get("lifecycle") not in config["lifecycle"]["values"]:
-            errors.append(f"{file}: invalid lifecycle")
-        if data.get("type") not in config["levels"]:
-            errors.append(f"{file}: unconfigured level {data.get('type')}")
+        if data.get(lifecycle_key) not in accepted_lifecycles:
+            errors.append(f"{file}: invalid {lifecycle_key}")
+        errors.extend(_approval_findings(file, data, config, lifecycle_key))
+        if data.get("type") not in config_tiers(config):
+            errors.append(f"{file}: unconfigured tier {data.get('type')}")
         if data.get("annotation_exemption") is True and not data.get("exemption_reason"):
             errors.append(f"{file}: annotation exemption requires exemption_reason")
-        level_config = config["levels"].get(data.get("type"), {})
+        level_config = config_tiers(config).get(str(data.get("type")), {})
         if level_config.get("derives_from") and not data.get("derives_from"):
             errors.append(f"{file}: {data.get('type')} requires derives_from")
         for parent in data.get("derives_from", []) or []:
@@ -1780,11 +1944,11 @@ def validate_requirements(
                 and level_config.get("derives_from")
                 and requirements[parent][1].get("type") not in level_config["derives_from"]
             ):
-                errors.append(f"{file}: invalid parent level")
+                errors.append(f"{file}: invalid parent tier")
         if prose and len(str(data.get("description", "")).split()) < 3:
             errors.append(f"W001 {file}: description is unusually short")
     errors.extend(graph(root)["errors"])
-    errors.extend(_relation_findings(requirements))
+    errors.extend(_relation_findings(requirements, lifecycle_key))
     return errors
 
 
@@ -1846,6 +2010,14 @@ def update_coverage(
             # Written only where it has a value (or is already present), so a bundle
             # that never supersedes anything gains no empty ``supersedes: []`` lines.
             available_updates["supersedes"] = supersedes[identifier]
+        authored = requirements[identifier][1]
+        _, owner = owner_policy(
+            config,
+            str(authored.get("tier") or authored.get("type") or ""),
+            str(authored.get("scope") or ""),
+        )
+        # None removes a stale value once no owner is configured any more.
+        available_updates["default_owner_email"] = owner
         if str(requirements[identifier][1].get("type")) == "SwRS":
             available_updates.update(
                 {
@@ -1915,11 +2087,11 @@ def report(root: Path) -> dict[str, Any]:
         for item in validate_requirements(root)
         if not item.startswith("W") and not is_info_finding(item)
     ]
+    config = load_config(root)
     lifecycle: dict[str, int] = {}
     for _, data, _ in requirements.values():
-        value = str(data.get("lifecycle", "invalid"))
+        value = str(data.get(lifecycle_field(config), "invalid"))
         lifecycle[value] = lifecycle.get(value, 0) + 1
-    config = load_config(root)
     leaf_levels = _leaf_levels(config)
     missing_implementation: list[str] = []
     missing_tests: list[str] = []

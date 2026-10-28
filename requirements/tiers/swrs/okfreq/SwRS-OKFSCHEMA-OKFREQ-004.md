@@ -7,7 +7,7 @@ description: The okfreq layer reports requirement hierarchy, coverage, and
   lifecycle health.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -34,6 +34,7 @@ agent_skill_files:
 example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Report requirement health

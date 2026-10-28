@@ -1,16 +1,17 @@
 version: 1
-levels:
-  StRS: {folder: strs, prefix: StRS, derives_from: []}
-  SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS]}
+tiers:
+  StRS: {folder: strs, prefix: StRS, derives_from: [], approval_lock: true}
+  SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS], approval_lock: false}
 id_policy: scope-prefix-sequence
 strs_test_coverage_mode: linked-swrs
 lifecycle:
-  values: [draft, proposed, approved, deprecated, superseded]
+  field: lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files]
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
+  default_owner_email]
 retired_ids: []
 scopes:
   Core: {id_token: CORE, source_dirs: [src], test_dirs: [tests]}

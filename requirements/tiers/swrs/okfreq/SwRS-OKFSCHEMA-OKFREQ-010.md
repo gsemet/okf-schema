@@ -9,7 +9,7 @@ description: When a user asks to set up okfreq in a project without a
   its code and tests, without asking the user.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -35,6 +35,7 @@ implemented_in_files:
 - skills/okfreq-setup/SKILL.md
 tested_in_files:
 - tests/test_skill_resources.py
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Set up a project's requirements baseline from one skill
@@ -51,6 +52,8 @@ When a user asks to set up okfreq in a project without a requirements bundle, th
 - THEN the skill directs the agent to install okfreq, initialise the bundle,
   write the StRS and SwRS from the code, add implementation and test markers,
   close test gaps and open one pull request, without asking the user anything
+- AND the requirements are created `proposed`, the owner named in the request
+  or in `CODEOWNERS` is recorded per tier, and nothing is approved
 
 ### Scenario: Refuse to set up over an existing bundle
 

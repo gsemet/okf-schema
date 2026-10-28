@@ -9,15 +9,15 @@ notes. Unknown properties are allowed and must be preserved.
 
 | Field | Required | Ownership | Meaning |
 |---|---:|---|---|
-| `type` | yes | authored | Configured hierarchy level, such as `StRS` or `SwRS`. |
+| `type` | yes | authored | Configured tier, such as `StRS` or `SwRS`. |
 | `id` | yes | authored | Stable human-readable identifier. Never renumber an existing ID. |
 | `uuid` | yes | authored | Globally unique identity. Native requirements receive a generated UUID; imported requirements must provide one. |
 | `title` | yes | authored | Short human-readable name. |
 | `description` | yes | authored | The requirement statement. It should describe observable, bounded behavior or intent. |
 | `project` | yes | authored | Project or product owning the requirement. |
 | `scope` | yes | authored | Scope used for ownership, allocation, and scan mapping. |
-| `tier` | yes | authored | Level label used by the requirements hierarchy. |
-| `lifecycle` | yes | authored | One of `draft`, `proposed`, `approved`, `deprecated`, or `superseded`. |
+| `tier` | yes | authored | Tier label used by the requirements hierarchy. |
+| `lifecycle` | yes | authored | One of `draft`, `proposed`, `approved`, `deprecated`, or `superseded`; see {ref}`okfreq-lifecycle-states`. The field name is `lifecycle.field` in `config.yml`, and the values are its `enum` in the base schema. |
 | `origin` | yes | authored | Source of the requirement, such as `native`, `imported`, or a tool name. |
 | `derives_from` | conditional | authored | IDs of higher-level requirements, with case-sensitive Markdown filename-stem navigation hints. Native `SwRS` requirements need at least one `StRS` ID. |
 | `depends_on` | no | authored | Semantic prerequisite or dependency IDs. This is not generated coverage. |
@@ -30,11 +30,50 @@ notes. Unknown properties are allowed and must be preserved.
 | `exemption_reason` | SwRS | authored | Conditional justification required when `annotation_exemption` is `true`. Explain why repository source/test coverage is not applicable and point to external justification or verification documents when available. |
 | `external_id` | no | authored | Identifier of the corresponding requirement in an external system. It is not a local file reference. |
 | `external_url` | no | authored | URI of the corresponding requirement in an external system. |
+| `owner_email` | no | authored | Owner of this requirement when it differs from the configured one. Replaces `default_owner_email`. |
+| `approved_by` | when `lifecycle: approved` | authored | Email of the owner who agreed to the current content. Recorded only on the owner's explicit agreement. |
+| `approved_on` | when `lifecycle: approved` | authored | ISO date (`YYYY-MM-DD`) of that agreement, updated with every agreed change. |
+
+(okfreq-lifecycle-states)=
+
+## Lifecycle states
+
+The lifecycle says how freely a requirement may change. Only people change it,
+through the commands below or an explicit edit; okfreq never infers it.
+
+| State | Meaning | Change rule |
+|---|---|---|
+| `draft` | A requirement proposal, not implemented yet. | Free. `okfreq retire` can delete it for good. A project whose requirements are delivered with the code they describe should not keep drafts on its default branch: create them with `okfreq new --lifecycle proposed` in the change that implements them. |
+| `proposed` | Implemented and in force, but not frozen. | Changes through the project's usual plan and review, with no explicit owner agreement. |
+| `approved` | Frozen by its owner. | Any significant change (normative statement, scenarios, verification criteria, deprecation or supersession) needs the owner's explicit, justified agreement, recorded in `approved_by` and `approved_on`. Editorial fixes that keep the meaning are free. Allowed only where `approval_lock` is true for the tier and scope. |
+| `deprecated` | No longer in force, without replacement (`okfreq archive`). | Kept for history; its ID is never reused. |
+| `superseded` | Replaced by the requirements in `superseded_by` (`okfreq supersede`). | Kept for history. |
+
+Which requirements can be frozen, and by whom, is set per tier and per scope in
+`config.yml` ({ref}`okfreq-ownership-and-approval`):
+by default StRS can be approved and SwRS cannot. `okfreq validate` fails on an
+`approved` requirement whose tier and scope are not lockable, or that lacks
+`approved_by` or `approved_on`.
+
+A coding agent never approves a requirement, and never changes an approved one, on
+its own decision. The owner's agreement is usually given during planning, where
+the agent cannot see it. So when its task changes an approved requirement, the
+agent proceeds as if the owner agreed: it records the owner's email in
+`approved_by` and today's date in `approved_on`, names the requirement in the pull
+or merge request, and requests the owner's review of the file. A review rule such
+as `CODEOWNERS` then blocks the merge until the owner approves.
+
+```yaml
+lifecycle: approved
+default_owner_email: product-owner@example.org   # generated from config.yml
+approved_by: product-owner@example.org
+approved_on: 2026-10-28
+```
 
 ## Tier-specific Markdown bodies
 
 `okfreq new` deliberately emits different authoring scaffolds for the two
-default levels. Angle-bracket text is an unfinished gap and should remain
+default tiers. Angle-bracket text is an unfinished gap and should remain
 visible until it is replaced with evidence-based content. The first Markdown
 heading repeats the frontmatter `title`; update both together when renaming
 a requirement. EARS describes the statement format, not the document title.
@@ -169,6 +208,7 @@ that list the fields explicitly keep their current set until you do.
 | `supersedes` | generated | Reverse links computed from other requirements’ `superseded_by` fields: the requirements this one replaces. Written by `okfreq update-coverage` when `supersedes` is in `generated_fields`, only where it has a value (or the field is already present). Do not author it. |
 | `implemented_in_files` | generated or external tool | SwRS-only project-relative source paths containing implementation markers. It is optional and must never be invented. |
 | `tested_in_files` | generated or external tool | SwRS-only project-relative test paths containing test markers. It is optional and must never be invented. |
+| `default_owner_email` | generated | Owner resolved from `config.yml` for the requirement's tier and scope. Written by `okfreq update-coverage` when `default_owner_email` is in `generated_fields`, removed when no owner applies. An authored `owner_email` replaces it. |
 
 The schema is selected from the `type` value. Common fields are defined in
 `tiers/_schema/base.schema.yaml`; `type: StRS` is validated by
@@ -325,8 +365,8 @@ For example:
 The keywords and accepted ID pattern are configured in `config.yml`. `trace`
 reports implementation references, test references, direct StRS validation-test
 references, unknown IDs, non-leaf references, and
-scan warnings. Projects may configure other levels; implementation markers on
-non-leaf levels do not count as leaf coverage.
+scan warnings. Projects may configure other tiers; implementation markers on
+non-leaf tiers do not count as leaf coverage.
 
 ```{admonition} Markers are file-level references
 :class: warning
@@ -361,8 +401,8 @@ Project-specific properties such as `safety_goal`, `owner`, `review_board`,
 frontmatter. The bundled schema uses `additionalProperties: true`, so these
 properties remain interoperable and are preserved by round-trip editing.
 
-For a new hierarchy level, add a level entry to `config.yml` with its folder,
-ID prefix, and allowed parent levels. Keep the same directional convention:
+For a new tier, add an entry under `tiers` in `config.yml` with its folder,
+ID prefix, and allowed parent tiers. Keep the same directional convention:
 `derives_from` is authored and `derived_by` is computed. For new lifecycle
 values or transition policies, update the configuration and validation policy
 explicitly; do not silently reinterpret existing lifecycle states.

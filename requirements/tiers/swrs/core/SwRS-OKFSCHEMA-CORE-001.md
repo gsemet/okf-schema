@@ -7,7 +7,7 @@ description: The generic okf-schema layer validates and manages ordinary OKF
   bundles.
 project: okf-schema
 scope: core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -28,6 +28,7 @@ owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Validate generic OKF bundles

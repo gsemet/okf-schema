@@ -13,6 +13,6 @@ def test_okfreq_showcase_runs_in_an_empty_project(tmp_path: Path) -> None:
     script = Path(__file__).parents[1] / "examples/okfreq-examples/showcase.py"
     namespace = runpy.run_path(str(script))
     outcomes = namespace["run_showcase"](tmp_path / "shipping")
-    assert len(outcomes) == 10
+    assert len(outcomes) == 11
     assert (tmp_path / "shipping/dist/requirements-report.json").is_file()
     assert not (tmp_path / "shipping/requirements/tiers/strs/broken.md").exists()

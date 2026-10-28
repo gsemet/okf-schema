@@ -1,6 +1,6 @@
 """Maintain requirement navigation while preserving authored Markdown.
 
-``lint_indexes`` creates indexes at the tiers root, configured level folders,
+``lint_indexes`` creates indexes at the tiers root, configured tier folders,
 and every ancestor of a requirement. Only a delimited navigation block is owned
 by the generator; introductory prose, frontmatter and log.md remain authored.
 """
@@ -14,6 +14,7 @@ from urllib.parse import quote
 from okf_schema.okfreq.core import (
     RequirementError,
     _atomic_write,
+    config_tiers,
     load_config,
     load_requirements,
     tiers_path,
@@ -53,7 +54,7 @@ def lint_indexes(
 
     Raises:
         RequirementError:
-            If generated-block delimiters are malformed or a configured level
+            If generated-block delimiters are malformed or a configured tier
             folder escapes the tiers root.
 
     Examples:
@@ -64,7 +65,7 @@ def lint_indexes(
     tiers = tiers_path(root).resolve()
     documents = load_requirements(root)
     directories = {tiers}
-    for level in load_config(root)["levels"].values():
+    for level in config_tiers(load_config(root)).values():
         directory = (tiers / str(level["folder"])).resolve()
         if not directory.is_relative_to(tiers):
             raise RequirementError(f"level folder escapes tiers root: {directory}")

@@ -6,7 +6,7 @@ title: Provide requirements traceability operations
 description: The okfreq subset provides requirement traceability operations.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -33,6 +33,7 @@ agent_skill_files:
 example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Provide requirements traceability operations

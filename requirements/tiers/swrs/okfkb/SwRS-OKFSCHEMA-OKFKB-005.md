@@ -8,7 +8,7 @@ description: When findings are consolidated with okfkb-distill, the workflow
   confirmation before promotion.
 project: okf-schema
 scope: okfkb
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -26,6 +26,7 @@ verification_criteria: The distill skill is shipped unchanged, and instruction
   inspection confirms evidence preservation and explicit promotion confirmation.
 agent_skill_files:
 - skills/okfkb-distill/SKILL.md
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Consolidate knowledge findings

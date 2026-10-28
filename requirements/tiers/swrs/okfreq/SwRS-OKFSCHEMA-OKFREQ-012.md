@@ -9,7 +9,7 @@ description: When a requirement is superseded or related to others, okfreq SHALL
   inconsistent or cyclic references.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -39,6 +39,7 @@ implemented_in_files:
 tested_in_files:
 - tests/test_examples.py
 - tests/test_okfreq.py
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Relate requirements by supersession and association

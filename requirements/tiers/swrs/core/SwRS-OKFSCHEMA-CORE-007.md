@@ -8,7 +8,7 @@ description: When annotated file targets are explicitly checked, the base
   report invalid or skipped targets without modifying document values.
 project: okf-schema
 scope: core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -31,6 +31,7 @@ agent_skill_files:
 - skills/okf-schema/SKILL.md
 example_files:
 - examples/okfreq-examples/showcase.py
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Interpret and optionally check schema-declared file references

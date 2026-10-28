@@ -7,7 +7,7 @@ description: The okfkb layer scaffolds knowledge bases with type-aligned tier
   folders and installs their supporting guidance.
 project: okf-schema
 scope: okfkb
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -33,6 +33,7 @@ owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Scaffold and install knowledge bases
