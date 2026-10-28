@@ -1,16 +1,18 @@
 version: 1
-levels:
-  StRS: {folder: strs, prefix: StRS-OKFSCHEMA, derives_from: []}
-  SwRS: {folder: swrs, prefix: SwRS-OKFSCHEMA, derives_from: [StRS]}
+tiers:
+  StRS: {folder: strs, prefix: StRS-OKFSCHEMA, derives_from: [], approval_lock: true,
+    owner_email: gaetan@xeberon.net}
+  SwRS: {folder: swrs, prefix: SwRS-OKFSCHEMA, derives_from: [StRS], approval_lock: false,
+    owner_email: gaetan@xeberon.net}
 id_policy: scope-prefix-sequence
 strs_test_coverage_mode: linked-swrs-and-validation-test
 lifecycle:
-  values: [draft, proposed, approved, deprecated, superseded]
+  field: lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files]
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files, default_owner_email]
 scopes:
   core:
     id_token: CORE

@@ -27,6 +27,8 @@ from okf_schema.okfreq.core import (
     graph,
     initialize_bundle,
     is_info_finding,
+    lifecycle_field,
+    load_config,
     load_requirements,
     marker_scan,
     merge_config,
@@ -138,7 +140,14 @@ def _register_new(level: str, name: str) -> None:
     @click.option("--derives-from", multiple=True)
     @click.option(
         "--user-need",
-        help="Stakeholder need for StRS only; rejected for derived levels such as SwRS.",
+        help="Stakeholder need for StRS only; rejected for derived tiers such as SwRS.",
+    )
+    @click.option(
+        "--lifecycle",
+        type=click.Choice(["draft", "proposed"]),
+        default="draft",
+        show_default=True,
+        help="proposed when the change also delivers the implementation; draft otherwise.",
     )
     @click.option("--path", default=".", type=click.Path())
     def create(
@@ -149,6 +158,7 @@ def _register_new(level: str, name: str) -> None:
         origin: str,
         derives_from: tuple[str, ...],
         user_need: str | None,
+        lifecycle: str,
         path: str,
     ) -> None:
         """Create one requirement of the registered level.
@@ -168,6 +178,8 @@ def _register_new(level: str, name: str) -> None:
                 Parent requirement IDs.
             user_need:
                 Stakeholder need accepted only for an StRS.
+            lifecycle:
+                Initial lifecycle, ``draft`` or ``proposed``.
             path:
                 Project or requirements-bundle path.
 
@@ -190,6 +202,7 @@ def _register_new(level: str, name: str) -> None:
                 origin=origin,
                 derives_from=list(derives_from),
                 user_need=user_need,
+                lifecycle=lifecycle,
             )
             click.echo(f"Created {target}")
             if level == "StRS":
@@ -450,8 +463,9 @@ def status(path: str) -> None:
     root = _root(path)
     requirements = load_requirements(root)
     lifecycle: dict[str, int] = {}
+    field = lifecycle_field(load_config(root))
     for _, data, _ in requirements.values():
-        value = str(data.get("lifecycle", "invalid"))
+        value = str(data.get(field, "invalid"))
         lifecycle[value] = lifecycle.get(value, 0) + 1
     click.echo(
         json.dumps(
@@ -778,5 +792,6 @@ def _change_lifecycle(
     if target not in requirements:
         raise click.ClickException(f"unknown requirement: {target}")
     file, _, text = requirements[target]
-    _atomic_write(file, _render_frontmatter(text, {"lifecycle": lifecycle, **(extra or {})}))
+    field = lifecycle_field(load_config(root))
+    _atomic_write(file, _render_frontmatter(text, {field: lifecycle, **(extra or {})}))
     click.echo(f"Updated {target}")

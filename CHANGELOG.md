@@ -2,8 +2,48 @@
 
 ### Feat
 
+- **okfreq**: requirement owners and owner-approved lifecycle
+
+## v0.15.1 (2026-10-27)
+
+## v0.15.0 (2026-10-26)
+
+### Feat
+
+- **okfreq**: list superseding requirements and relate requirements
+
+### Refactor
+
+- **okfreq**: keep a single requirements guideline
+
+## v0.14.1 (2026-10-25)
+
+### Fix
+
+- **release**: attach only the package files to the GitHub release
+
+## v0.14.0 (2026-10-25)
+
+### Feat
+
+- **okfreq**: set up a requirements baseline from one skill
+
+### Fix
+
+- **okfreq**: never reuse a requirement number
+- **validate**: report W11 for datetime stale_after values
+- **schema**: report empty and unparsable schema files
+
+## v0.13.0 (2026-10-19)
+
+### Feat
+
 - **file-links**: expose resolvable frontmatter link results
 - describe and check navigable file links in OKF bundles
+
+### Fix
+
+- **okfreq**: keep generated evidence paths stable across platforms
 
 ## v0.12.0 (2026-09-02)
 

@@ -8,7 +8,7 @@ description: When a user inspects an OKF bundle, okf-schema SHALL provide
   without modifying the bundle.
 project: okf-schema
 scope: core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -27,6 +27,7 @@ owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Inspect and query bundle knowledge

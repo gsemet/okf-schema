@@ -8,7 +8,7 @@ description: When OKF 0.2 metadata is validated, okf-schema SHALL enforce
   with actionable findings.
 project: okf-schema
 scope: core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -26,6 +26,7 @@ owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Validate OKF 0.2 provenance and lifecycle

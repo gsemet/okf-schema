@@ -7,7 +7,7 @@ description: When export is requested, the reporting capability SHALL provide a
   portable report.
 project: OKFREQXMP
 scope: Core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: StRS
 derives_from: []

@@ -7,7 +7,7 @@ description: When export is requested, the service SHALL write the report as CSV
   output.
 project: OKFREQXMP
 scope: Core
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:

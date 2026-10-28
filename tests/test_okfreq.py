@@ -17,10 +17,12 @@ from okf_schema.okfreq.core import (
     create_requirement,
     graph,
     init_requirements,
+    lifecycle_values,
     load_config,
     load_requirements,
     marker_scan,
     merge_config,
+    owner_policy,
     report,
     retire_requirement,
     supersede_requirement,
@@ -67,7 +69,7 @@ def test_init_and_new_requirements(tmp_path: Path) -> None:
     assert swrs.name == "SwRS-default-001.md"
     assert validate_requirements(root) == []
     assert graph(root)["derived_by"]["StRS-default-001"] == ["SwRS-default-001"]
-    assert load_config(root)["levels"]["SwRS"]["prefix"] == "SwRS"
+    assert load_config(root)["tiers"]["SwRS"]["prefix"] == "SwRS"
     assert load_config(root)["strs_test_coverage_mode"] == "linked-swrs"
 
 
@@ -823,7 +825,8 @@ def test_update_coverage_rejects_unknown_generated_field(tmp_path: Path) -> None
     config = root / "config.yml"
     config.write_text(
         config.read_text(encoding="utf-8").replace(
-            "generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files]",
+            "generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,\n"
+            "  default_owner_email]",
             "generated_fields: [unknown]",
         ),
         encoding="utf-8",
@@ -1781,3 +1784,341 @@ def test_empty_scalar_superseded_by_counts_as_missing_without_a_list_hint(tmp_pa
     findings = validate_requirements(root)
     assert any("requires a non-empty superseded_by" in f for f in findings)
     assert not any(f.startswith("I2 ") for f in findings)
+
+
+def _set_fields(document: Path, **fields: object) -> None:
+    """Rewrite authored frontmatter fields of one requirement document."""
+    frontmatter, body = extract_frontmatter(document.read_text(encoding="utf-8"))
+    assert frontmatter is not None
+    data = make_yaml().load(frontmatter)
+    data.update(fields)
+    document.write_text(f"---\n{dump_yaml(data)}---\n{body}", encoding="utf-8")
+
+
+def _edit_config(root: Path, old: str, new: str) -> None:
+    config = root / "config.yml"
+    text = config.read_text(encoding="utf-8")
+    assert old in text
+    config.write_text(text.replace(old, new), encoding="utf-8")
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_generated_config_states_tiers_lock_and_lifecycle_field(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    config = load_config(root)
+
+    assert config["tiers"]["StRS"]["approval_lock"] is True
+    assert config["tiers"]["SwRS"]["approval_lock"] is False
+    assert config["lifecycle"] == {"field": "lifecycle"}
+    assert "levels" not in config
+    assert lifecycle_values(root, config) == [
+        "draft",
+        "proposed",
+        "approved",
+        "deprecated",
+        "superseded",
+    ]
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_lifecycle_values_come_from_the_schema_enum_unless_legacy_values_are_set(
+    tmp_path: Path,
+) -> None:
+    root = make_bundle(tmp_path)
+    schema = tiers_path(root) / "_schema" / "base.schema.yaml"
+    schema.write_text(
+        schema.read_text(encoding="utf-8").replace(
+            "    - superseded\n", "    - superseded\n    - retired\n"
+        ),
+        encoding="utf-8",
+    )
+    assert lifecycle_values(root, load_config(root))[-1] == "retired"
+
+    _edit_config(root, "  field: lifecycle\n", "  values: [draft, proposed]\n")
+    assert lifecycle_values(root, load_config(root)) == ["draft", "proposed"]
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_legacy_levels_key_is_read_and_cannot_be_mixed_with_tiers(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    _edit_config(root, "tiers:\n", "levels:\n")
+    add_requirements(root)
+    assert validate_requirements(root) == []
+
+    _edit_config(root, "levels:\n", "tiers: {}\nlevels:\n")
+    with pytest.raises(RequirementError, match="both tiers and the legacy levels"):
+        load_config(root)
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="tier_default", scope="other", expected=(False, "tier@x.org"))
+@Parametrization.case(name="scope_owner", scope="ui", expected=(False, "scope@x.org"))
+@Parametrization.case(name="scope_tier", scope="api", expected=(True, "api@x.org"))
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_owner_policy_prefers_scope_tier_then_scope_then_tier(
+    scope: str, expected: tuple[bool, str]
+) -> None:
+    config = {
+        "tiers": {
+            "SwRS": {"derives_from": ["StRS"], "approval_lock": False, "owner_email": "tier@x.org"}
+        },
+        "scopes": {
+            "ui": {"owner_email": "scope@x.org"},
+            "api": {
+                "owner_email": "scope@x.org",
+                "tiers": {"SwRS": {"approval_lock": True, "owner_email": "api@x.org"}},
+            },
+        },
+    }
+
+    assert owner_policy(config, "SwRS", scope) == expected
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_lock_defaults_to_top_tiers_when_unset() -> None:
+    config = {"tiers": {"StRS": {"derives_from": []}, "SwRS": {"derives_from": ["StRS"]}}}
+
+    assert owner_policy(config, "StRS", "default") == (True, None)
+    assert owner_policy(config, "SwRS", "default") == (False, None)
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_default_owner_email_is_generated_and_removed_with_the_config(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    strs, swrs = add_requirements(root)
+    _edit_config(root, "approval_lock: true}", "approval_lock: true, owner_email: po@x.org}")
+
+    update_coverage(root)
+    assert load_requirements(root)["StRS-default-001"][1]["default_owner_email"] == "po@x.org"
+    assert "default_owner_email" not in load_requirements(root)["SwRS-default-001"][1]
+
+    _edit_config(root, ", owner_email: po@x.org}", "}")
+    assert update_coverage(root) == [str(strs)]
+    assert "default_owner_email" not in load_requirements(root)["StRS-default-001"][1]
+    assert swrs.is_file()
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_approved_requirement_needs_the_owner_agreement_fields(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    strs, _ = add_requirements(root)
+    _set_fields(strs, lifecycle="approved", owner_email="po@x.org")
+
+    findings = validate_requirements(root)
+    assert len(findings) == 1
+    assert "requires approved_by and approved_on" in findings[0]
+    assert "(po@x.org)" in findings[0]
+    assert "a coding agent never decides it alone" in findings[0]
+    assert "request the owner's review" in findings[0]
+
+    _set_fields(strs, approved_by="po@x.org", approved_on="2026-10-28")
+    assert validate_requirements(root) == []
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_approved_is_refused_where_approval_lock_is_false(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    _, swrs = add_requirements(root)
+    _set_fields(swrs, lifecycle="approved", approved_by="po@x.org", approved_on="2026-10-28")
+
+    findings = validate_requirements(root)
+    assert len(findings) == 1
+    assert "approval_lock is false" in findings[0]
+
+    _edit_config(
+        root,
+        "  default: {source_dirs: [src], test_dirs: [tests]}",
+        "  default: {source_dirs: [src], test_dirs: [tests], tiers: {SwRS: {approval_lock: true}}}",
+    )
+    assert validate_requirements(root) == []
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="lock", setting="approval_lock: yes-please", match="approval_lock must be true or false"
+)
+@Parametrization.case(
+    name="owner", setting="owner_email: nobody", match="owner_email is not an email address"
+)
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_malformed_ownership_settings_are_reported(
+    tmp_path: Path, setting: str, match: str
+) -> None:
+    root = make_bundle(tmp_path)
+    _edit_config(root, "approval_lock: false}", f"approval_lock: false}}\n  SwRT: {{{setting}}}")
+
+    assert any(match in finding for finding in validate_requirements(root))
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_new_can_start_a_requirement_as_proposed(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    result = CliRunner().invoke(
+        okfreq,
+        [
+            "new",
+            "strs",
+            "Export",
+            "--description",
+            "The tool SHALL export.",
+            "--project",
+            "p",
+            "--lifecycle",
+            "proposed",
+            "--path",
+            str(root),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert load_requirements(root)["StRS-default-001"][1]["lifecycle"] == "proposed"
+    with pytest.raises(RequirementError, match="starts as draft or proposed"):
+        create_requirement(
+            root,
+            "StRS",
+            "X",
+            "The tool SHALL x.",
+            project="p",
+            scope="default",
+            origin="native",
+            lifecycle="approved",
+        )
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="legacy_import", destination="tiers", incoming="levels")
+@Parametrization.case(name="legacy_destination", destination="levels", incoming="tiers")
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_config_merge_normalizes_legacy_levels_to_tiers(
+    tmp_path: Path, destination: str, incoming: str
+) -> None:
+    root = make_bundle(tmp_path)
+    _edit_config(root, "tiers:\n", f"{destination}:\n")
+    source = tmp_path / "import.yml"
+    source.write_text(
+        f"{incoming}:\n  SwRT: {{folder: swrt, prefix: SwRT, derives_from: [SwRS]}}\n",
+        encoding="utf-8",
+    )
+
+    assert merge_config(root, source) == []
+    text = (root / "config.yml").read_text(encoding="utf-8")
+    assert "levels:" not in text
+    config = load_config(root)
+    assert list(config["tiers"]) == ["StRS", "SwRS", "SwRT"]
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_config_merge_refuses_a_legacy_lifecycle_values_list_over_a_field(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    source = tmp_path / "import.yml"
+    source.write_text("lifecycle:\n  values: [draft, done]\n", encoding="utf-8")
+
+    assert merge_config(root, source) == ["lifecycle.values"]
+    assert load_config(root)["lifecycle"] == {"field": "lifecycle"}
+
+    source.write_text("tiers: {}\nlevels: {}\n", encoding="utf-8")
+    with pytest.raises(RequirementError, match="both tiers and the legacy levels"):
+        merge_config(root, source)
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="case_insensitive_scope", scope="API", expected=(True, "api@x.org"))
+@Parametrization.case(name="unknown_scope", scope="nowhere", expected=(False, "tier@x.org"))
+@Parametrization.case(
+    name="null_scope_lock_falls_back", scope="web", expected=(False, "tier@x.org")
+)
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_owner_policy_scope_matching_and_null_lock(scope: str, expected: tuple[bool, str]) -> None:
+    config = {
+        "tiers": {
+            "SwRS": {"derives_from": ["StRS"], "approval_lock": False, "owner_email": "tier@x.org"}
+        },
+        "scopes": {
+            "api": {"tiers": {"SwRS": {"approval_lock": True, "owner_email": "api@x.org"}}},
+            "web": {"tiers": {"SwRS": {"approval_lock": None}}},
+        },
+    }
+
+    assert owner_policy(config, "SwRS", scope) == expected
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_null_lock_everywhere_and_custom_top_tier_default_to_lockable() -> None:
+    config = {
+        "tiers": {"Need": {"folder": "need", "approval_lock": None}},
+        "scopes": {"default": {"tiers": {"Need": {"approval_lock": None}}}},
+    }
+
+    assert owner_policy(config, "Need", "default") == (True, None)
+    assert owner_policy({"tiers": {"Goal": {"folder": "goal"}}}, "Goal", "x") == (True, None)
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_new_rejects_an_unknown_initial_lifecycle(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    result = CliRunner().invoke(
+        okfreq,
+        ["new", "strs", "Export", "--description", "The tool SHALL export.", "--project", "p"]
+        + ["--lifecycle", "bogus", "--path", str(root)],
+    )
+
+    assert result.exit_code != 0
+    assert "Invalid value for '--lifecycle'" in result.output
+    assert load_requirements(root) == {}
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="deprecated", lifecycle="deprecated", extra={})
+@Parametrization.case(
+    name="superseded", lifecycle="superseded", extra={"superseded_by": ["SwRS-default-002"]}
+)
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_retired_requirement_may_keep_its_approval_record(
+    tmp_path: Path, lifecycle: str, extra: dict
+) -> None:
+    root, paths = make_family(tmp_path)
+    set_fields(
+        paths["SwRS-default-001"],
+        lifecycle=lifecycle,
+        approved_by="po@x.org",
+        approved_on="2026-10-28",
+        **extra,
+    )
+
+    assert validate_requirements(root) == []
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+def test_lifecycle_field_names_a_custom_frontmatter_field(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    _edit_config(root, "  field: lifecycle\n", "  field: status\n")
+    schema = tiers_path(root) / "_schema" / "base.schema.yaml"
+    text = schema.read_text(encoding="utf-8")
+    assert "\n  lifecycle:\n" in text and "\n- lifecycle\n" in text
+    schema.write_text(
+        text.replace("\n  lifecycle:\n", "\n  status:\n").replace(
+            "\n- lifecycle\n", "\n- status\n"
+        ),
+        encoding="utf-8",
+    )
+    runner = CliRunner()
+    for title in ("Export", "Import"):
+        result = runner.invoke(
+            okfreq,
+            ["new", "strs", title, "--description", "The tool SHALL move data.", "--project", "p"]
+            + ["--user-need", "Users move data.", "--lifecycle", "proposed", "--path", str(root)],
+        )
+        assert result.exit_code == 0, result.output
+    created = load_requirements(root)["StRS-default-001"][1]
+    assert created["status"] == "proposed"
+    assert "lifecycle" not in created
+    assert validate_requirements(root) == []
+
+    supersede_requirement(root, "StRS-default-001", ["StRS-default-002"])
+    archived = runner.invoke(okfreq, ["archive", "StRS-default-002", "--path", str(root), "--yes"])
+    assert archived.exit_code == 0, archived.output
+    requirements = load_requirements(root)
+    assert requirements["StRS-default-001"][1]["status"] == "superseded"
+    assert requirements["StRS-default-002"][1]["status"] == "deprecated"
+    assert "lifecycle" not in requirements["StRS-default-002"][1]
+    assert validate_requirements(root) == []

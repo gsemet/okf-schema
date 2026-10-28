@@ -8,7 +8,7 @@ description: When requirements guidance is installed, the okfreq distribution
   authoring, evidence, reports, navigation and recovery.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -44,6 +44,7 @@ tested_in_files:
 - tests/test_examples.py
 - tests/test_skill_resources.py
 - tests/test_tutorial_okfreq.py
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Ship usable standalone requirements guidance

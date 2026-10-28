@@ -67,8 +67,9 @@ agent's skills directory.
    how a missing or outdated copy is installed or refreshed. It leaves every
    other file of `guidelines/` untouched.
 5. Before changing requirements, read `config.yml` and every schema under
-   `tiers/_schema/`. Local configuration and schemas define the actual levels,
-   hierarchy, IDs, lifecycle values, markers, scopes, and allowed fields.
+   `tiers/_schema/`. Local configuration and schemas define the actual tiers,
+   hierarchy, IDs, lifecycle values, owners, approval locks, markers, scopes, and
+   allowed fields.
 
 ## The goal of okfreq
 
@@ -110,8 +111,12 @@ satisfied. It is not an issue title, design choice, code comment, or task.
   test-link coverage, structural health, and lifecycle counts separate; do not
   collapse them into a misleading success score.
 - **Lifecycle is explicit.** Creating, formatting, linking, or testing a
-  requirement never silently promotes it from `draft` to `proposed` or
-  `approved`.
+  requirement never silently changes its lifecycle. A requirement delivered with
+  its code starts `proposed`; `draft` is a proposal not implemented yet.
+- **`approved` belongs to the owner.** It freezes a requirement; only the owner
+  agrees to approve or change one, recorded in `approved_by` and `approved_on`.
+  Owners and approval locks come from `config.yml` per tier and scope. Repair
+  steps for an agent: [references/operations.md](references/operations.md#lifecycle-ownership-and-approval).
 
 ## Route the intent
 
@@ -301,8 +306,8 @@ format, not a generic document heading.
    exemptions, or lifecycle transitions.
 3. Never renumber an existing requirement. Allocate new identities through
    `okfreq new` under the configured ID policy.
-4. Never treat generated `derived_by`, `supersedes`, `implemented_in_files`, or
-   `tested_in_files` as authored truth.
+4. Never treat generated `derived_by`, `supersedes`, `implemented_in_files`,
+   `tested_in_files` or `default_owner_email` as authored truth.
 5. Keep `okfreq` requirements independent from `okfkb` knowledge documents.
    They may coexist and both use OKF-compatible Markdown, but they have distinct
    purposes and lifecycles.

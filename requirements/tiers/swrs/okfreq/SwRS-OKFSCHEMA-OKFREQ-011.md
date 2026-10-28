@@ -8,7 +8,7 @@ description: When a confirmed retire operation targets an unreferenced draft
   and SHALL NOT allocate that number again.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -36,6 +36,7 @@ implemented_in_files:
 tested_in_files:
 - tests/test_examples.py
 - tests/test_okfreq.py
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Retire a draft requirement permanently

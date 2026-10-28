@@ -8,7 +8,7 @@ description: The okfreq capability SHALL enable teams to author, trace, and
   identity and authored intent.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: StRS
 derives_from: []
@@ -27,6 +27,8 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFREQ-010
 - SwRS-OKFSCHEMA-OKFREQ-011
 - SwRS-OKFSCHEMA-OKFREQ-012
+- SwRS-OKFSCHEMA-OKFREQ-013
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Maintain auditable software requirements

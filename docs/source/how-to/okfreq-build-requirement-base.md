@@ -36,7 +36,10 @@ For the boundary between marker linkage and executed test-result evidence, see
 4. Create a stakeholder requirement:
    `okfreq new strs "Export report" --description "When report export is requested, the reporting capability SHALL make a portable report available." --user-need "Users need a portable report for offline review." --project demo`.
    This creates a draft `StRS` with a generated UUID and stable ID such as
-   `StRS-default-001`. Its body separates normative stakeholder-observable
+   `StRS-default-001`. A `draft` is a proposal not implemented yet: when the
+   requirement describes code that already exists, add `--lifecycle proposed`.
+   Name the requirement owner with `tiers.StRS.owner_email` in `config.yml`; only
+   that owner approves a requirement, on tiers whose `approval_lock` allows it. Its body separates normative stakeholder-observable
    behavior, the preserved user need, and rationale/constraints. It does not
    contain software scenarios or verification notes.
 5. Create a software requirement with its parent:
@@ -72,7 +75,7 @@ $ okfreq validate . --prose
 
 The command exits non-zero for missing required metadata, invalid UUIDs,
 unknown derivation targets, invalid lifecycle values, or invalid configured
-levels. It does not turn a marker into a claim that the implementation or test
+tiers. It does not turn a marker into a claim that the implementation or test
 is correct: run the normal project test suite as well.
 
 See the [design explanation](../explanation/okfreq-choices.md) and the

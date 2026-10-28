@@ -1,5 +1,33 @@
 # Update Log
 
+## 2026-10-28
+
+- Added [SwRS-OKFSCHEMA-OKFREQ-013](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-013.md):
+  lifecycle states now have documented meanings (`draft` is a proposal not yet
+  implemented, `proposed` is implemented but not frozen, `approved` is frozen by its
+  owner). `config.yml` uses `tiers` instead of `levels` and names the lifecycle field
+  instead of repeating its values, which now come from the base schema; both legacy
+  forms are still read. Each tier states `approval_lock` (true for StRS, false for SwRS
+  by default) and may name an `owner_email`; a scope overrides the owner, and
+  `scopes.<scope>.tiers.<tier>` overrides both. `default_owner_email` is a new
+  generated field, `owner_email` its authored override. An `approved` requirement
+  needs `approved_by` and `approved_on` and a lockable tier and scope; the error
+  tells a coding agent to record the owner's agreement and request the owner's
+  review. `okfreq new --lifecycle proposed` creates a requirement delivered with its
+  code. This bundle moved to the new configuration names, names its owner, and all
+  32 requirements moved from `draft` to `proposed`: each one is implemented and
+  linked. No requirement is approved: approval is the owner's decision.
+- Extended [SwRS-OKFSCHEMA-OKFREQ-013](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-013.md) after
+  review: `okfreq import`/`config-merge` rename `levels` to `tiers` on both sides and
+  report an imported `lifecycle.values` list as a conflict when the destination names
+  `lifecycle.field`; a custom lifecycle field name works in a hand-written schema; a
+  `null` `approval_lock` counts as unset; a retired requirement may keep its approval
+  record. [SwRS-OKFSCHEMA-OKFREQ-010](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-010.md): the
+  setup skill creates requirements `proposed`, records the owner and approves
+  nothing. [SwRS-OKFSCHEMA-OKFREQ-005](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-005.md) says
+  tiers instead of levels (wording only).
+- Verification: see the pull request for the preflight result.
+
 ## 2026-10-26
 
 - Added [SwRS-OKFSCHEMA-OKFREQ-012](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-012.md):

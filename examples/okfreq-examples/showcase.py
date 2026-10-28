@@ -45,7 +45,11 @@ def run_showcase(project: Path) -> dict[str, str]:
         text = path.read_text(encoding="utf-8")
         frontmatter, body = extract_frontmatter(text)
         data = make_yaml().load(frontmatter)
-        data.update(updates)
+        for key, value in updates.items():
+            if value is None:
+                data.pop(key, None)
+            else:
+                data[key] = value
         path.write_text(f"---\n{dump_yaml(data)}---\n{body}", encoding="utf-8")
 
     root = project / "requirements"
@@ -259,6 +263,27 @@ def run_showcase(project: Path) -> dict[str, str]:
     command("validate", str(root))
     outcomes["supersession_and_relations"] = (
         "several replacements, generated supersedes, relates_to; cycles and gaps refused"
+    )
+
+    config = make_yaml().load(config_path.read_text(encoding="utf-8"))
+    config["tiers"]["StRS"]["owner_email"] = "product-owner@example.org"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    command("update-coverage", str(root))
+    owned = records[parent][0]
+    assert load_requirements(root)[parent][1]["default_owner_email"] == "product-owner@example.org"
+    edit(owned, {"lifecycle": "approved"})
+    refusal = command("validate", str(root), "--json", expected=1)
+    assert "requires approved_by and approved_on" in refusal
+    assert "request the owner's review" in refusal
+    edit(owned, {"approved_by": "product-owner@example.org", "approved_on": "2026-10-28"})
+    command("validate", str(root))
+    unlockable = records[swrs][0].parent / f"{replacement}.md"
+    edit(unlockable, {"lifecycle": "approved", "approved_by": "a@example.org"})
+    assert "approval_lock is false" in command("validate", str(root), "--json", expected=1)
+    edit(unlockable, {"lifecycle": "proposed", "approved_by": None})
+    command("validate", str(root))
+    outcomes["ownership_and_approval"] = (
+        "owner generated from the tier; approval needs the owner's recorded agreement and a lock"
     )
 
     broken = root / "tiers/strs/broken.md"

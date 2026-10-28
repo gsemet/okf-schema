@@ -8,7 +8,7 @@ description: When requirement linting succeeds, okfreq SHALL refresh navigation
   history.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -34,6 +34,7 @@ implemented_in_files:
 - src/okf_schema/okfreq/navigation.py
 tested_in_files:
 - tests/test_requirement_indexes.py
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Maintain generated requirement navigation

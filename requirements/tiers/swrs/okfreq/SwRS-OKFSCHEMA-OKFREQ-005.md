@@ -8,7 +8,7 @@ description: When a requirement bundle is validated, okfreq SHALL check schemas,
   keeping prose findings advisory.
 project: okf-schema
 scope: okfreq
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -36,6 +36,7 @@ agent_skill_files:
 example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Validate requirement bundles
@@ -46,7 +47,7 @@ When a requirement bundle is validated, okfreq SHALL check schemas, identities, 
 
 ### Scenario: Validate a conforming requirement graph
 
-- GIVEN requirements that satisfy the configured schema, levels, lifecycle, and
+- GIVEN requirements that satisfy the configured schema, tiers, lifecycle, and
   parent hierarchy
 - WHEN `okfreq validate` or `okfreq lint` runs
 - THEN structural validation succeeds and reports the number of inspected

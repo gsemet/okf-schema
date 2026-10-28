@@ -31,8 +31,49 @@ properties:
     description: Functional scope, e.g. Core, Safety, Connectivity.
   lifecycle:
     type: string
-    description: Lifecycle stage of the requirement, e.g. draft, active,
-      retired.
+    enum:
+    - draft
+    - proposed
+    - approved
+    - deprecated
+    - superseded
+    description: |
+      Explicit, human-controlled lifecycle state.
+      - draft: a requirement proposal that is not implemented yet. A project whose
+        requirements are delivered with the code they describe should not keep drafts
+        on its default branch.
+      - proposed: implemented and in force, but not frozen. It may change through the
+        usual plan and review, without an explicit owner agreement.
+      - approved: frozen by its owner. Any significant change (normative statement,
+        scenarios, criteria, deprecation or supersession) needs the owner's explicit,
+        justified agreement, recorded in approved_by and approved_on. Allowed only where
+        approval_lock is true for the requirement's tier and scope.
+      - deprecated: no longer in force and not replaced; kept for history.
+      - superseded: replaced by the requirements listed in superseded_by; kept for history.
+  owner_email:
+    type: string
+    format: email
+    description: Authored owner of this requirement. Overrides
+      default_owner_email; the owner approves the requirement and any change to
+      it once approved.
+  default_owner_email:
+    type: string
+    format: email
+    description: 'Generated owner from config.yml: scopes.<scope>.tiers.<tier>.owner_email,
+      else scopes.<scope>.owner_email, else tiers.<tier>.owner_email. Absent when
+      none is configured. owner_email, when set, replaces it.'
+  approved_by:
+    type: string
+    format: email
+    description: Email of the owner who approved the current content. Required
+      when the lifecycle is approved; set only on the owner's explicit
+      agreement, never by an agent's own decision.
+  approved_on:
+    type: string
+    format: date
+    description: ISO date (YYYY-MM-DD) of the owner's approval of the current
+      content. Required when the lifecycle is approved; updated with every
+      agreed change.
   origin:
     type: string
     minLength: 1

@@ -7,7 +7,7 @@ description: The okfkb layer searches, reads, queries, and updates
   knowledge-base evidence.
 project: okf-schema
 scope: okfkb
-lifecycle: draft
+lifecycle: proposed
 origin: native
 tier: SwRS
 derives_from:
@@ -35,6 +35,7 @@ agent_skill_files:
 - skills/okfkb/references/navigation-and-maintenance.md
 example_files:
 - docs/source/tutorials/okfkb-workflow.md
+default_owner_email: gaetan@xeberon.net
 ---
 
 ## Navigate knowledge-base evidence

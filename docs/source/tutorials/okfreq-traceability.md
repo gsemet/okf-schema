@@ -155,7 +155,7 @@ reports for offline review. The existing exporter is one way to support it.
 For a real project, confirm the outcome with its owner or existing agreed
 specification before recording it as expected behavior.
 
-`okfreq` starts with two requirement levels:
+`okfreq` starts with two requirement tiers:
 
 - **StRS — stakeholder requirements specification:** the outcome and user need.
 - **SwRS — software requirements specification:** observable software behavior
@@ -200,6 +200,13 @@ stable when wording changes; do not renumber them to rearrange files.
 The statements use EARS-style wording: a condition or trigger, followed by one
 observable `SHALL` response. The generated headings repeat the frontmatter titles.
 Creation leaves both requirements in `draft`; writing `SHALL` is not approval.
+A `draft` is a proposal that is not implemented yet. This tutorial keeps the
+default while you review the wording, but a requirement that describes code that
+already exists, or that is delivered in the same change as its code, is
+`proposed`: create it with `--lifecycle proposed`. Only its owner, configured as
+`owner_email` per tier or scope in `config.yml`, may later set it to `approved`,
+and only on a tier whose `approval_lock` allows it; see
+{ref}`okfreq-lifecycle-states`.
 
 Complete **both** generated bodies. Preserve their generated frontmatter and
 replace the Markdown below it with these reviewed examples:

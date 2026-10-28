@@ -308,6 +308,10 @@ def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: P
         "Never merge",
         "requirements/guidelines/requirements.guidelines.md",
         "requirements/guidelines/project.guidelines.md",
+        "--lifecycle proposed",
+        "owner_email",
+        "approval_lock",
+        "Nothing is approved during setup",
     ):
         assert required in text
     for target in re.findall(r"\]\(([^)]+)\)", text):
