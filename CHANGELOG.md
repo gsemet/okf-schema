@@ -1,5 +1,27 @@
 ## Unreleased
 
+### BREAKING CHANGE
+
+- okfreq bundles use req_lifecycle and approved_at.
+Migrate an existing bundle:
+1. Set lifecycle.field: req_lifecycle in config.yml and rename the
+   lifecycle key of every requirement to req_lifecycle.
+2. Replace approved_on with approved_at, an ISO 8601 datetime with a UTC
+   offset, for example 2026-10-28T09:00:00+01:00.
+3. In tiers/_schema/base.schema.yaml, rename the lifecycle property,
+   add its x-okf-status-projection mapping, the status and verified
+   properties and a link-projection label on each relation field (copy
+   them from a fresh okfreq init).
+4. Add status and verified to generated_fields, then run
+   okfreq update-coverage and okfreq lint.
+5. Rewrite log.md headings as "## YYYY-MM-DD", newest first.
+
+### Feat
+
+- **okfreq**: keep requirement bundles native OKF v0.2 bundles
+
+## v0.16.0 (2026-10-28)
+
 ### Feat
 
 - **okfreq**: requirement owners and owner-approved lifecycle
