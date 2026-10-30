@@ -132,7 +132,7 @@ def test_traceability_tutorial_runs_from_existing_feature_to_updated_contract(
 
     records = load_requirements(project / "requirements")
     assert set(records) == {"StRS-default-001", "SwRS-default-001", "SwRS-default-002"}
-    assert all(data["lifecycle"] == "draft" for _, data, _ in records.values())
+    assert all(data["req_lifecycle"] == "draft" for _, data, _ in records.values())
     for identifier in ("SwRS-default-001", "SwRS-default-002"):
         assert records[identifier][1]["implemented_in_files"] == ["src/export.py"]
         assert records[identifier][1]["tested_in_files"] == ["tests/test_export.py"]

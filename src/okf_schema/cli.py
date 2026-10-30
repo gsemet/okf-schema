@@ -17,6 +17,7 @@ import click
 
 from okf_schema import __version__
 from okf_schema._internal.models import BundleStats
+from okf_schema._internal.utils import collect_markdown_files
 from okf_schema._internal.yaml import make_yaml
 from okf_schema.api import (
     backlinks_bundle,
@@ -30,7 +31,9 @@ from okf_schema.api import (
 )
 from okf_schema.okfkb.cli import kb
 from okf_schema.okfkb.patterns import INIT_PATTERNS, list_patterns
+from okf_schema.projection import ProjectionError
 from okf_schema.skill_cli import _register_install_skills
+from okf_schema.validator import log_heading_findings
 
 
 class _HelpCommand(click.Command):
@@ -575,6 +578,11 @@ def validate_md(
     default=True,
     help="Update links and backlinks frontmatter fields from markdown body.",
 )
+@click.option(
+    "--link-projection/--no-link-projection",
+    default=True,
+    help="Generate the Links sections and status declared by schema projection annotations.",
+)
 @click.pass_context
 def lint(
     ctx: click.Context,
@@ -582,6 +590,7 @@ def lint(
     check: bool,
     diff: bool,
     links: bool,
+    link_projection: bool,
 ) -> None:
     """Lint frontmatter: flatten nested lists and convert block-style to inline.
 
@@ -592,7 +601,18 @@ def lint(
 
     With ``--links/--no-links`` (default: ``--links``), also updates ``links``
     (outgoing) and ``backlinks`` (incoming) frontmatter fields
-    based on internal markdown links found in each concept's body.
+    based on internal markdown links found in each concept's body; the
+    generated Links section is not scanned.
+
+    With ``--link-projection/--no-link-projection`` (default: on), maintains the
+    generated Links section of each field whose ``x-okf-link`` carries a
+    ``link-projection`` label, and ``status`` from an ``x-okf-status-projection``.
+
+    Every ``log.md`` heading must be exactly ``## YYYY-MM-DD``, newest first, one
+    per date: ``W5`` and ``W18`` are printed, and ``--check`` fails on them.
+
+    .. versionchanged:: 0.17.0
+        Add ``--link-projection`` and the ``log.md`` heading check.
 
     Args:
         ctx:
@@ -605,6 +625,8 @@ def lint(
             Whether to print a unified diff without writing changes.
         links:
             Whether to synchronize link metadata from Markdown bodies.
+        link_projection:
+            Whether to maintain the projections declared by the schemas.
 
     Examples:
         okf-schema lint --path bundle
@@ -612,12 +634,25 @@ def lint(
     """
     # @implements_req SwRS-OKFSCHEMA-CORE-003
     try:
-        results = lint_bundle(bundle_path, check=check, diff=diff, links=links)
+        results = lint_bundle(
+            bundle_path, check=check, diff=diff, links=links, projection=link_projection
+        )
     except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
+        click.echo(f"Error: {exc}", err=True)
+        ctx.exit(1)
+    except ProjectionError as exc:
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(1)
 
     changed = [r for r in results if r.changed]
+    log_findings = [
+        finding
+        for path in collect_markdown_files(Path(bundle_path))
+        if path.name == "log.md"
+        for finding in log_heading_findings(path)
+    ]
+    for finding in log_findings:
+        click.echo(f"WARNING [{finding.code}] {finding.message}", err=True)
 
     if diff:
         for r in changed:
@@ -629,6 +664,8 @@ def lint(
         if changed:
             for r in changed:
                 _echo(ctx, f"Would lint: {r.path}")
+            ctx.exit(1)
+        if log_findings:
             ctx.exit(1)
         _echo(ctx, "All files are properly linted.")
         ctx.exit(0)

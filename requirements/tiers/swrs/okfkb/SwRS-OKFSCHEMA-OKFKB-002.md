@@ -7,7 +7,8 @@ description: The okfkb layer scaffolds knowledge bases with type-aligned tier
   folders and installs their supporting guidance.
 project: okf-schema
 scope: okfkb
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -67,3 +68,12 @@ overwriting existing authored files.
 - Method: automated scaffold and installation tests in temporary directories.
 - Criteria: a fresh bundle validates, and installation preserves pre-existing
   file bytes.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFKB-001](../../strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md): Maintain trustworthy engineering knowledge
+<!-- okf:links:end -->

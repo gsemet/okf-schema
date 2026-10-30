@@ -2,7 +2,7 @@
 
 This reference documents all validation codes returned by okf-schema's validation commands (`validate` and `validate-md`).
 
-## Error Codes (E0–E10)
+## Error Codes (E0–E11)
 
 Errors represent conformance violations that must be fixed before the validation passes.
 
@@ -243,11 +243,35 @@ ordinary JSON Schema validation.
 - Rename duplicate Markdown basenames or use a different relationship value.
 
 Enable the check with `okf-schema validate --check-links` or
-`okfreq validate --check-links`.
+`okfreq validate --check-links`. A `link-projection` key in the annotation must be
+a non-empty string on a `filename-stem`, `bundle-relative` or
+`bundle-relative-stem` resolution.
 
 ---
 
-## Warning Codes (W0–W17)
+### E11: Malformed Projection Annotation
+
+**Severity**: Error (`okf-schema validate`; `okfreq validate` reports the same
+problems as errors)
+
+**Description**: A schema declares a projection that `okf-schema lint` cannot
+apply: a `link-projection` label that is empty, not a string, or set on a
+resolution that leaves the bundle (`document-relative`, `project-relative`); or
+an `x-okf-status-projection` that is not a mapping, maps a value to something
+other than `draft`, `stable` or `deprecated`, or misses a value of the property
+`enum`.
+
+```text
+Schema 'note': parents: x-okf-link link-projection needs a resolution inside the bundle (bundle-relative, bundle-relative-stem, filename-stem), not project-relative
+Schema 'note': state: x-okf-status-projection has no OKF status for gone
+```
+
+**How to Fix**: Remove the label from fields that point outside the bundle, and
+map every lifecycle value to an OKF status.
+
+---
+
+## Warning Codes (W0–W18)
 
 Warnings indicate best-practice violations or missing metadata. Validation passes with warnings unless `--strict` mode is enabled.
 
@@ -354,22 +378,28 @@ Overview of this category...
 
 **Severity**: Warning (OKF bundle validation only)
 
-**Description**: A `log.md` file has a level-2 heading that is not in ISO 8601 date format (YYYY-MM-DD).
+**Description**: A `log.md` file has a level-2 heading that is not exactly a
+valid ISO 8601 date (`YYYY-MM-DD`), for example a date followed by a topic.
 
 **Example**:
 ```markdown
 ## July 6, 2024      # Wrong format
+## 2024-07-06 (import)   # Wrong: topic in the heading
 
 - Added new concept
 ```
 
 **How to Fix**:
-Use ISO 8601 format for all `log.md` headings:
+Use ISO 8601 format for all `log.md` headings and put a topic in a sub-heading:
 ```markdown
 ## 2024-07-06
 
+### Import
+
 - Added new concept
 ```
+
+`okf-schema lint --check` and `okfreq lint --check` fail on `W5`.
 
 ---
 
@@ -697,6 +727,19 @@ Schema (`type: object`, `properties`, ...).
 
 W17 fails validation only in `--strict` mode. `okfreq validate`, `status` and
 `report` list it but never count it as an error.
+
+---
+
+### W18: log.md Dates Repeated or Out of Order
+
+**Severity**: Warning (OKF bundle validation only)
+
+**Description**: OKF section 9 lists log entries newest first. A date heading
+repeats an earlier date or is newer than the heading above it.
+
+**How to Fix**: Keep one `## YYYY-MM-DD` heading per date, newest first, and
+append new entries to the existing section of their date.
+`okf-schema lint --check` and `okfreq lint --check` fail on `W18`.
 
 ---
 

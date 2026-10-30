@@ -7,7 +7,8 @@ description: When Rust export is requested, the service SHALL return the
   selected row as a newline-terminated CSV record.
 project: OKFREQXMP
 scope: Core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -46,3 +47,12 @@ When Rust export is requested, the service SHALL return the selected row as a ne
 
 - Method: test
 - Criteria: The Rust test compares exact output for populated and empty rows.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-CORE-001](../strs/StRS-CORE-001.md): Export a report
+<!-- okf:links:end -->

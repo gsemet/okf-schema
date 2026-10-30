@@ -60,7 +60,11 @@ Type-specific required fields:
 Authors and agents may add `derived_from` using canonical bundle-relative,
 extensionless paths. `okfkb update` computes the reciprocal `derives_to` field
 under `# knowledge graph fields generated automatically — do not edit manually`.
-Never hand-edit `derives_to`.
+Never hand-edit `derives_to`. Because `Base.schema.yaml` labels both fields with
+a `link-projection`, `okfkb update` also writes them as Markdown links in a
+generated `### Links` section at the end of the body, between
+`<!-- okf:links:start -->` and `<!-- okf:links:end -->`, so any OKF consumer sees
+the edges. Never hand-edit that section; it is not authored content.
 
 - **Finding**: also `generated.at`, `confidence` (`low|medium|high|confirmed`), and `context`
   (what you believed and the scope you actually tested).
@@ -69,6 +73,7 @@ Never hand-edit `derives_to`.
 ## 3. Finding immutability & contradictions
 
 - A Finding's **body and claim are frozen** once written. Never reword or delete.
+  The generated Links section is not part of the authored body.
 - To correct a Finding, write a NEW Finding with `contradicts: [<old-id>]` or
   `supersedes: [<old-id>]`.
 - The only permitted edits to an existing Finding are the lifecycle fields
@@ -100,5 +105,7 @@ Pre-commit checklist:
 - [ ] No Finding body was reworded or deleted.
 - [ ] All three commands above pass (also covered by `just preflight`).
 
-Add a dated entry to `knowledge/log.md` for significant changes. Use plain
-ISO-8601 date headings; avoid parenthetical annotations (they trigger warnings).
+Add a dated entry to `knowledge/log.md` for significant changes. Each date heading
+is exactly `## YYYY-MM-DD`, newest first, one per date; put a topic in a
+`### Topic` sub-heading. Anything else triggers `W5` or `W18`, and
+`okf-schema lint --check` fails on it.

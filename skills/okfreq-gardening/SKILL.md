@@ -203,7 +203,7 @@ regenerate the log or invent entries for a no-op pass.
 Treat `draft`, `proposed`, `approved`, `deprecated`, and `superseded` as distinct.
 An approved requirement needs configured verification information and successful
 structural validation; a marker alone is insufficient. It also records its
-owner's agreement (`approved_by`, `approved_on`) on a tier and scope whose
+owner's agreement (`approved_by`, `approved_at`) on a tier and scope whose
 `approval_lock` is true; report a gap, never fill these fields yourself during an
 audit. Implemented drafts are reported as candidates for `proposed`; the change
 itself follows the user's decision. Lifecycle changes are

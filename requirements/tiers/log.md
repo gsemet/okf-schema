@@ -1,5 +1,30 @@
 # Update Log
 
+## 2026-10-30
+
+### Native OKF projection
+
+- Added [SwRS-OKFSCHEMA-CORE-009](swrs/core/SwRS-OKFSCHEMA-CORE-009.md): schemas
+  declare how metadata is projected for plain OKF consumers. `x-okf-link` accepts a
+  `link-projection` label (only on a resolution inside the bundle) and a property may
+  carry an `x-okf-status-projection` mapping; `okf-schema lint` and `okfkb update`
+  generate a delimited `### Links` body section and `status` from them, `validate`
+  reports malformed annotations as `E11`, and `log.md` headings must be exactly
+  `## YYYY-MM-DD`, newest first (`W5`, new `W18`; `lint --check` fails on them).
+- Added [SwRS-OKFSCHEMA-OKFREQ-014](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-014.md): okfreq
+  bundles stay native OKF bundles. The lifecycle key is `req_lifecycle`, mapped onto
+  OKF `status`; `approved_on` is replaced by `approved_at` (ISO 8601 datetime with an
+  offset), projected onto a `verified` event by a `human:` actor; relation fields
+  become Links sections; `status` and `verified` are new generated fields; `validate`
+  also runs the base OKF checks on the tiers folder. No backward compatibility is kept.
+- Updated [SwRS-OKFSCHEMA-OKFREQ-013](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-013.md) for
+  `req_lifecycle` and `approved_at`, and
+  [SwRS-OKFSCHEMA-OKFKB-006](swrs/okfkb/SwRS-OKFSCHEMA-OKFKB-006.md) for the projected
+  derivation links.
+- This bundle renamed `lifecycle` to `req_lifecycle`, annotated its base schema and
+  regenerated `status` and the Links sections of all requirements.
+- Verification: `just preflight`.
+
 ## 2026-10-28
 
 - Added [SwRS-OKFSCHEMA-OKFREQ-013](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-013.md):

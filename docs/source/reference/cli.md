@@ -181,11 +181,13 @@ locations or test execution.
 
 ## `okf-schema lint`
 
-Lint frontmatter: flatten nested lists, convert block-style to inline, and
-auto-update `links` and `backlinks` fields from markdown body content.
+Lint frontmatter: flatten nested lists, convert block-style to inline,
+auto-update `links` and `backlinks` fields from markdown body content, and
+maintain the projections the schemas declare for plain OKF consumers.
 
 ```bash
-okf-schema lint --path BUNDLE [--check] [--diff] [--links|--no-links]
+okf-schema lint --path BUNDLE [--check] [--diff] [--links|--no-links] \
+    [--link-projection|--no-link-projection]
 ```
 
 | Option | Description |
@@ -194,6 +196,15 @@ okf-schema lint --path BUNDLE [--check] [--diff] [--links|--no-links]
 | `--diff` | Show unified diff without modifying. |
 | `--links` | Update `links` and `backlinks` from markdown body (default). |
 | `--no-links` | Skip updating `links` and `backlinks`. |
+| `--link-projection` | Maintain the generated `### Links` body section of every field whose `x-okf-link` carries a `link-projection` label, and `status` from an `x-okf-status-projection` mapping (default). |
+| `--no-link-projection` | Leave the generated section and `status` untouched. |
+
+The `--links` body scan ignores the generated section, so `links`/`backlinks`
+reflect authored links only. Every `log.md` heading must be exactly
+`## YYYY-MM-DD`, newest first, one per date: lint prints `W5`/`W18` warnings and
+`--check` exits 1 on them, as it does on files that would change. An incomplete or
+repeated generated section fails with an error and nothing is written. See
+{doc}`../how-to/write-custom-schema`.
 
 ---
 

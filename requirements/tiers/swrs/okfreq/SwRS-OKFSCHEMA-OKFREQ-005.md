@@ -8,7 +8,8 @@ description: When a requirement bundle is validated, okfreq SHALL check schemas,
   keeping prose findings advisory.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -91,3 +92,12 @@ contract belongs to `SwRS-OKFSCHEMA-CORE-007`, not to a separate requirements im
 - Method: unit and CLI tests for schemas, hierarchy failures, and prose warnings.
 - Criteria: structural failures exit unsuccessfully, valid graphs succeed, and
   prose-only findings remain warnings.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

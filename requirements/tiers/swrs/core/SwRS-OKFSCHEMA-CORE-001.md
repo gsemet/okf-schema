@@ -7,7 +7,8 @@ description: The generic okf-schema layer validates and manages ordinary OKF
   bundles.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -64,3 +65,12 @@ report actionable results without silently changing authored content.
 - Method: automated CLI and API tests using valid and invalid bundle fixtures.
 - Criteria: results and exit status are deterministic, and validation leaves
   fixture content unchanged.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-CORE-001](../../strs/core/StRS-OKFSCHEMA-CORE-001.md): Validate OKF bundle structures
+<!-- okf:links:end -->

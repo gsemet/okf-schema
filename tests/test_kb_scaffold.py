@@ -77,19 +77,19 @@ def test_scaffold_kb_declares_shared_file_link_metadata(tmp_path: Path) -> None:
     target = tmp_path / "knowledge"
     scaffold_kb(target)
     schema = yaml.safe_load((target / "_schema" / "Base.schema.yaml").read_text(encoding="utf-8"))
-    for field, resolution in {
-        "derived_from": "bundle-relative-stem",
-        "derives_to": "bundle-relative-stem",
-        "links": "bundle-relative",
-        "backlinks": "bundle-relative",
+    for field, (resolution, label) in {
+        "derived_from": ("bundle-relative-stem", "Derived from"),
+        "derives_to": ("bundle-relative-stem", "Derives to"),
+        "links": ("bundle-relative", None),
+        "backlinks": ("bundle-relative", None),
     }.items():
         property_schema = schema["properties"][field]
         assert property_schema["type"] == "array"
         assert property_schema["items"]["type"] == "string"
-        assert property_schema["items"]["x-okf-link"] == {
-            "resolution": resolution,
-            "syntax": "plain",
-        }
+        expected = {"resolution": resolution, "syntax": "plain"}
+        if label is not None:
+            expected["link-projection"] = label
+        assert property_schema["items"]["x-okf-link"] == expected
 
 
 def test_scaffold_kb_creates_layout_creates_index_md(tmp_path: Path) -> None:

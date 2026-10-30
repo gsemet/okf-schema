@@ -30,6 +30,7 @@ capabilities to real usage and executable demonstrations.
 | Schema files that yield no schema | `SwRS-OKFSCHEMA-CORE-008`: `load_schema_database_with_diagnostics` reports empty files as `I1` and unparsable or non-mapping files as `W17` for all schema formats; covered by `tests/test_validator.py`, `tests/test_api.py`, `tests/test_cli_core.py` and `tests/test_okfreq.py`. |
 | OKF 0.2 lifecycle staleness (W11, W16) | SwRS-OKFSCHEMA-CORE-006 scenarios; `tests/test_okf2_compliance.py` covers bare dates, offset datetimes, YAML timestamp objects, unparseable values and the no-offset refusal; `tests/test_api.py` covers `stale` in `list`/`show`. |
 | Standalone agent distribution | `okfreq install-skills` ships the operations guide, setup skill and gardening skill; wheel tests install resources without the source checkout. |
+| Native OKF projection (`status`, `verified`, Links sections, log headings) | `SwRS-OKFSCHEMA-CORE-009` and `SwRS-OKFSCHEMA-OKFREQ-014`. This bundle annotates its base schema with `x-okf-status-projection` and `link-projection`, so every requirement carries `status` and a generated Links section; it approves nothing, so no live `verified` event exists and the showcase generates one for a disposable StRS. `tests/test_projection.py` covers the generic generator, `E11`, `W5`/`W18` and the okfkb derivation links; `tests/test_okfreq_projection.py` covers okfreq commands and checks. |
 
 ## Try the concrete scenarios
 

@@ -8,7 +8,8 @@ description: When a confirmed archive or supersede operation is requested,
   and SHALL reject unconfirmed or unknown targets.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -66,3 +67,12 @@ When a confirmed archive or supersede operation is requested, okfreq SHALL apply
 - Method: CLI lifecycle tests comparing files before and after each operation.
 - Criteria: confirmed valid transitions preserve content and identity, while all
   rejected transitions perform no writes.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

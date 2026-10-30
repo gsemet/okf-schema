@@ -1108,14 +1108,14 @@ def test_okfreq_cli_accepts_link_check_options(tmp_path: Path) -> None:
     (root / "tiers" / "strs" / "StRS-default-001.md").write_text(
         "---\ntype: StRS\nid: StRS-default-001\nuuid: "
         "00000000-0000-4000-8000-000000000001\ntitle: Parent\ndescription: Parent\n"
-        "project: demo\nscope: default\nlifecycle: draft\norigin: native\ntier: StRS\n"
+        "project: demo\nscope: default\nreq_lifecycle: draft\norigin: native\ntier: StRS\n"
         "user_need: Need\n---\n\nThe parent SHALL exist.\n",
         encoding="utf-8",
     )
     (root / "tiers" / "swrs" / "SwRS-default-001.md").write_text(
         "---\ntype: SwRS\nid: SwRS-default-001\nuuid: "
         "00000000-0000-4000-8000-000000000002\ntitle: Child\ndescription: Child\n"
-        "project: demo\nscope: default\nlifecycle: draft\norigin: native\ntier: SwRS\n"
+        "project: demo\nscope: default\nreq_lifecycle: draft\norigin: native\ntier: SwRS\n"
         "derives_from: [StRS-default-001]\nannotation_exemption: false\n"
         "implemented_in_files: [src/missing.py]\ntested_in_files: []\n---\n"
         "\nThe child SHALL exist.\n",
@@ -1159,6 +1159,7 @@ def test_generated_okfreq_schemas_and_link_check_preserve_requirement_semantics(
         "id_marker": "id",
         "tooltip_shows_fields": ["description"],
         "preview_shows_fields": ["description"],
+        "link-projection": "Derives from",
     }
     assert swrs["implemented_in_files"]["items"]["x-okf-link"] == {
         "resolution": "project-relative",
@@ -1179,7 +1180,7 @@ def test_generated_okfreq_schemas_and_link_check_preserve_requirement_semantics(
     (root / "tiers" / "strs" / "StRS-default-001.md").write_text(
         "---\ntype: StRS\nid: StRS-default-001\nuuid: "
         "00000000-0000-4000-8000-000000000001\ntitle: Parent\ndescription: Parent\n"
-        "project: demo\nscope: default\nlifecycle: draft\norigin: native\ntier: StRS\n"
+        "project: demo\nscope: default\nreq_lifecycle: draft\norigin: native\ntier: StRS\n"
         "user_need: Need\nexternal_id: EXT-1\n---\n\nThe parent SHALL exist.\n",
         encoding="utf-8",
     )
@@ -1187,7 +1188,7 @@ def test_generated_okfreq_schemas_and_link_check_preserve_requirement_semantics(
     swrs.write_text(
         "---\ntype: SwRS\nid: SwRS-default-001\nuuid: "
         "00000000-0000-4000-8000-000000000002\ntitle: Child\ndescription: Child\n"
-        "project: demo\nscope: default\nlifecycle: draft\norigin: native\ntier: SwRS\n"
+        "project: demo\nscope: default\nreq_lifecycle: draft\norigin: native\ntier: SwRS\n"
         "derives_from: [StRS-default-001]\nannotation_exemption: false\n"
         "implemented_in_files: [src/feature.py]\ntested_in_files: [tests/test_feature.py]\n"
         "external_id: EXT-2\n---\n\nThe child SHALL exist.\n",

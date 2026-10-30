@@ -9,7 +9,8 @@ description: When a schema file in a schema database is empty, cannot be parsed
   W17 otherwise.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -69,3 +70,12 @@ When a schema file in a schema database is empty, cannot be parsed or is not a m
 - Method: validator, API and CLI regression tests over the three schema formats.
 - Criteria: each format yields `I1` or `W17` with the file name, `--strict` exits 0 for `I1` alone
   and 1 for `W17`, and the usable schemas of the same directory are still loaded.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-CORE-001](../../strs/core/StRS-OKFSCHEMA-CORE-001.md): Validate OKF bundle structures
+<!-- okf:links:end -->

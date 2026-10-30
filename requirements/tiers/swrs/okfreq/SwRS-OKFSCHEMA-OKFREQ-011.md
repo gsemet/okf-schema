@@ -8,7 +8,8 @@ description: When a confirmed retire operation targets an unreferenced draft
   and SHALL NOT allocate that number again.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -73,3 +74,12 @@ When a confirmed retire operation targets an unreferenced draft requirement, okf
   validation of a retired ID.
 - Criteria: a retired or deleted number is never allocated again, and every refused
   retirement leaves requirements, configuration and log unchanged.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

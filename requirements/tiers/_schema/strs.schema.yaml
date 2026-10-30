@@ -28,7 +28,8 @@ examples:
     description: The tool SHALL validate requirement frontmatter.
     project: okf-schema
     scope: core
-    lifecycle: draft
+    req_lifecycle: draft
+    status: draft
     origin: native
     tier: StRS
     user_need: Teams need confidence that requirement metadata is valid.

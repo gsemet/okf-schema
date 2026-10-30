@@ -9,7 +9,8 @@ description: When an OKFKB bundle is maintained or validated, the CLI SHALL
   fields.
 project: okf-schema
 scope: okfkb
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -23,6 +24,7 @@ implemented_in_files:
 - src/okf_schema/validator.py
 tested_in_files:
 - tests/test_kb_derivations.py
+- tests/test_projection.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
@@ -44,6 +46,14 @@ When an OKFKB bundle is maintained or validated, the CLI SHALL deterministically
 - THEN every document contains the deterministic `derives_to` reflection of
   those authored edges without changing `derived_from`
 
+### Scenario: Project derivations as Markdown links
+
+- GIVEN the shipped `Base.schema.yaml`, whose `derived_from` and `derives_to`
+  carry the `link-projection` labels `Derived from` and `Derives to`
+- WHEN `okfkb update` runs
+- THEN each document with derivations ends with a generated Links section that a
+  plain OKF consumer reads as edges; the authored body above it is unchanged
+
 ### Scenario: Detect stale or invalid computed graph data
 
 - GIVEN an OKFKB document with a missing or stale `derives_to` value, or a
@@ -61,3 +71,12 @@ When an OKFKB bundle is maintained or validated, the CLI SHALL deterministically
 - Criteria: reverse edges and ownership comments are deterministic, invalid
   paths are reported, validation is read-only, and derivation traversal reaches
   the expected downstream documents.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFKB-001](../../strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md): Maintain trustworthy engineering knowledge
+<!-- okf:links:end -->

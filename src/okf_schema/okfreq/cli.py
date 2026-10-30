@@ -32,6 +32,7 @@ from okf_schema.okfreq.core import (
     load_requirements,
     marker_scan,
     merge_config,
+    project_requirements,
     retire_requirement,
     supersede_requirement,
     update_coverage,
@@ -299,11 +300,14 @@ def _run_validation(
     prose: bool = False,
     check_links: bool = False,
     project_root: str | None = None,
-) -> None:
+) -> list[str]:
     """Run validation for commands that only need an exit status.
 
     Warnings are always printed because link-check warnings describe checks
     that were skipped, independently of advisory prose warnings.
+
+    Returns:
+        The warnings and informational findings.
     """
     root = _root(path)
     findings = validate_requirements(
@@ -312,16 +316,13 @@ def _run_validation(
         check_links=check_links,
         project_root=Path(project_root) if project_root else None,
     )
-    for finding in findings:
-        if finding.startswith("W") or is_info_finding(finding):
-            click.echo(finding)
-    errors = [
-        finding
-        for finding in findings
-        if not finding.startswith("W") and not is_info_finding(finding)
-    ]
+    notes = [finding for finding in findings if finding.startswith("W") or is_info_finding(finding)]
+    for finding in notes:
+        click.echo(finding)
+    errors = [finding for finding in findings if finding not in notes]
     if errors:
         raise click.ClickException("\n".join(errors))
+    return notes
 
 
 @okfreq.command()
@@ -346,7 +347,7 @@ def lint(
     check: bool,
     show_diff: bool,
 ) -> None:
-    """Validate requirements and refresh generated navigation indexes.
+    """Validate requirements and refresh generated navigation and OKF projections.
 
     .. versionchanged:: 0.13.0
         Refresh all requirement-directory indexes, preserving authored content.
@@ -354,6 +355,11 @@ def lint(
 
     .. versionchanged:: 0.13.0
         Link-check warnings are emitted even when ``--prose`` is not enabled.
+
+    .. versionchanged:: 0.17.0
+        Refresh the OKF projection of each requirement (Links section, ``status``,
+        ``verified``); ``--check`` also fails on a stale projection and on a
+        ``log.md`` heading that is not ``## YYYY-MM-DD``, newest first (W5, W18).
 
     Args:
         path:
@@ -379,10 +385,16 @@ def lint(
 
     if check and show_diff:
         raise click.UsageError("Use either --check or --diff, not both")
-    _run_validation(path, prose=prose, check_links=check_links, project_root=project_root)
+    notes = _run_validation(path, prose=prose, check_links=check_links, project_root=project_root)
     changed = lint_indexes(_root(path), check=check, show_diff=show_diff)
     click.echo(f"{len(changed)} indexes {'would change' if check or show_diff else 'updated'}")
-    if check and changed:
+    projected = project_requirements(_root(path), check=check, show_diff=show_diff)
+    click.echo(
+        f"{len(projected)} requirement OKF projections "
+        f"{'would change' if check or show_diff else 'updated'}"
+    )
+    log_findings = [note for note in notes if note.startswith(("W5 ", "W18 "))]
+    if check and (changed or projected or log_findings):
         raise click.exceptions.Exit(1)
 
 
@@ -786,12 +798,13 @@ def _change_lifecycle(
 ) -> None:
     """Change one requirement's lifecycle after explicit confirmation."""
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-007
-    from okf_schema.okfreq.core import _atomic_write, _render_frontmatter
+    from okf_schema.okfreq.core import _atomic_write, _projected, _render_frontmatter
 
     requirements = load_requirements(root)
     if target not in requirements:
         raise click.ClickException(f"unknown requirement: {target}")
     file, _, text = requirements[target]
     field = lifecycle_field(load_config(root))
-    _atomic_write(file, _render_frontmatter(text, {field: lifecycle, **(extra or {})}))
+    rendered = _render_frontmatter(text, {field: lifecycle, **(extra or {})})
+    _atomic_write(file, _projected(root, file, rendered))
     click.echo(f"Updated {target}")

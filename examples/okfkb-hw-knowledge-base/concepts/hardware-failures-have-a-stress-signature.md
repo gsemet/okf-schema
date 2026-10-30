@@ -20,3 +20,14 @@ generated:
 Hardware failures that recur only during stress testing should be treated as a
 bounded diagnostic signature. Preserve the production-log conditions before
 changing hardware, firmware, or test parameters.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derived from:
+  - [findings/2026.07.04-21.35-hw-failure-investigation](../findings/2026.07.04-21.35-hw-failure-investigation.md): HW Failure investigation
+- Derives to:
+  - [playbooks/investigate-recurring-hardware-failures](../playbooks/investigate-recurring-hardware-failures.md): Investigate recurring hardware failures
+<!-- okf:links:end -->

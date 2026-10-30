@@ -100,7 +100,8 @@ Requirement documents live only under `tiers/`.
   `superseded_by` list (required, non-empty, on every `superseded` requirement and
   only there). Link requirements that are merely connected with `relates_to`.
   Never hand-edit generated `derived_by`, `supersedes`, `implemented_in_files`,
-  `tested_in_files` or `default_owner_email` fields.
+  `tested_in_files`, `default_owner_email`, `status` or `verified` fields, nor the
+  Links section between `<!-- okf:links:start -->` and `<!-- okf:links:end -->`.
 - For leaf software requirements, add `@implements_req <ID>` markers near the
   implementation and `@tests_req <ID>` markers near corresponding tests. Do not
   use source markers on stakeholder or other non-leaf levels. A real direct
@@ -115,6 +116,11 @@ Requirement documents live only under `tiers/`.
 
 ## Lifecycle and approval
 
+- The lifecycle is the `req_lifecycle` field (`lifecycle.field` in `config.yml`).
+  OKF consumers read the generated `status` instead (`draft`, `stable` or
+  `deprecated`), mapped by the `x-okf-status-projection` annotation of the base
+  schema. Never write `status` yourself: change the lifecycle, then run
+  `okfreq update-coverage`.
 - `draft`: a proposal, not implemented yet. Requirements delivered with their
   code start `proposed` (`okfreq new ... --lifecycle proposed`); a draft on the
   default branch is a gap to report.
@@ -129,12 +135,16 @@ Requirement documents live only under `tiers/`.
   override per tier. Never edit owners or locks without the owner's request.
 - When the task asks you to change an approved requirement, the owner usually
   agreed during planning, out of your sight: proceed as if they agreed. Set
-  `approved_by` to the owner's email and `approved_on` to today's date, list the
+  `approved_by` to the owner's email and `approved_at` to the current date and
+  time with its UTC offset (ISO 8601, for example `2026-10-28T09:00:00+01:00`), list the
   approved requirements you touched in the pull or merge request, and request the
   owner's review of those files. If nothing in the task asks for the change,
   restore the previous content and report the conflict.
+- `okfreq update-coverage` turns the approval into the generated OKF `verified`
+  event (`by: human:<owner email>`, `at: <approved_at>`), so OKF consumers read the
+  requirement as human-reviewed.
 - `okfreq validate` fails on an `approved` requirement without `approved_by` and
-  `approved_on`, or whose tier and scope are not lockable. Follow its message;
+  `approved_at`, or whose tier and scope are not lockable. Follow its message;
   never silence it by downgrading the lifecycle without the owner's agreement.
 
 ## Traceability markers
@@ -171,6 +181,22 @@ including advisory `id_marker`, marker prefixes, tooltip/preview field hints,
 and source/test line-number hints. These annotations guide editors and other
 consumers; they do not execute tests or prove coverage. Existing schemas are
 preserved and are not migrated by `okfreq init`.
+
+## Native OKF bundle
+
+The `tiers/` folder is a plain OKF v0.2 bundle: a consumer that knows only OKF
+reads lifecycle, trust and relations from fields okfreq generates as the schemas
+declare.
+
+- A relation field whose `x-okf-link` carries a `link-projection` label (for
+  example `link-projection: Derives from`) becomes a group of Markdown links in the
+  generated `### Links` section at the end of the body. Removing the label removes
+  the group; renaming it renames the group. Links that leave the bundle
+  (`project-relative`) cannot be projected.
+- `okfreq validate` also runs the base OKF checks on `tiers/` and reports a
+  `status` that disagrees with the lifecycle and a malformed projection annotation.
+- `okfreq lint --check` and `okfreq update-coverage --check` fail on a stale Links
+  section, `status` or `verified`.
 
 ## Tier-specific authoring formats
 
@@ -236,7 +262,9 @@ preserved and are not migrated by `okfreq init`.
 - Agents append a dated entry to `<bundle>/tiers/log.md` after substantive
   requirement changes: record affected IDs or relative links, what changed,
   why it changed, decisions or open questions and actual verification results.
-  Put newest dates first and append to an existing date section when appropriate.
+  Each date heading is exactly `## YYYY-MM-DD`, newest first, one per date: append
+  to an existing date section, and put a topic in a `### Topic` sub-heading, never
+  in the date heading. `okfreq lint --check` fails on any other heading.
 - The canonical filename is `log.md`, not `logs.md`. It is authored history:
   lint must never regenerate or overwrite it. Do not add a history entry solely
   because identical generated artifacts were refreshed, or invent approvals or

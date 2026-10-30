@@ -18,6 +18,7 @@ from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.file_links import inspect_file_links
 from okf_schema.okfreq.cli import okfreq
 from okf_schema.okfreq.core import load_requirements, report
+from okf_schema.projection import LINKS_START, strip_links_section
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-008
 
@@ -215,11 +216,13 @@ def run_showcase(project: Path) -> dict[str, str]:
     assert any(item["id"] == swrs for item in report(root)["marker_coverage"]["exemptions"])
     command("archive", swrs, "--path", str(root), expected=1)
     command("archive", swrs, "--path", str(root), "--yes")
-    assert load_requirements(root)[swrs][1]["lifecycle"] == "deprecated"
+    assert load_requirements(root)[swrs][1]["req_lifecycle"] == "deprecated"
+    assert load_requirements(root)[swrs][1]["status"] == "deprecated"
     command("supersede", swrs, replacement, "--path", str(root), "--yes")
     after = load_requirements(root)[swrs]
     assert after[1]["superseded_by"] == [replacement]
-    assert extract_frontmatter(after[2])[1] == body_before
+    assert strip_links_section(extract_frontmatter(after[2])[1]) == strip_links_section(body_before)
+    assert f"- Superseded by:\n  - [{replacement}]" in after[2]
     assert after[1]["uuid"] == records[swrs][1]["uuid"]
     outcomes["exemptions_and_lifecycle"] = (
         "explicit exemption, confirmation, supersession and stable UUID/body"
@@ -255,11 +258,11 @@ def run_showcase(project: Path) -> dict[str, str]:
     assert any(record["supersedes"] == [swrs] for record in report(root)["requirements"])
     command("supersede", replacement, swrs, "--path", str(root), "--yes", expected=1)
     unreplaced = records[swrs][0].parent / f"{second_replacement}.md"
-    edit(unreplaced, {"lifecycle": "superseded"})
+    edit(unreplaced, {"req_lifecycle": "superseded"})
     assert "requires a non-empty superseded_by" in command(
         "validate", str(root), "--json", expected=1
     )
-    edit(unreplaced, {"lifecycle": "draft"})
+    edit(unreplaced, {"req_lifecycle": "draft"})
     command("validate", str(root))
     outcomes["supersession_and_relations"] = (
         "several replacements, generated supersedes, relates_to; cycles and gaps refused"
@@ -271,19 +274,35 @@ def run_showcase(project: Path) -> dict[str, str]:
     command("update-coverage", str(root))
     owned = records[parent][0]
     assert load_requirements(root)[parent][1]["default_owner_email"] == "product-owner@example.org"
-    edit(owned, {"lifecycle": "approved"})
+    edit(owned, {"req_lifecycle": "approved"})
     refusal = command("validate", str(root), "--json", expected=1)
-    assert "requires approved_by and approved_on" in refusal
+    assert "requires approved_by and approved_at" in refusal
     assert "request the owner's review" in refusal
-    edit(owned, {"approved_by": "product-owner@example.org", "approved_on": "2026-10-28"})
+    assert "status draft does not match req_lifecycle approved" in refusal
+    edit(
+        owned,
+        {"approved_by": "product-owner@example.org", "approved_at": "2026-10-28T09:00:00+01:00"},
+    )
+    command("update-coverage", str(root))
     command("validate", str(root))
+    approved = load_requirements(root)[parent]
+    assert approved[1]["status"] == "stable"
+    assert approved[1]["verified"] == {
+        "by": "human:product-owner@example.org",
+        "at": "2026-10-28T09:00:00+01:00",
+    }
+    assert LINKS_START in approved[2] and f"- Derived by:\n  - [{swrs}]" in approved[2]
     unlockable = records[swrs][0].parent / f"{replacement}.md"
-    edit(unlockable, {"lifecycle": "approved", "approved_by": "a@example.org"})
+    edit(unlockable, {"req_lifecycle": "approved", "approved_by": "a@example.org"})
     assert "approval_lock is false" in command("validate", str(root), "--json", expected=1)
-    edit(unlockable, {"lifecycle": "proposed", "approved_by": None})
+    edit(unlockable, {"req_lifecycle": "proposed", "approved_by": None})
+    command("update-coverage", str(root))
     command("validate", str(root))
     outcomes["ownership_and_approval"] = (
         "owner generated from the tier; approval needs the owner's recorded agreement and a lock"
+    )
+    outcomes["okf_projection"] = (
+        "status, human verified event and Links sections generated for plain OKF consumers"
     )
 
     broken = root / "tiers/strs/broken.md"

@@ -8,7 +8,8 @@ description: When requirements guidance is installed, the okfreq distribution
   authoring, evidence, reports, navigation and recovery.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -93,3 +94,16 @@ evidence, reports, navigation and recovery.
 - Criteria: all packaged references resolve without repository docs/source,
   reports validate against their JSON Schema, invalid documents fail, and
   lifecycle demonstrations preserve stable identity and bodies.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+- Depends on:
+  - [SwRS-OKFSCHEMA-OKFREQ-002](SwRS-OKFSCHEMA-OKFREQ-002.md): Author and validate requirements
+  - [SwRS-OKFSCHEMA-OKFREQ-004](SwRS-OKFSCHEMA-OKFREQ-004.md): Report requirement health
+  - [SwRS-OKFSCHEMA-OKFREQ-005](SwRS-OKFSCHEMA-OKFREQ-005.md): Validate requirement bundles
+<!-- okf:links:end -->

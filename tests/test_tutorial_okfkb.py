@@ -12,6 +12,7 @@ from click.testing import CliRunner
 from okf_schema._internal.yaml import extract_frontmatter, parse_yaml
 from okf_schema.cli import cli
 from okf_schema.okfkb.cli import kb
+from okf_schema.projection import strip_links_section
 
 # @tests_req SwRS-OKFSCHEMA-OKFKB-003
 # @tests_req SwRS-OKFSCHEMA-OKFKB-004
@@ -59,6 +60,8 @@ def test_knowledge_tutorial_preserves_evidence_and_builds_a_navigable_synthesis(
                 if path.name == "index.md":
                     continue
                 _, body = extract_frontmatter(path.read_text(encoding="utf-8"))
+                # The generated Links section mirrors derives_to; the authored body is frozen.
+                body = strip_links_section(body).rstrip("\n")
                 if path in frozen:
                     assert body == frozen[path]
                 else:

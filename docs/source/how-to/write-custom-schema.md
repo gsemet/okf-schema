@@ -228,6 +228,67 @@ project-relative links. See the
 [requirements frontmatter example](../reference/okfreq-frontmatter.md)
 for the repository's StRS/SwRS contract and its link-enabled validation command.
 
+## Project metadata for plain OKF consumers
+
+A consumer that knows only the OKF specification reads relations from Markdown
+links in the body (section 6.1) and the lifecycle from `status` (section 5.4).
+When your bundle keeps relations as frontmatter IDs or uses its own lifecycle
+words, declare in the schema how they are projected; `okf-schema lint` and
+`okfkb update` then maintain the projection:
+
+```yaml
+properties:
+  state:
+    type: string
+    enum: [wip, done, gone]
+    x-okf-status-projection: {wip: draft, done: stable, gone: deprecated}
+  parents:
+    type: array
+    items:
+      type: string
+      x-okf-link: {resolution: filename-stem, syntax: plain, link-projection: Parents}
+```
+
+```bash
+okf-schema lint --path bundle
+okf-schema lint --path bundle --check   # exit 1 when a projection is stale
+```
+
+A document with `state: wip` and `parents: [root, missing]` becomes:
+
+```markdown
+---
+type: note
+state: wip
+status: draft
+parents: [root, missing]
+---
+
+# Child
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Parents:
+  - [root](root.md): Root note
+  - `missing`
+<!-- okf:links:end -->
+```
+
+- One group per annotated field, in schema order (an `allOf` base schema first),
+  one relative link per value followed by the target title. A value that does
+  not resolve stays as code, so no broken link is written.
+- Renaming a label renames its group; removing it removes the group, and a
+  section without groups is removed, on the next lint.
+- Only `filename-stem`, `bundle-relative` and `bundle-relative-stem` targets can be
+  projected; `okf-schema validate` reports `E11` for a label on another resolution
+  and for a status mapping that misses an `enum` value or maps to anything other
+  than `draft`, `stable` or `deprecated`.
+- `lint --links` skips the generated section, so `links`/`backlinks` keep listing
+  authored links only. `--no-link-projection` turns the projection off for one run.
+
 ## Check that your schema is loaded
 
 Validation tells you when a schema file yields no schema, so a new or broken file

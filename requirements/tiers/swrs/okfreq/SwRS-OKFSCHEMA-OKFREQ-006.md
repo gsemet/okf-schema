@@ -8,7 +8,8 @@ description: When configuration is imported or merged, okfreq SHALL preserve
   for review.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -65,3 +66,12 @@ When configuration is imported or merged, okfreq SHALL preserve existing conflic
   configuration inputs.
 - Criteria: compatible keys merge, conflicts are complete and deterministic, and
   existing values are never silently overwritten.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

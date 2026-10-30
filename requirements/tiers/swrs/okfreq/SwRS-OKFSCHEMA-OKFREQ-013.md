@@ -8,11 +8,12 @@ description: When requirements are validated or regenerated, okfreq SHALL read
   take the accepted lifecycle values from the base schema, generate
   default_owner_email from the tier and scope owner settings, and reject an
   approved requirement whose tier and scope do not allow approval or that lacks
-  approved_by and approved_on, with a message telling a coding agent to obtain
+  approved_by and approved_at, with a message telling a coding agent to obtain
   and record the owner's agreement.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -31,7 +32,7 @@ default_owner_email: gaetan@xeberon.net
 
 ### Normative behavior
 
-When requirements are validated or regenerated, okfreq SHALL read tiers (or the legacy levels key) and the lifecycle field from configuration, take the accepted lifecycle values from the base schema, generate default_owner_email from the tier and scope owner settings, and reject an approved requirement whose tier and scope do not allow approval or that lacks approved_by and approved_on, with a message telling a coding agent to obtain and record the owner's agreement.
+When requirements are validated or regenerated, okfreq SHALL read tiers (or the legacy levels key) and the lifecycle field from configuration, take the accepted lifecycle values from the base schema, generate default_owner_email from the tier and scope owner settings, and reject an approved requirement whose tier and scope do not allow approval or that lacks approved_by and approved_at, with a message telling a coding agent to obtain and record the owner's agreement.
 
 ### Scenario: Read the new and the legacy configuration names
 
@@ -54,10 +55,10 @@ When requirements are validated or regenerated, okfreq SHALL read tiers (or the 
 
 ### Scenario: Use a custom lifecycle field name
 
-- GIVEN `lifecycle.field: status` and a hand-written base schema whose property and
-  `required` entry are named `status` (`okfreq init` always generates `lifecycle`)
+- GIVEN `lifecycle.field: state` and a hand-written base schema whose property and
+  `required` entry are named `state` (`okfreq init` always generates `req_lifecycle`)
 - WHEN `okfreq validate`, `okfreq new`, `okfreq supersede` or `okfreq archive` runs
-- THEN each reads or writes `status`, and no `lifecycle` field is written
+- THEN each reads or writes `state`, and no `req_lifecycle` field is written
 
 ### Scenario: Take the lifecycle values from the base schema
 
@@ -80,14 +81,14 @@ When requirements are validated or regenerated, okfreq SHALL read tiers (or the 
 
 ### Scenario: Guard an approved requirement
 
-- GIVEN a requirement with `lifecycle: approved`
+- GIVEN a requirement with `req_lifecycle: approved`
 - WHEN `okfreq validate` or `okfreq lint` runs
 - THEN it fails when the resolved `approval_lock` is false, or when `approved_by` or
-  `approved_on` is missing; the message names the owner and tells a coding agent
+  `approved_at` is missing or is not an ISO 8601 datetime with a UTC offset; the message names the owner and tells a coding agent
   not to decide alone, to record the owner's agreement and to request the owner's
   review of the file, or else to restore the previous state
 - AND a `deprecated` or `superseded` requirement may keep its `approved_by` and
-  `approved_on` as history
+  `approved_at` as history
 
 ### Scenario: Reject malformed ownership settings
 
@@ -101,3 +102,12 @@ When requirements are validated or regenerated, okfreq SHALL read tiers (or the 
 - Method: test
 - Criteria: `tests/test_okfreq.py` ownership and lifecycle tests pass, and
   `okfreq validate --check-links` passes on this repository's own bundle.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

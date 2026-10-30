@@ -8,7 +8,8 @@ description: The okfreq capability SHALL enable teams to author, trace, and
   identity and authored intent.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: StRS
 derives_from: []
@@ -28,6 +29,7 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFREQ-011
 - SwRS-OKFSCHEMA-OKFREQ-012
 - SwRS-OKFSCHEMA-OKFREQ-013
+- SwRS-OKFSCHEMA-OKFREQ-014
 default_owner_email: gaetan@xeberon.net
 ---
 
@@ -56,3 +58,25 @@ visible before delivery decisions are made.
 - Lifecycle transitions remain explicit human decisions.
 - Consumers must be able to distinguish local requirement navigation, project source/test
   evidence, and external tracker IDs while preserving existing requirement identity and values.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derived by:
+  - [SwRS-OKFSCHEMA-OKFREQ-001](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-001.md): Provide requirements traceability operations
+  - [SwRS-OKFSCHEMA-OKFREQ-002](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-002.md): Author and validate requirements
+  - [SwRS-OKFSCHEMA-OKFREQ-003](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-003.md): Trace requirements to source and tests
+  - [SwRS-OKFSCHEMA-OKFREQ-004](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-004.md): Report requirement health
+  - [SwRS-OKFSCHEMA-OKFREQ-005](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-005.md): Validate requirement bundles
+  - [SwRS-OKFSCHEMA-OKFREQ-006](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-006.md): Merge requirement configuration safely
+  - [SwRS-OKFSCHEMA-OKFREQ-007](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-007.md): Manage requirement lifecycle explicitly
+  - [SwRS-OKFSCHEMA-OKFREQ-008](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-008.md): Ship usable standalone requirements guidance
+  - [SwRS-OKFSCHEMA-OKFREQ-009](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-009.md): Maintain generated requirement navigation
+  - [SwRS-OKFSCHEMA-OKFREQ-010](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-010.md): Set up a project's requirements baseline from one skill
+  - [SwRS-OKFSCHEMA-OKFREQ-011](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-011.md): Retire a draft requirement permanently
+  - [SwRS-OKFSCHEMA-OKFREQ-012](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-012.md): Relate requirements by supersession and association
+  - [SwRS-OKFSCHEMA-OKFREQ-013](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-013.md): Resolve requirement ownership and guard approvals
+  - [SwRS-OKFSCHEMA-OKFREQ-014](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-014.md): Keep requirement bundles native OKF bundles
+<!-- okf:links:end -->

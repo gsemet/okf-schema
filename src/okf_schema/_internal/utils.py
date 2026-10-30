@@ -13,6 +13,7 @@ from pathlib import Path
 
 from okf_schema._internal.models import ConceptInfo
 from okf_schema._internal.yaml import extract_frontmatter, parse_yaml
+from okf_schema.projection import strip_links_section
 
 RESERVED_FILES = {"index.md", "log.md"}
 ISO8601_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -252,7 +253,8 @@ def build_link_graph(bundle: Path) -> tuple[dict[str, list[str]], dict[str, list
         rel = path.relative_to(bundle).as_posix()
         text = path.read_text(encoding="utf-8")
         _fm_text, body = extract_frontmatter(text)
-        links = extract_outgoing_links(body, path, bundle)
+        # The generated Links section mirrors frontmatter relations, not authored links.
+        links = extract_outgoing_links(strip_links_section(body), path, bundle)
         if links:
             outgoing[rel] = links
 

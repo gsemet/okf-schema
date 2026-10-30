@@ -8,7 +8,8 @@ description: When annotated file targets are explicitly checked, the base
   report invalid or skipped targets without modifying document values.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -98,3 +99,12 @@ document values.
 - Method: shared API, generic scaffold, and CLI regression tests in `tests/test_file_links.py`.
 - Criteria: scalar/list and composition cases resolve deterministically, invalid targets report
   `E10`, unavailable context reports `W15`, and default validation does not change.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-CORE-003](../../strs/core/StRS-OKFSCHEMA-CORE-003.md): Recognize file references without changing knowledge values
+<!-- okf:links:end -->

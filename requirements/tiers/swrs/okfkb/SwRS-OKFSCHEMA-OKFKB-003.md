@@ -7,7 +7,8 @@ description: The okfkb layer records one immutable empirical Finding per capture
   operation.
 project: okf-schema
 scope: okfkb
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -64,3 +65,12 @@ new immutable Finding containing the supplied observation context and provenance
 - Method: automated tests that compare the bundle before and after captures.
 - Criteria: each successful capture adds one valid Finding and does not rewrite
   existing findings.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFKB-001](../../strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md): Maintain trustworthy engineering knowledge
+<!-- okf:links:end -->

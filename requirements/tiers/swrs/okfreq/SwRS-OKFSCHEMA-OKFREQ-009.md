@@ -8,7 +8,8 @@ description: When requirement linting succeeds, okfreq SHALL refresh navigation
   history.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -72,3 +73,14 @@ throughout the tiers tree while preserving authored text and change history.
 - Method: CLI and generator regression tests, plus the project's own index-freshness check.
 - Criteria: all ancestor links resolve, repeated generation is a no-op, previews
   preserve bytes, and authored content/logs survive updates unchanged.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+- Depends on:
+  - [SwRS-OKFSCHEMA-OKFREQ-005](SwRS-OKFSCHEMA-OKFREQ-005.md): Validate requirement bundles
+<!-- okf:links:end -->

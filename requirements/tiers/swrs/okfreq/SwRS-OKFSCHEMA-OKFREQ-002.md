@@ -7,7 +7,8 @@ description: The okfreq layer creates, validates, and manages requirement
   documents and lifecycle.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -86,3 +87,12 @@ or SwRS authoring format without changing existing requirements.
 - Criteria: each created document validates, StRS and SwRS bodies use distinct
   formats, missing StRS intent remains explicit, tier-inappropriate fields are
   rejected, and failed creation leaves existing documents unchanged.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

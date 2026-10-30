@@ -8,7 +8,8 @@ description: When a user initializes a bundle or creates a concept, okf-schema
   existing target.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -52,3 +53,12 @@ When a user initializes a bundle or creates a concept, okf-schema SHALL create t
 - Method: CLI tests in temporary directories.
 - Criteria: created bundles validate, requested metadata is present, and existing
   targets remain byte-for-byte unchanged after rejection.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-CORE-002](../../strs/core/StRS-OKFSCHEMA-CORE-002.md): Maintain and inspect OKF bundles
+<!-- okf:links:end -->

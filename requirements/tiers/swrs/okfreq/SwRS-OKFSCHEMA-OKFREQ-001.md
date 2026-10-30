@@ -6,7 +6,8 @@ title: Provide requirements traceability operations
 description: The okfreq subset provides requirement traceability operations.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -89,3 +90,12 @@ are migrated; `external_id` is not annotated as a local file link.
 - Method: automated command-surface and failure-path tests.
 - Criteria: supported commands resolve the same bundle consistently, and rejected
   operations preserve existing files.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

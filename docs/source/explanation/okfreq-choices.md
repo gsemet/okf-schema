@@ -52,7 +52,7 @@ because the policy follows who owns what: StRS are lockable by default and SwRS
 are not, and a scope can name its own owner or lock its SwRS too.
 
 okfreq cannot witness an agreement given in a planning meeting. It therefore
-checks only that the agreement is recorded (`approved_by`, `approved_on`), and
+checks only that the agreement is recorded (`approved_by`, `approved_at`), and
 its error message tells an agent what to do: record the agreement it was given,
 then ask the owner to review the file. The forge enforces the rest, for example a
 `CODEOWNERS` rule that blocks the merge until the owner approves.

@@ -24,12 +24,13 @@ import json
 import os
 import re
 import tempfile
+import time
 import uuid
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from importlib.metadata import PackageNotFoundError, version
 from importlib.resources import as_file, files
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from jsonschema import Draft202012Validator, FormatChecker
 from ruamel.yaml.comments import CommentedMap
@@ -38,8 +39,17 @@ from ruamel.yaml.scalarstring import LiteralScalarString
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml, parse_yaml
 from okf_schema.api import check_file_links
 from okf_schema.file_links import _FileLinkContext
-from okf_schema.validator import load_schema_database as load_schema_database  # noqa: F401
-from okf_schema.validator import load_schema_database_with_diagnostics
+from okf_schema.projection import (
+    BundleProjector,
+    Derive,
+    ProjectionError,
+    projected_status,
+    projection_problems,
+    schema_projection,
+)
+from okf_schema.validator import _parse_stale_after, load_schema_database_with_diagnostics
+from okf_schema.validator import load_schema_database as load_schema_database
+from okf_schema.validator import validate_bundle as validate_okf_bundle
 
 DEFAULT_CONFIG = """version: 1
 tiers:
@@ -48,19 +58,36 @@ tiers:
 id_policy: scope-prefix-sequence
 strs_test_coverage_mode: linked-swrs
 lifecycle:
-  field: lifecycle
+  field: req_lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email]
+  default_owner_email, status, verified]
 retired_ids: []
 scopes:
   default: {source_dirs: [src], test_dirs: [tests]}
 """
 
 LIFECYCLES = ("draft", "proposed", "approved", "deprecated", "superseded")
+DEFAULT_LIFECYCLE_FIELD = "req_lifecycle"
+# OKF section 5.4 status read by plain OKF consumers for each okfreq lifecycle.
+STATUS_PROJECTION = {
+    "draft": "draft",
+    "proposed": "stable",
+    "approved": "stable",
+    "deprecated": "deprecated",
+    "superseded": "deprecated",
+}
+LINK_PROJECTION_LABELS = {
+    "derives_from": "Derives from",
+    "derived_by": "Derived by",
+    "depends_on": "Depends on",
+    "superseded_by": "Superseded by",
+    "supersedes": "Supersedes",
+    "relates_to": "Relates to",
+}
 LIFECYCLE_DESCRIPTION = """Explicit, human-controlled lifecycle state.
 - draft: a requirement proposal that is not implemented yet. A project whose
   requirements are delivered with the code they describe should not keep drafts
@@ -69,15 +96,24 @@ LIFECYCLE_DESCRIPTION = """Explicit, human-controlled lifecycle state.
   usual plan and review, without an explicit owner agreement.
 - approved: frozen by its owner. Any significant change (normative statement,
   scenarios, criteria, deprecation or supersession) needs the owner's explicit,
-  justified agreement, recorded in approved_by and approved_on. Allowed only where
+  justified agreement, recorded in approved_by and approved_at. Allowed only where
   approval_lock is true for the requirement's tier and scope.
 - deprecated: no longer in force and not replaced; kept for history.
 - superseded: replaced by the requirements listed in superseded_by; kept for history.
+OKF consumers read the generated status mapped by x-okf-status-projection.
 """
 GUIDELINE_NAME = "requirements.guidelines.md"
 DEFAULT_ID_PATTERN = r"[A-Za-z][A-Za-z0-9_-]*"
 SUPPORTED_GENERATED_FIELDS = frozenset(
-    {"derived_by", "supersedes", "implemented_in_files", "tested_in_files", "default_owner_email"}
+    {
+        "derived_by",
+        "supersedes",
+        "implemented_in_files",
+        "tested_in_files",
+        "default_owner_email",
+        "status",
+        "verified",
+    }
 )
 _EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 STRS_TEST_COVERAGE_MODES = (
@@ -295,7 +331,15 @@ def _atomic_write(path: Path, text: str) -> None:  # pragma: no cover - OS failu
             stream.write(text)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        for attempt in range(5):
+            try:
+                os.replace(temporary, path)
+                break
+            except PermissionError:
+                # Windows refuses a replace while a scanner briefly holds the target open.
+                if attempt == 4:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
     except BaseException:
         Path(temporary).unlink(missing_ok=True)
         raise
@@ -362,7 +406,7 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
 
     def schema_text(level: str) -> str:
         """Return a valid generated schema for the requested level."""
-        base = {
+        base: dict[str, Any] = {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": "base.schema.yaml",
             "title": "okfreq requirement base profile",
@@ -401,10 +445,20 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                     "minLength": 1,
                     "description": "Functional scope, e.g. Core, Safety, Connectivity.",
                 },
-                "lifecycle": {
+                DEFAULT_LIFECYCLE_FIELD: {
                     "type": "string",
                     "enum": list(LIFECYCLES),
                     "description": LiteralScalarString(LIFECYCLE_DESCRIPTION),
+                    "x-okf-status-projection": dict(STATUS_PROJECTION),
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["draft", "stable", "deprecated"],
+                    "description": (
+                        "Generated OKF lifecycle (OKF section 5.4), mapped from "
+                        f"{DEFAULT_LIFECYCLE_FIELD} by x-okf-status-projection, so a plain "
+                        "OKF consumer reads it. Never edit it by hand."
+                    ),
                 },
                 "owner_email": {
                     "type": "string",
@@ -434,13 +488,26 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                         "agreement, never by an agent's own decision."
                     ),
                 },
-                "approved_on": {
+                "approved_at": {
                     "type": "string",
-                    "format": "date",
+                    "format": "date-time",
                     "description": (
-                        "ISO date (YYYY-MM-DD) of the owner's approval of the current "
+                        "ISO 8601 datetime with an explicit UTC offset (for example "
+                        "2026-10-28T09:00:00+01:00) of the owner's approval of the current "
                         "content. Required when the lifecycle is approved; updated with "
                         "every agreed change."
+                    ),
+                },
+                "verified": {
+                    "type": "object",
+                    "properties": {
+                        "by": {"type": "string"},
+                        "at": {"type": "string", "format": "date-time"},
+                    },
+                    "description": (
+                        "Generated OKF trust event (OKF section 5.2): by human:<approved_by> "
+                        "at approved_at, so an approved requirement reads as human-reviewed. "
+                        "Never edit it by hand."
                     ),
                 },
                 "origin": {
@@ -551,12 +618,15 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                 "description",
                 "project",
                 "scope",
-                "lifecycle",
+                DEFAULT_LIFECYCLE_FIELD,
                 "origin",
                 "tier",
             ],
             "additionalProperties": True,
         }
+        base_properties = cast("dict[str, dict[str, Any]]", base["properties"])
+        for name, label in LINK_PROJECTION_LABELS.items():
+            base_properties[name]["items"]["x-okf-link"]["link-projection"] = label
         if level == "base":
             return dump_yaml(base) + "\n"
         tier = "StRS" if level == "strs" else "SwRS"
@@ -740,7 +810,7 @@ def load_config(root: Path) -> dict[str, Any]:
     data["markers"].setdefault("id_pattern", DEFAULT_ID_PATTERN)
     lifecycle = data.setdefault("lifecycle", {})
     if "values" not in lifecycle:
-        lifecycle.setdefault("field", "lifecycle")
+        lifecycle.setdefault("field", DEFAULT_LIFECYCLE_FIELD)
     data.setdefault("id_policy", "scope-prefix-sequence")
     data.setdefault("generated_fields", sorted(SUPPORTED_GENERATED_FIELDS))
     data.setdefault("strs_test_coverage_mode", "linked-swrs")
@@ -810,14 +880,19 @@ def lifecycle_field(config: dict[str, Any]) -> str:
             A configuration returned by :func:`load_config`.
 
     Returns:
-        ``lifecycle.field`` from the configuration, ``"lifecycle"`` by default.
+        ``lifecycle.field`` from the configuration, ``"req_lifecycle"`` by default.
+
+    .. versionchanged:: 0.17.0
+        The default field is ``req_lifecycle``, distinct from the OKF ``status``.
 
     Examples:
-        >>> lifecycle_field({"lifecycle": {"field": "status"}})
-        'status'
+        >>> lifecycle_field({"lifecycle": {"field": "state"}})
+        'state'
     """
     lifecycle = config.get("lifecycle", {})
-    return str(lifecycle.get("field", "lifecycle")) if isinstance(lifecycle, dict) else "lifecycle"
+    if isinstance(lifecycle, dict):
+        return str(lifecycle.get("field", DEFAULT_LIFECYCLE_FIELD))
+    return DEFAULT_LIFECYCLE_FIELD
 
 
 def lifecycle_values(root: Path, config: dict[str, Any]) -> list[str]:
@@ -960,18 +1035,175 @@ def _approval_findings(
             "(approval_lock is false). Keep it proposed, or ask the owner to set "
             "approval_lock: true for this tier or scope in config.yml."
         )
-    missing = [name for name in ("approved_by", "approved_on") if not data.get(name)]
+    missing = [name for name in ("approved_by", "approved_at") if not data.get(name)]
     if missing:
         findings.append(
             f"{file}: lifecycle approved requires {' and '.join(missing)}. Only the "
             f"requirement owner ({owner or 'owner_email or default_owner_email'}) approves "
             "a requirement or a change to an approved one; a coding agent never decides it "
             "alone. If the owner agreed, for example during planning, set approved_by to "
-            "the owner's email and approved_on to today's date, then request the owner's "
+            "the owner's email and approved_at to the current date and time with its UTC "
+            "offset (for example 2026-10-28T09:00:00+01:00), then request the owner's "
             "review of this file on the pull or merge request (for example through "
             "CODEOWNERS). Otherwise restore the previous lifecycle and content."
         )
+    elif _approval_instant(data.get("approved_at")) is None:
+        findings.append(
+            f"{file}: approved_at must be an ISO 8601 datetime with an explicit UTC offset, "
+            "for example 2026-10-28T09:00:00+01:00"
+        )
     return findings
+
+
+def _approval_instant(value: Any) -> datetime.datetime | None:
+    """Return the approval instant, or ``None`` unless it is a datetime with an offset."""
+    if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
+        return None
+    if isinstance(value, str) and "T" not in value.upper():
+        return None
+    parsed = _parse_stale_after(value)
+    return parsed if isinstance(parsed, datetime.datetime) else None
+
+
+def _verified_update(data: CommentedMap) -> dict[str, tuple[Any, str | None]]:
+    """Return the generated OKF ``verified`` event of the owner approval, if any."""
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-014
+    by, at = data.get("approved_by"), data.get("approved_at")
+    if not by or _approval_instant(at) is None:
+        return {"verified": (None, None)}
+    event = CommentedMap()
+    event["by"] = f"human:{by}"
+    # A copy keeps the authored form of the instant without a YAML alias;
+    # ruamel's replace() keeps the offset that deepcopy drops.
+    event["at"] = at.replace() if isinstance(at, datetime.datetime) else str(at)
+    return {"verified": (event, "approved_at")}
+
+
+def _tier_schemas(root: Path) -> dict[str, dict[str, Any]]:
+    """Return the tier schemas keyed by case-folded type, each composed with the base."""
+    schemas = {
+        name.casefold(): schema
+        for name, schema in load_schema_database(tiers_path(root) / "_schema").items()
+    }
+    base = schemas.pop("base", None) or schemas.pop("base.schema", None)
+    composed: dict[str, dict[str, Any]] = {}
+    for name, schema in schemas.items():
+        data = dict(schema)
+        if base is not None:
+            data["allOf"] = [base, *data.get("allOf", [])[1:]]
+        composed[name] = data
+    return composed
+
+
+class _RequirementProjector(BundleProjector):
+    """Project requirements onto OKF ``status``, ``verified`` and Links sections."""
+
+    def __init__(self, root: Path, config: dict[str, Any]) -> None:
+        generated = {str(name) for name in config.get("generated_fields", [])}
+        super().__init__(tiers_path(root), _tier_schemas(root), status="status" in generated)
+        self.verified = "verified" in generated
+
+    def project(
+        self,
+        path: Path,
+        text: str,
+        *,
+        updates: Mapping[str, tuple[Any, str | None]] | None = None,
+        derive: Derive | None = None,
+    ) -> str:
+        """Project one requirement; ``verified`` follows the owner approval."""
+        if derive is None and self.verified:
+            derive = _verified_update
+        return super().project(path, text, updates=updates, derive=derive)
+
+
+def requirement_projector(root: Path, config: dict[str, Any] | None = None) -> BundleProjector:
+    """Return the OKF projector of a requirements bundle.
+
+    The projections come from the annotations of ``tiers/_schema/``: a Links
+    section per ``link-projection``, ``status`` per ``x-okf-status-projection``
+    when ``status`` is a generated field, and ``verified`` from ``approved_by``
+    and ``approved_at`` when ``verified`` is a generated field.
+
+    .. versionadded:: 0.17.0
+
+    Args:
+        root:
+            The bundle root.
+        config:
+            A configuration returned by :func:`load_config`; loaded when omitted.
+
+    Returns:
+        A projector whose ``project(path, text)`` returns the projected text.
+    """
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-014
+    return _RequirementProjector(root, config if config is not None else load_config(root))
+
+
+def _projected(root: Path, file: Path, text: str) -> str:
+    """Return *text* projected for OKF consumers, as a domain error on malformed sections."""
+    try:
+        return requirement_projector(root).project(file, text)
+    except ProjectionError as exc:
+        raise RequirementError(f"{file}: {exc}") from exc
+
+
+def project_requirements(
+    root: Path,
+    *,
+    check: bool = False,
+    show_diff: bool = False,
+) -> list[Path]:
+    """Refresh the OKF projection of every requirement.
+
+    .. versionadded:: 0.17.0
+
+    Args:
+        root:
+            The bundle root.
+        check:
+            Report stale requirements without writing.
+        show_diff:
+            Print unified diffs without writing.
+
+    Returns:
+        Requirement paths that changed or would change.
+
+    Raises:
+        RequirementError:
+            If a requirement holds an incomplete or repeated generated Links section.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     project_requirements(init_requirements(Path(directory) / "requirements"))
+        []
+    """
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-014
+    projector = requirement_projector(root)
+    changed: list[Path] = []
+    for file, _, text in sorted(load_requirements(root).values(), key=lambda item: item[0]):
+        try:
+            rendered = projector.project(file, text)
+        except ProjectionError as exc:
+            raise RequirementError(f"{file}: {exc}") from exc
+        if rendered == text:
+            continue
+        changed.append(file)
+        if show_diff:
+            print(
+                "".join(
+                    difflib.unified_diff(
+                        text.splitlines(True),
+                        rendered.splitlines(True),
+                        fromfile=str(file),
+                        tofile=str(file),
+                    )
+                )
+            )
+        elif not check:
+            _atomic_write(file, rendered)
+    return changed
 
 
 def _leaf_levels(config: dict[str, Any]) -> set[str]:
@@ -1312,7 +1544,8 @@ def create_requirement(
     if target.exists() or identifier in existing:
         raise RequirementError(f"requirement ID collision: {identifier}")
     body = ears_body(level, description, user_need=user_need, title=title)
-    _atomic_write(target, f"---\n{dump_yaml(data)}---\n\n{body}")
+    text = f"---\n{dump_yaml(data)}---\n\n{body}"
+    _atomic_write(target, _projected(root, target, text))
     return target
 
 
@@ -1492,9 +1725,8 @@ def supersede_requirement(root: Path, target: str, replacements: list[str]) -> P
             raise RequirementError(f"superseded_by would form a cycle: {' -> '.join(cycle)}")
     file, _, text = requirements[target]
     field = lifecycle_field(load_config(root))
-    _atomic_write(
-        file, _render_frontmatter(text, {field: "superseded", "superseded_by": replacements})
-    )
+    rendered = _render_frontmatter(text, {field: "superseded", "superseded_by": replacements})
+    _atomic_write(file, _projected(root, file, rendered))
     return file
 
 
@@ -1891,6 +2123,14 @@ def validate_requirements(
                 + (f" ({problems})" if problems else "")
             )
     errors.extend(schema_findings)
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-014
+    reported: set[str] = set()
+    for name, schema in sorted(schemas.items()):
+        for problem in projection_problems(schema):
+            if problem not in reported:
+                reported.add(problem)
+                errors.append(f"{schemas_dir / name}: {problem}")
+    projections: dict[str, Any] = {}
     link_context = _FileLinkContext()
     retired = set(config["retired_ids"])
     for identifier, (file, data, text) in requirements.items():
@@ -1907,6 +2147,15 @@ def validate_requirements(
             schema_data["allOf"] = [base, *schema_data.get("allOf", [])[1:]]
             validator = Draft202012Validator(schema_data, format_checker=FormatChecker())
             errors.extend(f"{file}: {error.message}" for error in validator.iter_errors(data))
+            projection = projections.setdefault(level, schema_projection(schema_data))
+            if projection.status_field not in (None, "status"):
+                expected = projected_status(data, projection)
+                if "status" in data and data["status"] != expected:
+                    errors.append(
+                        f"{file}: status {data.get('status')} does not match "
+                        f"{projection.status_field} {data.get(projection.status_field)} "
+                        f"(expected {expected}); run okfreq update-coverage"
+                    )
             if check_links:
                 for diagnostic in check_file_links(
                     data,
@@ -1949,7 +2198,25 @@ def validate_requirements(
             errors.append(f"W001 {file}: description is unusually short")
     errors.extend(graph(root)["errors"])
     errors.extend(_relation_findings(requirements, lifecycle_key))
+    errors.extend(_okf_findings(root))
     return errors
+
+
+# okf-schema checks that requirement bundles cover otherwise: provenance is recorded
+# by verified, relation lists stay in block style, and okfreq lint owns the indexes
+# (lint --check reports a missing or stale one).
+_OKF_IGNORED_CODES = frozenset({"W3", "W4", "W7"})
+
+
+def _okf_findings(root: Path) -> list[str]:
+    """Run the base OKF checks of ``okf-schema validate`` on the tiers folder."""
+    # @implements_req SwRS-OKFSCHEMA-OKFREQ-014
+    report = validate_okf_bundle(tiers_path(root))
+    return [
+        f"{finding.code} {finding.path}: {finding.message}"
+        for finding in [*report.errors, *report.warnings, *report.infos]
+        if finding.code not in _OKF_IGNORED_CODES
+    ]
 
 
 def update_coverage(
@@ -1980,6 +2247,11 @@ def update_coverage(
         Also maintains ``supersedes``, the inverse of ``superseded_by``, when it
         is listed in ``generated_fields``.
 
+    .. versionchanged:: 0.17.0
+        Also maintains the OKF projection: ``status`` and ``verified`` when they
+        are listed in ``generated_fields``, and the generated Links section of
+        every field whose schema carries a ``link-projection``.
+
     Examples:
         >>> from pathlib import Path
         >>> from tempfile import TemporaryDirectory
@@ -2003,6 +2275,7 @@ def update_coverage(
             if parent in reverse:
                 reverse[parent].append(str(data.get("id")))
     supersedes = _supersession_reverse(requirements)
+    projector = requirement_projector(root, config)
     changed: list[str] = []
     for identifier, (file, _, text) in requirements.items():
         available_updates: dict[str, Any] = {"derived_by": sorted(reverse[identifier])}
@@ -2037,6 +2310,10 @@ def update_coverage(
                     data.pop("implemented_in_files", None)
                     data.pop("tested_in_files", None)
                     rendered = f"---\n{dump_yaml(data)}---\n{body}"
+        try:
+            rendered = projector.project(file, rendered)
+        except ProjectionError as exc:
+            raise RequirementError(f"{file}: {exc}") from exc
         if rendered == text:
             continue
         changed.append(str(file))
