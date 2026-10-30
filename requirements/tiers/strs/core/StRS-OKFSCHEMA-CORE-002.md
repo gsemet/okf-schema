@@ -7,7 +7,8 @@ description: The okf-schema capability SHALL enable maintainers to author,
   normalize, navigate, and evolve OKF bundles without losing authored knowledge.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: StRS
 derives_from: []
@@ -19,6 +20,7 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-003
 - SwRS-OKFSCHEMA-CORE-004
 - SwRS-OKFSCHEMA-CORE-005
+- SwRS-OKFSCHEMA-CORE-009
 default_owner_email: gaetan@xeberon.net
 ---
 
@@ -40,3 +42,16 @@ Maintainers need one deterministic toolchain for creating, formatting, indexing,
   must survive maintenance operations.
 - Read-only inspection must not mutate the bundle.
 - Preview modes must expose proposed changes before write operations are applied.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derived by:
+  - [SwRS-OKFSCHEMA-CORE-002](../../swrs/core/SwRS-OKFSCHEMA-CORE-002.md): Create bundles and concepts
+  - [SwRS-OKFSCHEMA-CORE-003](../../swrs/core/SwRS-OKFSCHEMA-CORE-003.md): Normalize bundle formatting
+  - [SwRS-OKFSCHEMA-CORE-004](../../swrs/core/SwRS-OKFSCHEMA-CORE-004.md): Maintain indexes and superseded links
+  - [SwRS-OKFSCHEMA-CORE-005](../../swrs/core/SwRS-OKFSCHEMA-CORE-005.md): Inspect and query bundle knowledge
+  - [SwRS-OKFSCHEMA-CORE-009](../../swrs/core/SwRS-OKFSCHEMA-CORE-009.md): Project schema-declared metadata for plain OKF consumers
+<!-- okf:links:end -->

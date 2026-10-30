@@ -34,12 +34,16 @@ After KB mutations:
 
 - ensure relationship paths resolve;
 - maintain reciprocal contradiction/supersession metadata where supported;
-- refresh generated links, backlinks, `derives_to`, and indexes with
-  project-prescribed tools;
+- refresh generated links, backlinks, `derives_to`, the body Links section
+  (`<!-- okf:links:start -->` ... `<!-- okf:links:end -->`, projected from
+  `derived_from` and `derives_to`) and indexes with project-prescribed tools;
+  never edit the Links section by hand;
 - keep frontmatter compact and schema-valid;
 - preserve unknown extension fields and YAML comments;
 - add `log.md` entries only for significant semantic events: promotion,
-  contradiction, supersession, deprecation, or material revision.
+  contradiction, supersession, deprecation, or material revision, under an exact
+  `## YYYY-MM-DD` heading, newest first, with any topic in a `### Topic`
+  sub-heading.
 
 Routine formatting, indexing, and no-op gardening runs do not deserve semantic
 log entries.

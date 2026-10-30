@@ -74,7 +74,7 @@ properties:
     type: array
     items:
       type: string
-      x-okf-link: {resolution: bundle-relative-stem, syntax: plain}
+      x-okf-link: {resolution: bundle-relative-stem, syntax: plain, link-projection: Derived from}
   derives_to:
     description: >-
       Generated canonical bundle-relative, extensionless paths of documents
@@ -82,7 +82,7 @@ properties:
     type: array
     items:
       type: string
-      x-okf-link: {resolution: bundle-relative-stem, syntax: plain}
+      x-okf-link: {resolution: bundle-relative-stem, syntax: plain, link-projection: Derives to}
   links:
     type: array
     items:

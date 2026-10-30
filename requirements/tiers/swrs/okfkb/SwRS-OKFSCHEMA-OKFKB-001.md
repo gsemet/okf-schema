@@ -6,7 +6,8 @@ title: Provide deterministic knowledge-base operations
 description: The okfkb subset provides deterministic knowledge-base operations.
 project: okf-schema
 scope: okfkb
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -70,3 +71,12 @@ extensionless bundle-path rule as authored `derived_from` references.
 - Method: automated CLI tests over fixed knowledge-base fixtures.
 - Criteria: repeated operations are stable and failed operations leave authored
   fixture content intact.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFKB-001](../../strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md): Maintain trustworthy engineering knowledge
+<!-- okf:links:end -->

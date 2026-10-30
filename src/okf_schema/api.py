@@ -290,12 +290,18 @@ def lint_bundle(
     check: bool = False,
     diff: bool = False,
     links: bool = False,
+    projection: bool = True,
 ) -> list[FormattedResult]:
     """Lint frontmatter in all concept files of an OKF bundle.
 
     Converts block-style (multi-line) lists to inline notation so that
     frontmatter stays compact.  This is important for coding agents that
     load only the first *n* lines of a file.
+
+    .. versionchanged:: 0.17.0
+        Maintain the OKF projections declared by ``_schema/`` annotations:
+        a generated Links section per ``link-projection`` and ``status`` per
+        ``x-okf-status-projection``.
 
     Args:
         bundle_path:
@@ -307,6 +313,8 @@ def lint_bundle(
         links:
             If ``True``, also update ``links`` and ``backlinks``
             frontmatter fields based on markdown body content.
+        projection:
+            If ``True``, maintain the projections declared by the bundle schemas.
 
     Returns:
         List of :class:`FormattedResult`, one per markdown file.
@@ -314,6 +322,7 @@ def lint_bundle(
     Raises:
         FileNotFoundError: When *bundle_path* does not exist.
         NotADirectoryError: When *bundle_path* is not a directory.
+        ProjectionError: When a generated Links section is incomplete or repeated.
 
     Examples:
         >>> from tempfile import TemporaryDirectory
@@ -322,7 +331,7 @@ def lint_bundle(
         ...     results = lint_bundle(directory, check=True, links=True)
     """
     bundle = _resolve_bundle(bundle_path)
-    return _lint_bundle(bundle, check=check, diff=diff, links=links)
+    return _lint_bundle(bundle, check=check, diff=diff, links=links, projection=projection)
 
 
 # @implements_req SwRS-OKFSCHEMA-CORE-005

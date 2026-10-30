@@ -9,7 +9,8 @@ description: When a requirement is superseded or related to others, okfreq SHALL
   inconsistent or cyclic references.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -98,3 +99,15 @@ When a requirement is superseded or related to others, okfreq SHALL record the r
   validation errors, cycles, retirement and the report; the executable showcase.
 - Criteria: valid relations pass, every refusal exits unsuccessfully without writes,
   and generated `supersedes` converges with `update-coverage --check`.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+- Relates to:
+  - [SwRS-OKFSCHEMA-OKFREQ-007](SwRS-OKFSCHEMA-OKFREQ-007.md): Manage requirement lifecycle explicitly
+  - [SwRS-OKFSCHEMA-OKFREQ-011](SwRS-OKFSCHEMA-OKFREQ-011.md): Retire a draft requirement permanently
+<!-- okf:links:end -->

@@ -25,8 +25,8 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 
 | Command | Purpose |
 |---|---|
-| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation, supersession and `relates_to` links, and optionally annotated file targets. Prose and skipped-root findings are advisory. Requirement schema files that are unparsable or not mappings produce `W17`; empty ones produce informational `I1`, and a legacy single-ID `superseded_by` produces `I2` (listed, never counted as errors, and `--json` has an `infos` list). |
-| `okfreq lint [PATH] [--prose] [--check-links] [--project-root DIR] [--check|--diff]` | Validate, then regenerate requirement-directory navigation. `--check` fails on stale indexes without writing; `--diff` previews changes. |
+| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation, supersession and `relates_to` links, and optionally annotated file targets. Prose and skipped-root findings are advisory. Requirement schema files that are unparsable or not mappings produce `W17`; empty ones produce informational `I1`, and a legacy single-ID `superseded_by` produces `I2` (listed, never counted as errors, and `--json` has an `infos` list). Also reports a `status` that disagrees with the lifecycle, an `approved_at` without a UTC offset, malformed projection annotations, and the base OKF findings of `okf-schema validate` on `tiers/` (except `W3`, `W4` and `W7`). |
+| `okfreq lint [PATH] [--prose] [--check-links] [--project-root DIR] [--check|--diff]` | Validate, then regenerate requirement-directory navigation and the OKF projection of each requirement (`status`, `verified`, Links section). `--check` fails on stale indexes or projections and on a `log.md` heading that is not `## YYYY-MM-DD`, newest first, without writing; `--diff` previews changes. |
 | `okfreq index [PATH]` | Print the stable requirement ID index. |
 | `okfreq search QUERY [PATH]` | Search IDs, titles, and descriptions. |
 | `okfreq in-file FILE` | Print one requirement document. |
@@ -70,8 +70,10 @@ index is written. Requirement mutations and coverage generation remain separate.
 
 An optional `requirements/index.md` is a human-authored overview and is preserved.
 Agents maintain dated change records in `requirements/tiers/log.md` (singular):
-affected requirements, rationale, decisions and verification evidence. Lint
-never rewrites logs or invents change history.
+affected requirements, rationale, decisions and verification evidence, under
+exact `## YYYY-MM-DD` headings, newest first, with any topic in a `### Topic`
+sub-heading. Lint never rewrites logs or invents change history, but `--check`
+fails on a non-conforming heading (`W5`, `W18`).
 
 ### Check annotated file targets
 
@@ -100,7 +102,7 @@ unavailable. A missing stem in a known bundle is `E10`. Warnings do not make `ok
 
 | Command | Purpose |
 |---|---|
-| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `default_owner_email`). `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
+| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `default_owner_email`, `status`, `verified`) and the generated Links section of every `link-projection` field; see {ref}`okfreq-okf-projection`. `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
 | `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. Each requirement record also lists `derives_from`, `superseded_by`, the computed `supersedes` and `relates_to`. |
 
 Without output options, the command writes JSON, JSON Schema and Markdown
@@ -116,7 +118,9 @@ Generated artifacts should be regenerated rather than edited manually.
 | `okfreq supersede TARGET REPLACEMENT [REPLACEMENT...] [--path PATH] --yes` | Set the target to `superseded` and write `superseded_by` as the list of replacements, replacing any previous value. Every ID must exist, a replacement must not be the target or repeat, and the replacements must not make `superseded_by` cyclic; otherwise nothing is written. Run `okfreq update-coverage` afterwards to refresh `supersedes`. |
 
 Lifecycle mutations require explicit `--yes`. They preserve the requirement
-body, stable ID, UUID, and unrelated frontmatter.
+body, stable ID, UUID, and unrelated frontmatter. Like `okfreq new`, they also
+write the generated OKF `status` mapped from the new lifecycle and refresh the
+generated Links section at the end of the body.
 
 ## Retire a draft
 

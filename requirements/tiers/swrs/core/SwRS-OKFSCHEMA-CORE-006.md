@@ -8,7 +8,8 @@ description: When OKF 0.2 metadata is validated, okf-schema SHALL enforce
   with actionable findings.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -73,3 +74,12 @@ When OKF 0.2 metadata is validated, okf-schema SHALL enforce provenance, verific
 - Method: OKF 0.2 compliance and validator tests.
 - Criteria: valid metadata produces the expected trust/staleness result and each
   invalid governed condition produces its documented finding category.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-CORE-001](../../strs/core/StRS-OKFSCHEMA-CORE-001.md): Validate OKF bundle structures
+<!-- okf:links:end -->

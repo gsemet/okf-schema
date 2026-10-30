@@ -8,7 +8,8 @@ description: The OKF capability SHALL enable consumers to distinguish file
   authored value types.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: StRS
 derives_from: []
@@ -41,3 +42,12 @@ The same contract must apply to ordinary knowledge, engineering evidence, and re
 - Checking targets is an explicit choice, not a new requirement for existing bundles.
 - A skipped check must not be presented as evidence that a target exists.
 - Existing bundles and their schemas require no automatic migration or rewrite.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derived by:
+  - [SwRS-OKFSCHEMA-CORE-007](../../swrs/core/SwRS-OKFSCHEMA-CORE-007.md): Interpret and optionally check schema-declared file references
+<!-- okf:links:end -->

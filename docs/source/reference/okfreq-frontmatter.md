@@ -17,11 +17,11 @@ notes. Unknown properties are allowed and must be preserved.
 | `project` | yes | authored | Project or product owning the requirement. |
 | `scope` | yes | authored | Scope used for ownership, allocation, and scan mapping. |
 | `tier` | yes | authored | Tier label used by the requirements hierarchy. |
-| `lifecycle` | yes | authored | One of `draft`, `proposed`, `approved`, `deprecated`, or `superseded`; see {ref}`okfreq-lifecycle-states`. The field name is `lifecycle.field` in `config.yml`, and the values are its `enum` in the base schema. |
+| `req_lifecycle` | yes | authored | One of `draft`, `proposed`, `approved`, `deprecated`, or `superseded`; see {ref}`okfreq-lifecycle-states`. The field name is `lifecycle.field` in `config.yml` (`req_lifecycle` by default, distinct from the OKF `status`), and the values are its `enum` in the base schema. |
 | `origin` | yes | authored | Source of the requirement, such as `native`, `imported`, or a tool name. |
 | `derives_from` | conditional | authored | IDs of higher-level requirements, with case-sensitive Markdown filename-stem navigation hints. Native `SwRS` requirements need at least one `StRS` ID. |
 | `depends_on` | no | authored | Semantic prerequisite or dependency IDs. This is not generated coverage. |
-| `superseded_by` | when `lifecycle: superseded` | authored | List of one or more requirement IDs that replace this requirement. Required and non-empty exactly when the lifecycle is `superseded`; written by `okfreq supersede`. A single ID written by earlier releases (`superseded_by: SwRS-new-001`) is still read as a one-item list. |
+| `superseded_by` | when `req_lifecycle: superseded` | authored | List of one or more requirement IDs that replace this requirement. Required and non-empty exactly when the lifecycle is `superseded`; written by `okfreq supersede`. A single ID written by earlier releases (`superseded_by: SwRS-new-001`) is still read as a one-item list. |
 | `relates_to` | no | authored | List of requirement IDs related to this one laterally, at any level or scope, for example a sibling feature or a requirement from another release. It has no derivation, supersession or coverage meaning and no generated inverse. |
 | `verification_method` | no | authored | Controlled method used to verify the requirement, for example `test`, `analysis`, `inspection`, or `demonstration`. |
 | `verification_criteria` | no | authored | Optional pass criteria that make verification concrete. |
@@ -31,8 +31,8 @@ notes. Unknown properties are allowed and must be preserved.
 | `external_id` | no | authored | Identifier of the corresponding requirement in an external system. It is not a local file reference. |
 | `external_url` | no | authored | URI of the corresponding requirement in an external system. |
 | `owner_email` | no | authored | Owner of this requirement when it differs from the configured one. Replaces `default_owner_email`. |
-| `approved_by` | when `lifecycle: approved` | authored | Email of the owner who agreed to the current content. Recorded only on the owner's explicit agreement. |
-| `approved_on` | when `lifecycle: approved` | authored | ISO date (`YYYY-MM-DD`) of that agreement, updated with every agreed change. |
+| `approved_by` | when `req_lifecycle: approved` | authored | Email of the owner who agreed to the current content. Recorded only on the owner's explicit agreement. |
+| `approved_at` | when `req_lifecycle: approved` | authored | ISO 8601 datetime with an explicit UTC offset (`2026-10-28T09:00:00+01:00`) of that agreement, updated with every agreed change. A bare date is rejected. |
 
 (okfreq-lifecycle-states)=
 
@@ -45,7 +45,7 @@ through the commands below or an explicit edit; okfreq never infers it.
 |---|---|---|
 | `draft` | A requirement proposal, not implemented yet. | Free. `okfreq retire` can delete it for good. A project whose requirements are delivered with the code they describe should not keep drafts on its default branch: create them with `okfreq new --lifecycle proposed` in the change that implements them. |
 | `proposed` | Implemented and in force, but not frozen. | Changes through the project's usual plan and review, with no explicit owner agreement. |
-| `approved` | Frozen by its owner. | Any significant change (normative statement, scenarios, verification criteria, deprecation or supersession) needs the owner's explicit, justified agreement, recorded in `approved_by` and `approved_on`. Editorial fixes that keep the meaning are free. Allowed only where `approval_lock` is true for the tier and scope. |
+| `approved` | Frozen by its owner. | Any significant change (normative statement, scenarios, verification criteria, deprecation or supersession) needs the owner's explicit, justified agreement, recorded in `approved_by` and `approved_at`. Editorial fixes that keep the meaning are free. Allowed only where `approval_lock` is true for the tier and scope. |
 | `deprecated` | No longer in force, without replacement (`okfreq archive`). | Kept for history; its ID is never reused. |
 | `superseded` | Replaced by the requirements in `superseded_by` (`okfreq supersede`). | Kept for history. |
 
@@ -53,22 +53,71 @@ Which requirements can be frozen, and by whom, is set per tier and per scope in
 `config.yml` ({ref}`okfreq-ownership-and-approval`):
 by default StRS can be approved and SwRS cannot. `okfreq validate` fails on an
 `approved` requirement whose tier and scope are not lockable, or that lacks
-`approved_by` or `approved_on`.
+`approved_by` or `approved_at`.
 
 A coding agent never approves a requirement, and never changes an approved one, on
 its own decision. The owner's agreement is usually given during planning, where
 the agent cannot see it. So when its task changes an approved requirement, the
 agent proceeds as if the owner agreed: it records the owner's email in
-`approved_by` and today's date in `approved_on`, names the requirement in the pull
-or merge request, and requests the owner's review of the file. A review rule such
-as `CODEOWNERS` then blocks the merge until the owner approves.
+`approved_by` and the current date and time with its offset in `approved_at`, names
+the requirement in the pull or merge request, and requests the owner's review of the
+file. A review rule such as `CODEOWNERS` then blocks the merge until the owner
+approves. `okfreq update-coverage` then writes the generated `status` and
+`verified` fields that plain OKF consumers read:
 
 ```yaml
-lifecycle: approved
+req_lifecycle: approved
+status: stable                                   # generated from req_lifecycle
 default_owner_email: product-owner@example.org   # generated from config.yml
 approved_by: product-owner@example.org
-approved_on: 2026-10-28
+approved_at: 2026-10-28T09:00:00+01:00
+verified:                                        # generated from the approval
+  by: human:product-owner@example.org
+  at: 2026-10-28T09:00:00+01:00
 ```
+
+(okfreq-okf-projection)=
+
+## Native OKF projection
+
+The `tiers/` folder is a plain OKF v0.2 bundle. okfreq keeps its own vocabulary
+and generates, as the schemas declare, the fields a consumer that knows only OKF
+reads:
+
+| okfreq field | OKF field | Declared by |
+|---|---|---|
+| `req_lifecycle` | `status` (section 5.4) | `x-okf-status-projection` on the lifecycle property |
+| `approved_by`, `approved_at` | `verified` (section 5.2), by a `human:` actor | built in, when `verified` is in `generated_fields` |
+| `derives_from`, `derived_by`, `depends_on`, `superseded_by`, `supersedes`, `relates_to` | Markdown links in the body (section 6.1) | `link-projection` in each field's `x-okf-link` |
+
+| `req_lifecycle` | `status` | Read as |
+|---|---|---|
+| `draft` | `draft` | work in progress |
+| `proposed`, `approved` | `stable` | current |
+| `deprecated`, `superseded` | `deprecated` | retired |
+
+The relations become one generated section at the end of the body, one group per
+annotated field in schema order, one relative link per value with the target
+title. A value that does not resolve stays as code, so no broken link is written:
+
+```markdown
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-demo-001](../../strs/core/StRS-demo-001.md): Export portable reports
+<!-- okf:links:end -->
+```
+
+Removing a `link-projection` label removes its group from every section on the
+next `okfreq lint` or `update-coverage`; renaming it renames the group. Links that
+leave the bundle (`project-relative`, such as `implemented_in_files`) cannot be
+projected: `okfreq validate` rejects such a label, a status mapping to a value
+outside `draft | stable | deprecated` or missing a lifecycle value, and a `status`
+that disagrees with the lifecycle. `okfreq lint --check` and
+`okfreq update-coverage --check` fail on a stale section, `status` or `verified`.
 
 ## Tier-specific Markdown bodies
 
@@ -165,7 +214,7 @@ okfreq update-coverage requirements
 
 ```yaml
 # SwRS-export-001.md (authored)
-lifecycle: superseded
+req_lifecycle: superseded
 superseded_by:
   - SwRS-export-010
   - SwRS-export-011
@@ -176,7 +225,7 @@ supersedes:
 
 `okfreq validate` and `okfreq lint` fail, naming the file, when:
 
-- `lifecycle` is `superseded` and `superseded_by` is absent or empty;
+- `req_lifecycle` is `superseded` and `superseded_by` is absent or empty;
 - `superseded_by` is set while the lifecycle is anything else (clear it, or
   restore `superseded`);
 - a `superseded_by` or `relates_to` target is unknown, is the requirement itself
@@ -209,6 +258,9 @@ that list the fields explicitly keep their current set until you do.
 | `implemented_in_files` | generated or external tool | SwRS-only project-relative source paths containing implementation markers. It is optional and must never be invented. |
 | `tested_in_files` | generated or external tool | SwRS-only project-relative test paths containing test markers. It is optional and must never be invented. |
 | `default_owner_email` | generated | Owner resolved from `config.yml` for the requirement's tier and scope. Written by `okfreq update-coverage` when `default_owner_email` is in `generated_fields`, removed when no owner applies. An authored `owner_email` replaces it. |
+| `status` | generated | OKF lifecycle mapped from `req_lifecycle` by `x-okf-status-projection`; see {ref}`okfreq-okf-projection`. Written by `okfreq new`, `archive`, `supersede`, `update-coverage` and `lint` when `status` is in `generated_fields`. |
+| `verified` | generated | OKF trust event `{by: human:<approved_by>, at: <approved_at>}`, removed when the approval is incomplete. Written when `verified` is in `generated_fields`. |
+| Links section | generated | Body section between `<!-- okf:links:start -->` and `<!-- okf:links:end -->`, one group per `link-projection` field. |
 
 The schema is selected from the `type` value. Common fields are defined in
 `tiers/_schema/base.schema.yaml`; `type: StRS` is validated by

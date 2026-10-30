@@ -35,7 +35,7 @@ properties:
     minLength: 1
     description: Domain used for organization, ID allocation, and evidence
       scanning.
-  lifecycle:
+  req_lifecycle:
     type: string
     enum: [draft, proposed, approved, deprecated, superseded]
     description: |
@@ -47,10 +47,18 @@ properties:
         usual plan and review, without an explicit owner agreement.
       - approved: frozen by its owner. Any significant change (normative statement,
         scenarios, criteria, deprecation or supersession) needs the owner's explicit,
-        justified agreement, recorded in approved_by and approved_on. Allowed only where
+        justified agreement, recorded in approved_by and approved_at. Allowed only where
         approval_lock is true for the requirement's tier and scope.
       - deprecated: no longer in force and not replaced; kept for history.
       - superseded: replaced by the requirements listed in superseded_by; kept for history.
+      OKF consumers read the generated status mapped by x-okf-status-projection.
+    x-okf-status-projection: {draft: draft, proposed: stable, approved: stable,
+      deprecated: deprecated, superseded: deprecated}
+  status:
+    type: string
+    enum: [draft, stable, deprecated]
+    description: Generated OKF lifecycle (OKF section 5.4) mapped from req_lifecycle by
+      x-okf-status-projection, so a plain OKF consumer reads it. Never edit it by hand.
   owner_email:
     type: string
     format: email
@@ -68,11 +76,19 @@ properties:
     description: Email of the owner who approved the current content. Required when
       the lifecycle is approved; set only on the owner's explicit agreement, never by
       an agent's own decision.
-  approved_on:
+  approved_at:
     type: string
-    format: date
-    description: ISO date (YYYY-MM-DD) of the owner's approval of the current content.
-      Required when the lifecycle is approved; updated with every agreed change.
+    format: date-time
+    description: ISO 8601 datetime with an explicit UTC offset of the owner's approval
+      of the current content. Required when the lifecycle is approved; updated with
+      every agreed change.
+  verified:
+    type: object
+    properties:
+      by: {type: string}
+      at: {type: string, format: date-time}
+    description: Generated OKF trust event (OKF section 5.2) by human:<approved_by> at
+      approved_at, so an approved requirement reads as human-reviewed. Never edit it by hand.
   origin:
     type: string
     minLength: 1
@@ -90,6 +106,7 @@ properties:
         id_marker: id
         tooltip_shows_fields: [description]
         preview_shows_fields: [description]
+        link-projection: Derives from
     description: Authored parent IDs; file navigation uses matching Markdown
       filename stems.
   derived_by:
@@ -102,6 +119,7 @@ properties:
         id_marker: id
         tooltip_shows_fields: [description]
         preview_shows_fields: [description]
+        link-projection: Derived by
     description: Generated reverse IDs; file navigation uses matching Markdown
       filename stems.
   depends_on:
@@ -112,6 +130,7 @@ properties:
         resolution: filename-stem
         syntax: plain
         id_marker: id
+        link-projection: Depends on
     description: Authored dependency IDs; file navigation uses matching Markdown
       filename stems.
   superseded_by:
@@ -124,6 +143,7 @@ properties:
         id_marker: id
         tooltip_shows_fields: [description]
         preview_shows_fields: [description]
+        link-projection: Superseded by
     description: Authored IDs of the requirements that replace this one; required
       when the lifecycle is superseded and forbidden otherwise.
   supersedes:
@@ -136,6 +156,7 @@ properties:
         id_marker: id
         tooltip_shows_fields: [description]
         preview_shows_fields: [description]
+        link-projection: Supersedes
     description: Generated IDs of the requirements this one replaces, the inverse
       of superseded_by.
   relates_to:
@@ -148,6 +169,7 @@ properties:
         id_marker: id
         tooltip_shows_fields: [description]
         preview_shows_fields: [description]
+        link-projection: Relates to
     description: Authored IDs of laterally related requirements; carries no
       derivation, supersession or coverage meaning.
   external_id:
@@ -186,7 +208,7 @@ properties:
   owner:
     type: string
     description: Project team responsible for maintaining the contract.
-required: [type, id, uuid, title, description, project, scope, lifecycle, origin,
+required: [type, id, uuid, title, description, project, scope, req_lifecycle, origin,
   tier]
 additionalProperties: true
 examples:
@@ -197,6 +219,7 @@ examples:
   description: The tool SHALL validate requirement frontmatter.
   project: okf-schema
   scope: core
-  lifecycle: proposed
+  req_lifecycle: proposed
+  status: stable
   origin: native
   tier: StRS

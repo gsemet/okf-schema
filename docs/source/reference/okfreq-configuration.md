@@ -48,13 +48,13 @@ tiers:
 id_policy: scope-prefix-sequence
 strs_test_coverage_mode: linked-swrs
 lifecycle:
-  field: lifecycle
+  field: req_lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email]
+  default_owner_email, status, verified]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -76,9 +76,9 @@ scopes:
 | `tiers` | Maps each tier to its document folder, ID prefix, allowed parent tiers, `approval_lock` and optional `owner_email` (see {ref}`okfreq-ownership-and-approval`). Additional tiers use the same generic derivation rules. Configurations written before 0.16.0 use the key `levels`, which is still read; a file must not declare both. |
 | `id_policy` | Allocation strategy. `scope-prefix-sequence` is currently supported; `okfreq new` rejects unsupported values. Existing documents are never renumbered. |
 | `strs_test_coverage_mode` | StRS test-coverage rule. Choose `linked-swrs` or `linked-swrs-and-validation-test`; the default is `linked-swrs`. |
-| `lifecycle.field` | Frontmatter field that holds the lifecycle state, `lifecycle` by default. The accepted values are the `enum` of that field in `tiers/_schema/base.schema.yaml`; their meanings are in {ref}`okfreq-lifecycle-states`. A schema you write by hand must use the same name for the property and its `required` entry; `okfreq init` always generates `lifecycle`, because it runs before you can edit `config.yml`. A legacy `lifecycle.values` list is still read and takes precedence over the schema. |
+| `lifecycle.field` | Frontmatter field that holds the lifecycle state, `req_lifecycle` by default, so it never collides with the OKF `status` that okfreq generates from it. The accepted values are the `enum` of that field in `tiers/_schema/base.schema.yaml`; their meanings are in {ref}`okfreq-lifecycle-states`. A schema you write by hand must use the same name for the property and its `required` entry; `okfreq init` always generates `req_lifecycle`, with its `x-okf-status-projection` mapping, because it runs before you can edit `config.yml`. A legacy `lifecycle.values` list is still read and takes precedence over the schema. |
 | `markers` | Implementation/test marker keywords and the regular expression used to recognise IDs. The entire match is the requirement ID. |
-| `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, and `default_owner_email`; unsupported values fail explicitly. A configuration that lists the fields explicitly keeps that list: add `supersedes` to maintain the backlink of `superseded_by`, and `default_owner_email` to write each requirement's configured owner. |
+| `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `default_owner_email`, `status` and `verified` (see {ref}`okfreq-okf-projection`); unsupported values fail explicitly. A configuration that lists the fields explicitly keeps that list: add `supersedes` to maintain the backlink of `superseded_by`, and `default_owner_email` to write each requirement's configured owner. |
 | `retired_ids` | IDs that were deleted with `okfreq retire` and must never be allocated again. Optional list of ID strings, written by `okfreq retire`; `okfreq new` numbers after the highest of the existing and retired IDs, `okfreq validate` rejects a document with a listed ID, and `okfreq import`/`config-merge` take the union of both lists. |
 | `scopes` | Per-scope ID token, requirement subfolder, source/test ownership, and optional ownership overrides (`owner_email`, `tiers.<tier>.approval_lock`, `tiers.<tier>.owner_email`). Keep `source_dirs` and `test_dirs` separate. |
 
@@ -161,7 +161,7 @@ owner with the authored field `owner_email`, which replaces `default_owner_email
 
 - the resolved `approval_lock` is `false`: keep it `proposed`, or ask the owner to
   enable the lock for that tier or scope;
-- `approved_by` or `approved_on` is missing. The message tells a coding agent that
+- `approved_by` or `approved_at` is missing, or `approved_at` is not an ISO 8601 datetime with a UTC offset. The message tells a coding agent that
   approval is the owner's decision. If the owner agreed (for example during
   planning), the agent records the owner's email and today's date, then requests
   the owner's review of the file on the pull or merge request; otherwise it

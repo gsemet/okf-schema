@@ -6,7 +6,8 @@ title: Validate OKF bundle structures
 description: The generic CLI validates OKF bundle structure and schemas.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: StRS
 derives_from: []
@@ -40,3 +41,14 @@ work against it.
   metadata.
 - A structurally invalid bundle must be distinguishable from a valid bundle by
   both human-readable output and command exit status.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derived by:
+  - [SwRS-OKFSCHEMA-CORE-001](../../swrs/core/SwRS-OKFSCHEMA-CORE-001.md): Validate generic OKF bundles
+  - [SwRS-OKFSCHEMA-CORE-006](../../swrs/core/SwRS-OKFSCHEMA-CORE-006.md): Validate OKF 0.2 provenance and lifecycle
+  - [SwRS-OKFSCHEMA-CORE-008](../../swrs/core/SwRS-OKFSCHEMA-CORE-008.md): Report schema files that yield no schema
+<!-- okf:links:end -->

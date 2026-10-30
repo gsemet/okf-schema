@@ -223,6 +223,25 @@ Consumers may also define presentation hints such as
 are advisory metadata for editors and navigation tools; the generic checker
 does not render tooltips, previews, or line-number UI.
 
+### Projections for plain OKF consumers
+
+OKF reads relations only as Markdown links in the body and lifecycle only from
+`status` (`draft | stable | deprecated`). A schema declares how richer metadata is
+projected onto them; `okf-schema lint` (and `okfkb update`) maintains the result:
+
+- `link-projection: <label>` inside `x-okf-link` turns each value of the field into
+  a link in a generated `### Links` section at the end of the body, between
+  `<!-- okf:links:start -->` and `<!-- okf:links:end -->`: one group per annotated
+  field, in schema order, base schema first. Unresolved values stay as code. Only
+  `filename-stem`, `bundle-relative` and `bundle-relative-stem` may be projected.
+- `x-okf-status-projection: {<value>: draft|stable|deprecated, ...}` on a lifecycle
+  property generates `status` right after it; every `enum` value needs a mapping.
+
+Never edit the generated section or `status` by hand; change the source field or
+the annotation and run `okf-schema lint`. `lint --no-link-projection` skips them,
+`lint --check` fails when they are stale, and `lint --links` ignores the section
+when it rebuilds `links`/`backlinks`. A malformed annotation is reported as `E11`.
+
 Both `resolution` and `syntax` are required. Resolution is `document-relative`
 (from the Markdown file's parent), `bundle-relative`, `bundle-relative-stem`, `project-relative`, or
 `filename-stem` (case-sensitive Markdown basename without `.md`). Syntax is
@@ -329,8 +348,9 @@ for c in concepts:
 | E8 | Source metadata | A source lacks `resource` or duplicates another source ID |
 | E9 | Trust/lifecycle metadata | Verification or lifecycle date structure is invalid |
 | E10 | Annotated file link | Opt-in file target or annotation is invalid, ambiguous, or escapes its declared root |
+| E11 | Projection annotation | A `link-projection` is empty or leaves the bundle, or an `x-okf-status-projection` maps to a non-OKF status or misses an `enum` value |
 
-### Warnings (W0–W17)
+### Warnings (W0–W18)
 
 | Code | Rule | Description |
 |------|------|-------------|
@@ -339,7 +359,7 @@ for c in concepts:
 | W2 | Broken cross-links | Internal markdown link points to a non-existent file |
 | W3 | Missing provenance timestamp | No `generated.at` (or legacy `timestamp`) in frontmatter |
 | W4 | Missing `index.md` | Directory with markdown files has no `index.md` |
-| W5 | Non-ISO date heading | `log.md` date heading not in `YYYY-MM-DD` format |
+| W5 | Non-ISO date heading | `log.md` date heading is not exactly `YYYY-MM-DD`; put a topic in a `### Topic` sub-heading |
 | W6 | Missing schema | No schema found for the concept's `type` |
 | W7 | Block-style lists | Frontmatter lists should use inline notation (e.g. `tags: [a, b]`) to keep frontmatter compact |
 | W8 | Legacy timestamp | Migrate `timestamp` to `generated.at` with `okf-schema lint` |
@@ -352,6 +372,7 @@ for c in concepts:
 | W15 | Skipped file-link check | Opt-in target checking lacks a root or filesystem access prevents inspection |
 | W16 | Unparseable `stale_after` | Value is not an ISO 8601 datetime with UTC offset (or bare date), so W11 cannot run; fix or remove it |
 | W17 | Unusable schema file | `schema file '<name>' cannot be parsed: <reason>`: syntax error, unreadable, or not a mapping; the type has no schema |
+| W18 | Log order | `log.md` date headings repeat or are not newest first; `lint --check` fails on W5 and W18 |
 
 ### Informational (I1)
 

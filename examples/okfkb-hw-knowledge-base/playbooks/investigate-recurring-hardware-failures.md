@@ -23,3 +23,12 @@ generated:
 2. Reproduce the signature without changing more than one condition at a time.
 3. Compare timestamps, affected components, and environmental boundaries.
 4. Record each confirmed observation as a new Finding.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derived from:
+  - [concepts/hardware-failures-have-a-stress-signature](../concepts/hardware-failures-have-a-stress-signature.md): Hardware failures have a stress signature
+<!-- okf:links:end -->

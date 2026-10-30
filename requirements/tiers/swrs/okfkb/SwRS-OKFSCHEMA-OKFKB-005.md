@@ -8,7 +8,8 @@ description: When findings are consolidated with okfkb-distill, the workflow
   confirmation before promotion.
 project: okf-schema
 scope: okfkb
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -56,3 +57,12 @@ confirmation before promoting a synthesized conclusion.
 - Method: installation tests and inspection of the packaged distill skill.
 - Criteria: the installed workflow preserves evidence, exposes contradictions,
   and makes promotion conditional on explicit confirmation.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFKB-001](../../strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md): Maintain trustworthy engineering knowledge
+<!-- okf:links:end -->

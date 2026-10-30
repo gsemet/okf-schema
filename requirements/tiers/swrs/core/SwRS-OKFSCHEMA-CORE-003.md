@@ -8,7 +8,8 @@ description: When formatting or linting is requested, okf-schema SHALL normalize
   and authored content.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -55,3 +56,12 @@ When formatting or linting is requested, okf-schema SHALL normalize supported fr
 - Method: formatter, API, and CLI regression tests.
 - Criteria: normalized output is idempotent, preservation-sensitive content is
   retained, and preview modes perform no writes.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-CORE-002](../../strs/core/StRS-OKFSCHEMA-CORE-002.md): Maintain and inspect OKF bundles
+<!-- okf:links:end -->

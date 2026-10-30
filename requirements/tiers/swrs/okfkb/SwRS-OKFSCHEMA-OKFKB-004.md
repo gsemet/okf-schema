@@ -7,7 +7,8 @@ description: The okfkb layer searches, reads, queries, and updates
   knowledge-base evidence.
 project: okf-schema
 scope: okfkb
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -63,3 +64,12 @@ knowledge and evidence.
 - Method: automated navigation tests over a fixed multi-layer bundle.
 - Criteria: expected documents and backlinks are returned consistently, and
   read-only navigation leaves the bundle unchanged.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFKB-001](../../strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md): Maintain trustworthy engineering knowledge
+<!-- okf:links:end -->

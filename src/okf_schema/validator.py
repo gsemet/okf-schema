@@ -16,6 +16,10 @@ OKF 0.2 additions (E7-E9, W8-W13, W16):
   W13 – Broken path in path-form `resource` or `sources[].resource`
   W14 – Invalid authored OKFKB derivation or stale computed `derives_to`
   W16 – `stale_after` cannot be parsed, so staleness is not checked
+  W18 – `log.md` date heading repeated or not newest first
+
+Schema projection annotations (see :mod:`okf_schema.projection`):
+  E11 – Malformed `link-projection` or `x-okf-status-projection` annotation
 
 Schema loading diagnostics (see :func:`load_schema_database_with_diagnostics`):
   I1  – Informational: schema file is empty (type stays without schema)
@@ -55,6 +59,7 @@ from okf_schema.okfkb.derivations import (
     content_document_paths,
     supports_derivation_graph,
 )
+from okf_schema.projection import projection_problems
 
 # Matches OKF actor strings: <prefix>:<identifier>  e.g. human:alice, bot:ci
 _ACTOR_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*:.+$")
@@ -896,13 +901,80 @@ def validate_index(
         )
 
 
+def log_heading_findings(path: Path) -> list[Finding]:
+    """Check the date headings of a ``log.md`` file (W5, W18).
+
+    OKF section 9 groups log entries under ``## YYYY-MM-DD`` headings, newest
+    first. A topic belongs in a ``### Topic`` sub-heading.
+
+    .. versionadded:: 0.17.0
+
+    Args:
+        path:
+            Path to the ``log.md`` file.
+
+    Returns:
+        ``W5`` for a level-2 heading that is not exactly a valid ``YYYY-MM-DD``
+        date, ``W18`` for a date repeated or out of newest-first order.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     log = Path(directory) / "log.md"
+        ...     _ = log.write_text("## 2026-01-01\\n\\n## 2026-02-01 (topic)\\n")
+        ...     [finding.code for finding in log_heading_findings(log)]
+        ['W5']
+    """
+    # @implements_req SwRS-OKFSCHEMA-CORE-009
+    findings: list[Finding] = []
+    previous: date | None = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("## "):
+            continue
+        heading = line[3:]
+        try:
+            current = date.fromisoformat(heading) if ISO8601_DATE_RE.match(heading) else None
+        except ValueError:
+            current = None
+        if current is None:
+            findings.append(
+                Finding(
+                    "W5",
+                    f"log.md '{path}' date heading '{heading}' is not exactly ISO 8601 "
+                    "'YYYY-MM-DD'. Fix: keep the date alone and put a topic in a "
+                    "'### Topic' sub-heading.",
+                    path,
+                )
+            )
+            continue
+        if previous is not None and current >= previous:
+            problem = "repeats" if current == previous else "is newer than"
+            findings.append(
+                Finding(
+                    "W18",
+                    f"log.md '{path}' date heading '{heading}' {problem} the heading "
+                    f"'{previous.isoformat()}' above it. Fix: keep one heading per date, "
+                    "newest first.",
+                    path,
+                )
+            )
+            continue
+        previous = current
+    return findings
+
+
 def validate_log(
     path: Path,
     report: Report,
 ) -> None:
     """Validate a ``log.md`` file.
 
-    Checks E3 (no frontmatter) and W5 (ISO 8601 date headings).
+    Checks E3 (no frontmatter), W5 (ISO 8601 date headings) and W18
+    (one heading per date, newest first).
+
+    .. versionchanged:: 0.17.0
+        A heading must be exactly ``YYYY-MM-DD``; W18 reports repeated and
+        out-of-order dates.
 
     Args:
         path:
@@ -920,16 +992,8 @@ def validate_log(
             path,
         )
 
-    # Check date headings
-    for line in text.splitlines():
-        if line.startswith("## "):
-            date_candidate = line[3:].strip()
-            if not ISO8601_DATE_RE.match(date_candidate):
-                report.add_warning(
-                    "W5",
-                    f"log.md '{path}' date heading '{date_candidate}' not in ISO 8601 format",
-                    path,
-                )
+    for finding in log_heading_findings(path):
+        report.add_warning(finding.code, finding.message, path)
 
 
 def _check_reserved_file_naming(
@@ -1001,6 +1065,14 @@ def validate_bundle(
     # Track directories that contain markdown files
     dirs_with_md: set[Path] = set()
     link_context = _FileLinkContext()
+
+    # E11 — a projection annotation the generator would ignore or refuse.
+    problems: dict[str, str] = {}
+    for type_name, schema in sorted((schemas or {}).items()):
+        for problem in projection_problems(schema):
+            problems.setdefault(problem, type_name)
+    for problem, type_name in problems.items():
+        report.add_error("E11", f"Schema '{type_name}': {problem}")
 
     for path in collect_markdown_files(bundle):
         dirs_with_md.add(path.parent)

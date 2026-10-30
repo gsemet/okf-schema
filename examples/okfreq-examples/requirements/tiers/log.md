@@ -1,5 +1,10 @@
 # Update Log
 
+## 2026-10-30
+
+- The lifecycle field is `req_lifecycle`; regenerated requirements carry the OKF
+  `status` and a generated Links section declared by the scaffold schema.
+
 ## 2026-10-19
 
 - Aligned each requirement body heading with its frontmatter title; future

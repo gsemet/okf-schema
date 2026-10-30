@@ -9,7 +9,8 @@ description: When a user asks to set up okfreq in a project without a
   its code and tests, without asking the user.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -77,3 +78,15 @@ When a user asks to set up okfreq in a project without a requirements bundle, th
   its stop rules and delivery steps.
 - Criteria: the test passes; the skill's behaviour with a real agent is not
   verified by this test.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+- Depends on:
+  - [SwRS-OKFSCHEMA-OKFREQ-002](SwRS-OKFSCHEMA-OKFREQ-002.md): Author and validate requirements
+  - [SwRS-OKFSCHEMA-OKFREQ-008](SwRS-OKFSCHEMA-OKFREQ-008.md): Ship usable standalone requirements guidance
+<!-- okf:links:end -->

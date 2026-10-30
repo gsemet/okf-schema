@@ -7,7 +7,8 @@ description: When export is requested, the service SHALL write the report as CSV
   output.
 project: OKFREQXMP
 scope: Core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -46,3 +47,12 @@ When export is requested, the service SHALL write the report as CSV output.
 
 - Method: test
 - Criteria: Automated tests compare exact CSV output for populated and empty inputs.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-CORE-001](../strs/StRS-CORE-001.md): Export a report
+<!-- okf:links:end -->

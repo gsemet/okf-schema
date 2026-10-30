@@ -72,13 +72,17 @@ properties:
       Authored canonical bundle-relative, extensionless paths of documents
       from which this document was derived.
     type: array
-    items: { type: string }
+    items:
+      type: string
+      x-okf-link: {resolution: bundle-relative-stem, syntax: plain, link-projection: Derived from}
   derives_to:
     description: >-
       Generated canonical bundle-relative, extensionless paths of documents
       derived from this document. Computed from their derived_from fields.
     type: array
-    items: { type: string }
+    items:
+      type: string
+      x-okf-link: {resolution: bundle-relative-stem, syntax: plain, link-projection: Derives to}
   links:
     type: array
     items:

@@ -8,7 +8,8 @@ description: When a user inspects an OKF bundle, okf-schema SHALL provide
   without modifying the bundle.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -56,3 +57,12 @@ When a user inspects an OKF bundle, okf-schema SHALL provide deterministic list,
   statistics operations.
 - Criteria: ordering and computed relationships are deterministic, missing targets
   fail explicitly, and fixture content remains unchanged.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-CORE-002](../../strs/core/StRS-OKFSCHEMA-CORE-002.md): Maintain and inspect OKF bundles
+<!-- okf:links:end -->

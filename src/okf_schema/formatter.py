@@ -20,6 +20,7 @@ from pathlib import Path
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from okf_schema._internal.utils import (
+    RESERVED_FILES,
     build_link_graph,
     collect_markdown_files,
 )
@@ -30,6 +31,8 @@ from okf_schema.okfkb.derivations import (
     document_id,
     supports_derivation_graph,
 )
+from okf_schema.projection import BundleProjector
+from okf_schema.validator import load_schema_database
 
 
 @dataclass
@@ -427,8 +430,15 @@ def lint_bundle(
     check: bool = False,
     diff: bool = False,
     links: bool = False,
+    projection: bool = True,
 ) -> list[FormattedResult]:
     """Lint all concept files in an OKF bundle (convert block lists to inline).
+
+    .. versionchanged:: 0.17.0
+        Apply the projections declared by the bundle schemas (``link-projection``
+        Links sections and ``x-okf-status-projection`` status) unless
+        *projection* is ``False``. The ``links`` body scan skips the generated
+        Links section.
 
     Args:
         bundle:
@@ -441,9 +451,15 @@ def lint_bundle(
         links:
             If ``True``, also update ``links`` and ``backlinks``
             frontmatter fields based on markdown body content.
+        projection:
+            If ``True``, maintain the OKF projections declared in ``_schema/``.
 
     Returns:
         A list of results, one per markdown file found in the bundle.
+
+    Raises:
+        ProjectionError:
+            If a document holds an incomplete or repeated generated Links section.
 
     Examples:
         >>> from tempfile import TemporaryDirectory
@@ -460,6 +476,11 @@ def lint_bundle(
         outgoing_graph, incoming_graph = build_link_graph(bundle)
     if supports_derivation_graph(bundle):
         derivation_graph = build_derivation_graph(bundle).derives_to
+    projector = (
+        BundleProjector(bundle, load_schema_database(bundle / "_schema"))
+        if projection and (bundle / "_schema").is_dir()
+        else None
+    )
 
     results: list[FormattedResult] = []
     for path in collect_markdown_files(bundle):
@@ -483,6 +504,14 @@ def lint_bundle(
                 )
                 if derivation_updated is not None:
                     linted = derivation_updated
+
+        if (
+            projector is not None
+            and linted is not None
+            and path.name not in RESERVED_FILES
+            and "_schema" not in path.relative_to(bundle).parts
+        ):
+            linted = projector.project(path, linted)
 
         if linted is None or linted == original:
             results.append(FormattedResult(path=path, changed=False))

@@ -7,7 +7,8 @@ description: The okfreq layer records implementation and test markers and
   computes coverage.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -75,3 +76,12 @@ requirement fields and Markdown bodies.
 - Criteria: valid multi-file coverage is retained, suspect references are
   classified correctly, and only configured generated fields change during an
   update.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

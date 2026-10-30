@@ -24,6 +24,8 @@ RESOLUTIONS = frozenset(
     }
 )
 SYNTAXES = frozenset({"plain", "wikilink"})
+# Resolutions whose targets stay inside the bundle, the only ones a link-projection may use.
+PROJECTABLE_RESOLUTIONS = frozenset({"filename-stem", "bundle-relative", "bundle-relative-stem"})
 
 
 @dataclass(frozen=True)
@@ -323,6 +325,17 @@ def _parse_annotation(
             field_path,
             "x-okf-link syntax must be one of " + ", ".join(sorted(SYNTAXES)),
         )
+    if "link-projection" in annotation:
+        label = annotation["link-projection"]
+        if not isinstance(label, str) or not label.strip():
+            return _error(field_path, "x-okf-link link-projection must be a non-empty string")
+        if resolution not in PROJECTABLE_RESOLUTIONS:
+            return _error(
+                field_path,
+                "x-okf-link link-projection needs a resolution inside the bundle ("
+                + ", ".join(sorted(PROJECTABLE_RESOLUTIONS))
+                + f"), not {resolution}",
+            )
     return resolution, syntax
 
 

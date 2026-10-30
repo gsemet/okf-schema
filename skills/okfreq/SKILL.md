@@ -114,9 +114,13 @@ satisfied. It is not an issue title, design choice, code comment, or task.
   requirement never silently changes its lifecycle. A requirement delivered with
   its code starts `proposed`; `draft` is a proposal not implemented yet.
 - **`approved` belongs to the owner.** It freezes a requirement; only the owner
-  agrees to approve or change one, recorded in `approved_by` and `approved_on`.
+  agrees to approve or change one, recorded in `approved_by` and `approved_at`.
   Owners and approval locks come from `config.yml` per tier and scope. Repair
   steps for an agent: [references/operations.md](references/operations.md#lifecycle-ownership-and-approval).
+- **The bundle stays a native OKF bundle.** okfreq generates `status` from
+  `req_lifecycle`, a `human:` `verified` event from the approval and a Links
+  section from the relations, as the schemas declare. Never edit them by hand.
+  Details: [references/operations.md](references/operations.md#native-okf-projection).
 
 ## Route the intent
 
@@ -329,5 +333,6 @@ at the tiers root and every tier/scope directory. Preserve authored text outside
 the generated blocks and the optional bundle-root overview. Use `--diff` for a
 read-only preview and `--check` for CI; lint otherwise writes generated navigation.
 Append meaningful changes, affected IDs, rationale and actual verification to
-`<bundle>/tiers/log.md`, preserving history. Logs are authored, never generated.
+`<bundle>/tiers/log.md`, preserving history, under a `## YYYY-MM-DD` heading (newest
+first, one per date; a topic goes in a `### Topic` sub-heading). Logs are authored, never generated.
 Read the bundled operations reference for marker delimiters and exact commands.

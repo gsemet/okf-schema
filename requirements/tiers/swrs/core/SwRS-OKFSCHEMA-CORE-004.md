@@ -8,7 +8,8 @@ description: When bundle maintenance is requested, okf-schema SHALL regenerate
   while reporting deferred rewrites.
 project: okf-schema
 scope: core
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -53,3 +54,12 @@ When bundle maintenance is requested, okf-schema SHALL regenerate deterministic 
 - Method: API and CLI tests over indexed bundles and supersession fixtures.
 - Criteria: repeated maintenance is idempotent, safe links are rewritten, and
   unresolved replacements are reported without data loss.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-CORE-002](../../strs/core/StRS-OKFSCHEMA-CORE-002.md): Maintain and inspect OKF bundles
+<!-- okf:links:end -->

@@ -7,7 +7,8 @@ description: The okfreq layer reports requirement hierarchy, coverage, and
   lifecycle health.
 project: okf-schema
 scope: okfreq
-lifecycle: proposed
+req_lifecycle: proposed
+status: stable
 origin: native
 tier: SwRS
 derives_from:
@@ -71,3 +72,12 @@ counts as separate inspectable metrics.
 - Method: automated tests of status, graph, JSON, and Markdown report output.
 - Criteria: report totals match the loaded corpus and known discrepancies appear
   in the correct categories.
+
+<!-- okf:links:start -->
+### Links
+
+<!-- Generated from the frontmatter relations; edit them instead. -->
+
+- Derives from:
+  - [StRS-OKFSCHEMA-OKFREQ-001](../../strs/okfreq/StRS-OKFSCHEMA-OKFREQ-001.md): Maintain auditable software requirements
+<!-- okf:links:end -->

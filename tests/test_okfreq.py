@@ -12,6 +12,7 @@ from parametrization import Parametrization
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.okfreq.cli import okfreq
 from okf_schema.okfreq.core import (
+    STATUS_PROJECTION,
     RequirementError,
     bundle_path,
     create_requirement,
@@ -31,6 +32,7 @@ from okf_schema.okfreq.core import (
     validate_requirements,
     write_markdown_report,
 )
+from okf_schema.projection import strip_links_section
 
 
 def make_bundle(tmp_path: Path) -> Path:
@@ -826,7 +828,7 @@ def test_update_coverage_rejects_unknown_generated_field(tmp_path: Path) -> None
     config.write_text(
         config.read_text(encoding="utf-8").replace(
             "generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,\n"
-            "  default_owner_email]",
+            "  default_owner_email, status, verified]",
             "generated_fields: [unknown]",
         ),
         encoding="utf-8",
@@ -1025,7 +1027,7 @@ def test_cli_validation_and_graph_failures(tmp_path: Path) -> None:
         "description: A broken requirement.\n"
         "project: demo\n"
         "scope: default\n"
-        "lifecycle: draft\n"
+        "req_lifecycle: draft\n"
         "origin: native\n"
         "tier: SwRS\n"
         "derives_from: [unknown]\n"
@@ -1325,13 +1327,17 @@ def test_retire_refuses_unknown_published_and_marked_requirements(tmp_path: Path
         retire_requirement(root, "SwRS-default-099")
     approved = tiers_path(root) / "swrs" / "SwRS-default-001.md"
     approved.write_text(
-        approved.read_text(encoding="utf-8").replace("lifecycle: draft", "lifecycle: approved"),
+        approved.read_text(encoding="utf-8").replace(
+            "req_lifecycle: draft", "req_lifecycle: approved"
+        ),
         encoding="utf-8",
     )
     with pytest.raises(RequirementError, match="use archive or supersede"):
         retire_requirement(root, "SwRS-default-001")
     approved.write_text(
-        approved.read_text(encoding="utf-8").replace("lifecycle: approved", "lifecycle: draft"),
+        approved.read_text(encoding="utf-8").replace(
+            "req_lifecycle: approved", "req_lifecycle: draft"
+        ),
         encoding="utf-8",
     )
     (project / "src").mkdir()
@@ -1463,7 +1469,7 @@ def make_family(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
 
 
 def set_fields(path: Path, **updates: object) -> None:
-    """Rewrite frontmatter fields of one requirement, keeping the body."""
+    """Rewrite frontmatter fields of one requirement, keeping the body and its status."""
     frontmatter, body = extract_frontmatter(path.read_text(encoding="utf-8"))
     data = make_yaml().load(frontmatter)
     for key, value in updates.items():
@@ -1471,6 +1477,8 @@ def set_fields(path: Path, **updates: object) -> None:
             data.pop(key, None)
         else:
             data[key] = value
+    if "req_lifecycle" in updates and "status" in data:
+        data["status"] = STATUS_PROJECTION.get(str(data["req_lifecycle"]), data["status"])
     path.write_text(f"---\n{dump_yaml(data)}---\n{body}", encoding="utf-8")
 
 
@@ -1491,10 +1499,12 @@ def test_supersede_records_several_replacements_as_a_list(tmp_path: Path) -> Non
     )
     assert result.exit_code == 0, result.output
     data = frontmatter_of(old)
-    assert data["lifecycle"] == "superseded"
+    assert data["req_lifecycle"] == "superseded"
     assert data["superseded_by"] == ["SwRS-default-002", "SwRS-default-003"]
     assert data["uuid"] == uuid
-    assert extract_frontmatter(old.read_text(encoding="utf-8"))[1] == before
+    after = extract_frontmatter(old.read_text(encoding="utf-8"))[1]
+    assert strip_links_section(after) == strip_links_section(before)
+    assert "- Superseded by:\n  - [SwRS-default-002](SwRS-default-002.md)" in after
     assert "superseded_by:\n- SwRS-default-002\n- SwRS-default-003\n" in old.read_text("utf-8")
     assert validate_requirements(root) == []
 
@@ -1504,7 +1514,7 @@ def test_supersede_with_one_replacement_writes_a_list_and_replaces_a_legacy_scal
 ) -> None:
     root, paths = make_family(tmp_path)
     old = paths["SwRS-default-001"]
-    set_fields(old, lifecycle="superseded", superseded_by="SwRS-default-002")
+    set_fields(old, req_lifecycle="superseded", superseded_by="SwRS-default-002")
     supersede_requirement(root, "SwRS-default-001", ["SwRS-default-003"])
     assert frontmatter_of(old)["superseded_by"] == ["SwRS-default-003"]
 
@@ -1558,12 +1568,12 @@ def test_cli_supersede_requires_a_replacement_and_confirmation(tmp_path: Path) -
 @Parametrization.autodetect_parameters()
 @Parametrization.case(
     name="superseded_without_replacement",
-    fields={"lifecycle": "superseded"},
+    fields={"req_lifecycle": "superseded"},
     expected="lifecycle superseded requires a non-empty superseded_by",
 )
 @Parametrization.case(
     name="superseded_with_empty_list",
-    fields={"lifecycle": "superseded", "superseded_by": []},
+    fields={"req_lifecycle": "superseded", "superseded_by": []},
     expected="lifecycle superseded requires a non-empty superseded_by",
 )
 @Parametrization.case(
@@ -1573,22 +1583,22 @@ def test_cli_supersede_requires_a_replacement_and_confirmation(tmp_path: Path) -
 )
 @Parametrization.case(
     name="unknown_replacement",
-    fields={"lifecycle": "superseded", "superseded_by": ["SwRS-default-009"]},
+    fields={"req_lifecycle": "superseded", "superseded_by": ["SwRS-default-009"]},
     expected="unknown superseded_by target SwRS-default-009",
 )
 @Parametrization.case(
     name="self_replacement",
-    fields={"lifecycle": "superseded", "superseded_by": ["SwRS-default-001"]},
+    fields={"req_lifecycle": "superseded", "superseded_by": ["SwRS-default-001"]},
     expected="superseded_by must not reference the requirement itself",
 )
 @Parametrization.case(
     name="repeated_replacement",
-    fields={"lifecycle": "superseded", "superseded_by": ["SwRS-default-002"] * 2},
+    fields={"req_lifecycle": "superseded", "superseded_by": ["SwRS-default-002"] * 2},
     expected="duplicate superseded_by target SwRS-default-002",
 )
 @Parametrization.case(
     name="not_a_list_of_ids",
-    fields={"lifecycle": "superseded", "superseded_by": {"id": "SwRS-default-002"}},
+    fields={"req_lifecycle": "superseded", "superseded_by": {"id": "SwRS-default-002"}},
     expected="superseded_by must be a list of requirement IDs",
 )
 @Parametrization.case(
@@ -1628,7 +1638,7 @@ def test_validation_rejects_a_superseded_by_cycle(tmp_path: Path) -> None:
     for old, new in (("001", "002"), ("002", "003"), ("003", "001")):
         set_fields(
             paths[f"SwRS-default-{old}"],
-            lifecycle="superseded",
+            req_lifecycle="superseded",
             superseded_by=[f"SwRS-default-{new}"],
         )
     cycles = [f for f in validate_requirements(root) if "superseded_by cycle" in f]
@@ -1641,10 +1651,10 @@ def test_validation_rejects_a_superseded_by_cycle(tmp_path: Path) -> None:
 def test_a_chain_of_replacements_is_valid(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     set_fields(
-        paths["SwRS-default-001"], lifecycle="superseded", superseded_by=["SwRS-default-002"]
+        paths["SwRS-default-001"], req_lifecycle="superseded", superseded_by=["SwRS-default-002"]
     )
     set_fields(
-        paths["SwRS-default-002"], lifecycle="superseded", superseded_by=["SwRS-default-003"]
+        paths["SwRS-default-002"], req_lifecycle="superseded", superseded_by=["SwRS-default-003"]
     )
     assert validate_requirements(root) == []
 
@@ -1654,7 +1664,7 @@ def test_legacy_scalar_superseded_by_is_accepted_with_an_informational_finding(
 ) -> None:
     root, paths = make_family(tmp_path)
     old = paths["SwRS-default-001"]
-    set_fields(old, lifecycle="superseded", superseded_by="SwRS-default-002")
+    set_fields(old, req_lifecycle="superseded", superseded_by="SwRS-default-002")
     # The scaffold schema declares the list form; a bundle created by an earlier release
     # declares nothing for the field, which is what this scenario reproduces.
     findings = validate_requirements(root)
@@ -1751,11 +1761,11 @@ def test_graph_reports_unknown_relation_targets(tmp_path: Path) -> None:
 @Parametrization.case(name="relates_to", fields={"relates_to": ["SwRS-default-001"]})
 @Parametrization.case(
     name="superseded_by_list",
-    fields={"lifecycle": "superseded", "superseded_by": ["SwRS-default-001"]},
+    fields={"req_lifecycle": "superseded", "superseded_by": ["SwRS-default-001"]},
 )
 @Parametrization.case(
     name="superseded_by_legacy_scalar",
-    fields={"lifecycle": "superseded", "superseded_by": "SwRS-default-001"},
+    fields={"req_lifecycle": "superseded", "superseded_by": "SwRS-default-001"},
 )
 def test_retire_refuses_a_requirement_referenced_by_a_relation(
     tmp_path: Path, fields: dict
@@ -1780,7 +1790,7 @@ def test_scaffold_schema_annotates_the_relation_fields(tmp_path: Path) -> None:
 
 def test_empty_scalar_superseded_by_counts_as_missing_without_a_list_hint(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
-    set_fields(paths["SwRS-default-001"], lifecycle="superseded", superseded_by="")
+    set_fields(paths["SwRS-default-001"], req_lifecycle="superseded", superseded_by="")
     findings = validate_requirements(root)
     assert any("requires a non-empty superseded_by" in f for f in findings)
     assert not any(f.startswith("I2 ") for f in findings)
@@ -1792,6 +1802,8 @@ def _set_fields(document: Path, **fields: object) -> None:
     assert frontmatter is not None
     data = make_yaml().load(frontmatter)
     data.update(fields)
+    if "req_lifecycle" in fields and "status" in data:
+        data["status"] = STATUS_PROJECTION[str(data["req_lifecycle"])]
     document.write_text(f"---\n{dump_yaml(data)}---\n{body}", encoding="utf-8")
 
 
@@ -1809,7 +1821,7 @@ def test_generated_config_states_tiers_lock_and_lifecycle_field(tmp_path: Path) 
 
     assert config["tiers"]["StRS"]["approval_lock"] is True
     assert config["tiers"]["SwRS"]["approval_lock"] is False
-    assert config["lifecycle"] == {"field": "lifecycle"}
+    assert config["lifecycle"] == {"field": "req_lifecycle"}
     assert "levels" not in config
     assert lifecycle_values(root, config) == [
         "draft",
@@ -1834,7 +1846,7 @@ def test_lifecycle_values_come_from_the_schema_enum_unless_legacy_values_are_set
     )
     assert lifecycle_values(root, load_config(root))[-1] == "retired"
 
-    _edit_config(root, "  field: lifecycle\n", "  values: [draft, proposed]\n")
+    _edit_config(root, "  field: req_lifecycle\n", "  values: [draft, proposed]\n")
     assert lifecycle_values(root, load_config(root)) == ["draft", "proposed"]
 
 
@@ -1902,16 +1914,21 @@ def test_default_owner_email_is_generated_and_removed_with_the_config(tmp_path: 
 def test_approved_requirement_needs_the_owner_agreement_fields(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     strs, _ = add_requirements(root)
-    _set_fields(strs, lifecycle="approved", owner_email="po@x.org")
+    _set_fields(strs, req_lifecycle="approved", owner_email="po@x.org")
 
     findings = validate_requirements(root)
     assert len(findings) == 1
-    assert "requires approved_by and approved_on" in findings[0]
+    assert "requires approved_by and approved_at" in findings[0]
     assert "(po@x.org)" in findings[0]
     assert "a coding agent never decides it alone" in findings[0]
     assert "request the owner's review" in findings[0]
 
-    _set_fields(strs, approved_by="po@x.org", approved_on="2026-10-28")
+    _set_fields(strs, approved_by="po@x.org", approved_at="2026-10-28")
+    findings = validate_requirements(root)
+    assert len(findings) == 1
+    assert "approved_at must be an ISO 8601 datetime" in findings[0]
+
+    _set_fields(strs, approved_at="2026-10-28T09:00:00+01:00")
     assert validate_requirements(root) == []
 
 
@@ -1919,7 +1936,12 @@ def test_approved_requirement_needs_the_owner_agreement_fields(tmp_path: Path) -
 def test_approved_is_refused_where_approval_lock_is_false(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _, swrs = add_requirements(root)
-    _set_fields(swrs, lifecycle="approved", approved_by="po@x.org", approved_on="2026-10-28")
+    _set_fields(
+        swrs,
+        req_lifecycle="approved",
+        approved_by="po@x.org",
+        approved_at="2026-10-28T09:00:00+01:00",
+    )
 
     findings = validate_requirements(root)
     assert len(findings) == 1
@@ -1971,7 +1993,7 @@ def test_new_can_start_a_requirement_as_proposed(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0, result.output
-    assert load_requirements(root)["StRS-default-001"][1]["lifecycle"] == "proposed"
+    assert load_requirements(root)["StRS-default-001"][1]["req_lifecycle"] == "proposed"
     with pytest.raises(RequirementError, match="starts as draft or proposed"):
         create_requirement(
             root,
@@ -2014,7 +2036,7 @@ def test_config_merge_refuses_a_legacy_lifecycle_values_list_over_a_field(tmp_pa
     source.write_text("lifecycle:\n  values: [draft, done]\n", encoding="utf-8")
 
     assert merge_config(root, source) == ["lifecycle.values"]
-    assert load_config(root)["lifecycle"] == {"field": "lifecycle"}
+    assert load_config(root)["lifecycle"] == {"field": "req_lifecycle"}
 
     source.write_text("tiers: {}\nlevels: {}\n", encoding="utf-8")
     with pytest.raises(RequirementError, match="both tiers and the legacy levels"):
@@ -2079,9 +2101,9 @@ def test_retired_requirement_may_keep_its_approval_record(
     root, paths = make_family(tmp_path)
     set_fields(
         paths["SwRS-default-001"],
-        lifecycle=lifecycle,
+        req_lifecycle=lifecycle,
         approved_by="po@x.org",
-        approved_on="2026-10-28",
+        approved_at="2026-10-28T09:00:00+01:00",
         **extra,
     )
 
@@ -2091,13 +2113,13 @@ def test_retired_requirement_may_keep_its_approval_record(
 # @tests_req SwRS-OKFSCHEMA-OKFREQ-013
 def test_lifecycle_field_names_a_custom_frontmatter_field(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
-    _edit_config(root, "  field: lifecycle\n", "  field: status\n")
+    _edit_config(root, "  field: req_lifecycle\n", "  field: state\n")
     schema = tiers_path(root) / "_schema" / "base.schema.yaml"
     text = schema.read_text(encoding="utf-8")
-    assert "\n  lifecycle:\n" in text and "\n- lifecycle\n" in text
+    assert "\n  req_lifecycle:\n" in text and "\n- req_lifecycle\n" in text
     schema.write_text(
-        text.replace("\n  lifecycle:\n", "\n  status:\n").replace(
-            "\n- lifecycle\n", "\n- status\n"
+        text.replace("\n  req_lifecycle:\n", "\n  state:\n").replace(
+            "\n- req_lifecycle\n", "\n- state\n"
         ),
         encoding="utf-8",
     )
@@ -2110,15 +2132,16 @@ def test_lifecycle_field_names_a_custom_frontmatter_field(tmp_path: Path) -> Non
         )
         assert result.exit_code == 0, result.output
     created = load_requirements(root)["StRS-default-001"][1]
-    assert created["status"] == "proposed"
-    assert "lifecycle" not in created
+    assert (created["state"], created["status"]) == ("proposed", "stable")
+    assert "req_lifecycle" not in created
     assert validate_requirements(root) == []
 
     supersede_requirement(root, "StRS-default-001", ["StRS-default-002"])
     archived = runner.invoke(okfreq, ["archive", "StRS-default-002", "--path", str(root), "--yes"])
     assert archived.exit_code == 0, archived.output
     requirements = load_requirements(root)
-    assert requirements["StRS-default-001"][1]["status"] == "superseded"
+    assert requirements["StRS-default-001"][1]["state"] == "superseded"
+    assert requirements["StRS-default-002"][1]["state"] == "deprecated"
     assert requirements["StRS-default-002"][1]["status"] == "deprecated"
-    assert "lifecycle" not in requirements["StRS-default-002"][1]
+    assert "req_lifecycle" not in requirements["StRS-default-002"][1]
     assert validate_requirements(root) == []
