@@ -212,8 +212,13 @@ def lint_frontmatter(text: str) -> str | None:
         if isinstance(value, list):
             flat = flatten_value(value)
             if flat != value:
-                data[key] = flat
+                # Flattening builds a plain list, which ruamel dumps block-style;
+                # re-wrap it so the inlined style below applies to it as well.
+                seq = CommentedSeq(flat)
+                seq.fa.set_flow_style()
+                data[key] = seq
                 changed = True
+                continue
         # Only set flow style on lists (CommentedSeq), not on block-mapped dicts
         if (
             isinstance(value, CommentedSeq)

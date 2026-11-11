@@ -328,6 +328,14 @@ def test_lint_frontmatter_preserves_comments() -> None:
     assert "# keep this comment" in result
 
 
+def test_lint_frontmatter_inlines_flattened_nested_list() -> None:
+    """A nested list is flattened *and* inlined, like an already-flat one."""
+    text = "---\ntype: concept\ntags:\n  - alpha\n  - [beta, gamma]\n---\n\n# Body\n"
+    result = lint_frontmatter(text)
+    assert result is not None
+    assert "tags: [alpha, beta, gamma]" in result
+
+
 # ---------------------------------------------------------------------------
 # lint_bundle
 # ---------------------------------------------------------------------------
