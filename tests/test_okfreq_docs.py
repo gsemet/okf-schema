@@ -12,6 +12,7 @@ results, so a change in the page or in the code fails here.
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -143,7 +144,7 @@ def test_example_3_no_scenarios_prints_w003_and_w004(tmp_path: Path) -> None:
     blocks = _captioned_blocks(_PAGE)["3"]
     _project, bundle = _build_example(tmp_path, blocks)
     findings = [
-        finding.replace(str(bundle), "<bundle>")
+        finding.replace(str(bundle), "<bundle>").replace(os.sep, "/")
         for finding in validate_requirements(bundle, prose=True)
     ]
     assert "\n".join(findings) == blocks["findings"].strip()

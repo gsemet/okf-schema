@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -3253,12 +3254,17 @@ EXECUTION_COST_LINK = (
 )
 
 
+def _addresses(finding: str, identifier: str) -> bool:
+    """Return whether ``finding`` names ``identifier``'s file and then the identifier."""
+    return f"{os.sep}{identifier}.md: {identifier} " in finding
+
+
 def w003_of(root: Path, identifier: str) -> str:
     """Return the single W003 finding addressed to one statement."""
     found = [
         finding
         for finding in validate_requirements(root)
-        if finding.startswith("W003 ") and f"/{identifier}.md: {identifier} " in finding
+        if finding.startswith("W003 ") and _addresses(finding, identifier)
     ]
     assert len(found) == 1, found
     return str(found[0])
@@ -3269,7 +3275,7 @@ def w004_of(root: Path, identifier: str) -> str:
     found = [
         finding
         for finding in validate_requirements(root)
-        if finding.startswith("W004 ") and f"/{identifier}.md: {identifier} " in finding
+        if finding.startswith("W004 ") and _addresses(finding, identifier)
     ]
     assert len(found) == 1, found
     return str(found[0])
@@ -4059,9 +4065,7 @@ def _d3(tmp_path: Path) -> None:
         "@tests_req <SwRS-ID>#S<n>."
     )
     assert sorted(advisory.split(" ")[0] for advisory in advisories) == ["W003", "W003", "W004"]
-    named = [
-        advisory.split(" ")[1].rsplit("/", 1)[-1].removesuffix(".md:") for advisory in advisories
-    ]
+    named = [Path(advisory.split(" ")[1].removesuffix(":")).stem for advisory in advisories]
     assert sorted(named) == sorted([silent, silent, draft])
 
     assert stakeholder_of(root, stunter)["paths"] == {"total": 2, "tested": 1, "accepted": 1}
