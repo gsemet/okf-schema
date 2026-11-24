@@ -3,6 +3,11 @@
 Run from the repository root with ``uv run python
 examples/okfreq-examples/showcase.py``. The checked-in CSV example is preserved;
 all configuration, lifecycle changes and intentional failures stay temporary.
+
+The showcase's own ``@delivers``, ``@verifies`` and ``@accepts`` markers are
+linkage fixtures that demonstrate scanning, not executed shipping software. The
+checked-in example's real acceptance test, run as a separate process, is
+``tests/test_acceptance_export.py``.
 """
 
 from __future__ import annotations
@@ -17,7 +22,7 @@ from jsonschema import Draft202012Validator
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.file_links import inspect_file_links
 from okf_schema.okfreq.cli import okfreq
-from okf_schema.okfreq.core import load_requirements, report
+from okf_schema.okfreq.core import load_requirements, report, report_schema
 from okf_schema.projection import LINKS_START, strip_links_section
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-008
@@ -120,6 +125,172 @@ def run_showcase(project: Path) -> dict[str, str]:
     outcomes["strict_stakeholder_coverage"] = (
         "requires linked SwRS tests and a direct validation test"
     )
+
+    # Mode linked-swrs-and-acceptance-paths on the same project and custom markers.
+    # The earlier mode and test file are restored afterwards; the declared scenarios and
+    # headings may stay, since the other modes accept them.
+    earlier_mode = config["strs_test_coverage_mode"]
+    earlier_tests = test_path.read_text(encoding="utf-8")
+    parent_path = records[parent][0]
+    swrs_path = records[swrs][0]
+
+    def stakeholder() -> dict:
+        record = next(item for item in report(root)["requirements"] if item["id"] == parent)
+        return record["stakeholder_test_coverage"]
+
+    def transitions() -> dict:
+        record = next(item for item in report(root)["requirements"] if item["id"] == swrs)
+        return record["transitions"]
+
+    def mark(*lines: str) -> None:
+        test_path.write_text("".join(f"# @{line}\n" for line in lines), encoding="utf-8")
+
+    parent_body = parent_path.read_text(encoding="utf-8")
+    assert "### Main paths" not in parent_body
+    parent_path.write_text(
+        parent_body.replace(
+            "### Preserved stakeholder intent",
+            "### Main paths\n\n"
+            "#### Path S1: Review a manifest offline\n\n"
+            "1. The dispatcher exports a manifest.\n"
+            "2. The dispatcher reads it without the service.\n\n"
+            "#### Path S2: Review a replacement manifest\n\n"
+            "1. The dispatcher exports the replacement manifest.\n"
+            "2. The dispatcher compares it with the first one.\n\n"
+            "### Preserved stakeholder intent",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    swrs_body = swrs_path.read_text(encoding="utf-8")
+    swrs_path.write_text(
+        swrs_body.replace("### Scenario: <nominal behavior>", "### Scenario S1: Write a manifest")
+        .replace(
+            "### Scenario: <boundary or failure behavior>",
+            "### Scenario S2: Write an empty manifest",
+        )
+        .replace("<nominal behavior>", "Write a manifest"),
+        encoding="utf-8",
+    )
+    config["markers"]["accepts"] = "@accepts"
+    config["strs_test_coverage_mode"] = "linked-swrs-and-acceptance-paths"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+
+    # 1. An undeclared StRS gets W003 (headings and a block to paste) and W004.
+    mark(f"verifies {swrs}", f"verifies {replacement}", f"verifies {parent}")
+    warnings = command("validate", str(root))
+    assert "W003" in warnings and "W004" in warnings
+    assert f"{parent} declares no scenarios:" in warnings
+    assert '"#### Path S1: Review a manifest offline"' in warnings
+    assert '"#### Path S2: Review a replacement manifest"' in warnings
+    assert "- id: S1\n" in warnings and "title: Review a replacement manifest" in warnings
+    assert f"{parent} has no acceptance test" in warnings
+    assert stakeholder()["paths"] == {"total": 0, "tested": 0, "accepted": 0}
+
+    # 2. Once declared, a fragmentless marker is an error and does not count.
+    edit(
+        parent_path,
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Review a manifest offline"},
+                {"id": "S2", "title": "Review a replacement manifest"},
+            ]
+        },
+    )
+    edit(
+        swrs_path,
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Write a manifest"},
+                {"id": "S2", "title": "Write an empty manifest"},
+            ]
+        },
+    )
+    errors = command("validate", str(root), "--json", expected=1)
+    assert f"@verifies {swrs} has no scenario fragment" in errors
+    assert f"@verifies {parent} has no scenario fragment" in errors
+    assert f"@verifies {replacement}" not in errors
+    assert stakeholder()["paths"]["tested"] == 0 and stakeholder()["tested"] is False
+    assert report(root)["marker_coverage"]["tested"] == 1
+
+    # 3. An unknown fragment is an error.
+    mark(f"verifies {replacement}", f"verifies {parent}#S9")
+    unknown = command("validate", str(root), "--json", expected=1)
+    assert f"@verifies {parent}#S9 names no declared scenario of {parent}" in unknown
+
+    # 4. The two StRS counters are independent.
+    mark(f"verifies {replacement}", f"accepts {parent}#S1")
+    assert "W004" not in command("validate", str(root))
+    coverage = stakeholder()
+    assert coverage["paths"] == {"total": 2, "tested": 0, "accepted": 1}
+    assert coverage["tested"] is False and coverage["accepted"] is False
+    mark(
+        f"verifies {replacement}",
+        f"accepts {parent}#S1",
+        f"verifies {parent}#S1",
+        f"verifies {parent}#S2",
+    )
+    coverage = stakeholder()
+    assert coverage["paths"] == {"total": 2, "tested": 2, "accepted": 1}
+    assert coverage["tested"] is True and coverage["accepted"] is False
+    mark(
+        f"verifies {replacement}",
+        f"accepts {parent}#S1",
+        f"accepts {parent}#S2",
+        f"verifies {parent}#S1",
+        f"verifies {parent}#S2",
+    )
+    coverage = stakeholder()
+    assert coverage["paths"] == {"total": 2, "tested": 2, "accepted": 2}
+    assert coverage["tested"] is True and coverage["accepted"] is True
+    assert coverage["status"] == "missing"
+
+    # 5. A SwRS with declared transitions is covered only when each one is marked.
+    mark(
+        f"verifies {replacement}",
+        f"accepts {parent}#S1",
+        f"accepts {parent}#S2",
+        f"verifies {swrs}#S1",
+    )
+    assert transitions() == {"tested": ["S1"], "missing": ["S2"]}
+    assert stakeholder()["status"] == "missing"
+    mark(
+        f"verifies {replacement}",
+        f"accepts {parent}#S1",
+        f"accepts {parent}#S2",
+        f"verifies {swrs}#S1",
+        f"verifies {swrs}#S2",
+    )
+    assert transitions() == {"tested": ["S1", "S2"], "missing": []}
+    coverage = stakeholder()
+    assert coverage["status"] == "covered" and coverage["tested"] is False
+    assert {item["status"] for item in coverage["linked_swrs"]} == {"covered"}
+    assert coverage["acceptance_tests"]["files"] == ["tests/test_manifest.py"]
+    command("validate", str(root))
+
+    # 6. A SwRS is not accepted: the SwRS schema refuses the marker.
+    mark(f"accepts {swrs}")
+    schema_error = command("validate", str(root), "--json", expected=1)
+    assert f"@accepts {swrs}" in schema_error and "Never present" in schema_error
+
+    # 7. The report validates against its emitted schema.
+    mark(
+        f"verifies {replacement}",
+        f"accepts {parent}#S1",
+        f"accepts {parent}#S2",
+        f"verifies {swrs}#S1",
+        f"verifies {swrs}#S2",
+    )
+    payload = report(root)
+    assert payload["format_version"] == 2
+    assert payload["stakeholder_test_coverage"]["paths"] == {"total": 2, "tested": 0, "accepted": 2}
+    Draft202012Validator(report_schema()).validate(payload)
+    outcomes["acceptance_paths"] = (
+        "declared scenarios, #S<n> fragments, independent tested/accepted counters, W003/W004"
+    )
+    config["strs_test_coverage_mode"] = earlier_mode
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    test_path.write_text(earlier_tests, encoding="utf-8")
     config["strs_test_coverage_mode"] = "linked-swrs"
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(f"# @verifies {swrs}\n# @verifies {replacement}\n", encoding="utf-8")
@@ -128,7 +299,8 @@ def run_showcase(project: Path) -> dict[str, str]:
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(test_path.read_text() + f"# @verifies {parent}\n", encoding="utf-8")
     # These markers demonstrate linkage only. Actual CSV behavior is tested in
-    # tests/test_export.py in the checked-in example, not claimed by this fixture.
+    # tests/test_export.py in the checked-in example, and its acceptance test is
+    # tests/test_acceptance_export.py; this fixture claims neither.
     preserved = load_requirements(root)[swrs][1]
     command("update-coverage", str(root), "--diff")
     command("update-coverage", str(root))

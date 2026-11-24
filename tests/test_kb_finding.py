@@ -45,9 +45,7 @@ def test_slugify_digits_preserved() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-003
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S1
 def test_new_finding_happy_path_creates_file_in_findings_dir(tmp_path: Path) -> None:
     """Creates a file inside <kb_path>/findings/."""
     (tmp_path / "findings").mkdir()
@@ -177,11 +175,29 @@ def test_new_finding_errors_nonexistent_kb_path_raises(tmp_path: Path) -> None:
         new_finding(missing, "Title")
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S2
+def test_new_finding_preserves_existing_findings_and_adds_a_separate_file(tmp_path: Path) -> None:
+    """A later capture leaves earlier Findings byte-identical and creates a new document."""
+    first = new_finding(tmp_path, "Earlier observation", context="First run.")
+    snapshot = {first: first.read_bytes()}
+
+    second = new_finding(tmp_path, "Later observation", context="Second run.")
+
+    assert second != first
+    assert second.read_text(encoding="utf-8") != first.read_text(encoding="utf-8")
+    assert {path.name for path in (tmp_path / "findings").glob("*.md")} == {
+        first.name,
+        second.name,
+    }
+    assert all(path.read_bytes() == content for path, content in snapshot.items())
+
+
 # ---------------------------------------------------------------------------
 # CLI — okfkb new-finding
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S1
 def test_kb_new_finding_cli_new_finding_creates_file(tmp_path: Path) -> None:
     """new-finding creates a finding file and prints the path."""
     runner = CliRunner()

@@ -28,6 +28,9 @@ notes. Unknown properties are allowed and must be preserved.
 | `user_need` | StRS | authored | Stakeholder outcome preserved separately from the normative StRS behavior. `okfreq new strs` leaves an explicit placeholder when `--user-need` is omitted. |
 | `annotation_exemption` | SwRS | authored | Whether implementation and test marker coverage is intentionally exempted. New SwRS documents default to `false`. |
 | `exemption_reason` | SwRS | authored | Conditional justification required when `annotation_exemption` is `true`. Explain why repository source/test coverage is not applicable and point to external justification or verification documents when available. |
+| `acceptance_exemption` | StRS, optional | authored | Whether acceptance of the whole StRS is intentionally waived because no automated test can accept it. It applies only in mode `linked-swrs-and-acceptance-paths`; see {ref}`okfreq-acceptance-exemptions`. Distinct from a SwRS's `annotation_exemption`. |
+| `acceptance_exemption_reason` | StRS, conditional | authored | Justification required when `acceptance_exemption` is `true`: why automated acceptance is not possible. It is not acceptance evidence. |
+| `scenarios` | no | authored | Main paths (StRS) or transition scenarios (SwRS), each `{id: S<n>, title: <text>}`; see {ref}`okfreq-declared-scenarios`. |
 | `external_id` | no | authored | Identifier of the corresponding requirement in an external system. It is not a local file reference. |
 | `external_url` | no | authored | URI of the corresponding requirement in an external system. |
 | `owner_email` | no | authored | Owner of this requirement when it differs from the configured one. Replaces `default_owner_email`. |
@@ -45,7 +48,7 @@ through the commands below or an explicit edit; okfreq never infers it.
 |---|---|---|
 | `draft` | A requirement proposal, not implemented yet. | Free. `okfreq retire` can delete it for good. A project whose requirements are delivered with the code they describe should not keep drafts on its default branch: create them with `okfreq new --lifecycle proposed` in the change that implements them. |
 | `proposed` | Implemented and in force, but not frozen. | Changes through the project's usual plan and review, with no explicit owner agreement. |
-| `approved` | Frozen by its owner. | Any significant change (normative statement, scenarios, verification criteria, deprecation or supersession) needs the owner's explicit, justified agreement, recorded in `approved_by` and `approved_at`. Editorial fixes that keep the meaning are free. Allowed only where `approval_lock` is true for the tier and scope. |
+| `approved` | Frozen by its owner. | Any significant change (normative statement, scenarios, verification criteria, deprecation or supersession) needs the owner's explicit, justified agreement, recorded in `approved_by` and `approved_at`. Editorial fixes that keep the meaning are free, and so is an edit that only adds `scenarios:` to the frontmatter: it leaves `approved_by` and `approved_at` unchanged unless the owner gives a new approval, and is logged in `tiers/log.md` naming the agreement. Allowed only where `approval_lock` is true for the tier and scope. |
 | `deprecated` | No longer in force, without replacement (`okfreq archive`). | Kept for history; its ID is never reused. |
 | `superseded` | Replaced by the requirements in `superseded_by` (`okfreq supersede`). | Kept for history. |
 
@@ -62,7 +65,19 @@ agent proceeds as if the owner agreed: it records the owner's email in
 `approved_by` and the current date and time with its offset in `approved_at`, names
 the requirement in the pull or merge request, and requests the owner's review of the
 file. A review rule such as `CODEOWNERS` then blocks the merge until the owner
-approves. `okfreq update-coverage` then writes the generated `status` and
+approves.
+
+There is one exception, for an edit that only adds `scenarios:` to the
+frontmatter of an approved requirement and leaves its body intact (see
+{ref}`okfreq-declared-scenarios`). The agent leaves `approved_by` and
+`approved_at` unchanged, unless the owner gives a new approval, and appends an
+entry to the bundle's `tiers/log.md` that names the owner's agreement. Changing
+a heading to align it with `scenarios:`, or any other body edit, is not part of
+the exception and follows the rule above. An acceptance waiver is authored
+metadata too: it does not give the agent approval to edit an approved
+requirement.
+
+`okfreq update-coverage` then writes the generated `status` and
 `verified` fields that plain OKF consumers read:
 
 ```yaml
@@ -127,14 +142,29 @@ visible until it is replaced with evidence-based content. The first Markdown
 heading repeats the frontmatter `title`; update both together when renaming
 a requirement. EARS describes the statement format, not the document title.
 
-An StRS preserves stakeholder intent without prescribing software design:
+An StRS preserves stakeholder intent without prescribing software design. Its
+main paths are the stakeholder-observable flows that acceptance tests walk; each
+`#### Path S<n>: <title>` heading matches an entry of `scenarios:`:
 
 ```markdown
+---
+scenarios:
+  - id: S1
+    title: Export every row
+---
+
 ## Export portable reports
 
 ### Normative behavior
 
 <stakeholder-observable SHALL statement>
+
+### Main paths
+
+#### Path S1: Export every row
+
+1. <first step the stakeholder observes>
+2. <next step, up to the observable outcome>
 
 ### Preserved stakeholder intent
 
@@ -147,22 +177,39 @@ An StRS preserves stakeholder intent without prescribing software design:
 - <known constraint, exclusion, or rationale>
 ```
 
-An SwRS describes software behavior that implementation and tests can observe:
+`okfreq new strs` writes the `### Main paths` section and its `scenarios:` entry
+in mode `linked-swrs-and-acceptance-paths` only; in the other modes it writes
+the body without that section, and a StRS may add one by hand. Add one
+`#### Path S<n>: <title>` heading and one `scenarios:` entry per main path.
+
+An SwRS describes software behavior that implementation and tests can observe.
+Its transition scenarios match its `scenarios:` entries. In mode
+`linked-swrs-and-acceptance-paths`, `okfreq new swrs` writes the numbered
+headings below and pre-fills `scenarios:`; in the other modes it writes
+unnumbered `### Scenario:` headings and no `scenarios:`:
 
 ```markdown
+---
+scenarios:
+  - id: S1
+    title: Write the selected rows
+  - id: S2
+    title: Write an empty selection
+---
+
 ## Write CSV output
 
 ### Normative behavior
 
 <observable, bounded software SHALL response>
 
-### Scenario: <nominal behavior>
+### Scenario S1: <nominal behavior>
 
 - GIVEN <precondition and relevant inputs>
 - WHEN <trigger or action>
 - THEN <single observable, verifiable outcome>
 
-### Scenario: <boundary or failure behavior>
+### Scenario S2: <boundary or failure behavior>
 
 - GIVEN <boundary precondition or failure>
 - WHEN <trigger or action>
@@ -201,6 +248,79 @@ justification. The reason does not make test execution available to the report;
 it records why repository marker coverage is intentionally excluded. See the
 **Generated and externally maintained fields** section above for the distinction
 between authored exemption metadata and generated coverage.
+
+(okfreq-declared-scenarios)=
+
+## Declared scenarios
+
+`scenarios:` is one authored frontmatter field shared by both tiers. On a StRS it
+lists its **main paths**; on a SwRS its **transition scenarios**. The tier says
+which, so an entry has no `kind`:
+
+```yaml
+scenarios:
+  - id: S1
+    title: Wait for a render
+  - id: S2
+    title: The source is gone
+```
+
+- The field is a non-empty list of mappings with exactly `id` and `title`. The
+  `id` is `S` followed by a number from 1 (`S1`, `S2`, ...); the `title` is
+  non-empty.
+- **An id is never reused**, even after its scenario is removed, and is not
+  renumbered when scenarios are reordered or removed: a test marker
+  `@tests_req StRS-X#S2` must keep naming the same scenario. `okfreq` does not
+  check this; it is authoring discipline.
+- Tests name an entry with a `#S<n>` fragment on a marker. In mode
+  `linked-swrs-and-acceptance-paths` the fragment is mandatory on every
+  `@tests_req` or `@accepts_req` whose target declares `scenarios:`; see the
+  [acceptance paths reference](okfreq-acceptance-paths.md) for the rule, the
+  counters and the findings.
+- `okfreq update-coverage` never generates or rewrites `scenarios:`.
+
+**Declare it from the headings of the body.** For a StRS, one entry per
+`#### Path S<n>: <title>` heading under `### Main paths`; for a SwRS, one entry
+per `### Scenario S<n>: <title>` heading. Give the entries ids `S1`, `S2`, ... in
+order, and use the same id and title in the frontmatter and in the heading
+(`#### Path S1: Wait for a render`). Matching them is authoring guidance that
+keeps readers and tests in step; `okfreq` does not enforce it. Legacy headings
+(`Path 1: Title`, `Scenario: Title`) still work: `W003` reads them and suggests
+the block to paste.
+
+**On an approved requirement**, adding only `scenarios:` is a frontmatter-only
+edit: the body stays exactly as it was and the change is logged in the bundle's
+`tiers/log.md`. The project's owner decides whether this metadata change needs a
+new approval; without one, `approved_by` and `approved_at` stay unchanged and
+the log entry names the agreement. Aligning headings changes the body, so it
+needs the owner's agreement under the normal approval rules.
+
+(okfreq-acceptance-exemptions)=
+
+### Acceptance exemptions
+
+`acceptance_exemption` and `acceptance_exemption_reason` are authored StRS
+fields. In mode `linked-swrs-and-acceptance-paths` they waive acceptance for the
+**whole StRS** when the requirement cannot be accepted by an automated test,
+for example an interactive review by a person:
+
+```yaml
+acceptance_exemption: true
+acceptance_exemption_reason: >-
+  The path is an interactive review by a person; no deterministic command
+  can accept it.
+```
+
+A reason is required when the flag is `true`. The waiver is a policy decision,
+not acceptance evidence: it creates no marker, leaves `accepted` and the path
+counts unchanged, does not relax the linked-SwRS rule or silence `W003`, and
+stops `W004`. It is distinct from a SwRS's `annotation_exemption` and
+`exemption_reason` above, which exempt that SwRS from source and test coverage;
+neither waives the other. The owner reviews a waiver under the project's
+approval rules and removes it when it is no longer justified; being slow or
+expensive is not a reason. See
+[why and when to waive acceptance](../explanation/okfreq-acceptance-paths.md)
+and the [reference](okfreq-acceptance-paths.md).
 
 ## Supersession and related requirements
 
@@ -256,7 +376,8 @@ that list the fields explicitly keep their current set until you do.
 | `derived_by` | generated | Reverse links computed from other requirements’ `derives_from` fields. Do not author this as the source of truth. |
 | `supersedes` | generated | Reverse links computed from other requirements’ `superseded_by` fields: the requirements this one replaces. Written by `okfreq update-coverage` when `supersedes` is in `generated_fields`, only where it has a value (or the field is already present). Do not author it. |
 | `implemented_in_files` | generated or external tool | SwRS-only project-relative source paths containing implementation markers. It is optional and must never be invented. |
-| `tested_in_files` | generated or external tool | SwRS-only project-relative test paths containing test markers. It is optional and must never be invented. |
+| `tested_in_files` | generated or external tool | Project-relative test paths containing test markers. Always on a SwRS; on a StRS only in mode `linked-swrs-and-acceptance-paths` (files of its counting `@tests_req` markers). It is optional and must never be invented. |
+| `accepted_in_files` | generated or external tool | StRS project-relative test paths containing counting `@accepts_req` markers, in mode `linked-swrs-and-acceptance-paths` only. A SwRS never carries it: its schema refuses it. It is optional and must never be invented. |
 | `default_owner_email` | generated | Owner resolved from `config.yml` for the requirement's tier and scope. Written by `okfreq update-coverage` when `default_owner_email` is in `generated_fields`, removed when no owner applies. An authored `owner_email` replaces it. |
 | `status` | generated | OKF lifecycle mapped from `req_lifecycle` by `x-okf-status-projection`; see {ref}`okfreq-okf-projection`. Written by `okfreq new`, `archive`, `supersede`, `update-coverage` and `lint` when `status` is in `generated_fields`. |
 | `verified` | generated | OKF trust event `{by: human:<approved_by>, at: <approved_at>}`, removed when the approval is incomplete. Written when `verified` is in `generated_fields`. |
@@ -265,9 +386,12 @@ that list the fields explicitly keep their current set until you do.
 The schema is selected from the `type` value. Common fields are defined in
 `tiers/_schema/base.schema.yaml`; `type: StRS` is validated by
 `tiers/_schema/strs.schema.yaml`, and `type: SwRS` by
-`tiers/_schema/swrs.schema.yaml`. StRS intentionally has no implementation or
-test coverage fields, because source and test markers apply only to leaf SwRS
-requirements.
+`tiers/_schema/swrs.schema.yaml`. StRS intentionally has no implementation
+coverage fields, because source markers apply only to leaf SwRS requirements.
+In mode `linked-swrs-and-acceptance-paths` a StRS also carries the generated
+`tested_in_files` and `accepted_in_files`; in the other modes
+`okfreq update-coverage` removes both from it. See the
+[acceptance paths reference](okfreq-acceptance-paths.md).
 
 `okfreq update-coverage` may update only the coverage fields it owns. It writes
 atomically and supports preview modes. Reports, indexes, and scope indexes are
@@ -393,7 +517,10 @@ StRS documents do not have source coverage. The generated report gives StRS its
 own stakeholder-test coverage record, computed from linked SwRS and the
 configured `strs_test_coverage_mode`. A direct `@tests_req StRS-ID` marker in a
 test file counts as a defined validation test when the
-`linked-swrs-and-validation-test` mode is selected.
+`linked-swrs-and-validation-test` mode is selected. In mode
+`linked-swrs-and-acceptance-paths` the StRS is instead measured by its declared
+main paths: `@tests_req StRS-ID#S<n>` tests a path and `@accepts_req
+StRS-ID#S<n>` accepts it (see {ref}`okfreq-declared-scenarios`).
 
 ## Marker fields
 
@@ -405,6 +532,14 @@ The default marker keywords are:
 
 # In tests code:
 @tests_req REQUIREMENT-ID
+@accepts_req STRS-ID
+```
+
+A test marker may carry a scenario fragment, `#S<n>`, glued to the ID:
+
+```text
+@tests_req REQUIREMENT-ID#S1
+@accepts_req STRS-ID#S1
 ```
 
 For example:
@@ -412,11 +547,18 @@ For example:
 ```python
 # @implements_req SwRS-default-001
 # @tests_req SwRS-default-001
+# @accepts_req StRS-default-001#S1
 ```
 
-The keywords and accepted ID pattern are configured in `config.yml`. `trace`
-reports implementation references, test references, direct StRS validation-test
-references, unknown IDs, non-leaf references, and
+The keywords and accepted ID pattern are configured in `config.yml`; the ID
+pattern must not admit `#`. `@tests_req` marks a test of a requirement or of one
+of its scenarios; `@accepts_req` marks the acceptance test of a StRS or of one
+of its main paths. Only `S<n>` is a fragment: any other suffix is ignored. When
+a requirement declares `scenarios:`, the fragment is mandatory in mode
+`linked-swrs-and-acceptance-paths`; in the other modes it is ignored and
+`@accepts_req` counts toward nothing. `trace`
+reports implementation references, test references, acceptance references,
+direct StRS validation-test references, unknown IDs, non-leaf references, and
 scan warnings. Projects may configure other tiers; implementation markers on
 non-leaf tiers do not count as leaf coverage.
 

@@ -33,6 +33,11 @@ For the boundary between marker linkage and executed test-result evidence, see
    `strs_test_coverage_mode` to `linked-swrs` for decomposition-based
    stakeholder coverage, or to `linked-swrs-and-validation-test` when each
    stakeholder outcome also needs a directly marked validation-test definition.
+   Choose `linked-swrs-and-acceptance-paths` when each stakeholder main path
+   needs an acceptance test: declare the paths in `scenarios:` and mark tests with
+   `@accepts_req` or `@tests_req` plus a `#S<n>` fragment (see
+   [Acceptance paths](../reference/okfreq-acceptance-paths.md) and
+   [Why `okfreq` measures acceptance paths](../explanation/okfreq-acceptance-paths.md)).
 4. Create a stakeholder requirement:
    `okfreq new strs "Export report" --description "When report export is requested, the reporting capability SHALL make a portable report available." --user-need "Users need a portable report for offline review." --project demo`.
    This creates a draft `StRS` with a generated UUID and stable ID such as

@@ -15,6 +15,13 @@ tier: StRS
 derives_from: []
 user_need: Teams need auditable requirements traceability before delivery
   decisions.
+scenarios:
+- id: S1
+  title: Set up a bundle and author linked requirements
+- id: S2
+  title: Trace markers and refresh generated coverage
+- id: S3
+  title: Audit the requirements base with validate and a report
 derived_by:
 - SwRS-OKFSCHEMA-OKFREQ-001
 - SwRS-OKFSCHEMA-OKFREQ-002
@@ -30,7 +37,13 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFREQ-012
 - SwRS-OKFSCHEMA-OKFREQ-013
 - SwRS-OKFSCHEMA-OKFREQ-014
+- SwRS-OKFSCHEMA-OKFREQ-015
 default_owner_email: gaetan@xeberon.net
+tested_in_files:
+- tests/test_examples.py
+- tests/test_okfreq.py
+accepted_in_files:
+- tests/test_acceptance_okfreq.py
 ---
 
 ## Maintain auditable software requirements
@@ -40,6 +53,27 @@ default_owner_email: gaetan@xeberon.net
 The `okfreq` capability SHALL enable teams to author, trace, and audit layered
 software requirements while preserving stable requirement identity and authored
 intent.
+
+### Main paths
+
+#### Path S1: Set up a bundle and author linked requirements
+
+1. A team initializes a requirements bundle in its project.
+2. The team creates a stakeholder requirement and a software requirement that
+   derives from it, and each keeps a stable identity.
+
+#### Path S2: Trace markers and refresh generated coverage
+
+1. The team marks source and tests with requirement markers.
+2. `okfreq trace` reports the markers, and `okfreq update-coverage` refreshes the
+   generated coverage fields of the requirements.
+
+#### Path S3: Audit the requirements base with validate and a report
+
+1. The team runs `okfreq validate` on the bundle.
+2. The team generates the requirements report.
+3. Gaps and drift are visible in the findings and in the report before delivery
+   decisions are made.
 
 ### Preserved stakeholder intent
 
@@ -79,4 +113,5 @@ visible before delivery decisions are made.
   - [SwRS-OKFSCHEMA-OKFREQ-012](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-012.md): Relate requirements by supersession and association
   - [SwRS-OKFSCHEMA-OKFREQ-013](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-013.md): Resolve requirement ownership and guard approvals
   - [SwRS-OKFSCHEMA-OKFREQ-014](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-014.md): Keep requirement bundles native OKF bundles
+  - [SwRS-OKFSCHEMA-OKFREQ-015](../../swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-015.md): Measure StRS acceptance paths
 <!-- okf:links:end -->

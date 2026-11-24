@@ -36,6 +36,11 @@ agent_skill_files:
 - skills/okfkb/references/navigation-and-maintenance.md
 example_files:
 - docs/source/tutorials/okfkb-workflow.md
+scenarios:
+- id: S1
+  title: Locate matching knowledge
+- id: S2
+  title: Query an absent target
 default_owner_email: gaetan@xeberon.net
 ---
 
@@ -47,13 +52,13 @@ When a user navigates an `okfkb` bundle, the CLI SHALL expose deterministic
 search, read, query, backlink, and managed-update operations over the bundle's
 knowledge and evidence.
 
-### Scenario: Locate matching knowledge
+### Scenario S1: Locate matching knowledge
 
 - GIVEN a bundle containing indexed knowledge documents
 - WHEN the user searches or queries for a matching term or relationship
 - THEN the CLI returns the matching documents in a stable, inspectable form
 
-### Scenario: Query an absent target
+### Scenario S2: Query an absent target
 
 - GIVEN a query that matches no known document or relationship
 - WHEN the navigation command runs

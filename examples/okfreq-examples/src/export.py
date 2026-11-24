@@ -6,6 +6,9 @@ endings to ``\n`` so generated output is identical on every platform.
 
 import csv
 import io
+import json
+import sys
+from pathlib import Path
 
 
 # @implements_req SwRS-CORE-001
@@ -27,3 +30,22 @@ def export_rows(rows: list[list[str]]) -> str:
     writer = csv.writer(output, lineterminator="\n")
     writer.writerows(rows)
     return output.getvalue()
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Export a JSON list of rows to a CSV report, as a user runs it.
+
+    Usage: ``python src/export.py <rows.json> <report.csv>``.
+
+    Args:
+        argv:
+            The ``rows.json`` and ``report.csv`` paths. Defaults to the
+            command-line arguments.
+    """
+    rows_path, report_path = sys.argv[1:] if argv is None else argv
+    rows = json.loads(Path(rows_path).read_text(encoding="utf-8"))
+    Path(report_path).write_text(export_rows(rows), encoding="utf-8", newline="")
+
+
+if __name__ == "__main__":
+    main()

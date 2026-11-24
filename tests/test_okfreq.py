@@ -75,6 +75,9 @@ def test_init_and_new_requirements(tmp_path: Path) -> None:
     assert load_config(root)["strs_test_coverage_mode"] == "linked-swrs"
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S3
 def test_new_requirement_bodies_use_distinct_tier_templates(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     stakeholder_behavior = "The reporting capability SHALL let users export a report."
@@ -120,6 +123,7 @@ def test_new_requirement_bodies_use_distinct_tier_templates(tmp_path: Path) -> N
     assert "### Rationale and constraints" not in swrs_text
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S1
 def test_strs_keeps_missing_user_need_explicit(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     requirement = create_requirement(
@@ -139,6 +143,7 @@ def test_strs_keeps_missing_user_need_explicit(tmp_path: Path) -> None:
     assert any(finding.startswith("W002 ") for finding in validate_requirements(root, prose=True))
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S2
 def test_swrs_requires_parent_and_invalid_level(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     with pytest.raises(RequirementError, match="derives_from"):
@@ -212,7 +217,6 @@ def test_preserves_body_and_updates_only_generated_coverage(tmp_path: Path) -> N
 
 
 def test_validation_reports_structural_and_graph_errors(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-005
     root = make_bundle(tmp_path)
     requirement, _ = add_requirements(root)
     content = requirement.read_text(encoding="utf-8").replace("uuid:", "uuid: bad-")
@@ -226,6 +230,7 @@ def test_validation_reports_structural_and_graph_errors(tmp_path: Path) -> None:
     assert any("unknown derives_from" in error for error in validate_requirements(root))
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-003#S2
 def test_marker_scan_warns_for_missing_scope_dirs_and_unknown_ids(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     (tmp_path / "src").mkdir()
@@ -282,13 +287,16 @@ def test_marker_scan_ignores_markers_inside_source_strings_and_cache_files(
     assert "Unknown-2" not in result["missing_ids"]
 
 
-# @tests_req StRS-OKFSCHEMA-OKFREQ-001
+# @tests_req StRS-OKFSCHEMA-OKFREQ-001#S3
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-004#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S1
 def test_report_and_cli_surface(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-004
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-001
     root = make_bundle(tmp_path)
     add_requirements(root)
     assert report(root)["totals"]["requirements"] == 2
+    assert {"schema_health", "structural_traceability", "marker_coverage", "lifecycle"} <= set(
+        report(root)["legacy"]
+    )
     runner = CliRunner()
     commands = (
         "init",
@@ -460,9 +468,10 @@ def test_report_computes_configured_stakeholder_test_coverage(tmp_path: Path) ->
     ]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-007#S1
 def test_cli_lifecycle_and_new(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-002
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-007
     project = tmp_path / "project"
     project.mkdir()
     runner = CliRunner()
@@ -544,6 +553,7 @@ def test_legacy_config_under_tiers_resolves_to_tiers(tmp_path: Path) -> None:
     assert tiers_path(tiers) == tiers
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S1
 def test_split_bundle_layout_is_resolved_from_the_project_root(tmp_path: Path) -> None:
     root = tmp_path / "requirements"
     (root / "tiers").mkdir(parents=True)
@@ -586,7 +596,7 @@ def test_init_creates_split_layout_with_guideline(tmp_path: Path) -> None:
     assert "The same requirement ID may appear more than once in a file" in guideline
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-001
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S4
 def test_init_force_replaces_only_the_installed_guideline(tmp_path: Path) -> None:
     """`init` keeps an edited guideline; `init --force` replaces it and spares project files."""
     root = tmp_path / "requirements"
@@ -616,6 +626,7 @@ def test_init_force_replaces_only_the_installed_guideline(tmp_path: Path) -> Non
     assert "Guideline up to date:" in again.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S4
 def test_init_without_force_never_overwrites_the_guideline(tmp_path: Path) -> None:
     """Without --force the initializer reports an existing guideline as kept."""
     from okf_schema.okfreq.core import _install_guideline, initialize_bundle
@@ -691,8 +702,8 @@ def test_invalid_stakeholder_test_coverage_mode_is_rejected(tmp_path: Path) -> N
         load_config(root)
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-003#S2
 def test_custom_markers_and_missing_directories(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-003
     root = make_bundle(tmp_path)
     config = root / "config.yml"
     config.write_text(
@@ -734,6 +745,8 @@ def test_marker_scan_handles_non_mapping_and_non_list_scopes(tmp_path: Path) -> 
     assert marker_scan(root)["warnings"] == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-003#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-003#S3
 def test_marker_scan_reports_non_leaf_and_accepts_repeated_markers(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     create_requirement(
@@ -762,6 +775,7 @@ def test_marker_scan_reports_non_leaf_and_accepts_repeated_markers(tmp_path: Pat
     assert repeated["non_leaf"] == ["StRS-default-001"]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-003#S1
 def test_marker_scan_uses_configured_id_pattern(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _, requirement = add_requirements(root)
@@ -828,7 +842,7 @@ def test_update_coverage_rejects_unknown_generated_field(tmp_path: Path) -> None
     config.write_text(
         config.read_text(encoding="utf-8").replace(
             "generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,\n"
-            "  default_owner_email, status, verified]",
+            "  accepted_in_files, default_owner_email, status, verified]",
             "generated_fields: [unknown]",
         ),
         encoding="utf-8",
@@ -978,6 +992,8 @@ def test_cli_error_and_preview_paths(tmp_path: Path) -> None:
     )
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-007#S2
 def test_supersede_rejects_unknown_replacement_without_writing(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _, requirement = add_requirements(root)
@@ -1084,13 +1100,15 @@ scopes:
     assert result["warnings"]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-006#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-006#S2
 def test_explicit_config_merge_preserves_unknown_keys_and_reports_conflicts(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-006
     root = make_bundle(tmp_path)
     source = tmp_path / "import.yml"
     source.write_text("version: 2\nexternal_key: preserved\n", encoding="utf-8")
     assert merge_config(root, source) == ["version"]
     config = load_config(root)
+    assert config["version"] == 1
     assert config["external_key"] == "preserved"
     assert runner_config_merge(root, source) == 0
     imported = CliRunner().invoke(okfreq, ["import", str(source), "--path", str(root)])
@@ -1127,6 +1145,7 @@ def test_duplicate_ids_are_rejected(tmp_path: Path) -> None:
 @Parametrization.case("non_mapping", text="---\n- value\n---\n")
 @Parametrization.case("missing_id", text="---\ntype: StRS\n---\n")
 @Parametrization.case("non_string_id", text="---\nid: 42\n---\n")
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S2
 def test_unindexable_requirements_fail_validation_and_reporting(tmp_path: Path, text: str) -> None:
     """Invalid documents cannot disappear from validation, reports or generated updates."""
     root = make_bundle(tmp_path)
@@ -1185,7 +1204,8 @@ def test_overlapping_scope_paths_list_a_file_once(tmp_path: Path) -> None:
     assert repeated["implemented"]["SwRS-default-001"] == ["src/implementation.py"]
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
 def test_validate_reports_schema_file_diagnostics(tmp_path: Path) -> None:
     """Extra empty or broken schema files are reported without failing validation."""
     root = init_requirements(tmp_path)
@@ -1237,6 +1257,7 @@ def make_swrs(root: Path, title: str = "Write") -> Path:
     )
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S4
 def test_new_requirement_never_reuses_a_deleted_number(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     add_requirements(root)
@@ -1250,8 +1271,8 @@ def test_new_requirement_never_reuses_a_deleted_number(tmp_path: Path) -> None:
     assert load_config(root)["retired_ids"] == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S1
 def test_retire_records_id_deletes_file_and_logs(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-011
     root = make_bundle(tmp_path)
     add_requirements(root)
     draft = make_swrs(root, "Draft")
@@ -1269,6 +1290,7 @@ def test_retire_records_id_deletes_file_and_logs(tmp_path: Path) -> None:
     assert validate_requirements(root) == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S1
 def test_retire_appends_to_todays_log_section_and_creates_missing_log(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     add_requirements(root)
@@ -1295,6 +1317,7 @@ def test_retire_appends_to_todays_log_section_and_creates_missing_log(tmp_path: 
     name="derives_from", field="derives_from", match="referenced by SwRS-default-002"
 )
 @Parametrization.case(name="depends_on", field="depends_on", match="referenced by SwRS-default-002")
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S2
 def test_retire_refuses_a_referenced_requirement(tmp_path: Path, field: str, match: str) -> None:
     root = make_bundle(tmp_path)
     add_requirements(root)
@@ -1319,6 +1342,7 @@ def test_retire_refuses_a_referenced_requirement(tmp_path: Path, field: str, mat
     assert "SwRS-default-001" in load_requirements(root)
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S2
 def test_retire_refuses_unknown_published_and_marked_requirements(tmp_path: Path) -> None:
     project = tmp_path / "project"
     root = make_bundle(project)
@@ -1350,6 +1374,7 @@ def test_retire_refuses_unknown_published_and_marked_requirements(tmp_path: Path
     assert load_config(root)["retired_ids"] == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S3
 def test_validation_flags_a_requirement_with_a_retired_id(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     add_requirements(root)
@@ -1374,6 +1399,7 @@ def test_malformed_retired_ids_are_rejected(tmp_path: Path, value: str) -> None:
         load_config(root)
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-006#S1
 def test_scaffold_config_declares_empty_retired_ids_and_merge_unions_them(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     assert "retired_ids: []" in (root / "config.yml").read_text(encoding="utf-8")
@@ -1389,6 +1415,8 @@ def test_scaffold_config_declares_empty_retired_ids_and_merge_unions_them(tmp_pa
     assert merged["custom"] is True
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S2
 def test_cli_retire_requires_confirmation_and_reports_refusals(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     add_requirements(root)
@@ -1440,6 +1468,7 @@ def test_retire_preserves_comments_and_formatting_of_an_existing_config(tmp_path
     assert text.endswith("retired_ids:\n- SwRS-default-001\n")
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S4
 def test_retired_numbers_of_other_scopes_and_wide_numbers_are_handled(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     config = root / "config.yml"
@@ -1486,8 +1515,9 @@ def frontmatter_of(path: Path) -> dict:
     return load_requirements(path.parents[2])[path.stem][1]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-007#S1
 def test_supersede_records_several_replacements_as_a_list(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-012
     root, paths = make_family(tmp_path)
     old = paths["SwRS-default-001"]
     before = extract_frontmatter(old.read_text(encoding="utf-8"))[1]
@@ -1509,6 +1539,7 @@ def test_supersede_records_several_replacements_as_a_list(tmp_path: Path) -> Non
     assert validate_requirements(root) == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S1
 def test_supersede_with_one_replacement_writes_a_list_and_replaces_a_legacy_scalar(
     tmp_path: Path,
 ) -> None:
@@ -1528,6 +1559,8 @@ def test_supersede_with_one_replacement_writes_a_list_and_replaces_a_legacy_scal
     match="duplicate replacement",
 )
 @Parametrization.case(name="none", args=[], match="at least one replacement")
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S4
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-007#S2
 def test_supersede_refuses_bad_replacements_without_writing(
     tmp_path: Path, args: list[str], match: str
 ) -> None:
@@ -1538,6 +1571,8 @@ def test_supersede_refuses_bad_replacements_without_writing(
     assert paths["SwRS-default-001"].read_text(encoding="utf-8") == before
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S4
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-007#S2
 def test_supersede_refuses_a_cycle_and_an_unknown_target(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     supersede_requirement(root, "SwRS-default-001", ["SwRS-default-002"])
@@ -1553,6 +1588,7 @@ def test_supersede_refuses_a_cycle_and_an_unknown_target(tmp_path: Path) -> None
     assert result.exit_code != 0
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-007#S2
 def test_cli_supersede_requires_a_replacement_and_confirmation(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     before = paths["SwRS-default-001"].read_text(encoding="utf-8")
@@ -1621,6 +1657,8 @@ def test_cli_supersede_requires_a_replacement_and_confirmation(tmp_path: Path) -
     fields={"relates_to": ["SwRS-default-002", "SwRS-default-002"]},
     expected="duplicate relates_to target SwRS-default-002",
 )
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S3
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S4
 def test_validation_rejects_inconsistent_relations(
     tmp_path: Path, fields: dict, expected: str
 ) -> None:
@@ -1633,6 +1671,7 @@ def test_validation_rejects_inconsistent_relations(
     assert CliRunner().invoke(okfreq, ["lint", str(root)]).exit_code != 0
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S4
 def test_validation_rejects_a_superseded_by_cycle(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     for old, new in (("001", "002"), ("002", "003"), ("003", "001")):
@@ -1659,6 +1698,7 @@ def test_a_chain_of_replacements_is_valid(tmp_path: Path) -> None:
     assert validate_requirements(root) == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S5
 def test_legacy_scalar_superseded_by_is_accepted_with_an_informational_finding(
     tmp_path: Path,
 ) -> None:
@@ -1687,6 +1727,7 @@ def test_legacy_scalar_superseded_by_is_accepted_with_an_informational_finding(
     assert record["superseded_by"] == ["SwRS-default-002"]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S2
 def test_update_coverage_generates_supersedes_and_detects_stale_values(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     update_coverage(root)
@@ -1725,6 +1766,8 @@ def test_supersedes_is_not_written_when_it_is_not_a_generated_field(tmp_path: Pa
     assert graph(root)["supersedes"]["SwRS-default-002"] == ["SwRS-default-001"]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-004#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S6
 def test_graph_and_report_expose_the_new_relations(tmp_path: Path) -> None:
     from jsonschema import Draft202012Validator
 
@@ -1767,6 +1810,8 @@ def test_graph_reports_unknown_relation_targets(tmp_path: Path) -> None:
     name="superseded_by_legacy_scalar",
     fields={"req_lifecycle": "superseded", "superseded_by": "SwRS-default-001"},
 )
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S5
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S6
 def test_retire_refuses_a_requirement_referenced_by_a_relation(
     tmp_path: Path, fields: dict
 ) -> None:
@@ -1788,6 +1833,7 @@ def test_scaffold_schema_annotates_the_relation_fields(tmp_path: Path) -> None:
     assert "supersedes" in (root / "config.yml").read_text(encoding="utf-8")
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S3
 def test_empty_scalar_superseded_by_counts_as_missing_without_a_list_hint(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     set_fields(paths["SwRS-default-001"], req_lifecycle="superseded", superseded_by="")
@@ -1814,7 +1860,8 @@ def _edit_config(root: Path, old: str, new: str) -> None:
     config.write_text(text.replace(old, new), encoding="utf-8")
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S4
 def test_generated_config_states_tiers_lock_and_lifecycle_field(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     config = load_config(root)
@@ -1832,7 +1879,7 @@ def test_generated_config_states_tiers_lock_and_lifecycle_field(tmp_path: Path) 
     ]
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S4
 def test_lifecycle_values_come_from_the_schema_enum_unless_legacy_values_are_set(
     tmp_path: Path,
 ) -> None:
@@ -1850,7 +1897,7 @@ def test_lifecycle_values_come_from_the_schema_enum_unless_legacy_values_are_set
     assert lifecycle_values(root, load_config(root)) == ["draft", "proposed"]
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S1
 def test_legacy_levels_key_is_read_and_cannot_be_mixed_with_tiers(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _edit_config(root, "tiers:\n", "levels:\n")
@@ -1866,7 +1913,7 @@ def test_legacy_levels_key_is_read_and_cannot_be_mixed_with_tiers(tmp_path: Path
 @Parametrization.case(name="tier_default", scope="other", expected=(False, "tier@x.org"))
 @Parametrization.case(name="scope_owner", scope="ui", expected=(False, "scope@x.org"))
 @Parametrization.case(name="scope_tier", scope="api", expected=(True, "api@x.org"))
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S5
 def test_owner_policy_prefers_scope_tier_then_scope_then_tier(
     scope: str, expected: tuple[bool, str]
 ) -> None:
@@ -1886,7 +1933,7 @@ def test_owner_policy_prefers_scope_tier_then_scope_then_tier(
     assert owner_policy(config, "SwRS", scope) == expected
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S5
 def test_lock_defaults_to_top_tiers_when_unset() -> None:
     config = {"tiers": {"StRS": {"derives_from": []}, "SwRS": {"derives_from": ["StRS"]}}}
 
@@ -1894,7 +1941,7 @@ def test_lock_defaults_to_top_tiers_when_unset() -> None:
     assert owner_policy(config, "SwRS", "default") == (False, None)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S5
 def test_default_owner_email_is_generated_and_removed_with_the_config(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     strs, swrs = add_requirements(root)
@@ -1910,7 +1957,7 @@ def test_default_owner_email_is_generated_and_removed_with_the_config(tmp_path: 
     assert swrs.is_file()
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S6
 def test_approved_requirement_needs_the_owner_agreement_fields(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     strs, _ = add_requirements(root)
@@ -1932,7 +1979,7 @@ def test_approved_requirement_needs_the_owner_agreement_fields(tmp_path: Path) -
     assert validate_requirements(root) == []
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S6
 def test_approved_is_refused_where_approval_lock_is_false(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _, swrs = add_requirements(root)
@@ -1962,7 +2009,7 @@ def test_approved_is_refused_where_approval_lock_is_false(tmp_path: Path) -> Non
 @Parametrization.case(
     name="owner", setting="owner_email: nobody", match="owner_email is not an email address"
 )
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S7
 def test_malformed_ownership_settings_are_reported(
     tmp_path: Path, setting: str, match: str
 ) -> None:
@@ -1972,7 +2019,6 @@ def test_malformed_ownership_settings_are_reported(
     assert any(match in finding for finding in validate_requirements(root))
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
 def test_new_can_start_a_requirement_as_proposed(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     result = CliRunner().invoke(
@@ -2010,7 +2056,7 @@ def test_new_can_start_a_requirement_as_proposed(tmp_path: Path) -> None:
 @Parametrization.autodetect_parameters()
 @Parametrization.case(name="legacy_import", destination="tiers", incoming="levels")
 @Parametrization.case(name="legacy_destination", destination="levels", incoming="tiers")
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S2
 def test_config_merge_normalizes_legacy_levels_to_tiers(
     tmp_path: Path, destination: str, incoming: str
 ) -> None:
@@ -2029,7 +2075,7 @@ def test_config_merge_normalizes_legacy_levels_to_tiers(
     assert list(config["tiers"]) == ["StRS", "SwRS", "SwRT"]
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S2
 def test_config_merge_refuses_a_legacy_lifecycle_values_list_over_a_field(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     source = tmp_path / "import.yml"
@@ -2049,7 +2095,7 @@ def test_config_merge_refuses_a_legacy_lifecycle_values_list_over_a_field(tmp_pa
 @Parametrization.case(
     name="null_scope_lock_falls_back", scope="web", expected=(False, "tier@x.org")
 )
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S5
 def test_owner_policy_scope_matching_and_null_lock(scope: str, expected: tuple[bool, str]) -> None:
     config = {
         "tiers": {
@@ -2064,7 +2110,7 @@ def test_owner_policy_scope_matching_and_null_lock(scope: str, expected: tuple[b
     assert owner_policy(config, "SwRS", scope) == expected
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S5
 def test_null_lock_everywhere_and_custom_top_tier_default_to_lockable() -> None:
     config = {
         "tiers": {"Need": {"folder": "need", "approval_lock": None}},
@@ -2075,7 +2121,6 @@ def test_null_lock_everywhere_and_custom_top_tier_default_to_lockable() -> None:
     assert owner_policy({"tiers": {"Goal": {"folder": "goal"}}}, "Goal", "x") == (True, None)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
 def test_new_rejects_an_unknown_initial_lifecycle(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     result = CliRunner().invoke(
@@ -2094,7 +2139,7 @@ def test_new_rejects_an_unknown_initial_lifecycle(tmp_path: Path) -> None:
 @Parametrization.case(
     name="superseded", lifecycle="superseded", extra={"superseded_by": ["SwRS-default-002"]}
 )
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S6
 def test_retired_requirement_may_keep_its_approval_record(
     tmp_path: Path, lifecycle: str, extra: dict
 ) -> None:
@@ -2110,7 +2155,7 @@ def test_retired_requirement_may_keep_its_approval_record(
     assert validate_requirements(root) == []
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S3
 def test_lifecycle_field_names_a_custom_frontmatter_field(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _edit_config(root, "  field: req_lifecycle\n", "  field: state\n")
@@ -2145,3 +2190,74 @@ def test_lifecycle_field_names_a_custom_frontmatter_field(tmp_path: Path) -> Non
     assert requirements["StRS-default-002"][1]["status"] == "deprecated"
     assert "req_lifecycle" not in requirements["StRS-default-002"][1]
     assert validate_requirements(root) == []
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S3
+def test_init_scaffold_declares_navigable_references(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    schemas = tiers_path(root) / "_schema"
+    base = make_yaml().load((schemas / "base.schema.yaml").read_text(encoding="utf-8"))
+    swrs = make_yaml().load((schemas / "swrs.schema.yaml").read_text(encoding="utf-8"))
+    for field in ("derives_from", "derived_by", "depends_on"):
+        link = base["properties"][field]["items"]["x-okf-link"]
+        assert (link["resolution"], link["syntax"]) == ("filename-stem", "plain")
+    swrs_properties = swrs["allOf"][1]["properties"]
+    for field in ("implemented_in_files", "tested_in_files"):
+        link = swrs_properties[field]["items"]["x-okf-link"]
+        assert (link["resolution"], link["syntax"]) == ("project-relative", "plain")
+    assert "x-okf-link" not in base["properties"].get("external_id", {})
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-004#S3
+def test_report_shows_unhealthy_requirements_in_their_own_metrics(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    _, swrs = add_requirements(root)
+    healthy = report(root)
+    assert healthy["legacy"]["structural_traceability"]["graph_errors"] == 0
+    assert healthy["marker_coverage"]["missing_tests"] == [swrs.stem]
+    assert healthy["totals"]["combined_coverage_percent"] == 0.0
+
+    swrs.write_text(
+        swrs.read_text(encoding="utf-8").replace("StRS-default-001", "missing"), encoding="utf-8"
+    )
+    unhealthy = report(root)
+    assert unhealthy["legacy"]["structural_traceability"]["graph_errors"] > 0
+    assert unhealthy["marker_coverage"]["missing_tests"] == [swrs.stem]
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S1
+def test_validate_succeeds_on_a_conforming_graph_and_counts_requirements(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    add_requirements(root)
+    runner = CliRunner()
+
+    validated = runner.invoke(okfreq, ["validate", str(root)])
+    assert validated.exit_code == 0, validated.output
+    assert "2 requirements, 0 errors, 0 warnings" in validated.output
+    as_json = json.loads(runner.invoke(okfreq, ["validate", str(root), "--json"]).output)
+    assert as_json["requirements"] == 2
+    assert as_json["errors"] == []
+    assert runner.invoke(okfreq, ["lint", str(root)]).exit_code == 0
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S3
+def test_prose_warnings_never_change_the_validation_exit_status(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    create_requirement(
+        root,
+        "StRS",
+        "Export reports",
+        "The reporting capability SHALL let users export a report.",
+        project="demo",
+        scope="default",
+        origin="native",
+    )
+    runner = CliRunner()
+
+    plain = runner.invoke(okfreq, ["validate", str(root)])
+    prose = runner.invoke(okfreq, ["validate", str(root), "--prose"])
+
+    assert plain.exit_code == prose.exit_code == 0, prose.output
+    assert "W002 " not in plain.output
+    assert "W002 " in prose.output
+    assert "0 errors" in prose.output

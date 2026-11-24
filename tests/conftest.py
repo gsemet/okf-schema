@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
+
+from tests.acceptance_support import InstalledProduct, install_product
+
+
+@pytest.fixture(scope="session")
+def installed_product(tmp_path_factory: pytest.TempPathFactory) -> InstalledProduct:
+    """Install the built wheel once per pytest worker, in an environment without the sources."""
+    if sys.platform == "win32":
+        pytest.skip("Acceptance tests run the installed POSIX console scripts")
+    return install_product(tmp_path_factory.mktemp("installed-product"))
 
 
 @pytest.fixture

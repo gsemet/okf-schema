@@ -27,6 +27,36 @@ That is why this example contains a few different kinds of files: together
 they show the path from the original need to the requirement, implementation,
 test evidence, and traceability report.
 
+## Acceptance paths
+
+The example runs in the `linked-swrs-and-acceptance-paths` mode. The stakeholder
+requirement `StRS-CORE-001` declares one main path, `S1` "Export selected rows for
+offline review", in its `scenarios:` frontmatter and in a matching
+`### Main paths` / `#### Path S1:` section. Each software requirement declares its
+transitions the same way (`S1` and `S2`, with matching `### Scenario S<n>:` headings),
+and every test names the one it checks with a `#S<n>` fragment.
+
+The example uses the two test verbs:
+
+- `@tests_req …#S<n>` marks a test of one scenario: the SwRS tests in
+  `tests/test_export.py` and `tests/rust_export_test.rs`, and `test_export_rows`,
+  the cheap in-process test that also walks the StRS path (`@tests_req StRS-CORE-001#S1`);
+- `@accepts_req StRS-CORE-001#S1` marks the acceptance test of the path:
+  `tests/test_acceptance_export.py`.
+
+The acceptance test runs the export as a user does, in a separate process:
+`python src/export.py <rows.json> <report.csv>` writes the report to disk and the
+test reads it back, so it proves the delivered behavior and not only an imported
+function. It is fast, so it runs with every other test. Below it, a slow variant of
+the same path is written entirely in comments, with no implementation: it only shows
+where a costly acceptance test of an installed product would go, in a pipeline that can
+afford it. Its marker is inactive (`# # @accepts_req …`), so it is not collected as a
+test and is not evidence; the tests check that without the fast marker the path is
+no longer accepted and the `W004` warning returns.
+
+The report shows `StRS-CORE-001` tested 1/1 and accepted 1/1, covered, with no
+missing transition and no `W003` or `W004` warning.
+
 ## Pointers
 
 - [Requirements bundle](requirements/)
@@ -35,6 +65,7 @@ test evidence, and traceability report.
 - [Rust software requirement](requirements/tiers/swrs/SwRS-CORE-002.md)
 - [Implementation](src/export.py)
 - [Tests](tests/test_export.py)
+- [Acceptance test](tests/test_acceptance_export.py)
 - [Rust implementation](src/rust_export.rs)
 - [Rust test](tests/rust_export_test.rs)
 - [Traceability report](dist/requirements-report.md)
@@ -48,15 +79,17 @@ just refresh-okfreq-examples
 uv run python examples/okfreq-examples/showcase.py
 ```
 
-The first command regenerates the CSV requirements, runs the Python CSV tests,
-refreshes source/test evidence and validates file targets before writing JSON,
+The first command regenerates the CSV requirements, runs the Python CSV tests
+and the acceptance test, refreshes source/test evidence and validates file targets before writing JSON,
 JSON Schema and Markdown reports under this example's `dist/`. Rust source and
 test markers demonstrate linkage; this command does not run a Rust compiler.
 
 The showcase creates a temporary shipping-manifest project and verifies:
 
 - scoped IDs/folders, custom markers, authored dependencies and external demo metadata;
-- both StRS coverage policies, including a direct stakeholder validation marker;
+- the three StRS coverage modes, including a direct stakeholder validation marker and
+  the `acceptance_paths` outcome: declared scenarios, `#S<n>` fragments, independent
+  tested and accepted counters, and the `W003` and `W004` warnings;
 - conflict-preserving config merge and preservation of unknown authored fields;
 - all five file-resolution modes, wikilink labels/fragments, E10 failures and W15 skips;
 - index/search/in-file/scope/graph/trace/status and schema-validated JSON reports;
@@ -70,7 +103,8 @@ The showcase creates a temporary shipping-manifest project and verifies:
 Its marker fixtures demonstrate scanning, not execution of shipping software.
 Its tracker reference is fictional demo data. All intentional failures and
 lifecycle changes stay temporary; the checked-in requirements are preserved.
-The Python CSV tests provide actual executable behavior evidence separately.
+The Python CSV tests and the acceptance test (`tests/test_acceptance_export.py`)
+provide actual executable behavior evidence separately.
 
 For the live project's feature/evidence map, read
 [How this project exercises okfreq](../../docs/source/explanation/project-feature-coverage.md).

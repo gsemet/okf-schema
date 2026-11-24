@@ -141,9 +141,7 @@ def test_load_nodes_node_fields_parsed(kb_bundle: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-004
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S1
 def test_search_search_ranks_title_and_tags(kb_bundle: Path) -> None:
     hits = navigate.search(kb_bundle, "pll")
     assert hits, "expected at least one hit"
@@ -370,6 +368,7 @@ def test_navigation_cli_query_filter_paths(kb_bundle: Path) -> None:
     assert result.output.strip() == "findings/2026.07.03-14.20-pll-temp-drift.md"
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S1
 def test_navigation_cli_query_traversal_json(kb_bundle: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(
@@ -530,11 +529,33 @@ def test_read_and_get_markdown_get_md_format_cli(kb_bundle: Path) -> None:
     assert "Hardcoded wait too short" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S2
 def test_read_and_get_markdown_query_table_no_matches(kb_bundle: Path) -> None:
+    snapshot = {path: path.read_bytes() for path in kb_bundle.rglob("*") if path.is_file()}
     runner = CliRunner()
     result = runner.invoke(kb, ["query", "type:playbook", str(kb_bundle)])
     assert result.exit_code == 0, result.output
     assert "No matching nodes." in result.output
+    assert {path: path.read_bytes() for path in kb_bundle.rglob("*") if path.is_file()} == snapshot
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S1
+def test_navigation_cli_repeated_queries_are_equivalent_and_read_only(kb_bundle: Path) -> None:
+    """Repeating read-only queries returns identical ordered output and leaves the bundle intact."""
+    snapshot = {path: path.read_bytes() for path in kb_bundle.rglob("*") if path.is_file()}
+    runner = CliRunner()
+    commands = [
+        ["search", "temperature", str(kb_bundle), "--format", "json"],
+        ["query", "finding ^ concept", str(kb_bundle), "--format", "paths"],
+    ]
+    for command in commands:
+        first = runner.invoke(kb, command)
+        second = runner.invoke(kb, command)
+        assert first.exit_code == 0, first.output
+        assert second.exit_code == 0, second.output
+        assert first.output == second.output
+        assert first.output.strip()
+    assert {path: path.read_bytes() for path in kb_bundle.rglob("*") if path.is_file()} == snapshot
 
 
 def test_read_and_get_markdown_read_empty_tier(kb_bundle: Path) -> None:

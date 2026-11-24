@@ -5,15 +5,16 @@ tiers:
   SwRS: {folder: swrs, prefix: SwRS-OKFSCHEMA, derives_from: [StRS], approval_lock: false,
     owner_email: gaetan@xeberon.net}
 id_policy: scope-prefix-sequence
-strs_test_coverage_mode: linked-swrs-and-validation-test
+strs_test_coverage_mode: linked-swrs-and-acceptance-paths
 lifecycle:
   field: req_lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files, default_owner_email,
-  status, verified]
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
+  accepted_in_files, default_owner_email, status, verified]
 scopes:
   core:
     id_token: CORE
@@ -24,6 +25,7 @@ scopes:
         src/okf_schema/projection.py,
         src/okf_schema/schemas, src/okf_schema/validator.py]
     test_dirs: [tests/test_api.py, tests/test_cli_core.py,
+        tests/test_acceptance_core.py,
         tests/test_cli_remaining.py, tests/test_edge_cases.py,
         tests/test_file_links.py, tests/test_formatter.py,
         tests/test_integration.py, tests/test_internal.py,
@@ -35,7 +37,7 @@ scopes:
     folder: okfkb
     source_dirs: [src/okf_schema/okfkb, src/okf_schema/skill_installer.py,
         skills/okfkb-distill]
-    test_dirs: [tests/test_kb_cli.py, tests/test_kb_derivations.py,
+    test_dirs: [tests/test_acceptance_okfkb.py, tests/test_kb_cli.py, tests/test_kb_derivations.py,
         tests/test_kb_finding.py, tests/test_kb_install.py,
         tests/test_kb_navigate.py, tests/test_kb_patterns.py,
         tests/test_kb_scaffold.py, tests/test_skill_installer.py,
@@ -47,6 +49,8 @@ scopes:
         skills/okfreq, skills/okfreq-gardening, skills/okfreq-setup,
         examples/okfreq-examples/showcase.py]
     test_dirs: [tests/test_okfreq.py, tests/test_file_links.py,
+        tests/test_acceptance_okfreq.py, tests/test_okfreq_acceptance_paths.py,
+        tests/test_okfreq_acceptance_paths_cli.py, tests/test_okfreq_docs.py,
         tests/test_examples.py, tests/test_skill_resources.py,
         tests/test_okfreq_cli.py, tests/test_requirement_indexes.py,
         tests/test_tutorial_okfreq.py, tests/test_okfreq_projection.py]

@@ -23,7 +23,7 @@
     },
     "format_version": {
       "type": "integer",
-      "const": 1
+      "const": 2
     },
     "generated_at": {
       "type": "string",
@@ -80,7 +80,8 @@
         "stakeholder_test_coverage_mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
         },
         "stakeholder_tests": {
@@ -150,7 +151,8 @@
         "mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
         },
         "requirements": {
@@ -165,6 +167,9 @@
           "type": "number",
           "minimum": 0,
           "maximum": 100
+        },
+        "paths": {
+          "$ref": "#/$defs/path_counts"
         }
       }
     },
@@ -304,6 +309,27 @@
         "tests": {
           "$ref": "#/$defs/linkage"
         },
+        "transitions": {
+          "type": "object",
+          "required": [
+            "tested",
+            "missing"
+          ],
+          "properties": {
+            "tested": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "missing": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
         "stakeholder_test_coverage": {
           "$ref": "#/$defs/stakeholder_requirement_coverage"
         },
@@ -354,6 +380,54 @@
         }
       }
     },
+    "path_counts": {
+      "type": "object",
+      "required": [
+        "total",
+        "tested",
+        "accepted"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tested": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accepted": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "status",
+        "files",
+        "count"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "defined",
+            "missing"
+          ]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
     "stakeholder_requirement_coverage": {
       "type": "object",
       "required": [
@@ -372,7 +446,8 @@
         "mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
         },
         "linked_swrs": {
@@ -390,35 +465,40 @@
               "status": {
                 "enum": [
                   "covered",
-                  "missing"
+                  "missing",
+                  "exempt"
                 ]
               }
             }
           }
         },
         "validation_tests": {
+          "$ref": "#/$defs/evidence"
+        },
+        "paths": {
+          "$ref": "#/$defs/path_counts"
+        },
+        "tested": {
+          "type": "boolean"
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "tests": {
+          "$ref": "#/$defs/evidence"
+        },
+        "acceptance_tests": {
+          "$ref": "#/$defs/evidence"
+        },
+        "acceptance_exemption": {
           "type": "object",
           "required": [
-            "status",
-            "files",
-            "count"
+            "reason"
           ],
           "properties": {
-            "status": {
-              "enum": [
-                "defined",
-                "missing"
-              ]
-            },
-            "files": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "count": {
-              "type": "integer",
-              "minimum": 0
+            "reason": {
+              "type": "string",
+              "minLength": 1
             }
           }
         }

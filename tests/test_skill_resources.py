@@ -99,7 +99,6 @@ def _build_wheel(repository_root: Path, wheel_directory: Path) -> Path:
     return next(wheel_directory.glob("*.whl"))
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-005
 def test_built_wheel_contains_canonical_skill_trees_unchanged(tmp_path: Path) -> None:
     """A wheel contains exactly the canonical skill files under package resources."""
     repository_root = Path(__file__).parents[1]
@@ -255,7 +254,7 @@ def test_source_checkout_commands_install_families(
         assert (destination / skill_root / "SKILL.md").is_file()
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-008
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S1
 def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) -> None:
     """Operational links remain usable when the installation has no docs/source tree."""
     from okf_schema.skill_installer import install_skill_family
@@ -271,7 +270,6 @@ def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) ->
             assert resource.is_file(), (document, target)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
 def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
     tmp_path: Path,
 ) -> None:
@@ -290,7 +288,29 @@ def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
         assert "references/requirements.guidelines.md" not in text
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S2
+def test_installed_okfreq_skill_recovery_separates_errors_skips_and_gaps(tmp_path: Path) -> None:
+    """The installed instructions tell an agent how to tell failures from skips and gaps."""
+    from okf_schema.skill_installer import install_skill_family
+
+    destination = tmp_path / "agent-skills"
+    install_skill_family("okfreq", destination)
+    skill = (destination / "okfreq" / "SKILL.md").read_text(encoding="utf-8")
+    operations = (destination / "okfreq" / "references" / "operations.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "A skipped check is not a verified" in skill
+    assert "Do not claim complete traceability" in skill
+    assert "validation/tests\nfailed or did not run" in skill
+    assert "For structural errors repair the indicated file" in operations
+    assert "`W15` skipped checks" in operations
+    assert "Execute the project's actual tests separately" in operations
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S3
 def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: Path) -> None:
     """The setup skill ships with the okfreq family and states its stop rules and delivery."""
     from okf_schema.skill_installer import install_skill_family
@@ -312,9 +332,91 @@ def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: P
         "owner_email",
         "approval_lock",
         "Nothing is approved during setup",
+        "already has a bundle",
+        "default branch cannot be determined",
+        "Never modify, stage or revert changes",
     ):
         assert required in text
     for target in re.findall(r"\]\(([^)]+)\)", text):
         if "://" in target or target.startswith("#"):
             continue
         assert (skill.parent / target.split("#")[0]).resolve().is_file(), target
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="okfreq-skill",
+    document="okfreq/SKILL.md",
+    required=(
+        "linked-swrs-and-acceptance-paths",
+        "`scenarios:`",
+        "`#S<n>` fragment",
+        "@accepts_req StRS-X#S1",
+        "an edit that only adds `scenarios:` to the frontmatter",
+        "closest to the final product",
+    ),
+)
+@Parametrization.case(
+    name="operations-reference",
+    document="okfreq/references/operations.md",
+    required=(
+        "linked-swrs-and-acceptance-paths",
+        "accepts: '@accepts_req'",
+        "`@accepts_req` on a SwRS is an error",
+        "acceptance_exemption: true",
+        "`W003`",
+        "`W004`",
+        "`@accepts_req` marker",
+    ),
+)
+@Parametrization.case(
+    name="gardening-skill",
+    document="okfreq-gardening/SKILL.md",
+    required=(
+        "linked-swrs-and-acceptance-paths",
+        "declare `scenarios:`",
+        "`#S<n>` fragment",
+        "`@accepts_req` over `@tests_req`",
+        "`acceptance_exemption`",
+    ),
+)
+@Parametrization.case(
+    name="setup-skill",
+    document="okfreq-setup/SKILL.md",
+    required=(
+        "linked-swrs-and-acceptance-paths",
+        "`#S<n>` fragment",
+        "`@accepts_req StRS-X#S<n>`",
+        "acceptance waiver",
+    ),
+)
+def test_installed_okfreq_skills_teach_the_acceptance_paths_mode(
+    tmp_path: Path, document: str, required: tuple[str, ...]
+) -> None:
+    """Each shipped skill document carries the vocabulary of the acceptance-paths mode."""
+    from okf_schema.skill_installer import install_skill_family
+
+    destination = tmp_path / "agent-skills"
+    install_skill_family("okfreq", destination)
+    text = " ".join((destination / document).read_text(encoding="utf-8").split())
+
+    for phrase in required:
+        assert phrase in text, phrase
+
+
+def test_packaged_guideline_teaches_the_acceptance_paths_mode() -> None:
+    """The guideline `okfreq init` installs states the Rule 7 exception and the waiver."""
+    guideline = (
+        resources.files("okf_schema") / "data/requirements/guidelines/requirements.guidelines.md"
+    )
+    text = " ".join(guideline.read_text(encoding="utf-8").split())
+
+    for phrase in (
+        "linked-swrs-and-acceptance-paths",
+        "`#S<n>` fragment",
+        "`@accepts_req StRS-X#S1`",
+        "an edit that only adds `scenarios:` to",
+        "`acceptance_exemption: true` with an `acceptance_exemption_reason`",
+        "distinct from a SwRS `annotation_exemption`",
+    ):
+        assert phrase in text, phrase

@@ -31,7 +31,11 @@ Implement the behavior and test it. Put comment markers near the corresponding
 source and tests, using the configured spellings:
 
 Use `# @implements_req SwRS-default-001` in source and
-`# @tests_req SwRS-default-001` in the corresponding test file.
+`# @tests_req SwRS-default-001` in the corresponding test file. In mode
+`linked-swrs-and-acceptance-paths` (see the configuration notes below), a
+requirement that declares `scenarios:` takes a fragment on each test marker,
+`# @tests_req SwRS-default-001#S1`, and the acceptance test of a StRS path takes
+`# @accepts_req StRS-default-001#S1`.
 
 ```bash
 okfreq trace . --json
@@ -69,15 +73,16 @@ tiers:
     owner_email: product-owner@example.org}
   SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS], approval_lock: false}
 id_policy: scope-prefix-sequence
-strs_test_coverage_mode: linked-swrs-and-validation-test
+strs_test_coverage_mode: linked-swrs-and-validation-test   # or linked-swrs, or linked-swrs-and-acceptance-paths
 lifecycle:
   field: req_lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email, status, verified]
+  accepted_in_files, default_owner_email, status, verified]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -107,13 +112,37 @@ scopes:
   lateral links that mean neither derivation nor replacement; it has no inverse,
   so declare it on one side only. A legacy scalar `superseded_by: ID` is still read
   (validation adds the informational `I2`); convert it to a list.
-- Only the seven listed `generated_fields` are supported. Omitting a generated
-  field leaves it unmanaged; unsupported names fail. StRS never carries generated
-  source/test file arrays, even when the setting lists those fields.
+- Only the eight listed `generated_fields` are supported. Omitting a generated
+  field leaves it unmanaged; unsupported names fail. A StRS never carries
+  `implemented_in_files`. It carries `tested_in_files` and `accepted_in_files`
+  only in mode `linked-swrs-and-acceptance-paths`; in the other modes
+  `okfreq update-coverage` removes both from a StRS. A SwRS never carries
+  `accepted_in_files`. `id_pattern` must not admit `#`.
 - The default StRS mode is `linked-swrs`: every linked SwRS needs a test marker
   and at least one SwRS must exist. The stricter mode also needs a direct
   `@tests_req StRS-...` marker in a configured test file. This is a defined
   validation test, not proof of execution. Do not put implementation markers on StRS.
+- The third mode, `linked-swrs-and-acceptance-paths`, measures each declared main
+  path of a StRS. Declare paths in the StRS frontmatter as
+  `scenarios: [{id: S1, title: ...}]` (ids `S<n>` from 1, unique, never reused or
+  renumbered; a SwRS declares its transition scenarios the same way). Tests name
+  one with a fragment glued to the ID. `@accepts_req StRS-X#S<n>` accepts a
+  path, `@tests_req StRS-X#S<n>` or `@tests_req SwRS-X#S<n>` tests one. The two
+  counters, tested and accepted, are independent; the StRS is covered when its
+  linked SwRS are covered and it is accepted. Rule in short: once a requirement
+  declares `scenarios:`, a marker with no fragment or an undeclared one is an
+  error that does not count; without `scenarios:`, a fragment is an error and a
+  fragmentless marker covers the whole requirement. `@accepts_req` on a SwRS is an
+  error; in the other two modes `@accepts_req` and fragments are read but count
+  for nothing. Recommendation: put `@accepts_req` on the test closest to the final
+  product, which may be costly and run in a main-branch pipeline, and
+  `@tests_req` on cheaper tests that run on every pull or merge request.
+  Markers are links, not proof of a run.
+- A StRS that no automated test can accept may carry an authored, justified
+  waiver: `acceptance_exemption: true` and a non-blank
+  `acceptance_exemption_reason`. It is not acceptance evidence and not a SwRS
+  `annotation_exemption`; being slow or expensive is not a reason. Never invent
+  one; it needs the owner's agreement.
 - `annotation_exemption: true` needs a non-empty `exemption_reason`. Use only
   for an agreed exception; report it separately, never as observed coverage.
 - Unknown producer metadata is preserved. `external_id` and `external_url`
@@ -132,7 +161,7 @@ scopes:
 |---|---|---|
 | `draft` | Proposal, not implemented yet. | Create it only ahead of its implementation; `okfreq retire` can delete it. Should not reach the default branch. |
 | `proposed` | Implemented and in force, not frozen. | Change it with the code, through the usual plan and review. New requirements delivered with their code: `okfreq new ... --lifecycle proposed`. |
-| `approved` | Frozen by its owner. | Never decide alone to approve it, change its meaning, deprecate or supersede it. Editorial fixes that keep the meaning are allowed. |
+| `approved` | Frozen by its owner. | Never decide alone to approve it, change its meaning, deprecate or supersede it. Editorial fixes that keep the meaning are allowed, and so is an edit that only adds `scenarios:` to the frontmatter: keep `approved_by` and `approved_at` unchanged unless the owner gives a new approval, and log it in `tiers/log.md` naming the owner's agreement. |
 | `deprecated` | Not in force, no replacement. | `okfreq archive TARGET --yes`. |
 | `superseded` | Replaced by `superseded_by`. | `okfreq supersede TARGET NEW... --yes`. |
 
@@ -221,7 +250,7 @@ The CLI checks files; it does not render tooltips or find marker lines for edito
 | Inspect marker evidence | `okfreq trace . --json` |
 | Archive explicitly | `okfreq archive ID --path . --yes` sets `deprecated`, never deletes. |
 | Supersede explicitly | `okfreq supersede OLD NEW [NEW2...] --path . --yes` sets `superseded`, writes the `superseded_by` list and preserves identity; then run `okfreq update-coverage` to refresh `supersedes`. Validation requires a non-empty `superseded_by` on every superseded requirement, forbids it otherwise, and rejects unknown, self, repeated or cyclic targets. |
-| Discard a never-published draft | `okfreq retire ID --path . --reason TEXT --yes` deletes it, lists the ID in `retired_ids` of `config.yml` and logs it in `tiers/log.md`. It refuses a non-draft, a requirement referenced by `derives_from`, `depends_on`, `relates_to`, `superseded_by` or a marker, and a missing `--yes`; resolve the reference first. Afterwards run `update-coverage` and `lint`. |
+| Discard a never-published draft | `okfreq retire ID --path . --reason TEXT --yes` deletes it, lists the ID in `retired_ids` of `config.yml` and logs it in `tiers/log.md`. It refuses a non-draft, a requirement referenced by `derives_from`, `depends_on`, `relates_to`, `superseded_by` or a `@implements_req`, `@tests_req` or `@accepts_req` marker, and a missing `--yes`; resolve the reference first. Afterwards run `update-coverage` and `lint`. |
 
 `okfreq new` numbers after the highest number ever used in the level prefix and
 scope, counting `retired_ids`; a number is never reused. Never delete a requirement
@@ -235,6 +264,31 @@ is part of the task. A duplicate trace marker means the same ID appears twice
 in one file; evidence in multiple files is legitimate. `missing_ids` needs a
 real requirement or a corrected marker; `non_leaf` needs inspection of the
 configured hierarchy. Missing scan directories make coverage incomplete.
+
+In mode `linked-swrs-and-acceptance-paths`, `validate` and `lint` also report
+marker errors (they carry no code; each names the file and line) and two
+warnings that never change the exit code. Repairs:
+
+- *Marker has no scenario fragment* although the requirement declares
+  `scenarios:`: name the scenario the test really exercises (`@tests_req SwRS-X#S1`)
+  or remove the marker. Never guess a fragment.
+- *Fragment names no declared scenario*: fix the fragment, or add the scenario to
+  `scenarios:` first. A fragment on a requirement with no `scenarios:` is the same
+  error: declare the scenarios or drop the fragment.
+- *`@accepts_req` on a SwRS*: use `@tests_req SwRS-X#S<n>` there and put
+  `@accepts_req` on the StRS.
+- *Malformed `scenarios:`*: each entry is `{id: S<n>, title: <text>}`, ids unique.
+- *Bundle SwRS schema older than 0.18.0* (`accepted_in_files is not refused`): add
+  under `properties:` of `tiers/_schema/swrs.schema.yaml` the property
+  `accepted_in_files` with `type: array` and `maxItems: 0` and a description that
+  says it is never present; `okfreq init` never replaces existing schemas.
+- `W003` (a live StRS declares no `scenarios:`): read the suggested block, adjust
+  ids and titles to the main paths in the body, and paste it into the frontmatter
+  only, logging it in `tiers/log.md` on an approved StRS.
+- `W004` (a live StRS has no counting `@accepts_req`): mark the existing test
+  closest to the final product with `@accepts_req StRS-X#S<n>`, or, when no
+  automated test can accept it, ask the owner about a justified waiver. Never write
+  a test or a marker only to silence it.
 
 For structural errors repair the indicated file, do not delete it to reduce the
 error count. For `E10` fix the target, filename ambiguity, or annotation; for

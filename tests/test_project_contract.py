@@ -25,8 +25,21 @@ def test_live_requirements_preserve_complete_real_evidence() -> None:
     ):
         assert evidence[category] == [], (category, evidence[category])
     stakeholder = result["stakeholder_test_coverage"]
-    assert stakeholder["mode"] == "linked-swrs-and-validation-test"
-    assert stakeholder["covered"] == stakeholder["requirements"]
+    assert stakeholder["mode"] == "linked-swrs-and-acceptance-paths"
+    assert stakeholder["covered"] == stakeholder["requirements"] == 5
+    # Twelve of the thirteen declared paths have an acceptance test; the interactive
+    # consolidation path of StRS-OKFSCHEMA-OKFKB-001 is waived with a reason.
+    assert stakeholder["paths"]["total"] == 13
+    assert stakeholder["paths"]["accepted"] == 12
+    records = {item["id"]: item for item in result["requirements"]}
+    waived = records["StRS-OKFSCHEMA-OKFKB-001"]["stakeholder_test_coverage"]
+    assert waived["acceptance_exemption"]["reason"].strip()
+    assert (waived["paths"]["total"], waived["paths"]["accepted"]) == (3, 2)
+    for strs_id, record in records.items():
+        if strs_id.startswith("StRS-") and strs_id != "StRS-OKFSCHEMA-OKFKB-001":
+            paths = record["stakeholder_test_coverage"]["paths"]
+            assert paths["accepted"] == paths["total"] > 0, strs_id
+    assert [item["id"] for item in evidence["exemptions"]] == ["SwRS-OKFSCHEMA-OKFKB-005"]
 
 
 def test_repository_guideline_is_the_installed_shipped_text() -> None:

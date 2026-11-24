@@ -3,8 +3,10 @@ $id: strs.schema.yaml
 title: okfreq stakeholder requirement profile
 description: >-
   StRS records a stakeholder-observable outcome and the need behind it. It
-  does not carry implementation or source coverage fields. Stakeholder test
-  coverage is computed in reports from linked SwRS according to configuration.
+  carries no implementation fields. Stakeholder test coverage is computed in
+  reports from linked SwRS according to configuration; in mode
+  linked-swrs-and-acceptance-paths it also carries the generated
+  tested_in_files and accepted_in_files.
 allOf:
   - $ref: base.schema.yaml
   - type: object
@@ -19,7 +21,47 @@ allOf:
         type: string
         minLength: 1
         description: Preserved stakeholder outcome.
+      acceptance_exemption:
+        type: boolean
+        description: Authored waiver of the acceptance condition for the whole StRS,
+          for a requirement that cannot be acceptance-tested automatically. Requires
+          acceptance_exemption_reason; it is never acceptance evidence.
+      acceptance_exemption_reason:
+        type: string
+        description: Why automated acceptance is not possible for this StRS; the
+          owner reviews it under the project's approval rules.
+      tested_in_files:
+        type: array
+        description: Generated test paths.
+        items:
+          type: string
+          x-okf-link:
+            resolution: project-relative
+            syntax: plain
+            basename_marker: '@tests_req'
+            id_marker: id
+            show_line_number: true
+      accepted_in_files:
+        type: array
+        description: 'Generated acceptance-test paths: files of @accepts_req markers
+          that count, in mode linked-swrs-and-acceptance-paths.'
+        items:
+          type: string
+          x-okf-link:
+            resolution: project-relative
+            syntax: plain
+            basename_marker: '@accepts_req'
+            id_marker: id
+            show_line_number: true
     required: [type, tier, user_need]
+    if:
+      properties:
+        acceptance_exemption: {const: true}
+      required: [acceptance_exemption]
+    then:
+      required: [acceptance_exemption_reason]
+      properties:
+        acceptance_exemption_reason: {minLength: 1}
 examples:
   - type: StRS
     id: StRS-OKFSCHEMA-CORE-001

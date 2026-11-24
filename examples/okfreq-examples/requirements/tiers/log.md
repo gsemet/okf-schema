@@ -1,5 +1,14 @@
 # Update Log
 
+## 2026-11-24
+
+- Moved the example to `strs_test_coverage_mode: linked-swrs-and-acceptance-paths`.
+  `StRS-CORE-001` declares its main path `S1`; both SwRS declare `scenarios:` with
+  matching `### Scenario S<n>:` headings; the tests carry `#S<n>` fragments.
+  `tests/test_acceptance_export.py` is the real acceptance test of `S1` (the export run
+  as a separate process); its slow variant is commented out and is not evidence.
+  `test_export_rows` also carries `@tests_req StRS-CORE-001#S1`.
+
 ## 2026-10-30
 
 - The lifecycle field is `req_lifecycle`; regenerated requirements carry the OKF

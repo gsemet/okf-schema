@@ -37,7 +37,10 @@ to it and is not included in the StRS schema or stakeholder coverage table.
 
 SwRS test-link coverage applies only to leaf `SwRS` requirements. A SwRS is
 test-link covered when at least one configured `@tests_req SwRS-ID` marker is
-found. This is a file-level relationship, not a test execution result.
+found. This is a file-level relationship, not a test execution result. In mode
+`linked-swrs-and-acceptance-paths`, a SwRS that declares `scenarios:` is covered
+only when every declared transition has a `@tests_req SwRS-ID#S<n>` marker; a
+SwRS without `scenarios:` keeps the rule above.
 
 ### StRS test coverage
 
@@ -48,6 +51,7 @@ rule is selected by `strs_test_coverage_mode` in `config.yml`:
 |---|---|
 | `linked-swrs` | It links to at least one SwRS and every linked SwRS has a test marker. |
 | `linked-swrs-and-validation-test` | The `linked-swrs` rule is satisfied and at least one validation test is defined directly for the StRS. |
+| `linked-swrs-and-acceptance-paths` | The `linked-swrs` rule is satisfied and the StRS is accepted: every declared main path has an `@accepts_req StRS-ID#S<n>` marker, or a justified acceptance waiver applies. |
 
 A validation test is defined by placing the normal test marker on the StRS ID
 in a configured test file:
@@ -61,10 +65,15 @@ This direct StRS marker is collected as validation-test evidence. An
 source coverage. The generated Markdown report therefore renders StRS and
 SwRS in separate tables, and places the active StRS rule below the StRS table.
 
-The two StRS modes deliberately answer different questions. The first asks
+The StRS modes deliberately answer different questions. The first asks
 whether the stakeholder outcome is decomposed into test-linked software
 behavior. The second also asks whether the stakeholder outcome has an explicit
-validation test definition of its own.
+validation test definition of its own. The third asks whether each declared main
+path of the stakeholder outcome has an acceptance test, and separately reports
+how many paths have a lighter test. It is still linkage: the new `@accepts_req`
+marker says that a file contains the acceptance test of a path, not that it ran
+or passed. See [why `okfreq` measures acceptance paths](okfreq-acceptance-paths.md)
+and the [reference](../reference/okfreq-acceptance-paths.md).
 
 ## The simple distinction
 
