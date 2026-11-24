@@ -14,7 +14,7 @@ capabilities to real usage and executable demonstrations.
 | Lifecycle meanings, owners and approval locks | `SwRS-OKFSCHEMA-OKFREQ-013` covers `tiers` and the legacy `levels`, lifecycle values read from the base schema, `approval_lock` and `owner_email` per tier and scope, the generated `default_owner_email` and the `approved` checks; `tests/test_okfreq.py` exercises precedence, removal, malformed settings and both refusals. The live bundle names its owner and generates `default_owner_email`, but approves nothing, because approval is the owner's decision; the showcase approves a disposable StRS and is refused on an unlockable SwRS. |
 | Nominal/failure scenarios, user needs, verification criteria | StRS documents preserve needs; SwRS documents specify observable behavior and verification. Prose checks expose unfinished scaffolds. |
 | Source/test evidence and generated-field ownership | Real markers in implementation and tests drive `requirements-report`; `update-coverage --check` detects drift. |
-| Stakeholder validation tests | The project uses `linked-swrs-and-validation-test`, with direct markers on real stakeholder workflow tests. The showcase compares it with default linked-SwRS coverage. |
+| Acceptance paths | The project uses `linked-swrs-and-acceptance-paths`. Installed-wheel acceptance tests cover 12 executable paths in `tests/test_acceptance_*.py`; cheaper path tests retain `@tests_req`; interactive OKFKB consolidation has a justified StRS waiver and separate SwRS annotation exemption. The showcase compares all three modes. |
 | Schema-declared links and navigation hints | Relationship IDs use filename stems; generated evidence uses project-relative paths. Custom documentation/skill/example fields are also checked against real files. |
 | All five resolution modes and both syntaxes | The disposable showcase resolves one manifest's local document, bundle path, extensionless path, source file and labelled wikilink. |
 | Local refs, unions, conditions and stable result identities | `tests/test_file_links.py` exercises applicable branches and JSON Pointer identities, including punctuation collisions and invalid targets. |
@@ -49,8 +49,9 @@ example unchanged. The checked-in example separately runs Python behavior tests
 and provides Rust source/test linkage; a Rust marker is not a claim that Rust
 compiled or ran during the Python workflow.
 
-Generated reports distinguish source linkage, test linkage, stakeholder test
-definition and execution evidence. `execution_evidence.status: not_collected`
+Generated reports distinguish source linkage, test linkage, independent tested
+and accepted paths, stakeholder coverage and execution evidence.
+`execution_evidence.status: not_collected`
 means exactly that; a 100% linkage figure does not assert test success or human
 approval. The showcase's marker fixtures demonstrate scanning, not production
 shipping behavior.

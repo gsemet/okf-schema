@@ -25,7 +25,10 @@ from okf_schema.validator import (
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S3
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S4
 
 
 def test_derive_trust_tier_no_verified_returns_unverified() -> None:

@@ -2,9 +2,55 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+import sysconfig
 from pathlib import Path
+from typing import Any
 
 import pytest
+
+
+@pytest.fixture(scope="session")
+def installed_runtime(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
+    """Build and install one wheel for isolated acceptance-path tests."""
+    if sys.platform == "win32":
+        pytest.skip("installed-wheel acceptance paths are not run on Windows")
+    work = tmp_path_factory.mktemp("installed-runtime")
+    repository = Path(__file__).parents[1]
+    wheel_dir = work / "wheel"
+    wheel_dir.mkdir()
+    subprocess.run(
+        ["uv", "build", "--offline", "--wheel", "--out-dir", str(wheel_dir)],
+        cwd=repository,
+        check=True,
+    )
+    wheel = next(wheel_dir.glob("*.whl"))
+    environment = work / "venv"
+    subprocess.run(["uv", "venv", "--python", sys.executable, str(environment)], check=True)
+    interpreter = environment / "bin" / "python"
+    subprocess.run(
+        ["uv", "pip", "install", "--python", str(interpreter), "--no-deps", str(wheel)],
+        check=True,
+    )
+    dependencies = work / "dependencies"
+    dependencies.mkdir()
+    purelib = Path(sysconfig.get_paths()["purelib"])
+    for entry in purelib.iterdir():
+        if entry.suffix == ".pth" or entry.name.startswith("okf_schema"):
+            continue
+        (dependencies / entry.name).symlink_to(entry, target_is_directory=entry.is_dir())
+    isolated = os.environ.copy()
+    isolated.pop("PYTHONPATH", None)
+    isolated["PYTHONPATH"] = str(dependencies)
+    isolated["PYTHONNOUSERSITE"] = "1"
+    return {
+        "bin": environment / "bin",
+        "python": interpreter,
+        "env": isolated,
+        "root": work,
+    }
 
 
 @pytest.fixture

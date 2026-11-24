@@ -104,7 +104,9 @@ satisfied. It is not an issue title, design choice, code comment, or task.
    test. The same ID may repeat at distinct evidence points in one file.
    StRS never receives implementation markers; in the stricter
    `linked-swrs-and-validation-test` mode, a direct `@tests_req <StRS-ID>` marker
-   defines a stakeholder validation test.
+   defines a validation test. In `linked-swrs-and-acceptance-paths`, declare
+   `scenarios:`, add `#S<n>` to every target with scenarios, and use
+   `@accepts_req <StRS-ID>#S<n>` for acceptance evidence.
 - **Markers are links, not proof.** A test marker says where verification lives,
   not whether the test ran or passed. Run the project's real test suite.
 - **Coverage and reports are generated views.** Keep implementation coverage,
@@ -115,6 +117,9 @@ satisfied. It is not an issue title, design choice, code comment, or task.
   its code starts `proposed`; `draft` is a proposal not implemented yet.
 - **`approved` belongs to the owner.** It freezes a requirement; only the owner
   agrees to approve or change one, recorded in `approved_by` and `approved_at`.
+  Adding only `scenarios:` to an approved requirement preserves the body and
+  existing approval fields unless the owner gives a new approval; log the
+  owner's agreement in `tiers/log.md`.
   Owners and approval locks come from `config.yml` per tier and scope. Repair
   steps for an agent: [references/operations.md](references/operations.md#lifecycle-ownership-and-approval).
 - **The bundle stays a native OKF bundle.** okfreq generates `status` from
@@ -253,7 +258,8 @@ diagnostics together. Use `check_file_links` for validation-only workflows.
 Neither API executes tests or treats a marker as proof beyond the configured
 traceability report.
 
-`implemented_in_files` and `tested_in_files` use exact project-relative paths.
+`implemented_in_files`, `tested_in_files`, and `accepted_in_files` use exact
+project-relative paths.
 `derives_from`, `derived_by`, `depends_on`, `superseded_by`, `supersedes`, and
 `relates_to` use case-sensitive Markdown
 filename stems without `.md`. Preserve the existing requirement-ID graph
@@ -285,8 +291,10 @@ format, not a generic document heading.
 1. Create or confirm the stakeholder outcome first. An StRS needs one
    stakeholder-observable normative behavior, the stakeholder's user need, and
    any known rationale or constraints. Do not add software scenarios or source
-   markers. Add a direct test marker only when the configured StRS coverage mode
-   requires an explicit validation test.
+   markers. Declare its main paths in `scenarios:` and use `@accepts_req` in the
+   new mode. Prefer the acceptance test closest to the final product; execution
+   cost does not define the marker. A justified whole-StRS waiver must not be
+   invented to fill coverage.
 2. Derive one or more SwRS requirements for independently observable software
    behaviors. Each SwRS needs a valid StRS parent, nominal and boundary/failure
    scenarios, and objective verification notes.
@@ -311,7 +319,7 @@ format, not a generic document heading.
 3. Never renumber an existing requirement. Allocate new identities through
    `okfreq new` under the configured ID policy.
 4. Never treat generated `derived_by`, `supersedes`, `implemented_in_files`,
-   `tested_in_files` or `default_owner_email` as authored truth.
+   `tested_in_files`, `accepted_in_files` or `default_owner_email` as authored truth.
 5. Keep `okfreq` requirements independent from `okfkb` knowledge documents.
    They may coexist and both use OKF-compatible Markdown, but they have distinct
    purposes and lifecycles.

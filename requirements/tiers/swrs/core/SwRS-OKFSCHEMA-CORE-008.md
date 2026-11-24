@@ -35,6 +35,13 @@ documentation_files:
 agent_skill_files:
 - skills/okf-schema/SKILL.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Report an empty schema file informationally
+- id: S2
+  title: Warn about an unparsable or non-mapping schema file
+- id: S3
+  title: Keep the legacy loader silent
 ---
 
 ## Report schema files that yield no schema
@@ -43,7 +50,7 @@ default_owner_email: gaetan@xeberon.net
 
 When a schema file in a schema database is empty, cannot be parsed or is not a mapping, okf-schema SHALL report it with the file name and leave the type without schema, as informational I1 for an empty file and as warning W17 otherwise.
 
-### Scenario: Report an empty schema file informationally
+### Scenario S1: Report an empty schema file informationally
 
 - GIVEN a schema database holding an empty, whitespace-only or comment-only schema file in JSON,
   JSON5 or YAML format
@@ -51,7 +58,7 @@ When a schema file in a schema database is empty, cannot be parsed or is not a m
 - THEN the report contains an informational `I1` entry naming the file, the type stays without
   schema, and `--strict` validation does not fail because of it
 
-### Scenario: Warn about an unparsable or non-mapping schema file
+### Scenario S2: Warn about an unparsable or non-mapping schema file
 
 - GIVEN a schema file with a syntax error, an unreadable file, or a top-level value that is not a
   mapping
@@ -59,7 +66,7 @@ When a schema file in a schema database is empty, cannot be parsed or is not a m
 - THEN the report contains warning `W17` naming the file and the parser error, and the type stays
   without schema
 
-### Scenario: Keep the legacy loader silent
+### Scenario S3: Keep the legacy loader silent
 
 - GIVEN a caller of `load_schema_database`
 - WHEN a schema file is empty or unparsable

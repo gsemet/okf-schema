@@ -63,7 +63,8 @@ def _make_bundle(path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-005
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 
 
 def test_list_list_outputs_concepts(tmp_path: Path) -> None:

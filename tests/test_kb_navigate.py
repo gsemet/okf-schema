@@ -141,7 +141,8 @@ def test_load_nodes_node_fields_parsed(kb_bundle: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-004
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S2
 
 
 def test_search_search_ranks_title_and_tags(kb_bundle: Path) -> None:

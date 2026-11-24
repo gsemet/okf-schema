@@ -33,8 +33,12 @@ CONTENT_DIRS = {
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-001
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S2
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S3
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S4
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S2
 
 
 def test_kb_help_kb_help_lists_init_and_install() -> None:

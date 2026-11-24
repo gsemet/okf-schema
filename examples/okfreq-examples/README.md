@@ -13,6 +13,14 @@ foundation. It connects stakeholder intent to software behavior, tracks the
 requirement lifecycle, and records whether the behavior is implemented and
 tested.
 
+This checked-in example runs `linked-swrs-and-acceptance-paths`. Its stakeholder
+path is "Export selected rows for offline review". SwRS tests carry
+`@tests_req …#S<n>`; the cheap in-process StRS path test uses
+`@tests_req StRS-CORE-001#S1`, while
+`test_acceptance_export.py` runs the export in a separate process and carries
+`@accepts_req StRS-CORE-001#S1`. A fully commented slow variant is illustrative
+future work and is not collected as evidence.
+
 This example includes one Python requirement and one Rust requirement:
 `SwRS-CORE-001` covers the Python CSV writer, while `SwRS-CORE-002` covers a
 Rust CSV row formatter.
@@ -35,6 +43,7 @@ test evidence, and traceability report.
 - [Rust software requirement](requirements/tiers/swrs/SwRS-CORE-002.md)
 - [Implementation](src/export.py)
 - [Tests](tests/test_export.py)
+- [Acceptance test](tests/test_acceptance_export.py)
 - [Rust implementation](src/rust_export.rs)
 - [Rust test](tests/rust_export_test.rs)
 - [Traceability report](dist/requirements-report.md)
@@ -56,7 +65,8 @@ test markers demonstrate linkage; this command does not run a Rust compiler.
 The showcase creates a temporary shipping-manifest project and verifies:
 
 - scoped IDs/folders, custom markers, authored dependencies and external demo metadata;
-- both StRS coverage policies, including a direct stakeholder validation marker;
+- all three StRS coverage modes, including direct validation and scenario-aware
+  acceptance-path evidence;
 - conflict-preserving config merge and preservation of unknown authored fields;
 - all five file-resolution modes, wikilink labels/fragments, E10 failures and W15 skips;
 - index/search/in-file/scope/graph/trace/status and schema-validated JSON reports;

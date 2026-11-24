@@ -1,5 +1,22 @@
 # Update Log
 
+## 2026-11-24
+
+### Acceptance paths
+
+- Switched this bundle to `linked-swrs-and-acceptance-paths`, declared 13 StRS
+  paths and 93 SwRS transitions, aligned scenario IDs with body headings, and
+  added fragments to real test markers.
+- Added [SwRS-OKFSCHEMA-OKFREQ-015](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-015.md),
+  the 0.18 scenario marker and report contract, and updated the three maintained
+  schemas plus runtime, skills, documentation and examples.
+- Added isolated installed-wheel acceptance tests for the 12 executable StRS
+  paths. Interactive consolidation remains intentionally unaccepted:
+  StRS-OKFSCHEMA-OKFKB-001 has a whole-StRS acceptance waiver and
+  SwRS-OKFSCHEMA-OKFKB-005 retains its independent annotation exemption.
+- Verification: `okfreq update-coverage`, validation with link checks, targeted
+  tests and `just preflight` are recorded in the implementation hand-back.
+
 ## 2026-10-30
 
 ### Native OKF projection

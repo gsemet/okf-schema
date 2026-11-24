@@ -1,6 +1,7 @@
 """Tests for the shared packaged-skill installer."""
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S2
 
 from __future__ import annotations
 

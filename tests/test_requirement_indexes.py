@@ -16,7 +16,9 @@ from okf_schema.okfreq.core import (
 )
 from okf_schema.okfreq.navigation import lint_indexes
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-009
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S3
 
 
 def _bundle(tmp_path: Path) -> Path:

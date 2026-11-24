@@ -2,9 +2,9 @@ $schema: https://json-schema.org/draft/2020-12/schema
 $id: strs.schema.yaml
 title: okfreq stakeholder requirement profile
 description: >-
-  StRS records a stakeholder-observable outcome and the need behind it. It
-  does not carry implementation or source coverage fields. Stakeholder test
-  coverage is computed in reports from linked SwRS according to configuration.
+  StRS records a stakeholder-observable outcome and the need behind it. It carries
+  no implementation fields; in mode linked-swrs-and-acceptance-paths it carries
+  generated tested_in_files and accepted_in_files.
 allOf:
   - $ref: base.schema.yaml
   - type: object
@@ -19,7 +19,50 @@ allOf:
         type: string
         minLength: 1
         description: Preserved stakeholder outcome.
+      tested_in_files:
+        type: array
+        items:
+          type: string
+          x-okf-link:
+            resolution: project-relative
+            syntax: plain
+            basename_marker: '@tests_req'
+            id_marker: id
+            show_line_number: true
+        description: Generated test paths.
+      accepted_in_files:
+        type: array
+        items:
+          type: string
+          x-okf-link:
+            resolution: project-relative
+            syntax: plain
+            basename_marker: '@accepts_req'
+            id_marker: id
+            show_line_number: true
+        description: >-
+          Generated acceptance-test paths: files of @accepts_req markers that
+          count, in mode linked-swrs-and-acceptance-paths.
+      acceptance_exemption:
+        type: boolean
+        description: Whether acceptance of this complete StRS is waived.
+      acceptance_exemption_reason:
+        type: [string, 'null']
+        minLength: 1
+        description: Required justification when acceptance is exempted.
     required: [type, tier, user_need]
+    allOf:
+      - if:
+          required: [acceptance_exemption]
+          properties:
+            acceptance_exemption:
+              const: true
+        then:
+          required: [acceptance_exemption_reason]
+          properties:
+            acceptance_exemption_reason:
+              type: string
+              minLength: 1
 examples:
   - type: StRS
     id: StRS-OKFSCHEMA-CORE-001

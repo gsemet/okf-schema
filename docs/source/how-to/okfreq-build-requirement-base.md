@@ -1,5 +1,8 @@
 # Build a requirement base
 
+Choose the StRS coverage mode explicitly. Scenario-aware stakeholder acceptance
+is described in [Why okfreq measures acceptance paths](../explanation/okfreq-acceptance-paths.md).
+
 ```{admonition} Want to understand the why first?
 :class: tip
 

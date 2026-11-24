@@ -241,8 +241,9 @@ the `okfkb` knowledge tiers. It provides:
 - separate StRS stakeholder and SwRS software-requirement layers;
 - stable requirement IDs and explicit lifecycle states;
 - authored `derives_from` relationships with generated reverse links;
-- `@implements_req` and `@tests_req` markers for implementation and test
-  traceability; and
+- `@implements_req`, `@tests_req`, and `@accepts_req` markers, with `#S<n>`
+  fragments when requirements declare scenarios, for implementation, test and
+  StRS acceptance traceability; and
 - validation, coverage, graph, report, archive, supersession, and draft-retirement commands.
 
 Initialize and validate a requirements bundle with:
@@ -258,6 +259,8 @@ okfreq trace my-requirements
 ```
 
 See the [`okfreq` requirements tutorial](https://okf-schema.readthedocs.io/en/stable/tutorials/okfreq-traceability.html),
+[why acceptance paths exist](docs/source/explanation/okfreq-acceptance-paths.md),
+[the scenario marker reference](docs/source/reference/okfreq-acceptance-paths.md),
 the [`okfreq` design choices](https://okf-schema.readthedocs.io/en/stable/explanation/okfreq-choices.html),
 and the [skill scope guide](skills/README.md) for the distinction between
 generic OKF, `okfkb`, and `okfreq`.

@@ -37,6 +37,13 @@ implemented_in_files:
 tested_in_files:
 - tests/test_skill_resources.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Set up a project that has no bundle
+- id: S2
+  title: Refuse to set up over an existing bundle
+- id: S3
+  title: Stop outside a usable git repository
 ---
 
 ## Set up a project's requirements baseline from one skill
@@ -45,7 +52,7 @@ default_owner_email: gaetan@xeberon.net
 
 When a user asks to set up okfreq in a project without a requirements bundle, the okfreq-setup skill SHALL direct the agent to deliver one pull request that specifies the project's current behaviour, anchored to its code and tests, without asking the user.
 
-### Scenario: Set up a project that has no bundle
+### Scenario S1: Set up a project that has no bundle
 
 - GIVEN a git project with no requirements bundle and an installed `okfreq-setup`
   skill
@@ -56,14 +63,14 @@ When a user asks to set up okfreq in a project without a requirements bundle, th
 - AND the requirements are created `proposed`, the owner named in the request
   or in `CODEOWNERS` is recorded per tier, and nothing is approved
 
-### Scenario: Refuse to set up over an existing bundle
+### Scenario S2: Refuse to set up over an existing bundle
 
 - GIVEN a project that already has a requirements `config.yml`
 - WHEN the user asks the agent to set up okfreq
 - THEN the skill directs the agent to stop and report that `okfreq-gardening`
   applies instead
 
-### Scenario: Stop outside a usable git repository
+### Scenario S3: Stop outside a usable git repository
 
 - GIVEN a directory that is not a git repository or whose default branch cannot
   be determined

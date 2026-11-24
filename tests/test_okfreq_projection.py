@@ -21,7 +21,9 @@ from okf_schema.okfreq.core import (
 from okf_schema.projection import LINKS_START
 from okf_schema.validator import validate_bundle
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-014
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S3
 
 
 def _family(tmp_path: Path) -> tuple[Path, dict[str, Path]]:

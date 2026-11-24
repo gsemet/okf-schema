@@ -25,8 +25,14 @@ def test_live_requirements_preserve_complete_real_evidence() -> None:
     ):
         assert evidence[category] == [], (category, evidence[category])
     stakeholder = result["stakeholder_test_coverage"]
-    assert stakeholder["mode"] == "linked-swrs-and-validation-test"
+    assert stakeholder["mode"] == "linked-swrs-and-acceptance-paths"
     assert stakeholder["covered"] == stakeholder["requirements"]
+    assert stakeholder["paths"] == {"total": 13, "tested": 13, "accepted": 12}
+    waived = [item for item in result["requirements"] if item["id"] == "StRS-OKFSCHEMA-OKFKB-001"][
+        0
+    ]["stakeholder_test_coverage"]
+    assert waived["acceptance_exemption"]["reason"]
+    assert waived["paths"]["accepted"] == 2
 
 
 def test_repository_guideline_is_the_installed_shipped_text() -> None:
@@ -40,3 +46,19 @@ def test_repository_guideline_is_the_installed_shipped_text() -> None:
         shipped.read_text(encoding="utf-8")
     )
     assert (project / "requirements/guidelines/project.guidelines.md").is_file()
+
+
+def test_shipped_guideline_carries_acceptance_path_authoring_rules() -> None:
+    """Installed projects receive fragment, cost and approval guidance."""
+    guideline = (
+        Path(__file__).parents[1]
+        / "src/okf_schema/data/requirements/guidelines/requirements.guidelines.md"
+    ).read_text(encoding="utf-8")
+    for phrase in (
+        "@tests_req",
+        "@accepts_req",
+        "#S<n>",
+        "balancing execution cost",
+        "only adds `scenarios:`",
+    ):
+        assert phrase in guideline

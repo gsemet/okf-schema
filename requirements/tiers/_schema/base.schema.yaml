@@ -47,8 +47,10 @@ properties:
         usual plan and review, without an explicit owner agreement.
       - approved: frozen by its owner. Any significant change (normative statement,
         scenarios, criteria, deprecation or supersession) needs the owner's explicit,
-        justified agreement, recorded in approved_by and approved_at. Allowed only where
-        approval_lock is true for the requirement's tier and scope.
+        justified agreement, recorded in approved_by and approved_at, except an edit
+        that only adds scenarios metadata: keep existing approval fields unless the
+        owner gives a new approval, and record the agreement in tiers/log.md. Allowed
+        only where approval_lock is true for the requirement's tier and scope.
       - deprecated: no longer in force and not replaced; kept for history.
       - superseded: replaced by the requirements listed in superseded_by; kept for history.
       OKF consumers read the generated status mapped by x-okf-status-projection.
@@ -96,6 +98,19 @@ properties:
   tier:
     type: string
     description: Configured level label; the tier schema constrains its value.
+  scenarios:
+    type: array
+    minItems: 1
+    description: Authored main paths (StRS) or transition scenarios (SwRS). Each id S<n>
+      is stable and never reused, even after its scenario is removed. Test markers name
+      one with a #S<n> fragment.
+    items:
+      type: object
+      required: [id, title]
+      additionalProperties: false
+      properties:
+        id: {type: string, pattern: '^S[1-9][0-9]*$'}
+        title: {type: string, minLength: 1}
   derives_from:
     type: array
     items:

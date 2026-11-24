@@ -13,9 +13,16 @@ origin: native
 tier: StRS
 derives_from: []
 user_need: Users need a portable report for offline review.
+scenarios:
+- id: S1
+  title: Export selected rows for offline review
 derived_by:
 - SwRS-CORE-001
 - SwRS-CORE-002
+tested_in_files:
+- tests/test_export.py
+accepted_in_files:
+- tests/test_acceptance_export.py
 ---
 
 ## Export a report
@@ -23,6 +30,13 @@ derived_by:
 ### Normative behavior
 
 When export is requested, the reporting capability SHALL provide a portable report.
+
+### Main paths
+
+#### Path S1: Export selected rows for offline review
+
+1. Select the rows to export.
+2. Run the export and review the CSV offline.
 
 ### Preserved stakeholder intent
 

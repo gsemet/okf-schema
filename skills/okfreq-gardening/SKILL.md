@@ -45,7 +45,7 @@ unrelated implementation task.
    `<bundle>/tiers/_schema/` before editing anything.
 - Preserve requirement IDs, UUIDs, authored frontmatter, unknown properties,
   YAML comments, and Markdown bodies.
-- Never hand-edit `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`,
+- Never hand-edit `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `accepted_in_files`,
   `default_owner_email`, indexes or reports. Use explicit `okfreq` commands for generated data.
 - Never claim implementation or test coverage without source evidence and
   markers. Markers are links, not proof that tests pass.
@@ -126,6 +126,8 @@ Run `okfreq trace . --json` and classify results:
 
 - `implemented` — source files containing implementation markers;
 - `tested` — test files containing test markers;
+- `accepted` — test files containing StRS acceptance markers;
+- `scenario_markers` — the marker, ID, fragment, file and first line;
 - `missing_ids` — markers that reference no known requirement;
 - `duplicates` — always empty: the same ID may be marked several times in one
   file, and in several files; the key is kept for report compatibility;
@@ -162,13 +164,21 @@ formats instead of applying one generic requirement template:
   statement as `--description` and the stakeholder's underlying outcome as
   `--user-need`. Use the frontmatter title as the first heading. Complete `Normative behavior`, `User Need`,
   and `Rationale and constraints`. Do not add SwRS scenarios, verification
-  notes, or implementation markers to an StRS. Add a direct validation-test
-  marker only for a real stakeholder test, as required by the configured mode.
+  notes, or implementation markers to an StRS. Declare `scenarios:` from
+  `### Main paths`; in `linked-swrs-and-acceptance-paths` mode add `#S<n>` to every marker and
+  choose `@accepts_req` for the test closest to the final product. A whole-StRS
+  waiver needs a real reason and never replaces linked-SwRS coverage.
 - **SwRS — software behavior:** provide one observable, bounded `SHALL`
   response as `--description` and at least one valid StRS parent with
   `--derives-from`. Complete nominal and boundary/failure GIVEN-WHEN-THEN
   scenarios plus objective verification notes. Do not add a `User Need` or
   stakeholder-constraints section to an SwRS.
+
+When migrating headings, assign `S1…` in existing order, never reuse IDs, and
+preserve a frontmatter-only approved-requirement change unless body headings
+also change. Add fragments to the real test of each scenario; never invent a
+marker to fill a counter. Heading ID/title alignment is authoring guidance,
+not a general validator.
 
 Treat every angle-bracket item emitted by the scaffold as an explicit authoring
 gap. Replace it with evidence-based content or leave it visible and report the

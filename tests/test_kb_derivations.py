@@ -60,7 +60,9 @@ def _bundle(tmp_path: Path) -> Path:
     return bundle
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-006
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S2
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S3
 
 
 def test_build_derivation_graph_reflects_authored_edges(tmp_path: Path) -> None:

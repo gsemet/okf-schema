@@ -3,6 +3,9 @@
 `okfreq` is a demonstrator to understand how to connect software requirements
 to source files and test files on top of `OKF-Schema`
 
+See [Why okfreq measures acceptance paths](okfreq-acceptance-paths.md) for the
+separate tested and accepted path counters.
+
 That is useful traceability, and can work pretty well for most opensource project
 but it is not the same thing as proving that the software requirement
 was successfully tested.
@@ -37,7 +40,8 @@ to it and is not included in the StRS schema or stakeholder coverage table.
 
 SwRS test-link coverage applies only to leaf `SwRS` requirements. A SwRS is
 test-link covered when at least one configured `@tests_req SwRS-ID` marker is
-found. This is a file-level relationship, not a test execution result.
+found. In acceptance-paths mode, every declared transition instead needs its
+own `#S<n>` marker. This is linkage, not a test execution result.
 
 ### StRS test coverage
 
@@ -48,6 +52,7 @@ rule is selected by `strs_test_coverage_mode` in `config.yml`:
 |---|---|
 | `linked-swrs` | It links to at least one SwRS and every linked SwRS has a test marker. |
 | `linked-swrs-and-validation-test` | The `linked-swrs` rule is satisfied and at least one validation test is defined directly for the StRS. |
+| `linked-swrs-and-acceptance-paths` | The linked-SwRS condition is satisfied and every declared path is accepted, or a justified whole-StRS waiver applies. Tested and accepted counters remain independent. |
 
 A validation test is defined by placing the normal test marker on the StRS ID
 in a configured test file:

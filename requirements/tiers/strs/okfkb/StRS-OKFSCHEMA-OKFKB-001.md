@@ -21,6 +21,20 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFKB-005
 - SwRS-OKFSCHEMA-OKFKB-006
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Capture an immutable finding
+- id: S2
+  title: Update a knowledge base's indexes and lint
+- id: S3
+  title: Propose a consolidation for human review
+acceptance_exemption: true
+acceptance_exemption_reason: The third main path is interactive consolidation
+  for human review and no deterministic acceptance command or evidence exists.
+tested_in_files:
+- tests/test_integration.py
+accepted_in_files:
+- tests/test_acceptance_okfkb.py
 ---
 
 ## Maintain trustworthy engineering knowledge
@@ -30,6 +44,24 @@ default_owner_email: gaetan@xeberon.net
 The `okfkb` capability SHALL enable engineering teams to capture, organize, and
 mature knowledge while retaining the evidence and provenance on which that
 knowledge depends.
+
+
+### Main paths
+
+#### Path S1: Capture an immutable finding
+
+1. Create a finding through the installed okfkb command.
+2. Read it back without rewriting earlier evidence.
+
+#### Path S2: Update a knowledge base's indexes and lint
+
+1. Run knowledge-base update on current documents.
+2. Receive regenerated indexes and deterministic lint results.
+
+#### Path S3: Propose a consolidation for human review
+
+1. Review converging or contradictory evidence interactively.
+2. Present a proposed consolidation for a human decision without claiming acceptance.
 
 ### Preserved stakeholder intent
 

@@ -1,4 +1,4 @@
-## Unreleased
+## v0.17.0 (2026-10-30)
 
 ### BREAKING CHANGE
 

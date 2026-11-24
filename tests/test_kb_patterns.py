@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S2
 
 
 def test_init_patterns_is_dict() -> None:

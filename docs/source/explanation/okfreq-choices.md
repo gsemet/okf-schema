@@ -1,5 +1,8 @@
 # `okfreq` Design Choices
 
+Authored `scenarios:`, generated acceptance paths, and the three marker verbs
+are explained in [Why okfreq measures acceptance paths](okfreq-acceptance-paths.md).
+
 `okfreq` is a requirements layer built using `okf-schema`.
 It stores requirements as OKF-compatible Markdown documents,
 but keeps them separate from `okfkb`,

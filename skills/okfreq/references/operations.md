@@ -69,14 +69,15 @@ tiers:
     owner_email: product-owner@example.org}
   SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS], approval_lock: false}
 id_policy: scope-prefix-sequence
-strs_test_coverage_mode: linked-swrs-and-validation-test
+strs_test_coverage_mode: linked-swrs-and-acceptance-paths
 lifecycle:
   field: req_lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files, accepted_in_files,
   default_owner_email, status, verified]
 retired_ids: []
 scopes:
@@ -107,13 +108,18 @@ scopes:
   lateral links that mean neither derivation nor replacement; it has no inverse,
   so declare it on one side only. A legacy scalar `superseded_by: ID` is still read
   (validation adds the informational `I2`); convert it to a list.
-- Only the seven listed `generated_fields` are supported. Omitting a generated
-  field leaves it unmanaged; unsupported names fail. StRS never carries generated
-  source/test file arrays, even when the setting lists those fields.
+- Eight generated fields are supported. Omitting one leaves it unmanaged;
+  unsupported names fail. StRS never carries `implemented_in_files`; in the
+  acceptance-paths mode it can carry `tested_in_files` and `accepted_in_files`.
 - The default StRS mode is `linked-swrs`: every linked SwRS needs a test marker
   and at least one SwRS must exist. The stricter mode also needs a direct
   `@tests_req StRS-...` marker in a configured test file. This is a defined
   validation test, not proof of execution. Do not put implementation markers on StRS.
+- `linked-swrs-and-acceptance-paths` requires `#S<n>` on markers targeting a
+  requirement with `scenarios:`. `@tests_req` feeds tested coverage;
+  `@accepts_req` feeds acceptance. A justified whole-StRS waiver does not exempt
+  linked SwRS. Use the error, `W003` and `W004` messages to repair paths,
+  fragments and acceptance evidence.
 - `annotation_exemption: true` needs a non-empty `exemption_reason`. Use only
   for an agreed exception; report it separately, never as observed coverage.
 - Unknown producer metadata is preserved. `external_id` and `external_url`

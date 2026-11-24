@@ -1,5 +1,9 @@
 # Add requirements traceability to an existing project
 
+For direct stakeholder acceptance, use
+[Acceptance paths and scenario markers](../reference/okfreq-acceptance-paths.md)
+to select `linked-swrs-and-acceptance-paths`.
+
 `okfreq` stores requirements as Markdown files with structured metadata. It
 connects a stakeholder outcome to software behavior, then to implementation and
 test files. Its commands validate the documents, discover declared links and

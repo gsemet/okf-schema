@@ -17,8 +17,16 @@ from okf_schema.okfreq.core import (
     validate_requirements,
 )
 
-# @tests_req SwRS-OKFSCHEMA-CORE-007
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-005
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S3
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S4
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S5
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S3
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S4
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S5
 
 
 def _link_schema(resolution: str, syntax: str = "plain") -> dict[str, object]:
@@ -297,7 +305,8 @@ def test_check_file_links_supports_wikilink_labels_and_fragments(tmp_path: Path)
     )
 
 
-# @tests_req StRS-OKFSCHEMA-CORE-003
+# @tests_req StRS-OKFSCHEMA-CORE-003#S1
+# @tests_req StRS-OKFSCHEMA-CORE-003#S2
 def test_inspect_file_links_exposes_successes_failures_and_suffixes(tmp_path: Path) -> None:
     """Structured inspection preserves identity, resolution, and parsed suffix metadata."""
     document = tmp_path / "docs" / "source.md"

@@ -23,7 +23,10 @@ from okf_schema._internal.yaml import extract_frontmatter
 from okf_schema.okfreq.cli import okfreq
 from okf_schema.okfreq.core import load_requirements
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-008
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S3
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S4
 
 
 def test_traceability_tutorial_runs_from_existing_feature_to_updated_contract(

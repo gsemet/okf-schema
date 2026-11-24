@@ -62,7 +62,8 @@ def test_flatten_value_mixed_nesting() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 
 
 def test_format_frontmatter_no_frontmatter() -> None:

@@ -22,6 +22,17 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-005
 - SwRS-OKFSCHEMA-CORE-009
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Create a bundle and author a concept
+- id: S2
+  title: Normalize and index a bundle
+- id: S3
+  title: Inspect bundle knowledge read-only
+tested_in_files:
+- tests/test_integration.py
+accepted_in_files:
+- tests/test_acceptance_core.py
 ---
 
 ## Maintain and inspect OKF bundles
@@ -29,6 +40,24 @@ default_owner_email: gaetan@xeberon.net
 ### Normative behavior
 
 The okf-schema capability SHALL enable maintainers to author, normalize, navigate, and evolve OKF bundles without losing authored knowledge.
+
+
+### Main paths
+
+#### Path S1: Create a bundle and author a concept
+
+1. Create a bundle through the installed interface.
+2. Add a concept through the user-facing command and inspect its stored metadata.
+
+#### Path S2: Normalize and index a bundle
+
+1. Run normalization and index generation on authored content.
+2. Observe deterministic files and generated navigation.
+
+#### Path S3: Inspect bundle knowledge read-only
+
+1. Request a listing or read-only view through the installed interface.
+2. Inspect the returned knowledge without changing the bundle.
 
 ### Preserved stakeholder intent
 

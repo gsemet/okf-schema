@@ -17,6 +17,15 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-006
 - SwRS-OKFSCHEMA-CORE-008
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Validate a conforming bundle
+- id: S2
+  title: Report a non-conforming bundle without changing it
+tested_in_files:
+- tests/test_integration.py
+accepted_in_files:
+- tests/test_acceptance_core.py
 ---
 
 ## Validate OKF bundle structures
@@ -26,6 +35,19 @@ default_owner_email: gaetan@xeberon.net
 When a maintainer validates an OKF bundle, the `okf-schema` CLI SHALL report
 structural and schema violations without modifying the bundle's authored
 content.
+
+
+### Main paths
+
+#### Path S1: Validate a conforming bundle
+
+1. Run the generic validator on an authored bundle that follows its declared schema.
+2. Receive a successful result without changing authored content.
+
+#### Path S2: Report a non-conforming bundle without changing it
+
+1. Run the validator on a bundle with invalid authored metadata.
+2. Receive actionable diagnostics and leave the source bundle unchanged.
 
 ### Preserved stakeholder intent
 

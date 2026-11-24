@@ -97,7 +97,9 @@ def test_load_schema_database_skips_oserror(tmp_path: Path) -> None:
     assert schemas == {}
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S3
 @Parametrization.autodetect_parameters()
 @Parametrization.case("json_empty", filename="t.schema.json", text="")
 @Parametrization.case("json_blank", filename="t.schema.json", text="  \n")
@@ -765,7 +767,9 @@ def test_validate_log_log_valid_dates_no_w5(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S3
 
 
 def test_validate_bundle_valid_valid_bundle_is_conformant() -> None:

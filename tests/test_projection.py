@@ -25,7 +25,9 @@ from okf_schema.projection import (
 )
 from okf_schema.validator import log_heading_findings
 
-# @tests_req SwRS-OKFSCHEMA-CORE-009
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S3
 
 SCHEMA = dedent(
     """\
@@ -324,7 +326,9 @@ def test_cli_lint_check_fails_on_a_non_conforming_log_heading(tmp_path: Path) ->
     assert "[W5]" in result.output and "'### Topic' sub-heading" in result.output
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-006
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S2
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S3
 def test_okfkb_update_projects_derivations_as_markdown_links(tmp_path: Path) -> None:
     kb = tmp_path / "kb"
     scaffold_kb(kb)

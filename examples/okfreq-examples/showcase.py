@@ -17,7 +17,7 @@ from jsonschema import Draft202012Validator
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.file_links import inspect_file_links
 from okf_schema.okfreq.cli import okfreq
-from okf_schema.okfreq.core import load_requirements, report
+from okf_schema.okfreq.core import load_requirements, report, report_schema, validate_requirements
 from okf_schema.projection import LINKS_START, strip_links_section
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-008
@@ -120,6 +120,70 @@ def run_showcase(project: Path) -> dict[str, str]:
     outcomes["strict_stakeholder_coverage"] = (
         "requires linked SwRS tests and a direct validation test"
     )
+    config["markers"]["accepts"] = "@accepts"
+    config["strs_test_coverage_mode"] = "linked-swrs-and-acceptance-paths"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    stakeholder_path = load_requirements(root)[parent][0]
+    stakeholder_text = stakeholder_path.read_text(encoding="utf-8")
+    path_block = (
+        "\n### Main paths\n\n"
+        "#### Path S1: Select shipment rows\n\n1. Select rows.\n2. Review the selection.\n\n"
+        "#### Path S2: Export shipment rows\n\n1. Run the export.\n2. Review the CSV.\n\n"
+    )
+    stakeholder_text = stakeholder_text.replace(
+        "### Preserved stakeholder intent",
+        path_block + "### Preserved stakeholder intent",
+        1,
+    )
+    stakeholder_path.write_text(stakeholder_text, encoding="utf-8")
+    findings = validate_requirements(root)
+    assert any(
+        "W003" in finding and parent in finding and "Path S1" in finding for finding in findings
+    )
+    assert any("W004" in finding and parent in finding for finding in findings)
+    edit(
+        stakeholder_path,
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Select shipment rows"},
+                {"id": "S2", "title": "Export shipment rows"},
+            ]
+        },
+    )
+    edit(
+        load_requirements(root)[swrs][0],
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Write selected shipment rows"},
+                {"id": "S2", "title": "Write an empty shipment"},
+            ]
+        },
+    )
+    assert any("has no scenario fragment" in finding for finding in validate_requirements(root))
+    assert report(root)["requirements"][0]["stakeholder_test_coverage"]["paths"]["accepted"] == 0
+    test_path.write_text(
+        f"# @accepts {parent}#S1\n"
+        f"# @verifies {parent}#S1\n# @verifies {parent}#S2\n"
+        f"# @verifies {swrs}#S1\n# @verifies {replacement}\n",
+        encoding="utf-8",
+    )
+    partial = report(root)
+    stakeholder = next(item for item in partial["requirements"] if item["id"] == parent)
+    assert stakeholder["stakeholder_test_coverage"]["paths"] == {
+        "total": 2,
+        "tested": 2,
+        "accepted": 1,
+    }
+    test_path.write_text(test_path.read_text() + f"# @accepts {parent}#S2\n", encoding="utf-8")
+    complete = report(root)
+    stakeholder = next(item for item in complete["requirements"] if item["id"] == parent)
+    assert stakeholder["stakeholder_test_coverage"]["accepted"] is True
+    test_path.write_text(test_path.read_text() + f"# @accepts {swrs}\n", encoding="utf-8")
+    assert any("@accepts" in finding and swrs in finding for finding in validate_requirements(root))
+    Draft202012Validator(report_schema()).validate(report(root))
+    outcomes["acceptance_paths"] = (
+        "scenario fragments drive independent tested/accepted counters and schema errors"
+    )
     config["strs_test_coverage_mode"] = "linked-swrs"
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(f"# @verifies {swrs}\n# @verifies {replacement}\n", encoding="utf-8")
@@ -128,7 +192,8 @@ def run_showcase(project: Path) -> dict[str, str]:
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(test_path.read_text() + f"# @verifies {parent}\n", encoding="utf-8")
     # These markers demonstrate linkage only. Actual CSV behavior is tested in
-    # tests/test_export.py in the checked-in example, not claimed by this fixture.
+    # tests/test_export.py and tests/test_acceptance_export.py in the checked-in
+    # example, not claimed by this fixture.
     preserved = load_requirements(root)[swrs][1]
     command("update-coverage", str(root), "--diff")
     command("update-coverage", str(root))

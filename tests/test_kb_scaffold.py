@@ -46,7 +46,8 @@ SCHEMA_FILES = {
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S2
 
 
 def test_scaffold_kb_creates_layout_creates_all_content_dirs(tmp_path: Path) -> None:

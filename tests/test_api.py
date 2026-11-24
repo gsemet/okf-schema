@@ -41,7 +41,9 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S3
 
 
 def test_validate_bundle_returns_report_for_valid_bundle() -> None:
@@ -416,7 +418,8 @@ def test_validate_markdown_files_absolute_directory_path(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 
 
 def test_format_bundle_returns_list_of_formatted_results() -> None:
@@ -469,7 +472,8 @@ def test_format_bundle_diff_mode(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-005
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 
 
 def test_list_bundle_returns_sorted_concept_summaries() -> None:
@@ -549,7 +553,10 @@ def test_list_bundle_datetime_stale_after_has_stale_true(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S3
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S4
 
 
 def test_show_bundle_returns_concept_detail() -> None:
@@ -639,7 +646,8 @@ def test_show_bundle_stale_concept_detected(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-004
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S2
 
 
 def test_index_bundle_returns_index_updates() -> None:
@@ -1867,7 +1875,9 @@ def test_update_bundle_superseded_rewrite_body_with_non_matching_links(tmp_path:
     assert "[Other](other.md)" in text  # preserved
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S3
 def test_validate_bundle_reports_schema_load_diagnostics(tmp_path: Path) -> None:
     """validate_bundle surfaces I1 in ``infos`` and W17 in ``warnings`` with the file path."""
     schema_dir = tmp_path / "schemas"

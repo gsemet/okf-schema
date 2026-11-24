@@ -19,6 +19,15 @@ user_need: Consumers need to recognize one file link or a list of file links
 derived_by:
 - SwRS-OKFSCHEMA-CORE-007
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Navigate declared file links
+- id: S2
+  title: Check declared file links on request
+tested_in_files:
+- tests/test_file_links.py
+accepted_in_files:
+- tests/test_acceptance_core.py
 ---
 
 ## Recognize file references without changing knowledge values
@@ -27,6 +36,19 @@ default_owner_email: gaetan@xeberon.net
 
 The OKF capability SHALL enable consumers to distinguish file references from ordinary strings and
 navigate their targets without changing authored value types.
+
+
+### Main paths
+
+#### Path S1: Navigate declared file links
+
+1. Resolve a declared link through the installed API.
+2. Receive the exact target and navigation metadata.
+
+#### Path S2: Check declared file links on request
+
+1. Run opt-in link checking through the installed command.
+2. Receive stable success or diagnostics for each target.
 
 ### Preserved stakeholder intent
 

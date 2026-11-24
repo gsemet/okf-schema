@@ -38,8 +38,27 @@ allOf:
           basename_marker: '@tests_req'
           id_marker: id
           show_line_number: true
+    accepted_in_files:
+      type: array
+      maxItems: 0
+      description: Never present. @accepts_req names a StRS main path; mark a
+        SwRS test with @tests_req <SwRS-ID>#S<n>.
   required:
   - type
   - tier
   - annotation_exemption
+  allOf:
+  - if:
+      required:
+      - annotation_exemption
+      properties:
+        annotation_exemption:
+          const: true
+    then:
+      required:
+      - exemption_reason
+      properties:
+        exemption_reason:
+          type: string
+          minLength: 1
 

@@ -45,7 +45,8 @@ def test_slugify_digits_preserved() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-003
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S2
 
 
 def test_new_finding_happy_path_creates_file_in_findings_dir(tmp_path: Path) -> None:

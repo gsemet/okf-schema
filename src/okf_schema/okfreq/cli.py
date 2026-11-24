@@ -164,6 +164,9 @@ def _register_new(level: str, name: str) -> None:
     ) -> None:
         """Create one requirement of the registered level.
 
+        .. versionchanged:: 0.18.0
+            Acceptance-paths mode pre-fills aligned scenario metadata.
+
         Args:
             title:
                 Concise statement of the requirement's subject.
@@ -243,7 +246,8 @@ def validate(
     """Validate requirements, configuration, and derivation graph.
 
     Advisory prose warnings are reported separately and never change the exit
-    status; only structural errors do.
+    status; only structural errors do. Acceptance-paths mode also validates
+    scenario fragments and the marker-derived acceptance schema.
 
     Args:
         path:
@@ -436,6 +440,9 @@ def search(query: str, path: str) -> None:
 def trace(path: str, as_json: bool) -> None:
     """Scan configured source and test directories for markers.
 
+    .. versionchanged:: 0.18.0
+        Include acceptance markers and scenario locations.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -446,6 +453,7 @@ def trace(path: str, as_json: bool) -> None:
     summary = (
         f"implemented: {len(result['implemented'])}; "
         f"tested: {len(result['tested'])}; "
+        f"accepted: {len(result['accepted'])}; "
         f"missing IDs: {len(result['missing_ids'])}"
     )
     click.echo(json.dumps(result, indent=2) if as_json else summary)
@@ -564,6 +572,9 @@ def coverage(
     show_diff: bool,
 ) -> None:
     """Explicitly update generated coverage fields.
+
+    .. versionchanged:: 0.18.0
+        Maintain accepted evidence and scenario-filtered test files.
 
     .. versionchanged:: 0.13.0
         ``--check`` exits non-zero when generated metadata is stale.
@@ -714,6 +725,9 @@ def retire(
     when TARGET is not a draft or when another requirement or a source or test
     marker references it; use ``archive`` or ``supersede`` for published
     requirements.
+
+    .. versionchanged:: 0.18.0
+        Acceptance markers also block draft retirement.
 
     .. versionadded:: 0.14.0
 

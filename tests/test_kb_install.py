@@ -10,7 +10,8 @@ import pytest
 from okf_schema.okfkb.install import install_kb
 from okf_schema.skill_installer import SKILL_FAMILIES, InstallationError, resolve_destination
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S2
 
 
 def test_install_kb_installs_exact_family_at_supplied_destination(tmp_path: Path) -> None:
