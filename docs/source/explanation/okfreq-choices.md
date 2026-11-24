@@ -15,10 +15,10 @@ This separation improves communication
 and makes user-level change impact (`StRS`) clearly visible
 and separated from testable software change (`SwRS`).
 
-Authored fields such as `derives_from`, lifecycle, and verification intent are
+Authored fields such as `derives_from`, `scenarios`, lifecycle, and verification intent are
 kept distinct from automatically generated fields
 (using `okfreq update-coverage` command) such as reverse links (`derived_by`),
-marker coverage (`implemented_in_files`, `tested_in_files`)
+marker coverage (`implemented_in_files`, `tested_in_files`, `accepted_in_files`)
 and the configured owner (`default_owner_email`).
 This allows agents (and tools) to navigate back and forth more easily
 without the need of an external parser or LSP (Language Server Protocal) server.
@@ -30,7 +30,8 @@ This is deliberately compatible with the [OKF specification](https://github.com/
 and the [okf-schema documentation](../index.md).
 
 The in-source and in-tests marker vocabulary defaults
-to `@implements_req` and `@tests_req`.
+to `@implements_req`, `@tests_req` and `@accepts_req`. See
+[acceptance paths](okfreq-acceptance-paths.md) for the distinction.
 `okfreq` only interoperates through stable IDs and preserved metadata.
 Lifecycle changes are explicit so a draft cannot silently become approved,
 and archive operations never delete a document. Only `okfreq retire` deletes,

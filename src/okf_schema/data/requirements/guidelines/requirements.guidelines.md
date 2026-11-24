@@ -102,7 +102,7 @@ Requirement documents live only under `tiers/`.
   `superseded_by` list (required, non-empty, on every `superseded` requirement and
   only there). Link requirements that are merely connected with `relates_to`.
   Never hand-edit generated `derived_by`, `supersedes`, `implemented_in_files`,
-  `tested_in_files`, `default_owner_email`, `status` or `verified` fields, nor the
+  `tested_in_files`, `accepted_in_files`, `default_owner_email`, `status` or `verified` fields, nor the
   Links section between `<!-- okf:links:start -->` and `<!-- okf:links:end -->`.
 - For leaf software requirements, add `@implements_req <ID>` markers near the
   implementation and `@tests_req <ID>` markers near corresponding tests. Do not
@@ -142,6 +142,9 @@ Requirement documents live only under `tiers/`.
   approved requirements you touched in the pull or merge request, and request the
   owner's review of those files. If nothing in the task asks for the change,
   restore the previous content and report the conflict.
+- When only adding `scenarios:` to an approved requirement, preserve its body.
+  The owner decides if new approval is needed; without one retain `approved_by`
+  and `approved_at` and log the agreement in `tiers/log.md`.
 - `okfreq update-coverage` turns the approval into the generated OKF `verified`
   event (`by: human:<owner email>`, `at: <approved_at>`), so OKF consumers read the
   requirement as human-reviewed.
@@ -154,6 +157,20 @@ Requirement documents live only under `tiers/`.
 - Use the configured marker prefixes near actual evidence. With the defaults,
   put `@implements_req <ID>` near the implementation and `@tests_req <ID>` near
   each test that checks the behavior.
+- In `linked-swrs-and-acceptance-paths`, declare main paths on StRS and
+  transition scenarios on SwRS as a non-empty `scenarios:` list of `id` and
+  `title` mappings. Number IDs `S1`, `S2`, and never reuse them. When scenarios
+  are declared, every `@tests_req` or `@accepts_req` must carry the matching
+  `#S<n>`; without declarations use a fragmentless marker. Mark each StRS main
+  path's acceptance test with `@accepts_req`. If that test is expensive it may
+  run in the main-branch pipeline while a cheaper `@tests_req` test runs on each
+  pull or merge request. If cheap, use `@accepts_req` directly. Placement is
+  guidance, not a check; never invent evidence.
+- When a complete StRS cannot be acceptance-tested (for example an interactive
+  agent workflow that requires human review), an owner may authorize
+  `acceptance_exemption: true` with a non-empty `acceptance_exemption_reason`.
+  The report distinguishes this exemption from acceptance; linked SwRS still
+  require test coverage. Never use a waiver to hide a test that could be written.
 - The same requirement ID may appear more than once in a file, for example
   when several tests verify different scenarios of the same requirement.
   Keep a marker beside each relevant test or implementation point. Do not
@@ -205,6 +222,7 @@ declare.
 - For an StRS, pass a stakeholder-observable `SHALL` statement as
   `--description` and the underlying outcome as `--user-need`. Complete the
   generated normative behavior, user need, and rationale/constraints sections.
+  In acceptance-paths mode use `### Main paths` with `#### Path <n>:` headings.
   Do not add SwRS scenarios or verification notes.
 - For an SwRS, pass one observable, bounded `SHALL` response as `--description`
   and at least one valid StRS ID with `--derives-from`. Complete the generated

@@ -28,6 +28,15 @@ verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Derive trust and staleness"
+- id: S2
+  title: "Compare `stale_after` as an instant"
+- id: S3
+  title: "Report an unusable `stale_after`"
+- id: S4
+  title: "Report inconsistent governed metadata"
 ---
 
 ## Validate OKF 0.2 provenance and lifecycle

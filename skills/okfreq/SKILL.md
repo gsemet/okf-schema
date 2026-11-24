@@ -105,6 +105,12 @@ satisfied. It is not an issue title, design choice, code comment, or task.
    StRS never receives implementation markers; in the stricter
    `linked-swrs-and-validation-test` mode, a direct `@tests_req <StRS-ID>` marker
    defines a stakeholder validation test.
+   In `linked-swrs-and-acceptance-paths`, declare `scenarios:` as stable,
+   never-reused `S1`, `S2` IDs and titles; a test marker on a declared scenario
+   requires its `#S<n>` fragment. Mark each StRS path's acceptance test with
+   `@accepts_req`. For costly acceptance tests use the main-branch pipeline and
+   cheaper `@tests_req` tests in pull or merge requests; cheap tests may carry
+   `@accepts_req` directly. The tool does not check the pipeline.
 - **Markers are links, not proof.** A test marker says where verification lives,
   not whether the test ran or passed. Run the project's real test suite.
 - **Coverage and reports are generated views.** Keep implementation coverage,
@@ -115,6 +121,8 @@ satisfied. It is not an issue title, design choice, code comment, or task.
   its code starts `proposed`; `draft` is a proposal not implemented yet.
 - **`approved` belongs to the owner.** It freezes a requirement; only the owner
   agrees to approve or change one, recorded in `approved_by` and `approved_at`.
+  For a frontmatter-only addition of `scenarios:`, the owner decides if new
+  approval is needed; otherwise retain these fields and log the agreement.
   Owners and approval locks come from `config.yml` per tier and scope. Repair
   steps for an agent: [references/operations.md](references/operations.md#lifecycle-ownership-and-approval).
 - **The bundle stays a native OKF bundle.** okfreq generates `status` from
@@ -253,7 +261,7 @@ diagnostics together. Use `check_file_links` for validation-only workflows.
 Neither API executes tests or treats a marker as proof beyond the configured
 traceability report.
 
-`implemented_in_files` and `tested_in_files` use exact project-relative paths.
+`implemented_in_files`, `tested_in_files` and `accepted_in_files` use exact project-relative paths.
 `derives_from`, `derived_by`, `depends_on`, `superseded_by`, `supersedes`, and
 `relates_to` use case-sensitive Markdown
 filename stems without `.md`. Preserve the existing requirement-ID graph
@@ -311,7 +319,7 @@ format, not a generic document heading.
 3. Never renumber an existing requirement. Allocate new identities through
    `okfreq new` under the configured ID policy.
 4. Never treat generated `derived_by`, `supersedes`, `implemented_in_files`,
-   `tested_in_files` or `default_owner_email` as authored truth.
+   `tested_in_files`, `accepted_in_files` or `default_owner_email` as authored truth.
 5. Keep `okfreq` requirements independent from `okfkb` knowledge documents.
    They may coexist and both use OKF-compatible Markdown, but they have distinct
    purposes and lifecycles.

@@ -558,6 +558,10 @@ on the StRS ID in a real stakeholder-level test. This adds a defined validation
 link; it still does not establish test execution or approval. Keep the default
 unless this additional policy fits the project's review process.
 
+For scenario-level evidence and separate stakeholder acceptance, choose
+`linked-swrs-and-acceptance-paths`; see [acceptance paths](../reference/okfreq-acceptance-paths.md).
+This tutorial deliberately keeps the default mode.
+
 ## Further reading
 
 - [Configuration](../reference/okfreq-configuration.md): scopes, ID allocation,

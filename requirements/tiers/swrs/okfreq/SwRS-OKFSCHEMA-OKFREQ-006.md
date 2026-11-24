@@ -38,6 +38,11 @@ example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Merge compatible configuration"
+- id: S2
+  title: "Preserve an existing conflicting value"
 ---
 
 ## Merge requirement configuration safely

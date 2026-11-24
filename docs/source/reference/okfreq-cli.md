@@ -41,6 +41,18 @@ distinct tests; the file is listed once. The `duplicates` key remains in the JSO
 reports for compatibility and is always empty. Marker spellings and the ID regular
 expression come from `config.yml`.
 
+`trace` shows the accepted marker count. `trace --json` also lists `accepted`
+marker files and `scenario_markers`, with
+the first line for each test or acceptance marker, ID, fragment and file.
+In the old coverage modes acceptance markers do not contribute to coverage.
+They still prevent `retire` from deleting a referenced draft. In the new mode
+see [scenario marker rules](okfreq-acceptance-paths.md) for validation findings,
+generated fields, report columns, and `okfreq new` scenario scaffolds.
+Its `validation_tests` always lists raw direct `@tests_req` files, unlike the
+new-mode report where that key contains counting `@accepts_req` files.
+New-mode validation reports invalid or missing fragments, misplaced acceptance
+markers, and incompatible SwRS schemas as errors, and `W003`/`W004` as warnings.
+
 Every non-reserved Markdown document under `tiers/` must have mapping
 frontmatter and a non-empty string `id`. Missing or malformed documents fail
 with their file path before indexing or reporting; they are never silently
@@ -102,8 +114,8 @@ unavailable. A missing stem in a known bundle is `E10`. Warnings do not make `ok
 
 | Command | Purpose |
 |---|---|
-| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `default_owner_email`, `status`, `verified`) and the generated Links section of every `link-projection` field; see {ref}`okfreq-okf-projection`. `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
-| `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. Each requirement record also lists `derives_from`, `superseded_by`, the computed `supersedes` and `relates_to`. |
+| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `accepted_in_files`, `default_owner_email`, `status`, `verified`) and the generated Links section of every `link-projection` field; see {ref}`okfreq-okf-projection`. In the new mode, StRS may carry test and acceptance files. `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
+| `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a format-version-2 JSON report and Markdown summary, including scenario counts and missing transitions in the new mode, SwRS source/test-link coverage and StRS coverage. StRS source coverage is not applicable. Each requirement record also lists `derives_from`, `superseded_by`, the computed `supersedes` and `relates_to`. |
 
 Without output options, the command writes JSON, JSON Schema and Markdown
 under the resolved bundle's parent directory in `dist/` and prints their paths.

@@ -141,9 +141,7 @@ def test_load_nodes_node_fields_parsed(kb_bundle: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-004
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S1
 def test_search_search_ranks_title_and_tags(kb_bundle: Path) -> None:
     hits = navigate.search(kb_bundle, "pll")
     assert hits, "expected at least one hit"
@@ -185,6 +183,7 @@ def test_get_get_by_stem(kb_bundle: Path) -> None:
     assert node.tier == "concepts"
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S2
 def test_get_get_missing_raises(kb_bundle: Path) -> None:
     with pytest.raises(FileNotFoundError):
         navigate.get(kb_bundle, "does-not-exist")

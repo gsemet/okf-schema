@@ -46,9 +46,7 @@ SCHEMA_FILES = {
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
 def test_scaffold_kb_creates_layout_creates_all_content_dirs(tmp_path: Path) -> None:
     """Creates the 8 canonical content directories."""
     target = tmp_path / "kb"
@@ -72,6 +70,7 @@ def test_scaffold_kb_creates_layout_creates_all_schema_files(tmp_path: Path) -> 
         assert (target / "_schema" / name).is_file(), f"Missing schema file: {name}"
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
 def test_scaffold_kb_declares_shared_file_link_metadata(tmp_path: Path) -> None:
     """New KB schemas expose navigation and derivation semantics without new value types."""
     target = tmp_path / "knowledge"

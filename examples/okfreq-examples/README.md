@@ -17,6 +17,12 @@ This example includes one Python requirement and one Rust requirement:
 `SwRS-CORE-001` covers the Python CSV writer, while `SwRS-CORE-002` covers a
 Rust CSV row formatter.
 
+The bundle uses `linked-swrs-and-acceptance-paths`. Its stakeholder path is
+exporting selected rows for offline review. SwRS tests use `@tests_req ...#S<n>`
+for their transitions; the in-process export test also names the StRS path.
+The acceptance test uses `@accepts_req StRS-CORE-001#S1` and runs the export in
+a separate process, then reads the CSV from disk as a user would.
+
 Here, a software requirement (`SwRS`) is simply a promise about observable
 software behavior. `SwRS-CORE-001` says that the service writes CSV output, and
 `SwRS-CORE-002` says that its Rust formatter returns a CSV row. A requirement is
@@ -35,6 +41,7 @@ test evidence, and traceability report.
 - [Rust software requirement](requirements/tiers/swrs/SwRS-CORE-002.md)
 - [Implementation](src/export.py)
 - [Tests](tests/test_export.py)
+- [Acceptance test](tests/test_acceptance_export.py)
 - [Rust implementation](src/rust_export.rs)
 - [Rust test](tests/rust_export_test.rs)
 - [Traceability report](dist/requirements-report.md)
@@ -56,7 +63,7 @@ test markers demonstrate linkage; this command does not run a Rust compiler.
 The showcase creates a temporary shipping-manifest project and verifies:
 
 - scoped IDs/folders, custom markers, authored dependencies and external demo metadata;
-- both StRS coverage policies, including a direct stakeholder validation marker;
+- all three StRS coverage policies, including declared acceptance paths;
 - conflict-preserving config merge and preservation of unknown authored fields;
 - all five file-resolution modes, wikilink labels/fragments, E10 failures and W15 skips;
 - index/search/in-file/scope/graph/trace/status and schema-validated JSON reports;
@@ -70,7 +77,7 @@ The showcase creates a temporary shipping-manifest project and verifies:
 Its marker fixtures demonstrate scanning, not execution of shipping software.
 Its tracker reference is fictional demo data. All intentional failures and
 lifecycle changes stay temporary; the checked-in requirements are preserved.
-The Python CSV tests provide actual executable behavior evidence separately.
+The Python CSV tests and the acceptance test provide executable evidence separately.
 
 For the live project's feature/evidence map, read
 [How this project exercises okfreq](../../docs/source/explanation/project-feature-coverage.md).

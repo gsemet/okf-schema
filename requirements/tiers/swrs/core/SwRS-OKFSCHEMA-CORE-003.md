@@ -23,13 +23,18 @@ implemented_in_files:
 - src/okf_schema/cli.py
 - src/okf_schema/formatter.py
 tested_in_files:
-- tests/test_api.py
+- tests/test_cli_core.py
 - tests/test_formatter.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Normalize supported content"
+- id: S2
+  title: "Preview without writing"
 ---
 
 ## Normalize bundle formatting

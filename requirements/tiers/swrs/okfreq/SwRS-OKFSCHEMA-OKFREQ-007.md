@@ -38,6 +38,11 @@ example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Apply a confirmed lifecycle transition"
+- id: S2
+  title: "Reject an unsafe transition"
 ---
 
 ## Manage requirement lifecycle explicitly

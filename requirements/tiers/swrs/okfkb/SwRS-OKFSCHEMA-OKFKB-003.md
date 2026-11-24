@@ -20,8 +20,7 @@ implemented_in_files:
 - src/okf_schema/okfkb/cli.py
 - src/okf_schema/okfkb/finding.py
 tested_in_files:
-- tests/test_kb_finding.py
-- tests/test_tutorial_okfkb.py
+- tests/test_acceptance_okfkb.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
@@ -37,6 +36,11 @@ agent_skill_files:
 example_files:
 - docs/source/tutorials/okfkb-workflow.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Record one finding"
+- id: S2
+  title: "Preserve earlier evidence"
 ---
 
 ## Capture immutable knowledge findings

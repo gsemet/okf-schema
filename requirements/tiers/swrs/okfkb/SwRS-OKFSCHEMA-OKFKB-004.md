@@ -21,7 +21,6 @@ implemented_in_files:
 - src/okf_schema/okfkb/navigate.py
 tested_in_files:
 - tests/test_kb_navigate.py
-- tests/test_tutorial_okfkb.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
@@ -37,6 +36,11 @@ agent_skill_files:
 example_files:
 - docs/source/tutorials/okfkb-workflow.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Locate matching knowledge"
+- id: S2
+  title: "Query an absent target"
 ---
 
 ## Navigate knowledge-base evidence

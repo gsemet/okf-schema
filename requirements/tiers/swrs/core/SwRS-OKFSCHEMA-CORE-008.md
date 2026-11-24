@@ -21,9 +21,6 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/validator.py
 tested_in_files:
-- tests/test_api.py
-- tests/test_cli_core.py
-- tests/test_okfreq.py
 - tests/test_validator.py
 owner: okf-schema maintainers
 verification_method: test
@@ -35,6 +32,13 @@ documentation_files:
 agent_skill_files:
 - skills/okf-schema/SKILL.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Report an empty schema file informationally"
+- id: S2
+  title: "Warn about an unparsable or non-mapping schema file"
+- id: S3
+  title: "Keep the legacy loader silent"
 ---
 
 ## Report schema files that yield no schema

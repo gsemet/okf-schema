@@ -37,6 +37,15 @@ example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Create a stakeholder requirement"
+- id: S2
+  title: "Create a software requirement"
+- id: S3
+  title: "Identify a requirement when reading its body"
+- id: S4
+  title: "Never reuse a requirement number"
 ---
 
 ## Author and validate requirements

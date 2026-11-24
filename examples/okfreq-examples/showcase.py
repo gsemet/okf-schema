@@ -17,7 +17,7 @@ from jsonschema import Draft202012Validator
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.file_links import inspect_file_links
 from okf_schema.okfreq.cli import okfreq
-from okf_schema.okfreq.core import load_requirements, report
+from okf_schema.okfreq.core import load_requirements, report, report_schema
 from okf_schema.projection import LINKS_START, strip_links_section
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-008
@@ -120,6 +120,67 @@ def run_showcase(project: Path) -> dict[str, str]:
     outcomes["strict_stakeholder_coverage"] = (
         "requires linked SwRS tests and a direct validation test"
     )
+    parent_file = records[parent][0]
+    parent_file.write_text(
+        parent_file.read_text(encoding="utf-8").replace(
+            "### Preserved stakeholder intent",
+            "### Main paths\n\n#### Path 1: Export a manifest\n\n"
+            "#### Path 2: Export an empty manifest\n\n### Preserved stakeholder intent",
+        ),
+        encoding="utf-8",
+    )
+    config["markers"]["accepts"] = "@accepts"
+    config["strs_test_coverage_mode"] = "linked-swrs-and-acceptance-paths"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    findings = command("validate", str(root))
+    assert "W003" in findings and "#### Path 1: Export a manifest" in findings
+    assert "W004" in findings
+    edit(
+        parent_file,
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Export a manifest"},
+                {"id": "S2", "title": "Export an empty manifest"},
+            ]
+        },
+    )
+    edit(
+        records[swrs][0],
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Export a manifest"},
+                {"id": "S2", "title": "Reject a bad manifest"},
+            ]
+        },
+    )
+    findings = command("validate", str(root), expected=1)
+    assert f"@verifies {swrs} has no scenario fragment" in findings
+    assert f"@verifies {parent} has no scenario fragment" in findings
+    test_path.write_text(
+        f"# @verifies {swrs}#S9\n# @verifies {replacement}\n# @accepts {parent}#S1\n",
+        encoding="utf-8",
+    )
+    assert "names no declared scenario" in command("validate", str(root), expected=1)
+    partial = report(root)
+    parent_record = next(item for item in partial["requirements"] if item["id"] == parent)
+    assert parent_record["stakeholder_test_coverage"]["paths"] == {
+        "total": 2,
+        "tested": 0,
+        "accepted": 1,
+    }
+    test_path.write_text(
+        f"# @verifies {swrs}#S1\n# @verifies {swrs}#S2\n"
+        f"# @verifies {replacement}\n# @verifies {parent}#S1\n"
+        f"# @verifies {parent}#S2\n# @accepts {parent}#S1\n# @accepts {parent}#S2\n",
+        encoding="utf-8",
+    )
+    complete = report(root)
+    assert complete["stakeholder_test_coverage"]["covered"] == 1
+    Draft202012Validator(report_schema()).validate(complete)
+    test_path.write_text(test_path.read_text() + f"# @accepts {swrs}\n", encoding="utf-8")
+    assert "Never present." in command("validate", str(root), expected=1)
+    outcomes["acceptance_paths"] = "declared paths and transitions count only matching markers"
+    test_path.write_text(f"# @verifies {swrs}\n# @verifies {replacement}\n", encoding="utf-8")
     config["strs_test_coverage_mode"] = "linked-swrs"
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(f"# @verifies {swrs}\n# @verifies {replacement}\n", encoding="utf-8")
@@ -128,7 +189,8 @@ def run_showcase(project: Path) -> dict[str, str]:
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(test_path.read_text() + f"# @verifies {parent}\n", encoding="utf-8")
     # These markers demonstrate linkage only. Actual CSV behavior is tested in
-    # tests/test_export.py in the checked-in example, not claimed by this fixture.
+    # tests/test_export.py and tests/test_acceptance_export.py in the checked-in
+    # example, not claimed by this fixture.
     preserved = load_requirements(root)[swrs][1]
     command("update-coverage", str(root), "--diff")
     command("update-coverage", str(root))

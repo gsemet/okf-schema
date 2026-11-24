@@ -25,8 +25,6 @@ from okf_schema.projection import (
 )
 from okf_schema.validator import log_heading_findings
 
-# @tests_req SwRS-OKFSCHEMA-CORE-009
-
 SCHEMA = dedent(
     """\
     type: object
@@ -186,6 +184,7 @@ def test_file_link_parser_rejects_a_link_projection_leaving_the_bundle(tmp_path:
     assert "needs a resolution inside the bundle" in diagnostics[0].message
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S1
 def test_lint_generates_links_and_status_from_schema_annotations(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path)
 
@@ -217,6 +216,7 @@ def test_link_graph_skips_the_generated_links_section(tmp_path: Path) -> None:
     assert "links: [root.md]" in (bundle / "child.md").read_text(encoding="utf-8")
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S2
 def test_renaming_then_removing_an_annotation_updates_every_links_section(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path)
     lint_bundle(bundle)
@@ -277,6 +277,7 @@ def test_cli_lint_reports_a_malformed_links_section(tmp_path: Path) -> None:
     assert "one complete generated Links section" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S3
 def test_validate_reports_malformed_projection_annotations(tmp_path: Path) -> None:
     bundle = _bundle(
         tmp_path,
@@ -303,6 +304,7 @@ def test_validate_reports_malformed_projection_annotations(tmp_path: Path) -> No
 )
 @Parametrization.case(name="oldest_first", text="## 2026-10-25\n\n## 2026-10-28\n", codes=["W18"])
 @Parametrization.case(name="repeated", text="## 2026-10-28\n\n## 2026-10-28\n", codes=["W18"])
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S3
 def test_log_heading_findings(tmp_path: Path, text: str, codes: list[str]) -> None:
     log = tmp_path / "log.md"
     log.write_text(f"# Log\n\n{text}", encoding="utf-8")
@@ -324,7 +326,7 @@ def test_cli_lint_check_fails_on_a_non_conforming_log_heading(tmp_path: Path) ->
     assert "[W5]" in result.output and "'### Topic' sub-heading" in result.output
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-006
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S2
 def test_okfkb_update_projects_derivations_as_markdown_links(tmp_path: Path) -> None:
     kb = tmp_path / "kb"
     scaffold_kb(kb)

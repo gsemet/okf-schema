@@ -46,7 +46,7 @@ unrelated implementation task.
 - Preserve requirement IDs, UUIDs, authored frontmatter, unknown properties,
   YAML comments, and Markdown bodies.
 - Never hand-edit `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`,
-  `default_owner_email`, indexes or reports. Use explicit `okfreq` commands for generated data.
+  `accepted_in_files`, `default_owner_email`, indexes or reports. Use explicit `okfreq` commands for generated data.
 - Never claim implementation or test coverage without source evidence and
   markers. Markers are links, not proof that tests pass.
 - Never change lifecycle or approval state as an incidental edit.
@@ -164,6 +164,13 @@ formats instead of applying one generic requirement template:
   and `Rationale and constraints`. Do not add SwRS scenarios, verification
   notes, or implementation markers to an StRS. Add a direct validation-test
   marker only for a real stakeholder test, as required by the configured mode.
+  In `linked-swrs-and-acceptance-paths`, derive `scenarios:` from existing
+  headings, using `S1` onward without reusing IDs. Add `#S<n>` to a marker
+  only when its test exercises that scenario; add `@accepts_req` to a real
+  acceptance test of each path. For approved requirements, edit frontmatter only,
+  preserve the body and approval unless the owner grants a new approval, and log
+  the agreement. Choose acceptance tests by what they do and execution cost;
+  never invent a test or marker to fill a counter.
 - **SwRS — software behavior:** provide one observable, bounded `SHALL`
   response as `--description` and at least one valid StRS parent with
   `--derives-from`. Complete nominal and boundary/failure GIVEN-WHEN-THEN

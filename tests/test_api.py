@@ -41,9 +41,6 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
-
-
 def test_validate_bundle_returns_report_for_valid_bundle() -> None:
     """Returns a conformant Report for a valid bundle."""
     report = validate_bundle(VALID_BUNDLE)
@@ -416,9 +413,6 @@ def test_validate_markdown_files_absolute_directory_path(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
 def test_format_bundle_returns_list_of_formatted_results() -> None:
     """Returns a list of FormattedResult objects."""
     results = format_bundle(VALID_BUNDLE)
@@ -467,9 +461,6 @@ def test_format_bundle_diff_mode(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # list_bundle
 # ---------------------------------------------------------------------------
-
-
-# @tests_req SwRS-OKFSCHEMA-CORE-005
 
 
 def test_list_bundle_returns_sorted_concept_summaries() -> None:
@@ -549,9 +540,6 @@ def test_list_bundle_datetime_stale_after_has_stale_true(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
-
-
 def test_show_bundle_returns_concept_detail() -> None:
     """Returns ConceptDetail with frontmatter and body."""
     detail = show_bundle(VALID_BUNDLE, "subdir/concept-a.md")
@@ -562,6 +550,7 @@ def test_show_bundle_returns_concept_detail() -> None:
     assert "# Concept A" in detail.body
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_show_bundle_invalid_concept_path_raises() -> None:
     """Raises FileNotFoundError for nonexistent concept path."""
     with pytest.raises(FileNotFoundError):
@@ -605,6 +594,7 @@ def test_show_bundle_trust_tier_unverified_for_new_concept(tmp_path: Path) -> No
     assert detail.stale is False
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_show_bundle_trust_tier_human_reviewed(tmp_path: Path) -> None:
     """OKF 0.2: human-verified concept has trust_tier='human-reviewed'."""
     bundle = tmp_path / "bundle"
@@ -637,9 +627,6 @@ def test_show_bundle_stale_concept_detected(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # index_bundle
 # ---------------------------------------------------------------------------
-
-
-# @tests_req SwRS-OKFSCHEMA-CORE-004
 
 
 def test_index_bundle_returns_index_updates() -> None:
@@ -734,6 +721,7 @@ def test_index_bundle_index_bundle_accepts_string_path() -> None:
         assert isinstance(update, IndexUpdate)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_preserves_existing_descriptions(tmp_path: Path) -> None:
     """Preserves custom descriptions from existing index.md."""
     bundle = tmp_path / "bundle"
@@ -1134,6 +1122,7 @@ def test_graph_bundle_returns_adjacency_dict() -> None:
     assert isinstance(graph, dict)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_graph_bundle_cross_linked_concepts(tmp_path: Path) -> None:
     """Correctly maps cross-linked concepts."""
     bundle = tmp_path / "bundle"
@@ -1654,6 +1643,7 @@ def test_rewrite_superseded_links_deferred_when_no_superseded_by(tmp_path: Path)
     assert deferred[0].reason == "no_superseded_by"
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S2
 def test_rewrite_superseded_links_deferred_when_replacement_missing(tmp_path: Path) -> None:
     """Defers superseded doc when replacement path does not exist."""
     from okf_schema.api import rewrite_superseded_links
@@ -1665,10 +1655,14 @@ def test_rewrite_superseded_links_deferred_when_replacement_missing(tmp_path: Pa
         "superseded_by: [nonexistent.md]\n---\n\n# Old\n",
         encoding="utf-8",
     )
+    source = bundle / "source.md"
+    source.write_text("---\ntype: Concept\n---\n\n[Old](old.md)\n", encoding="utf-8")
+    before = source.read_bytes()
     rewrites, deferred = rewrite_superseded_links(bundle)
     assert rewrites == []
     assert len(deferred) == 1
     assert "replacement_not_found" in deferred[0].reason
+    assert source.read_bytes() == before
 
 
 def test_rewrite_superseded_links_check_mode_does_not_modify_files(tmp_path: Path) -> None:
@@ -1867,7 +1861,6 @@ def test_update_bundle_superseded_rewrite_body_with_non_matching_links(tmp_path:
     assert "[Other](other.md)" in text  # preserved
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
 def test_validate_bundle_reports_schema_load_diagnostics(tmp_path: Path) -> None:
     """validate_bundle surfaces I1 in ``infos`` and W17 in ``warnings`` with the file path."""
     schema_dir = tmp_path / "schemas"

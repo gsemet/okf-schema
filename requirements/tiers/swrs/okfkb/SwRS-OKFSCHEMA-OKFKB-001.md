@@ -18,12 +18,22 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/okfkb/cli.py
 tested_in_files:
+- tests/test_acceptance_okfkb.py
 - tests/test_kb_cli.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Repeat a read-only operation"
+- id: S2
+  title: "Reject invalid input"
+- id: S3
+  title: "Check evidence links using the base schema contract"
+- id: S4
+  title: "Report a missing evidence target without rewriting knowledge"
 ---
 
 ## Provide deterministic knowledge-base operations

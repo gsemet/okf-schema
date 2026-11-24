@@ -35,9 +35,15 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py
 tested_in_files:
-- tests/test_examples.py
 - tests/test_okfreq_projection.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Generate the OKF fields"
+- id: S2
+  title: "Report what a plain OKF consumer would misread"
+- id: S3
+  title: "Detect a stale projection"
 ---
 
 ## Keep requirement bundles native OKF bundles

@@ -20,12 +20,18 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/cli.py
 tested_in_files:
+- tests/test_acceptance_core.py
 - tests/test_cli_core.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Initialize and author content"
+- id: S2
+  title: "Reject an existing target"
 ---
 
 ## Create bundles and concepts

@@ -45,9 +45,6 @@ def test_slugify_digits_preserved() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-003
-
-
 def test_new_finding_happy_path_creates_file_in_findings_dir(tmp_path: Path) -> None:
     """Creates a file inside <kb_path>/findings/."""
     (tmp_path / "findings").mkdir()

@@ -19,8 +19,10 @@ never touched. Our paths, scopes and checks follow; where they specialize the ba
 
 - Store requirements under `requirements/tiers/strs/<scope>/` and
   `requirements/tiers/swrs/<scope>/`, named like `SwRS-OKFSCHEMA-OKFREQ-002.md`.
-- This project uses `linked-swrs-and-validation-test`: add a direct StRS marker
-  only to a real stakeholder validation test.
+- This project uses `linked-swrs-and-acceptance-paths`. Mark each SwRS transition
+  with `@tests_req` on a real test, and each StRS path with `@accepts_req` on a
+  genuine acceptance test. Acceptance tests build and install the wheel in an
+  isolated environment and run the installed product in a fresh project.
 - Keep core `okf-schema`, knowledge-base `okfkb`, and requirements `okfreq`
   concerns in their configured scopes rather than combining unrelated claims.
 
@@ -49,7 +51,8 @@ validation/tests fail.
 
 - Keep the three supported generated fields enabled and refresh them through
   `okfreq update-coverage`; `--check` must fail when they are stale.
-- Keep the strict StRS coverage mode and direct validation-test evidence current.
+- Keep the scenario coverage mode and real acceptance evidence current; a
+  justified StRS exemption must not be presented as acceptance.
 - Maintain authored `documentation_files`, `agent_skill_files`, `example_files`,
   dependencies and verification criteria as actual existing project evidence.
 - Review `docs/source/explanation/project-feature-coverage.md` for feature usage.

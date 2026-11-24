@@ -27,6 +27,11 @@ verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Regenerate deterministic indexes"
+- id: S2
+  title: "Defer an unsafe superseded-link rewrite"
 ---
 
 ## Maintain indexes and superseded links

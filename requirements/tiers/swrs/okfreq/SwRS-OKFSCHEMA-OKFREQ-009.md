@@ -36,6 +36,13 @@ implemented_in_files:
 tested_in_files:
 - tests/test_requirement_indexes.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Discover requirements through scope indexes"
+- id: S2
+  title: "Preserve authored guidance and history"
+- id: S3
+  title: "Preview drift or reject unsafe input"
 ---
 
 ## Maintain generated requirement navigation

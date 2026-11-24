@@ -38,9 +38,21 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py
 tested_in_files:
-- tests/test_examples.py
 - tests/test_okfreq.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Record several replacements"
+- id: S2
+  title: "Compute the inverse supersedes list"
+- id: S3
+  title: "Require a replacement for a superseded requirement"
+- id: S4
+  title: "Reject unsafe replacement references"
+- id: S5
+  title: "Keep the legacy single replacement readable"
+- id: S6
+  title: "Relate requirements laterally"
 ---
 
 ## Relate requirements by supersession and association

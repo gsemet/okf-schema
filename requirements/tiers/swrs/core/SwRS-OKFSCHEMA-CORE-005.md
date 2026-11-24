@@ -23,12 +23,16 @@ implemented_in_files:
 - src/okf_schema/cli.py
 tested_in_files:
 - tests/test_api.py
-- tests/test_cli_remaining.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Inspect matching knowledge"
+- id: S2
+  title: "Reject an invalid inspection target"
 ---
 
 ## Inspect and query bundle knowledge

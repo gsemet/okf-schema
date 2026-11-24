@@ -2,9 +2,100 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+import sysconfig
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+
+
+@pytest.fixture(scope="session")
+def built_wheel(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build the product wheel once per pytest worker."""
+    root = Path(__file__).parents[1]
+    directory = tmp_path_factory.mktemp("built-wheel")
+    wheel_dir = directory / "wheel"
+    subprocess.run(
+        ["uv", "build", "--offline", "--wheel", "--out-dir", str(wheel_dir)],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return next(wheel_dir.glob("*.whl"))
+
+
+@pytest.fixture(scope="session")
+def installed_wheel(
+    tmp_path_factory: pytest.TempPathFactory, built_wheel: Path
+) -> tuple[Path, dict[str, str]]:
+    """Install an isolated wheel once per pytest worker."""
+    if sys.platform == "win32":
+        pytest.skip("isolated wheel acceptance tests require POSIX symlinks")
+    root = Path(__file__).parents[1]
+    directory = tmp_path_factory.mktemp("installed-wheel")
+    environment = directory / "venv"
+    subprocess.run(
+        ["uv", "venv", "--python", sys.executable, str(environment)],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    interpreter = environment / "bin" / "python"
+    subprocess.run(
+        ["uv", "pip", "install", "--python", str(interpreter), "--no-deps", str(built_wheel)],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    dependencies = directory / "runtime-dependencies"
+    dependencies.mkdir()
+    for entry in Path(sysconfig.get_paths()["purelib"]).iterdir():
+        if entry.suffix == ".pth" or entry.name.startswith("okf_schema"):
+            continue
+        (dependencies / entry.name).symlink_to(entry, target_is_directory=entry.is_dir())
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(dependencies)
+    env["PYTHONNOUSERSITE"] = "1"
+    return environment / "bin", env
+
+
+@pytest.fixture
+def run_installed(
+    tmp_path: Path, installed_wheel: tuple[Path, dict[str, str]]
+) -> Callable[..., subprocess.CompletedProcess[str]]:
+    """Run an installed executable outside the source checkout."""
+    scripts, env = installed_wheel
+
+    def run(executable: str, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+        command = (
+            [
+                "uv",
+                "run",
+                "--no-project",
+                "--no-sync",
+                "--python",
+                str(scripts / "python"),
+                "python",
+            ]
+            if executable == "python"
+            else [str(scripts / executable)]
+        )
+        return subprocess.run(
+            [*command, *args],
+            cwd=tmp_path,
+            env=env,
+            check=check,
+            capture_output=True,
+            text=True,
+        )
+
+    return run
 
 
 @pytest.fixture

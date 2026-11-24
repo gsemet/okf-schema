@@ -42,10 +42,19 @@ implemented_in_files:
 - skills/okfreq-gardening/SKILL.md
 - skills/okfreq/SKILL.md
 tested_in_files:
+- tests/test_acceptance_okfreq.py
 - tests/test_examples.py
-- tests/test_skill_resources.py
 - tests/test_tutorial_okfreq.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Operate without the tool source checkout"
+- id: S2
+  title: "Diagnose incomplete evidence and invalid documents"
+- id: S3
+  title: "Run the shipping-manifest demonstration safely"
+- id: S4
+  title: "Follow the adoption tutorial without inferred project setup"
 ---
 
 ## Ship usable standalone requirements guidance

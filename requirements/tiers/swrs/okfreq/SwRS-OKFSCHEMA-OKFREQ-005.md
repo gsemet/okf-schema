@@ -38,6 +38,17 @@ example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Validate a conforming requirement graph"
+- id: S2
+  title: "Refuse to omit an invalid document"
+- id: S3
+  title: "Keep prose guidance advisory"
+- id: S4
+  title: "Check requirement navigation and implementation evidence"
+- id: S5
+  title: "Keep target checks explicitly opt-in"
 ---
 
 ## Validate requirement bundles

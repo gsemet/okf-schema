@@ -20,6 +20,7 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/file_links.py
 tested_in_files:
+- tests/test_acceptance_core.py
 - tests/test_file_links.py
 owner: okf-schema maintainers
 verification_method: test
@@ -33,6 +34,17 @@ agent_skill_files:
 example_files:
 - examples/okfreq-examples/showcase.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Resolve scalar and list references through the shared API"
+- id: S2
+  title: "Reject invalid targets and identify checks that cannot run"
+- id: S3
+  title: "Preserve ordinary validation and existing bundles"
+- id: S4
+  title: "Inspect composed links without losing field identity"
+- id: S5
+  title: "Bound filesystem work and tolerate malformed targets"
 ---
 
 ## Interpret and optionally check schema-declared file references

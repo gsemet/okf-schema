@@ -62,9 +62,6 @@ def test_flatten_value_mixed_nesting() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
 def test_format_frontmatter_no_frontmatter() -> None:
     """Returns None when no frontmatter is present."""
     text = "# Hello\n\nBody text.\n"
@@ -89,6 +86,7 @@ def test_format_frontmatter_preserves_non_list_values() -> None:
     assert result == text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_frontmatter_preserves_comments() -> None:
     """Comments in frontmatter are preserved."""
     text = "---\ntitle: Hello\n# This is a comment\ntags: [a, b]\n---\n\n# Body\n"
@@ -185,6 +183,7 @@ def test_format_file_skip_no_frontmatter(tmp_path: Path) -> None:
     assert path.read_text() == original
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_file_preserves_body(tmp_path: Path) -> None:
     """Body content is preserved after formatting."""
     path = tmp_path / "concept.md"
@@ -225,6 +224,7 @@ def test_format_bundle_skips_non_markdown(tmp_path: Path) -> None:
     assert len(results) == 1
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_format_bundle_check_mode_no_modification(tmp_path: Path) -> None:
     """Check mode does not modify any files."""
     bundle = tmp_path / "bundle"

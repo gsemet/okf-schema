@@ -36,6 +36,15 @@ example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Resolve valid markers"
+- id: S2
+  title: "Encounter suspect markers"
+- id: S3
+  title: "Accept repeated markers in one file"
+- id: S4
+  title: "Inspect acceptance markers and scenario fragments"
 ---
 
 ## Trace requirements to source and tests
@@ -69,6 +78,13 @@ requirement fields and Markdown bodies.
 - THEN every marker is accepted without a diagnostic and the file is listed once
   in the generated coverage fields
 - AND the `duplicates` key of the reports remains present and empty
+
+### Scenario: Inspect acceptance markers and scenario fragments
+
+- GIVEN a configured test file containing test and acceptance markers
+- WHEN the user scans markers
+- THEN the scan lists acceptance marker files and each distinct test or acceptance
+  marker's fragment and first line, without changing coverage in the existing modes
 
 ### Verification notes
 

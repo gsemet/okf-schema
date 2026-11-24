@@ -13,6 +13,14 @@ origin: native
 tier: StRS
 derives_from: []
 user_need: Teams need to capture and organize engineering knowledge reliably.
+scenarios:
+- {id: S1, title: Capture an immutable finding}
+- {id: S2, title: Update a knowledge base's indexes and lint}
+- {id: S3, title: Propose a consolidation for human review}
+acceptance_exemption: true
+acceptance_exemption_reason: >-
+  Consolidation is an interactive agent skill requiring human review, not a
+  deterministic console command that an automated acceptance test can execute.
 derived_by:
 - SwRS-OKFSCHEMA-OKFKB-001
 - SwRS-OKFSCHEMA-OKFKB-002
@@ -21,6 +29,10 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFKB-005
 - SwRS-OKFSCHEMA-OKFKB-006
 default_owner_email: gaetan@xeberon.net
+tested_in_files:
+- tests/test_integration.py
+accepted_in_files:
+- tests/test_acceptance_okfkb.py
 ---
 
 ## Maintain trustworthy engineering knowledge
@@ -30,6 +42,23 @@ default_owner_email: gaetan@xeberon.net
 The `okfkb` capability SHALL enable engineering teams to capture, organize, and
 mature knowledge while retaining the evidence and provenance on which that
 knowledge depends.
+
+### Main paths
+
+#### Path 1: Capture an immutable finding
+
+1. An engineer records an observation with provenance.
+2. The knowledge base retains it as an immutable finding.
+
+#### Path 2: Update a knowledge base's indexes and lint
+
+1. A maintainer updates the knowledge base.
+2. Navigation and validation describe the current knowledge.
+
+#### Path 3: Propose a consolidation for human review
+
+1. An agent gathers findings and prepares a consolidation proposal.
+2. A human can review the proposal without losing the underlying findings.
 
 ### Preserved stakeholder intent
 

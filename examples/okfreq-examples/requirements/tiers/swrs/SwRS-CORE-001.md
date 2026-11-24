@@ -15,6 +15,11 @@ derives_from:
 - StRS-CORE-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Export selected rows
+- id: S2
+  title: Export an empty selection
 derived_by: []
 implemented_in_files:
 - src/export.py

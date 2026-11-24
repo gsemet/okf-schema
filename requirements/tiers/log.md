@@ -1,5 +1,29 @@
 # Update Log
 
+## 2026-11-24
+
+### Acceptance paths
+
+- Added [SwRS-OKFSCHEMA-OKFREQ-015](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-015.md)
+  for scenario-aware markers and reporting, the acceptance-path mode, and
+  schemas for authored scenarios and generated stakeholder test and acceptance
+  paths. The project now declares its stakeholder paths and software transitions
+  and ties test markers to the scenarios they exercise.
+- Added installed-wheel acceptance journeys and the executable CSV example.
+  The interactive consolidation
+  [StRS](strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md) and its
+  [SwRS](swrs/okfkb/SwRS-OKFSCHEMA-OKFKB-005.md) have separately justified
+  exemptions: human-reviewed agent decisions are not automated test evidence.
+- Verification: scenario and installed-wheel acceptance tests, live-bundle
+  validation and the project test suite; the owner reviews the declared paths.
+
+### Acceptance marker scanning
+
+- Extended [SwRS-OKFSCHEMA-OKFREQ-003](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-003.md)
+  to record acceptance markers and scenario fragments in trace output.
+  Acceptance markers also block draft retirement.
+- Verification: focused okfreq tests passed.
+
 ## 2026-10-30
 
 ### Native OKF projection

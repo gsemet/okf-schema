@@ -16,8 +16,6 @@ from okf_schema.okfreq.core import (
 )
 from okf_schema.okfreq.navigation import lint_indexes
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-009
-
 
 def _bundle(tmp_path: Path) -> Path:
     root = init_requirements(tmp_path / "requirements")
@@ -51,6 +49,8 @@ def _bundle(tmp_path: Path) -> Path:
     return root
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S2
 def test_lint_generates_all_ancestors_and_preserves_authored_material(tmp_path: Path) -> None:
     root = _bundle(tmp_path)
     root_index = root / "index.md"
@@ -101,6 +101,7 @@ def test_coverage_evidence_paths_are_sorted(tmp_path: Path) -> None:
     assert requirement["tested_in_files"] == ["tests/a.py", "tests/z.py"]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S3
 def test_index_previews_are_read_only_and_preserve_text_after_block(tmp_path: Path) -> None:
     root = _bundle(tmp_path)
     runner = CliRunner()
@@ -130,6 +131,7 @@ def test_index_previews_are_read_only_and_preserve_text_after_block(tmp_path: Pa
     "duplicate",
     content="<!-- okfreq:index:start --><!-- okfreq:index:start --><!-- okfreq:index:end -->",
 )
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S3
 def test_invalid_blocks_abort_without_partial_writes(tmp_path: Path, content: str) -> None:
     root = _bundle(tmp_path)
     index = root / "tiers/swrs/index.md"

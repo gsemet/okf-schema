@@ -37,6 +37,13 @@ implemented_in_files:
 tested_in_files:
 - tests/test_projection.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Generate the Links section and status from the schemas"
+- id: S2
+  title: "Follow the annotations, not hard-coded names"
+- id: S3
+  title: "Reject malformed annotations and log headings"
 ---
 
 ## Project schema-declared metadata for plain OKF consumers

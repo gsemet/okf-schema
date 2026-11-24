@@ -36,6 +36,13 @@ example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Generate a machine-readable report"
+- id: S2
+  title: "Report replacement and related requirements"
+- id: S3
+  title: "Report unhealthy requirements"
 ---
 
 ## Report requirement health

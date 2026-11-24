@@ -23,18 +23,19 @@ implemented_in_files:
 - src/okf_schema/okfkb/scaffold.py
 - src/okf_schema/skill_installer.py
 tested_in_files:
-- tests/test_integration.py
-- tests/test_kb_cli.py
 - tests/test_kb_install.py
-- tests/test_kb_patterns.py
 - tests/test_kb_scaffold.py
-- tests/test_skill_installer.py
 depends_on: []
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Scaffold a new knowledge base"
+- id: S2
+  title: "Install into existing content"
 ---
 
 ## Scaffold and install knowledge bases

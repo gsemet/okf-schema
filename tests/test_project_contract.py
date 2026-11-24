@@ -25,8 +25,16 @@ def test_live_requirements_preserve_complete_real_evidence() -> None:
     ):
         assert evidence[category] == [], (category, evidence[category])
     stakeholder = result["stakeholder_test_coverage"]
-    assert stakeholder["mode"] == "linked-swrs-and-validation-test"
+    assert stakeholder["mode"] == "linked-swrs-and-acceptance-paths"
     assert stakeholder["covered"] == stakeholder["requirements"]
+    knowledge = next(
+        item["stakeholder_test_coverage"]
+        for item in result["requirements"]
+        if item["id"] == "StRS-OKFSCHEMA-OKFKB-001"
+    )
+    assert knowledge["accepted"] is False
+    assert knowledge["acceptance_exemption"]["reason"]
+    assert any(item["status"] == "exempt" for item in knowledge["linked_swrs"])
 
 
 def test_repository_guideline_is_the_installed_shipped_text() -> None:

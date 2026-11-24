@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
-import sys
-import sysconfig
 from importlib import resources
 from pathlib import Path
 from zipfile import ZipFile
@@ -36,15 +33,6 @@ def _relative_files(root: Path) -> set[Path]:
 
 def _resource_root():
     return resources.files("skills")
-
-
-def _link_runtime_dependencies(destination: Path) -> None:
-    source = Path(sysconfig.get_paths()["purelib"])
-    destination.mkdir()
-    for entry in source.iterdir():
-        if entry.suffix == ".pth" or entry.name.startswith("okf_schema"):
-            continue
-        (destination / entry.name).symlink_to(entry, target_is_directory=entry.is_dir())
 
 
 def test_canonical_skills_are_importable_resources() -> None:
@@ -87,23 +75,8 @@ def test_installable_skills_do_not_use_cross_skill_relative_links() -> None:
             )
 
 
-def _build_wheel(repository_root: Path, wheel_directory: Path) -> Path:
-    wheel_directory.mkdir()
-    subprocess.run(
-        ["uv", "build", "--offline", "--wheel", "--out-dir", str(wheel_directory)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return next(wheel_directory.glob("*.whl"))
-
-
-# @tests_req SwRS-OKFSCHEMA-OKFKB-005
-def test_built_wheel_contains_canonical_skill_trees_unchanged(tmp_path: Path) -> None:
+def test_built_wheel_contains_canonical_skill_trees_unchanged(built_wheel: Path) -> None:
     """A wheel contains exactly the canonical skill files under package resources."""
-    repository_root = Path(__file__).parents[1]
-    wheel_path = _build_wheel(repository_root, tmp_path / "wheel")
     resource_prefix = "okf_schema/skills/"
     canonical_files = {
         Path(skill_root) / relative_file
@@ -111,7 +84,7 @@ def test_built_wheel_contains_canonical_skill_trees_unchanged(tmp_path: Path) ->
         for relative_file in _relative_files(_canonical_root() / skill_root)
     }
 
-    with ZipFile(wheel_path) as wheel:
+    with ZipFile(built_wheel) as wheel:
         packaged_files = {
             Path(member.removeprefix(resource_prefix))
             for member in wheel.namelist()
@@ -146,44 +119,11 @@ def test_base_skills_document_cli_and_agent_skill_installation(skill_root: str) 
 
 def test_installed_wheel_commands_install_complete_families_without_source_checkout(
     tmp_path: Path,
+    installed_wheel: tuple[Path, dict[str, str]],
 ) -> None:
     """Installed console scripts deploy packaged families and nested resources in isolation."""
-    if sys.platform == "win32":
-        return
-
+    scripts, isolated_environment = installed_wheel
     repository_root = Path(__file__).parents[1]
-    wheel_directory = tmp_path / "wheel"
-    subprocess.run(
-        ["uv", "build", "--offline", "--wheel", "--out-dir", str(wheel_directory)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    wheel_path = next(wheel_directory.glob("*.whl"))
-    environment = tmp_path / "venv"
-    subprocess.run(
-        ["uv", "venv", "--python", sys.executable, str(environment)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    interpreter = environment / "bin" / "python"
-    subprocess.run(
-        ["uv", "pip", "install", "--python", str(interpreter), "--no-deps", str(wheel_path)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-
-    runtime_dependencies = tmp_path / "runtime-dependencies"
-    _link_runtime_dependencies(runtime_dependencies)
-    isolated_environment = os.environ.copy()
-    isolated_environment.pop("PYTHONPATH", None)
-    isolated_environment["PYTHONPATH"] = str(runtime_dependencies)
-    isolated_environment["PYTHONNOUSERSITE"] = "1"
     destinations = {
         "okf-schema": ("okf-schema",),
         "okfkb": ("okfkb", "okfkb-distill", "okfkb-gardening", "okfkb-record-findings"),
@@ -196,7 +136,7 @@ def test_installed_wheel_commands_install_complete_families_without_source_check
     }
 
     imported_module = subprocess.run(
-        [str(interpreter), "-c", "import okf_schema; print(okf_schema.__file__)"],
+        [str(scripts / "python"), "-c", "import okf_schema; print(okf_schema.__file__)"],
         cwd=tmp_path,
         check=True,
         capture_output=True,
@@ -208,7 +148,7 @@ def test_installed_wheel_commands_install_complete_families_without_source_check
     for executable, skill_roots in destinations.items():
         destination = tmp_path / f"installed-{executable}"
         result = subprocess.run(
-            [str(environment / "bin" / executable), "install-skills", str(destination)],
+            [str(scripts / executable), "install-skills", str(destination)],
             cwd=tmp_path,
             check=True,
             capture_output=True,
@@ -255,7 +195,6 @@ def test_source_checkout_commands_install_families(
         assert (destination / skill_root / "SKILL.md").is_file()
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-008
 def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) -> None:
     """Operational links remain usable when the installation has no docs/source tree."""
     from okf_schema.skill_installer import install_skill_family
@@ -271,7 +210,6 @@ def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) ->
             assert resource.is_file(), (document, target)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
 def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
     tmp_path: Path,
 ) -> None:
@@ -290,7 +228,9 @@ def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
         assert "references/requirements.guidelines.md" not in text
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S3
 def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: Path) -> None:
     """The setup skill ships with the okfreq family and states its stop rules and delivery."""
     from okf_schema.skill_installer import install_skill_family
@@ -312,6 +252,12 @@ def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: P
         "owner_email",
         "approval_lock",
         "Nothing is approved during setup",
+        "the project already has a bundle",
+        "the default branch cannot be determined",
+        "Never modify, stage or revert changes that were in the worktree",
+        "without asking the user anything",
+        "add a test in the existing suites",
+        "open a pull request",
     ):
         assert required in text
     for target in re.findall(r"\]\(([^)]+)\)", text):

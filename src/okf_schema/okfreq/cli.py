@@ -20,6 +20,7 @@ from typing import Any
 import click
 
 from okf_schema.okfreq.core import (
+    ACCEPTANCE_MODE,
     GUIDELINE_NAME,
     RequirementError,
     bundle_path,
@@ -122,7 +123,7 @@ def init(path: str, force: bool) -> None:
 
 @okfreq.group()
 def new() -> None:
-    """Create a native requirement."""
+    """Create a native requirement, including scenarios in acceptance-path mode."""
 
 
 def _register_new(level: str, name: str) -> None:
@@ -245,6 +246,10 @@ def validate(
     Advisory prose warnings are reported separately and never change the exit
     status; only structural errors do.
 
+    .. versionchanged:: 0.18.0
+        Validate scenario fragments, acceptance markers and bundle schemas in
+        acceptance-path mode; report W003 and W004 as advisory warnings.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -286,6 +291,9 @@ def validate(
         click.echo(
             f"{result['requirements']} requirements, {len(errors)} errors, {len(warnings)} warnings"
         )
+        if load_config(_root(path))["strs_test_coverage_mode"] == ACCEPTANCE_MODE:
+            for error in errors:
+                click.echo(error)
         for warning in warnings:
             click.echo(warning)
         for info in infos:
@@ -360,6 +368,9 @@ def lint(
         Refresh the OKF projection of each requirement (Links section, ``status``,
         ``verified``); ``--check`` also fails on a stale projection and on a
         ``log.md`` heading that is not ``## YYYY-MM-DD``, newest first (W5, W18).
+
+    .. versionchanged:: 0.18.0
+        Apply scenario and acceptance-marker validation in acceptance-path mode.
 
     Args:
         path:
@@ -436,6 +447,9 @@ def search(query: str, path: str) -> None:
 def trace(path: str, as_json: bool) -> None:
     """Scan configured source and test directories for markers.
 
+    .. versionchanged:: 0.18.0
+        Include acceptance marker counts and scenario fragments.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -446,6 +460,7 @@ def trace(path: str, as_json: bool) -> None:
     summary = (
         f"implemented: {len(result['implemented'])}; "
         f"tested: {len(result['tested'])}; "
+        f"accepted: {len(result['accepted'])}; "
         f"missing IDs: {len(result['missing_ids'])}"
     )
     click.echo(json.dumps(result, indent=2) if as_json else summary)
@@ -568,6 +583,9 @@ def coverage(
     .. versionchanged:: 0.13.0
         ``--check`` exits non-zero when generated metadata is stale.
 
+    .. versionchanged:: 0.18.0
+        Update configured StRS test and acceptance files in acceptance-path mode.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -628,6 +646,9 @@ def generate_report(
     output_summary_md: str | None,
 ) -> None:
     """Generate detailed JSON and summary Markdown traceability reports.
+
+    .. versionchanged:: 0.18.0
+        Format version 2 reports scenario testing and stakeholder acceptance.
 
     Args:
         path:
@@ -712,7 +733,7 @@ def retire(
     The ID is recorded in ``retired_ids`` of ``config.yml`` and in the tier
     ``log.md``, so ``okfreq new`` never allocates that number again. Refused
     when TARGET is not a draft or when another requirement or a source or test
-    marker references it; use ``archive`` or ``supersede`` for published
+    or acceptance marker references it; use ``archive`` or ``supersede`` for published
     requirements.
 
     .. versionadded:: 0.14.0

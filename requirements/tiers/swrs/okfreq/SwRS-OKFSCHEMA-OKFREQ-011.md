@@ -35,9 +35,15 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py
 tested_in_files:
-- tests/test_examples.py
 - tests/test_okfreq.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Retire a draft"
+- id: S2
+  title: "Refuse an unsafe retirement"
+- id: S3
+  title: "Detect a reused retired ID"
 ---
 
 ## Retire a draft requirement permanently

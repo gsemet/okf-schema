@@ -75,8 +75,9 @@ lifecycle:
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files, accepted_in_files,
   default_owner_email, status, verified]
 retired_ids: []
 scopes:
@@ -107,13 +108,32 @@ scopes:
   lateral links that mean neither derivation nor replacement; it has no inverse,
   so declare it on one side only. A legacy scalar `superseded_by: ID` is still read
   (validation adds the informational `I2`); convert it to a list.
-- Only the seven listed `generated_fields` are supported. Omitting a generated
-  field leaves it unmanaged; unsupported names fail. StRS never carries generated
-  source/test file arrays, even when the setting lists those fields.
+- Only the eight listed `generated_fields` are supported. Omitting a generated
+  field leaves it unmanaged; unsupported names fail. StRS never carries
+  `implemented_in_files`; it carries `tested_in_files` and `accepted_in_files`
+  only in acceptance-paths mode.
 - The default StRS mode is `linked-swrs`: every linked SwRS needs a test marker
   and at least one SwRS must exist. The stricter mode also needs a direct
   `@tests_req StRS-...` marker in a configured test file. This is a defined
   validation test, not proof of execution. Do not put implementation markers on StRS.
+- `trace --json` lists acceptance markers and test-marker fragments with their
+  first line number. In these modes acceptance markers do not count for coverage,
+  but they block retirement of a referenced draft. Marker keywords must be distinct.
+- In `linked-swrs-and-acceptance-paths`, declare `scenarios:` as `id` / `title`
+  mappings, with stable IDs such as `S1` that are never reused. Each `@tests_req`
+  or `@accepts_req` targeting a declared requirement must carry a declared
+  `#S<n>`; without scenarios use a fragmentless marker. Acceptance is StRS-only.
+  Correct missing or unknown fragments instead of inventing test evidence.
+  `W003` suggests declarations from body headings, `W004` identifies StRS with
+  no counting acceptance marker. Older SwRS schemas must refuse
+  `accepted_in_files` using `type: array` and `maxItems: 0`; the validator prints
+  the declaration to add. For an approved requirement, leave the body and
+  existing approval unchanged unless the owner grants a new approval, and log
+  the owner's agreement.
+- An owner can exempt a whole StRS that cannot be acceptance-tested with
+  `acceptance_exemption: true` and a non-empty `acceptance_exemption_reason`.
+  The StRS still needs covered linked SwRS; the report marks it exempt rather
+  than accepted. Do not use this to conceal a missing feasible test.
 - `annotation_exemption: true` needs a non-empty `exemption_reason`. Use only
   for an agreed exception; report it separately, never as observed coverage.
 - Unknown producer metadata is preserved. `external_id` and `external_url`

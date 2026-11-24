@@ -37,6 +37,13 @@ implemented_in_files:
 tested_in_files:
 - tests/test_skill_resources.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Set up a project that has no bundle"
+- id: S2
+  title: "Refuse to set up over an existing bundle"
+- id: S3
+  title: "Stop outside a usable git repository"
 ---
 
 ## Set up a project's requirements baseline from one skill

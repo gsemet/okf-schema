@@ -18,6 +18,7 @@ derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/cli.py
 tested_in_files:
+- tests/test_file_links.py
 - tests/test_okfreq.py
 owner: okf-schema maintainers
 verification_method: test
@@ -35,6 +36,15 @@ example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Operate on a resolved bundle"
+- id: S2
+  title: "Reject an invalid operation"
+- id: S3
+  title: "Declare navigable references in new requirements schemas"
+- id: S4
+  title: "Install and refresh the shared guideline"
 ---
 
 ## Provide requirements traceability operations

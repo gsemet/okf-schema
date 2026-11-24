@@ -63,9 +63,6 @@ def _make_bundle(path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-005
-
-
 def test_list_list_outputs_concepts(tmp_path: Path) -> None:
     """list outputs one concept per line with path, type, title."""
     bundle = _make_bundle(tmp_path)

@@ -23,7 +23,7 @@
     },
     "format_version": {
       "type": "integer",
-      "const": 1
+      "const": 2
     },
     "generated_at": {
       "type": "string",
@@ -80,7 +80,8 @@
         "stakeholder_test_coverage_mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
         },
         "stakeholder_tests": {
@@ -150,7 +151,8 @@
         "mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
         },
         "requirements": {
@@ -165,6 +167,9 @@
           "type": "number",
           "minimum": 0,
           "maximum": 100
+        },
+        "paths": {
+          "$ref": "#/$defs/paths"
         }
       }
     },
@@ -183,6 +188,54 @@
   },
   "additionalProperties": true,
   "$defs": {
+    "paths": {
+      "type": "object",
+      "required": [
+        "total",
+        "tested",
+        "accepted"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tested": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accepted": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "marker_files": {
+      "type": "object",
+      "required": [
+        "status",
+        "files",
+        "count"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "defined",
+            "missing"
+          ]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
     "scope": {
       "type": "object",
       "required": [
@@ -307,6 +360,27 @@
         "stakeholder_test_coverage": {
           "$ref": "#/$defs/stakeholder_requirement_coverage"
         },
+        "transitions": {
+          "type": "object",
+          "required": [
+            "tested",
+            "missing"
+          ],
+          "properties": {
+            "tested": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "missing": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
         "execution": {
           "type": "object",
           "required": [
@@ -372,8 +446,36 @@
         "mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
+        },
+        "paths": {
+          "$ref": "#/$defs/paths"
+        },
+        "tested": {
+          "type": "boolean"
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "tests": {
+          "$ref": "#/$defs/marker_files"
+        },
+        "acceptance_tests": {
+          "$ref": "#/$defs/marker_files"
+        },
+        "acceptance_exemption": {
+          "type": "object",
+          "required": [
+            "reason"
+          ],
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         },
         "linked_swrs": {
           "type": "array",
@@ -390,7 +492,8 @@
               "status": {
                 "enum": [
                   "covered",
-                  "missing"
+                  "missing",
+                  "exempt"
                 ]
               }
             }

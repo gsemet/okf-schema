@@ -22,14 +22,20 @@ implemented_in_files:
 - src/okf_schema/schemas/__init__.py
 - src/okf_schema/validator.py
 tested_in_files:
-- tests/test_api.py
-- tests/test_cli_core.py
+- tests/test_acceptance_core.py
 - tests/test_validator.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Validate a conforming bundle"
+- id: S2
+  title: "Reject an invalid document"
+- id: S3
+  title: "Accept portable bundle contents"
 ---
 
 ## Validate generic OKF bundles

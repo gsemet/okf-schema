@@ -30,6 +30,13 @@ verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Materialize reciprocal derivations"
+- id: S2
+  title: "Project derivations as Markdown links"
+- id: S3
+  title: "Detect stale or invalid computed graph data"
 ---
 
 ## Materialize reciprocal knowledge derivations

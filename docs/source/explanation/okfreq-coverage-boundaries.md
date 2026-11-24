@@ -37,7 +37,9 @@ to it and is not included in the StRS schema or stakeholder coverage table.
 
 SwRS test-link coverage applies only to leaf `SwRS` requirements. A SwRS is
 test-link covered when at least one configured `@tests_req SwRS-ID` marker is
-found. This is a file-level relationship, not a test execution result.
+found. In the acceptance-path mode, if the SwRS declares scenarios, each
+transition needs a counting `@tests_req SwRS-ID#S<n>` instead. This is a
+file-level relationship, not a test execution result.
 
 ### StRS test coverage
 
@@ -48,6 +50,7 @@ rule is selected by `strs_test_coverage_mode` in `config.yml`:
 |---|---|
 | `linked-swrs` | It links to at least one SwRS and every linked SwRS has a test marker. |
 | `linked-swrs-and-validation-test` | The `linked-swrs` rule is satisfied and at least one validation test is defined directly for the StRS. |
+| `linked-swrs-and-acceptance-paths` | Linked SwRS are covered or explicitly exempt and every declared stakeholder path has an acceptance marker, unless the StRS has a justified acceptance waiver. |
 
 A validation test is defined by placing the normal test marker on the StRS ID
 in a configured test file:
@@ -61,10 +64,12 @@ This direct StRS marker is collected as validation-test evidence. An
 source coverage. The generated Markdown report therefore renders StRS and
 SwRS in separate tables, and places the active StRS rule below the StRS table.
 
-The two StRS modes deliberately answer different questions. The first asks
+The StRS modes deliberately answer different questions. The first asks
 whether the stakeholder outcome is decomposed into test-linked software
 behavior. The second also asks whether the stakeholder outcome has an explicit
-validation test definition of its own.
+validation test definition of its own. The third distinguishes tests from
+acceptance paths and reports justified waivers explicitly; see
+[acceptance paths](okfreq-acceptance-paths.md).
 
 ## The simple distinction
 

@@ -26,6 +26,21 @@ implemented_in_files:
 tested_in_files:
 - tests/test_okfreq.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: "Read the new and the legacy configuration names"
+- id: S2
+  title: "Merge a configuration that uses the other names"
+- id: S3
+  title: "Use a custom lifecycle field name"
+- id: S4
+  title: "Take the lifecycle values from the base schema"
+- id: S5
+  title: "Generate the default owner"
+- id: S6
+  title: "Guard an approved requirement"
+- id: S7
+  title: "Reject malformed ownership settings"
 ---
 
 ## Resolve requirement ownership and guard approvals
