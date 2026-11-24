@@ -127,9 +127,9 @@ def test_example_3_a_strs_without_scenarios_gets_w003_and_w004(tmp_path: Path) -
     assert _errors(root) == []
     shown = _blocks()["Example 3: okfreq validate output (W003 and W004)"]
     findings = [item for item in validate_requirements(root) if item.startswith(("W003", "W004"))]
-    assert [item.replace(f"{tmp_path}/", "") for item in findings] == re.split(
-        r"\n(?=W00\d )", shown
-    )
+    assert [
+        item.replace("\\", "/").replace(f"{tmp_path.as_posix()}/", "") for item in findings
+    ] == re.split(r"\n(?=W00\d )", shown)
     excerpt = json.loads(_blocks()["Example 3: JSON excerpt"])
     assert _record(root, "StRS-default-003")["stakeholder_test_coverage"] == excerpt
     _assert_markdown(root, tmp_path, "Example 3: Markdown row")
