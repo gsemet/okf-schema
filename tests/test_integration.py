@@ -18,8 +18,6 @@ from okf_schema.cli import cli
 from okf_schema.okfkb.cli import kb
 from okf_schema.okfreq.cli import okfreq
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
-
 
 def test_end_to_end_workflow_full_workflow(tmp_path: Path) -> None:
     """Run a complete workflow from empty to indexed bundle."""
@@ -140,7 +138,7 @@ def test_end_to_end_workflow_cli_sequence_on_same_bundle(tmp_path: Path) -> None
     assert "Health:" in result.output
 
 
-# @tests_req StRS-OKFSCHEMA-CORE-002
+# @tests_req StRS-OKFSCHEMA-CORE-002#S2
 def test_end_to_end_workflow_format_then_validate_consistency(tmp_path: Path) -> None:
     """Formatting should not introduce validation errors."""
     bundle = tmp_path / "bundle"
@@ -286,7 +284,7 @@ def test_end_to_end_workflow_validate_with_ref_schema(tmp_path: Path) -> None:
     assert not any(f.code == "W6" for f in report.warnings)
 
 
-# @tests_req StRS-OKFSCHEMA-CORE-001
+# @tests_req StRS-OKFSCHEMA-CORE-001#S1
 def test_end_to_end_workflow_init_creates_base_schema_and_validates(tmp_path: Path) -> None:
     """A bundle created with init validates cleanly including _base.schema.yaml."""
     runner = CliRunner()
@@ -459,6 +457,7 @@ def test_cli_integration_backlinks_cli_nonexistent_bundle(tmp_path: Path) -> Non
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
 def test_kb_end_to_end_workflow_kb_init_then_install(tmp_path: Path) -> None:
     """Full KB workflow: init a KB bundle, then install skills into a destination."""
     runner = CliRunner()
@@ -489,7 +488,7 @@ def test_kb_end_to_end_workflow_kb_init_then_install(tmp_path: Path) -> None:
     assert not (project_path / "AGENTS.md").exists()
 
 
-# @tests_req StRS-OKFSCHEMA-OKFKB-001
+# @tests_req StRS-OKFSCHEMA-OKFKB-001#S2
 def test_kb_end_to_end_workflow_kb_update(tmp_path: Path) -> None:
     """okfkb update regenerates indexes and lints a knowledge base."""
     runner = CliRunner()
@@ -521,6 +520,7 @@ def test_kb_end_to_end_workflow_kb_update(tmp_path: Path) -> None:
     assert "tags: [a, b]" in text
 
 
+# @tests_req StRS-OKFSCHEMA-OKFKB-001#S2
 def test_kb_end_to_end_workflow_kb_update_check_mode(tmp_path: Path) -> None:
     """okfkb update --check reports changes without modifying files."""
     runner = CliRunner()

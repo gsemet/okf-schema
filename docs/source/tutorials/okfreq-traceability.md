@@ -558,6 +558,12 @@ on the StRS ID in a real stakeholder-level test. This adds a defined validation
 link; it still does not establish test execution or approval. Keep the default
 unless this additional policy fits the project's review process.
 
+To measure each main path of a StRS instead, declare the paths in `scenarios:`
+and select `strs_test_coverage_mode: linked-swrs-and-acceptance-paths`; tests
+then name a path with `@accepts_req StRS-ID#S<n>` or `@tests_req StRS-ID#S<n>`.
+See [Acceptance paths](../reference/okfreq-acceptance-paths.md) and
+[Why `okfreq` measures acceptance paths](../explanation/okfreq-acceptance-paths.md).
+
 ## Further reading
 
 - [Configuration](../reference/okfreq-configuration.md): scopes, ID allocation,

@@ -1,7 +1,5 @@
 """Tests for the shared packaged-skill installer."""
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
-
 from __future__ import annotations
 
 import os
@@ -122,6 +120,7 @@ def test_install_skill_family_resolves_relative_destination_from_cwd(
     assert (tmp_path / "skills" / "okf-schema" / "SKILL.md").is_file()
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S2
 def test_install_skill_family_replaces_owned_directory_and_preserves_unrelated_content(
     tmp_path: Path,
 ) -> None:

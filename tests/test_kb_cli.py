@@ -33,10 +33,6 @@ CONTENT_DIRS = {
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-001
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
-
-
 def test_kb_help_kb_help_lists_init_and_install() -> None:
     """kb --help lists both init and install-skills subcommands."""
     runner = CliRunner()
@@ -80,6 +76,7 @@ def test_kb_help_kb_validate_help() -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
 def test_kb_init_kb_init_creates_bundle(tmp_path: Path) -> None:
     """kb init PATH creates the KB bundle layout."""
     runner = CliRunner()
@@ -110,6 +107,7 @@ def test_kb_init_kb_init_default_path_is_cwd(tmp_path: Path) -> None:
         assert (Path(td) / "index.md").is_file()
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S2
 def test_kb_init_kb_init_errors_on_nonempty_dir(tmp_path: Path) -> None:
     """kb init exits with code 1 when target is non-empty and --force not passed."""
     runner = CliRunner()
@@ -120,6 +118,8 @@ def test_kb_init_kb_init_errors_on_nonempty_dir(tmp_path: Path) -> None:
     assert result.exit_code == 1
     # Error should be reported on stderr or stdout
     assert "already exists" in result.output or "Error" in result.output
+    assert [path.name for path in target.iterdir()] == ["existing.txt"]
+    assert (target / "existing.txt").read_text(encoding="utf-8") == "existing"
 
 
 def test_kb_init_kb_init_force_overwrites(tmp_path: Path) -> None:
@@ -223,6 +223,7 @@ def test_kb_install_kb_install_exits_1_on_unexpected_error(
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
 def test_kb_validate_kb_validate_valid_bundle(tmp_path: Path) -> None:
     """kb validate exits 0 on a valid KB bundle."""
     runner = CliRunner()
@@ -260,6 +261,8 @@ def test_kb_validate_forwards_file_checks(tmp_path: Path, monkeypatch: pytest.Mo
     assert calls == [(True, tmp_path)]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S3
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S4
 def test_kb_default_links_are_checked_by_base_api_and_cli(tmp_path: Path) -> None:
     """Both layers check generated KB annotations, and validation never rewrites a bundle."""
     runner = CliRunner()
@@ -341,6 +344,7 @@ def test_kb_validate_kb_validate_invalid_bundle(tmp_path: Path) -> None:
     assert "Validation failed" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S2
 def test_kb_validate_kb_validate_missing_path(tmp_path: Path) -> None:
     """kb validate exits 1 when PATH does not exist."""
     runner = CliRunner()

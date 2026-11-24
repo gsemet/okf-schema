@@ -104,7 +104,16 @@ satisfied. It is not an issue title, design choice, code comment, or task.
    test. The same ID may repeat at distinct evidence points in one file.
    StRS never receives implementation markers; in the stricter
    `linked-swrs-and-validation-test` mode, a direct `@tests_req <StRS-ID>` marker
-   defines a stakeholder validation test.
+   defines a stakeholder validation test. In mode
+   `linked-swrs-and-acceptance-paths`, a requirement declares its main paths
+   (StRS) or transition scenarios (SwRS) in a frontmatter `scenarios:` list of
+   `{id: S<n>, title}`, tests name one with a `#S<n>` fragment glued to the ID
+   (`@tests_req SwRS-X#S1`), and `@accepts_req StRS-X#S1` marks the acceptance
+   test of a StRS path. Two independent counters result: tested and accepted.
+   Put `@accepts_req` on the test closest to the final product, which may be
+   costly and run in a main-branch pipeline, and `@tests_req` on cheaper tests
+   run on every pull or merge request. A marker with no fragment on a requirement
+   that declares `scenarios:` is an error and does not count.
 - **Markers are links, not proof.** A test marker says where verification lives,
   not whether the test ran or passed. Run the project's real test suite.
 - **Coverage and reports are generated views.** Keep implementation coverage,
@@ -115,6 +124,10 @@ satisfied. It is not an issue title, design choice, code comment, or task.
   its code starts `proposed`; `draft` is a proposal not implemented yet.
 - **`approved` belongs to the owner.** It freezes a requirement; only the owner
   agrees to approve or change one, recorded in `approved_by` and `approved_at`.
+  One exception: an edit that only adds `scenarios:` to the frontmatter of an
+  approved requirement, leaving the body intact, may be done by the agent. It
+  leaves `approved_by` and `approved_at` unchanged, unless the owner gives a new
+  approval, and logs the edit in `tiers/log.md` naming the owner's agreement.
   Owners and approval locks come from `config.yml` per tier and scope. Repair
   steps for an agent: [references/operations.md](references/operations.md#lifecycle-ownership-and-approval).
 - **The bundle stays a native OKF bundle.** okfreq generates `status` from
@@ -253,7 +266,7 @@ diagnostics together. Use `check_file_links` for validation-only workflows.
 Neither API executes tests or treats a marker as proof beyond the configured
 traceability report.
 
-`implemented_in_files` and `tested_in_files` use exact project-relative paths.
+`implemented_in_files`, `tested_in_files` and `accepted_in_files` use exact project-relative paths.
 `derives_from`, `derived_by`, `depends_on`, `superseded_by`, `supersedes`, and
 `relates_to` use case-sensitive Markdown
 filename stems without `.md`. Preserve the existing requirement-ID graph
@@ -285,8 +298,12 @@ format, not a generic document heading.
 1. Create or confirm the stakeholder outcome first. An StRS needs one
    stakeholder-observable normative behavior, the stakeholder's user need, and
    any known rationale or constraints. Do not add software scenarios or source
-   markers. Add a direct test marker only when the configured StRS coverage mode
-   requires an explicit validation test.
+   markers. In mode `linked-swrs-and-acceptance-paths`, give the StRS a
+   `### Main paths` section with one `#### Path S<n>: <title>` heading per
+   stakeholder-observable path and a matching `scenarios:` frontmatter entry
+   (`S1`, `S2`, ... in order, never reused or renumbered). Add a direct test
+   marker only when the configured StRS coverage mode requires an explicit
+   validation test or acceptance path.
 2. Derive one or more SwRS requirements for independently observable software
    behaviors. Each SwRS needs a valid StRS parent, nominal and boundary/failure
    scenarios, and objective verification notes.
@@ -311,7 +328,8 @@ format, not a generic document heading.
 3. Never renumber an existing requirement. Allocate new identities through
    `okfreq new` under the configured ID policy.
 4. Never treat generated `derived_by`, `supersedes`, `implemented_in_files`,
-   `tested_in_files` or `default_owner_email` as authored truth.
+   `tested_in_files`, `accepted_in_files` or `default_owner_email` as authored
+   truth.
 5. Keep `okfreq` requirements independent from `okfkb` knowledge documents.
    They may coexist and both use OKF-compatible Markdown, but they have distinct
    purposes and lifecycles.

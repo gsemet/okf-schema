@@ -102,13 +102,15 @@ Requirement documents live only under `tiers/`.
   `superseded_by` list (required, non-empty, on every `superseded` requirement and
   only there). Link requirements that are merely connected with `relates_to`.
   Never hand-edit generated `derived_by`, `supersedes`, `implemented_in_files`,
-  `tested_in_files`, `default_owner_email`, `status` or `verified` fields, nor the
+  `tested_in_files`, `accepted_in_files`, `default_owner_email`, `status` or
+  `verified` fields, nor the
   Links section between `<!-- okf:links:start -->` and `<!-- okf:links:end -->`.
 - For leaf software requirements, add `@implements_req <ID>` markers near the
   implementation and `@tests_req <ID>` markers near corresponding tests. Do not
   use source markers on stakeholder or other non-leaf levels. A real direct
   stakeholder validation test may carry an StRS test marker when the configured
-  coverage mode requires it.
+  coverage mode requires it, and a real acceptance test may carry an
+  `@accepts_req <StRS-ID>#S<n>` marker in mode `linked-swrs-and-acceptance-paths`.
 - A behavior fix changes the code, tests and SwRS together. Preserve the identity
   when refining the same contract; use lifecycle operations when replacing it.
 - Define a cross-cutting rule once. Requirements that rely on it reference its
@@ -130,7 +132,10 @@ Requirement documents live only under `tiers/`.
   the usual plan and review.
 - `approved`: frozen by its owner. Never approve a requirement, change its
   meaning, deprecate it or supersede it on your own decision. Editorial fixes that
-  keep the meaning are allowed.
+  keep the meaning are allowed, and so is an edit that only adds `scenarios:` to
+  the frontmatter and leaves the body intact: keep `approved_by` and `approved_at`
+  unchanged, unless the owner gives a new approval, and log it in `tiers/log.md`
+  naming the owner's agreement.
 - The owner of a requirement is its `owner_email`, else its generated
   `default_owner_email` (from `config.yml`: scope and tier, then scope, then
   tier). Whether a tier may be approved is its `approval_lock`, which a scope can
@@ -167,6 +172,23 @@ Requirement documents live only under `tiers/`.
   opener (`//`, `#`, `/*`, `*` or `<!--`). A marker after executable code on
   the same line is not recognized. In JSDoc, use a separate ` * ` line rather
   than the `/**` opening line.
+- A requirement can declare its main paths (StRS) or transition scenarios (SwRS)
+  in the frontmatter as `scenarios: [{id: S1, title: ...}]`. A test marker names
+  one with a `#S<n>` fragment glued to the ID (`@tests_req SwRS-X#S1`,
+  `@accepts_req StRS-X#S1`); only `S<n>` is a fragment. In mode
+  `linked-swrs-and-acceptance-paths`, once a requirement declares `scenarios:`,
+  every `@tests_req` or `@accepts_req` on it must carry a declared fragment, or it
+  is an error and does not count. Never guess a fragment; name the scenario the
+  test really exercises.
+- Two verbs feed two independent counters: `@tests_req` (tested) and
+  `@accepts_req` (accepted, StRS paths only). Put `@accepts_req` on the test
+  closest to the final product, which may be costly and run in a main-branch
+  pipeline, and `@tests_req` on cheaper tests that run on every pull or merge
+  request. Markers are links, not proof that a test ran.
+- A StRS that no automated test can accept may carry a justified
+  `acceptance_exemption: true` with an `acceptance_exemption_reason`. It is not
+  acceptance evidence, it is distinct from a SwRS `annotation_exemption`, and slow
+  or expensive tests are no reason. It needs the owner's agreement.
 - Implementation markers belong to configured `source_dirs`; test markers
   belong to configured `test_dirs`. When code or tests move, move their markers
   with them. Keep markers outside generated HTML/CSS strings.
@@ -205,12 +227,20 @@ declare.
 - For an StRS, pass a stakeholder-observable `SHALL` statement as
   `--description` and the underlying outcome as `--user-need`. Complete the
   generated normative behavior, user need, and rationale/constraints sections.
-  Do not add SwRS scenarios or verification notes.
+  Do not add SwRS scenarios or verification notes. In mode
+  `linked-swrs-and-acceptance-paths`, also write a `### Main paths` section with
+  one `#### Path S<n>: <title>` heading per stakeholder-observable path (a short
+  numbered list of steps up to the observable outcome), and declare each in the
+  frontmatter `scenarios:` with the same id and title (`S1`, `S2`, ... in order).
+  An id is never reused and is not renumbered when a path is reordered or removed:
+  tests cite it.
 - For an SwRS, pass one observable, bounded `SHALL` response as `--description`
   and at least one valid StRS ID with `--derives-from`. Complete the generated
   GIVEN-WHEN-THEN scenarios, adding one per refusal or boundary of the same
   behaviour, and the objective verification notes. Do not add an StRS user-need
-  or stakeholder-constraints section.
+  or stakeholder-constraints section. In mode `linked-swrs-and-acceptance-paths`,
+  number the scenarios (`### Scenario S1: <title>`) and declare them in
+  `scenarios:` the same way.
 - Cover nominal behavior and relevant refusal, failure or boundary cases.
   Group equivalent inputs and outcomes in a scenario table. Split unrelated
   behaviors rather than growing an unbounded scenario list in one SwRS.

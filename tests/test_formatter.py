@@ -62,15 +62,13 @@ def test_flatten_value_mixed_nesting() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
 def test_format_frontmatter_no_frontmatter() -> None:
     """Returns None when no frontmatter is present."""
     text = "# Hello\n\nBody text.\n"
     assert format_frontmatter(text) is None
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_frontmatter_flatten_nested_tags() -> None:
     """Flattens nested list values in frontmatter."""
     text = "---\ntags: [[a, b], c]\n---\n\n# Hello\n"
@@ -89,6 +87,7 @@ def test_format_frontmatter_preserves_non_list_values() -> None:
     assert result == text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_frontmatter_preserves_comments() -> None:
     """Comments in frontmatter are preserved."""
     text = "---\ntitle: Hello\n# This is a comment\ntags: [a, b]\n---\n\n# Body\n"
@@ -97,6 +96,7 @@ def test_format_frontmatter_preserves_comments() -> None:
     assert "# This is a comment" in result
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_frontmatter_idempotent() -> None:
     """Running twice on already-flat frontmatter produces same result."""
     text = "---\ntags: [a, b, c]\n---\n\n# Hello\n"
@@ -145,6 +145,7 @@ def test_format_file_in_place_no_change(tmp_path: Path) -> None:
     assert changed is False
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_format_file_check_mode_detects_changes(tmp_path: Path) -> None:
     """Check mode returns True when changes needed, no file modification."""
     path = tmp_path / "concept.md"
@@ -164,6 +165,7 @@ def test_format_file_check_mode_no_changes(tmp_path: Path) -> None:
     assert changed is False
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_format_file_diff_mode_returns_diff(tmp_path: Path) -> None:
     """Diff mode returns unified diff string."""
     path = tmp_path / "concept.md"
@@ -185,6 +187,7 @@ def test_format_file_skip_no_frontmatter(tmp_path: Path) -> None:
     assert path.read_text() == original
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_file_preserves_body(tmp_path: Path) -> None:
     """Body content is preserved after formatting."""
     path = tmp_path / "concept.md"

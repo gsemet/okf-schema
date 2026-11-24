@@ -41,9 +41,7 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S1
 def test_validate_bundle_returns_report_for_valid_bundle() -> None:
     """Returns a conformant Report for a valid bundle."""
     report = validate_bundle(VALID_BUNDLE)
@@ -51,6 +49,7 @@ def test_validate_bundle_returns_report_for_valid_bundle() -> None:
     assert report.is_conformant is True
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S2
 def test_validate_bundle_returns_report_for_invalid_bundle() -> None:
     """Returns a non-conformant Report for an invalid bundle."""
     invalid = BUNDLE_FIXTURES / "invalid" / "e1-no-frontmatter"
@@ -416,9 +415,6 @@ def test_validate_markdown_files_absolute_directory_path(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
 def test_format_bundle_returns_list_of_formatted_results() -> None:
     """Returns a list of FormattedResult objects."""
     results = format_bundle(VALID_BUNDLE)
@@ -469,9 +465,7 @@ def test_format_bundle_diff_mode(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-005
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_list_bundle_returns_sorted_concept_summaries() -> None:
     """Returns sorted list of ConceptSummary objects."""
     concepts = list_bundle(VALID_BUNDLE)
@@ -490,6 +484,7 @@ def test_list_bundle_sorted_by_path() -> None:
     assert paths == sorted(paths)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_list_bundle_nonexistent_path_raises() -> None:
     """Raises FileNotFoundError for nonexistent bundle path."""
     with pytest.raises(FileNotFoundError):
@@ -516,6 +511,7 @@ def test_list_bundle_non_stale_concept_has_stale_false() -> None:
     assert all(not c.stale for c in concepts)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_list_bundle_stale_concept_has_stale_true(tmp_path: Path) -> None:
     """OKF 0.2: concept with past stale_after has stale=True."""
     bundle = tmp_path / "bundle"
@@ -531,6 +527,8 @@ def test_list_bundle_stale_concept_has_stale_true(tmp_path: Path) -> None:
     assert any(c.stale for c in concepts)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S2
 def test_list_bundle_datetime_stale_after_has_stale_true(tmp_path: Path) -> None:
     """OKF 0.2: a past ISO 8601 datetime with UTC offset marks the concept stale."""
     bundle = tmp_path / "bundle"
@@ -549,9 +547,7 @@ def test_list_bundle_datetime_stale_after_has_stale_true(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_show_bundle_returns_concept_detail() -> None:
     """Returns ConceptDetail with frontmatter and body."""
     detail = show_bundle(VALID_BUNDLE, "subdir/concept-a.md")
@@ -562,6 +558,7 @@ def test_show_bundle_returns_concept_detail() -> None:
     assert "# Concept A" in detail.body
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_show_bundle_invalid_concept_path_raises() -> None:
     """Raises FileNotFoundError for nonexistent concept path."""
     with pytest.raises(FileNotFoundError):
@@ -605,6 +602,7 @@ def test_show_bundle_trust_tier_unverified_for_new_concept(tmp_path: Path) -> No
     assert detail.stale is False
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_show_bundle_trust_tier_human_reviewed(tmp_path: Path) -> None:
     """OKF 0.2: human-verified concept has trust_tier='human-reviewed'."""
     bundle = tmp_path / "bundle"
@@ -620,6 +618,7 @@ def test_show_bundle_trust_tier_human_reviewed(tmp_path: Path) -> None:
     assert detail.trust_tier == "human-reviewed"
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_show_bundle_stale_concept_detected(tmp_path: Path) -> None:
     """OKF 0.2: concept with past stale_after is stale=True."""
     bundle = tmp_path / "bundle"
@@ -639,9 +638,7 @@ def test_show_bundle_stale_concept_detected(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-004
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_returns_index_updates() -> None:
     """Returns list of IndexUpdate objects."""
     updates = index_bundle(VALID_BUNDLE)
@@ -666,6 +663,7 @@ def test_index_bundle_creates_missing_index(tmp_path: Path) -> None:
     assert (bundle / "subdir" / "index.md").exists()
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_preserves_root_frontmatter(tmp_path: Path) -> None:
     """Preserves frontmatter in bundle-root index.md."""
     import shutil
@@ -706,6 +704,7 @@ def test_index_bundle_empty_directory_skipped(tmp_path: Path) -> None:
     assert not any("empty_subdir" in u.path for u in updates)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_unchanged_when_content_identical(tmp_path: Path) -> None:
     """Marks index as unchanged when content is already up-to-date."""
     bundle = tmp_path / "bundle"
@@ -734,6 +733,7 @@ def test_index_bundle_index_bundle_accepts_string_path() -> None:
         assert isinstance(update, IndexUpdate)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_preserves_existing_descriptions(tmp_path: Path) -> None:
     """Preserves custom descriptions from existing index.md."""
     bundle = tmp_path / "bundle"
@@ -1037,6 +1037,7 @@ def test_index_bundle_get_subdir_description_truncates_long_desc(tmp_path: Path)
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_search_bundle_finds_by_title_substring() -> None:
     """Finds concepts by title substring (case-insensitive)."""
     results = search_bundle(VALID_BUNDLE, "concept")
@@ -1075,6 +1076,7 @@ def test_search_bundle_case_insensitive() -> None:
     assert len(results_lower) == len(results_upper)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_search_bundle_nonexistent_path_raises() -> None:
     """Raises FileNotFoundError for nonexistent bundle path."""
     with pytest.raises(FileNotFoundError):
@@ -1134,6 +1136,7 @@ def test_graph_bundle_returns_adjacency_dict() -> None:
     assert isinstance(graph, dict)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_graph_bundle_cross_linked_concepts(tmp_path: Path) -> None:
     """Correctly maps cross-linked concepts."""
     bundle = tmp_path / "bundle"
@@ -1220,6 +1223,7 @@ def test_graph_bundle_link_outside_bundle_excluded(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_backlinks_bundle_returns_backlink_results(tmp_path: Path) -> None:
     """Returns BacklinkResult records for linked concepts."""
     bundle = tmp_path / "bundle"
@@ -1372,6 +1376,7 @@ def test_stats_bundle_returns_bundle_stats() -> None:
     assert stats.directories >= 0
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_stats_bundle_counts_concepts_correctly(tmp_path: Path) -> None:
     """Counts total concepts accurately."""
     bundle = tmp_path / "bundle"
@@ -1476,6 +1481,7 @@ def test_stats_bundle_no_tags_means_empty_distribution(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_lint_bundle_api_converts_block_lists(tmp_path: Path) -> None:
     """lint_bundle converts block-style lists to inline."""
     bundle = tmp_path / "bundle"
@@ -1491,6 +1497,7 @@ def test_lint_bundle_api_converts_block_lists(tmp_path: Path) -> None:
     assert "tags: [a, b]" in text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_lint_bundle_api_check_mode(tmp_path: Path) -> None:
     """lint_bundle with check=True does not modify files."""
     bundle = tmp_path / "bundle"
@@ -1538,6 +1545,7 @@ def test_update_bundle_returns_update_result(tmp_path: Path) -> None:
     assert any(r.changed for r in result.lint_results)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_update_bundle_creates_index_and_lints(tmp_path: Path) -> None:
     """update_bundle creates index.md and lints frontmatter."""
     from okf_schema.api import update_bundle
@@ -1554,6 +1562,7 @@ def test_update_bundle_creates_index_and_lints(tmp_path: Path) -> None:
     assert "tags: [a, b]" in text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_update_bundle_check_mode_no_changes(tmp_path: Path) -> None:
     """update_bundle with check=True does not modify files."""
     from okf_schema.api import update_bundle
@@ -1636,6 +1645,7 @@ def test_rewrite_superseded_links_rewrites_link_to_superseded_doc(tmp_path: Path
     assert "old.md" not in text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S2
 def test_rewrite_superseded_links_deferred_when_no_superseded_by(tmp_path: Path) -> None:
     """Defers superseded doc without superseded_by field."""
     from okf_schema.api import DeferredRewrite, rewrite_superseded_links
@@ -1654,6 +1664,7 @@ def test_rewrite_superseded_links_deferred_when_no_superseded_by(tmp_path: Path)
     assert deferred[0].reason == "no_superseded_by"
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S2
 def test_rewrite_superseded_links_deferred_when_replacement_missing(tmp_path: Path) -> None:
     """Defers superseded doc when replacement path does not exist."""
     from okf_schema.api import rewrite_superseded_links
@@ -1867,7 +1878,8 @@ def test_update_bundle_superseded_rewrite_body_with_non_matching_links(tmp_path:
     assert "[Other](other.md)" in text  # preserved
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
 def test_validate_bundle_reports_schema_load_diagnostics(tmp_path: Path) -> None:
     """validate_bundle surfaces I1 in ``infos`` and W17 in ``warnings`` with the file path."""
     schema_dir = tmp_path / "schemas"
@@ -1884,6 +1896,8 @@ def test_validate_bundle_reports_schema_load_diagnostics(tmp_path: Path) -> None
     assert report.is_conformant
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
 def test_validate_markdown_files_reports_schema_load_diagnostics(tmp_path: Path) -> None:
     """validate_markdown_files surfaces the same diagnostics."""
     schema_dir = tmp_path / "schemas"

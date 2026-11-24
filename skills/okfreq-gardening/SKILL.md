@@ -46,7 +46,7 @@ unrelated implementation task.
 - Preserve requirement IDs, UUIDs, authored frontmatter, unknown properties,
   YAML comments, and Markdown bodies.
 - Never hand-edit `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`,
-  `default_owner_email`, indexes or reports. Use explicit `okfreq` commands for generated data.
+  `accepted_in_files`, `default_owner_email`, indexes or reports. Use explicit `okfreq` commands for generated data.
 - Never claim implementation or test coverage without source evidence and
   markers. Markers are links, not proof that tests pass.
 - Never change lifecycle or approval state as an incidental edit.
@@ -164,6 +164,19 @@ formats instead of applying one generic requirement template:
   and `Rationale and constraints`. Do not add SwRS scenarios, verification
   notes, or implementation markers to an StRS. Add a direct validation-test
   marker only for a real stakeholder test, as required by the configured mode.
+  In mode `linked-swrs-and-acceptance-paths`, close an acceptance gap this way:
+  declare `scenarios:` (`- id: S1` / `title: ...`) in the frontmatter only, from
+  the `#### Path` headings of the body, with ids `S1`, `S2`, ... in order and never
+  reused or renumbered, and leave the body untouched. On an approved StRS this is
+  the only allowed edit: keep `approved_by` and `approved_at` unchanged unless the
+  owner gives a new approval, and log it in `tiers/log.md` naming the owner's
+  agreement. Then put the right `#S<n>` fragment on each existing marker of that
+  requirement, and choose `@accepts_req` over `@tests_req` for the test closest to
+  the final product (possibly costly, run in the main-branch pipeline); keep
+  `@tests_req` on cheaper tests. A justified `acceptance_exemption` waiver, with a
+  non-blank `acceptance_exemption_reason`, is only for a StRS no automated test can
+  accept, never because a test is slow or expensive, and needs the owner's
+  agreement. Never invent a test, a marker or a waiver to silence `W003` or `W004`.
 - **SwRS — software behavior:** provide one observable, bounded `SHALL`
   response as `--description` and at least one valid StRS parent with
   `--derives-from`. Complete nominal and boundary/failure GIVEN-WHEN-THEN

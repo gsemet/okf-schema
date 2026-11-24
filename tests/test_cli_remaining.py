@@ -63,9 +63,7 @@ def _make_bundle(path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-005
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_list_list_outputs_concepts(tmp_path: Path) -> None:
     """list outputs one concept per line with path, type, title."""
     bundle = _make_bundle(tmp_path)
@@ -79,6 +77,7 @@ def test_list_list_outputs_concepts(tmp_path: Path) -> None:
     assert "subdir/concept-c.md" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_list_list_sorted_by_path(tmp_path: Path) -> None:
     """list output is sorted by path."""
     bundle = _make_bundle(tmp_path)
@@ -91,6 +90,7 @@ def test_list_list_sorted_by_path(tmp_path: Path) -> None:
     assert lines[2].startswith("subdir/concept-c.md")
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_list_list_exits_2_on_invalid_bundle(tmp_path: Path) -> None:
     """list exits 2 on nonexistent bundle path."""
     runner = CliRunner()
@@ -103,6 +103,7 @@ def test_list_list_exits_2_on_invalid_bundle(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_show_show_outputs_frontmatter_and_body(tmp_path: Path) -> None:
     """show displays frontmatter as YAML followed by body."""
     bundle = _make_bundle(tmp_path)
@@ -115,6 +116,7 @@ def test_show_show_outputs_frontmatter_and_body(tmp_path: Path) -> None:
     assert "See also" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_show_show_exits_2_on_missing_concept(tmp_path: Path) -> None:
     """show exits 2 when concept not found."""
     bundle = _make_bundle(tmp_path)
@@ -167,6 +169,7 @@ def test_index_index_exits_2_on_invalid_bundle(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_stats_stats_outputs_summary(tmp_path: Path) -> None:
     """stats outputs a compact summary line."""
     bundle = _make_bundle(tmp_path)
@@ -226,6 +229,7 @@ def test_stats_stats_shows_broken_links_in_health(tmp_path: Path) -> None:
     assert "1 broken link" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_stats_stats_exits_2_on_invalid_bundle(tmp_path: Path) -> None:
     """stats exits 2 on nonexistent bundle path."""
     runner = CliRunner()

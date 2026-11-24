@@ -13,6 +13,18 @@ origin: native
 tier: StRS
 derives_from: []
 user_need: Teams need to capture and organize engineering knowledge reliably.
+scenarios:
+- id: S1
+  title: Capture an immutable finding
+- id: S2
+  title: Update a knowledge base's indexes and lint
+- id: S3
+  title: Propose a consolidation for human review
+acceptance_exemption: true
+acceptance_exemption_reason: Path S3 is an interactive consolidation that an
+  agent proposes and a human reviews; it is not a deterministic command, so no
+  automated acceptance test can walk it (SwRS-OKFSCHEMA-OKFKB-005 carries its
+  own exemption). Paths S1 and S2 have acceptance tests.
 derived_by:
 - SwRS-OKFSCHEMA-OKFKB-001
 - SwRS-OKFSCHEMA-OKFKB-002
@@ -21,6 +33,10 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFKB-005
 - SwRS-OKFSCHEMA-OKFKB-006
 default_owner_email: gaetan@xeberon.net
+tested_in_files:
+- tests/test_integration.py
+accepted_in_files:
+- tests/test_acceptance_okfkb.py
 ---
 
 ## Maintain trustworthy engineering knowledge
@@ -30,6 +46,27 @@ default_owner_email: gaetan@xeberon.net
 The `okfkb` capability SHALL enable engineering teams to capture, organize, and
 mature knowledge while retaining the evidence and provenance on which that
 knowledge depends.
+
+### Main paths
+
+#### Path S1: Capture an immutable finding
+
+1. A team member records a finding in a knowledge base.
+2. The finding is stored as a new evidence file, and recording a later finding
+   leaves the earlier one unchanged.
+
+#### Path S2: Update a knowledge base's indexes and lint
+
+1. A team member updates the knowledge base after adding or changing knowledge.
+2. Indexes and derived links are regenerated, and lint reports any issue
+   without rewriting authored knowledge.
+
+#### Path S3: Propose a consolidation for human review
+
+1. An agent reads the findings of a topic and proposes consolidating them into
+   a higher knowledge layer.
+2. A human reviews the proposal and decides; nothing is promoted without that
+   decision.
 
 ### Preserved stakeholder intent
 

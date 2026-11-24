@@ -19,8 +19,17 @@ never touched. Our paths, scopes and checks follow; where they specialize the ba
 
 - Store requirements under `requirements/tiers/strs/<scope>/` and
   `requirements/tiers/swrs/<scope>/`, named like `SwRS-OKFSCHEMA-OKFREQ-002.md`.
-- This project uses `linked-swrs-and-validation-test`: add a direct StRS marker
-  only to a real stakeholder validation test.
+- This project uses `linked-swrs-and-acceptance-paths`: every StRS declares its main
+  paths under `### Main paths` and in `scenarios:`, and every SwRS declares its
+  `scenarios:`. Mark a test of a requirement or of one of its scenarios with
+  `@tests_req <ID>#S<n>`, always with the fragment. An acceptance test is the test
+  closest to the final product that walks one StRS main path end to end against the
+  installed wheel, using the three console scripts or the installed Python API in an
+  isolated subprocess (`tests/test_acceptance_*.py`), and carries
+  `@accepts_req StRS-…#S<n>`. Only such a test earns that marker. Where a path is
+  interactive (`StRS-OKFSCHEMA-OKFKB-001`), record a justified `acceptance_exemption`
+  instead of inventing a marker, and give the SwRS of that behavior its own
+  `annotation_exemption`.
 - Keep core `okf-schema`, knowledge-base `okfkb`, and requirements `okfreq`
   concerns in their configured scopes rather than combining unrelated claims.
 
@@ -47,9 +56,10 @@ validation/tests fail.
 
 ## Exercise the project contract
 
-- Keep the three supported generated fields enabled and refresh them through
+- Keep the supported generated fields enabled and refresh them through
   `okfreq update-coverage`; `--check` must fail when they are stale.
-- Keep the strict StRS coverage mode and direct validation-test evidence current.
+- Keep the acceptance-paths coverage mode and the `@accepts_req` evidence of every
+  declared path current.
 - Maintain authored `documentation_files`, `agent_skill_files`, `example_files`,
   dependencies and verification criteria as actual existing project evidence.
 - Review `docs/source/explanation/project-feature-coverage.md` for feature usage.

@@ -30,7 +30,12 @@ This is deliberately compatible with the [OKF specification](https://github.com/
 and the [okf-schema documentation](../index.md).
 
 The in-source and in-tests marker vocabulary defaults
-to `@implements_req` and `@tests_req`.
+to `@implements_req`, `@tests_req` and, for the acceptance path of a StRS,
+`@accepts_req`. A requirement's main paths or transitions are authored in its
+frontmatter as `scenarios:` and named by a `#S<n>` fragment on a test marker;
+the files of counting markers are generated into `tested_in_files` and
+`accepted_in_files`. The reasons for the two test verbs are in
+[Why `okfreq` measures acceptance paths](okfreq-acceptance-paths.md).
 `okfreq` only interoperates through stable IDs and preserved metadata.
 Lifecycle changes are explicit so a draft cannot silently become approved,
 and archive operations never delete a document. Only `okfreq retire` deletes,

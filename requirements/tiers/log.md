@@ -1,5 +1,45 @@
 # Update Log
 
+## 2026-11-24
+
+### Acceptance paths
+
+- Switched `strs_test_coverage_mode` from `linked-swrs-and-validation-test` to
+  `linked-swrs-and-acceptance-paths`. `markers.accepts` is `@accepts_req` and
+  `generated_fields` lists `accepted_in_files`.
+- Added [SwRS-OKFSCHEMA-OKFREQ-015](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-015.md): okfreq
+  reads the StRS main paths and the requirement scenarios, counts the markers that
+  carry a `#S<n>` fragment into independent tested and accepted counters, warns with
+  `W003` and `W004`, reports the paths and leaves the other modes unchanged.
+- Updated the bundle schemas: `base.schema.yaml` gains the `scenarios` property and the
+  `req_lifecycle` description states the exception for a `scenarios:`-only edit;
+  `strs.schema.yaml` gains `acceptance_exemption`, `acceptance_exemption_reason`,
+  `tested_in_files` and `accepted_in_files`; `swrs.schema.yaml` refuses
+  `accepted_in_files`.
+- Declared the acceptance paths of the five StRS (13 in all) in a `### Main paths`
+  section and in `scenarios:` frontmatter, and declared `scenarios:` on the 29 other
+  SwRS from their 93 `### Scenario` headings (`S1…` in order). The five StRS and
+  all SwRS are `proposed`, so the body headings were aligned to
+  `### Scenario S<n>: <title>` and the StRS bodies gained the `### Main paths` section.
+- Declaring only `scenarios:` on an approved requirement is a frontmatter-only edit
+  that keeps `approved_by` and `approved_at`; no requirement of this bundle is approved
+  now, and the owner agrees to this edit by reviewing the change. The owner reviews the
+  paths written in the five StRS.
+- Every `@tests_req` marker in `tests/` now carries a `#S<n>` fragment on the test that
+  exercises the scenario; the six direct StRS markers name the path they exercise;
+  tests that exercise no scenario lost their marker. Scenarios without a test got
+  new tests.
+- Added the acceptance tests `tests/test_acceptance_core.py`,
+  `tests/test_acceptance_okfkb.py` and `tests/test_acceptance_okfreq.py`: twelve
+  `@accepts_req` tests that walk the paths against the installed wheel.
+- Two justified exemptions: [StRS-OKFSCHEMA-OKFKB-001](strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md)
+  carries `acceptance_exemption` because its path S3 (propose a consolidation for human
+  review) is interactive, and
+  [SwRS-OKFSCHEMA-OKFKB-005](swrs/okfkb/SwRS-OKFSCHEMA-OKFKB-005.md) carries
+  `annotation_exemption` for the same reason.
+- Verification: `okfreq update-coverage`, `okfreq validate --prose --check-links`
+  (0 errors, no `W003` or `W004`), `okfreq lint`, `okfreq trace` and `just preflight`.
+
 ## 2026-10-30
 
 ### Native OKF projection
