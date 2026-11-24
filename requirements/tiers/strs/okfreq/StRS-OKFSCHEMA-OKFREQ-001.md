@@ -53,17 +53,17 @@ intent.
 
 ### Main paths
 
-#### Path 1: Set up a bundle and author linked requirements
+#### Path S1: Set up a bundle and author linked requirements
 
 1. A team initializes a bundle and creates stakeholder and software requirements.
 2. Their stable identities and derivation link are available for maintenance.
 
-#### Path 2: Trace markers and refresh generated coverage
+#### Path S2: Trace markers and refresh generated coverage
 
 1. A team marks implementation and test evidence and scans its project.
 2. Generated coverage fields link the corresponding source and test files.
 
-#### Path 3: Audit the requirements base with validate and a report
+#### Path S3: Audit the requirements base with validate and a report
 
 1. A team validates its requirements and generates a report.
 2. It can inspect structural findings and linkage coverage before delivery.

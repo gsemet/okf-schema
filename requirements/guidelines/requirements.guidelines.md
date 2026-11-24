@@ -157,7 +157,12 @@ Requirement documents live only under `tiers/`.
   each test that checks the behavior.
 - In `linked-swrs-and-acceptance-paths`, declare main paths on StRS and
   transition scenarios on SwRS as a non-empty `scenarios:` list of `id` and
-  `title` mappings. Number IDs `S1`, `S2`, and never reuse them. When scenarios
+  `title` mappings. Number IDs `S1`, `S2`, and never reuse them. In the body,
+  name each corresponding heading with the same ID and title, for example
+  `### Scenario S1: Export selected rows` or
+  `#### Path S1: Export selected rows`. Keep both in sync when editing; do not
+  renumber IDs when reordering or removing scenarios. This is authoring
+  guidance, not a validation rule. When scenarios
   are declared, every `@tests_req` or `@accepts_req` must carry the matching
   `#S<n>`; without declarations use a fragmentless marker. Mark each StRS main
   path's acceptance test with `@accepts_req`. If that test is expensive it may
@@ -220,7 +225,8 @@ declare.
 - For an StRS, pass a stakeholder-observable `SHALL` statement as
   `--description` and the underlying outcome as `--user-need`. Complete the
   generated normative behavior, user need, and rationale/constraints sections.
-  In acceptance-paths mode use `### Main paths` with `#### Path <n>:` headings.
+  In acceptance-paths mode use `### Main paths` with `#### Path S<n>:` headings
+  matching the corresponding `scenarios:` IDs and titles.
   Do not add SwRS scenarios or verification notes.
 - For an SwRS, pass one observable, bounded `SHALL` response as `--description`
   and at least one valid StRS ID with `--derives-from`. Complete the generated

@@ -37,12 +37,12 @@ navigate their targets without changing authored value types.
 
 ### Main paths
 
-#### Path 1: Navigate declared file links
+#### Path S1: Navigate declared file links
 
 1. A consumer inspects links declared by a schema.
 2. Link targets and resolution metadata are available without changing values.
 
-#### Path 2: Check declared file links on request
+#### Path S2: Check declared file links on request
 
 1. A maintainer requests validation of declared file links.
 2. The CLI reports unresolved targets without rewriting authored values.

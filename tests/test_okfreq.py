@@ -494,12 +494,29 @@ def test_new_scaffolds_predeclare_scenarios_only_in_new_mode(tmp_path: Path) -> 
     )
     strs, swrs = add_requirements(root)
     assert "### Main paths" in strs.read_text(encoding="utf-8")
+    assert "#### Path S1: <main path title>" in strs.read_text(encoding="utf-8")
+    assert "### Scenario S1: <nominal behavior>" in swrs.read_text(encoding="utf-8")
+    assert "### Scenario S2: <boundary or failure behavior>" in swrs.read_text(encoding="utf-8")
     data = load_requirements(root)
     assert data[strs.stem][1]["scenarios"] == [{"id": "S1", "title": "<main path title>"}]
     assert data[swrs.stem][1]["scenarios"] == [
         {"id": "S1", "title": "<nominal behavior>"},
         {"id": "S2", "title": "<boundary or failure behavior>"},
     ]
+
+
+def test_missing_scenarios_warning_preserves_explicit_heading_ids(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    strs, _ = add_requirements(root)
+    _edit_config(
+        root, "strs_test_coverage_mode: linked-swrs", f"strs_test_coverage_mode: {ACCEPTANCE_MODE}"
+    )
+    with strs.open("a", encoding="utf-8") as file:
+        file.write("\n### Main paths\n#### Path S5: Export\n#### Path 2: Review\n")
+    warning = next(item for item in validate_requirements(root) if item.startswith("W003"))
+    assert f"{strs.stem} declares no scenarios" in warning
+    assert "- id: S5\n  title: Export" in warning
+    assert "- id: S1\n  title: Review" in warning
 
 
 # @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S4

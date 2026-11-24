@@ -49,7 +49,7 @@ scenarios:
 
 When requirements are validated or regenerated, okfreq SHALL read tiers (or the legacy levels key) and the lifecycle field from configuration, take the accepted lifecycle values from the base schema, generate default_owner_email from the tier and scope owner settings, and reject an approved requirement whose tier and scope do not allow approval or that lacks approved_by and approved_at, with a message telling a coding agent to obtain and record the owner's agreement.
 
-### Scenario: Read the new and the legacy configuration names
+### Scenario S1: Read the new and the legacy configuration names
 
 - GIVEN a `config.yml` with `tiers` and `lifecycle.field`, or the legacy `levels`
   and `lifecycle.values`
@@ -58,7 +58,7 @@ When requirements are validated or regenerated, okfreq SHALL read tiers (or the 
   message to keep `tiers` only; `okfreq init` writes the new names and states
   `approval_lock: true` for StRS and `false` for SwRS explicitly
 
-### Scenario: Merge a configuration that uses the other names
+### Scenario S2: Merge a configuration that uses the other names
 
 - GIVEN a destination and an imported `config.yml`, one with `tiers` and the other
   with the legacy `levels`
@@ -68,21 +68,21 @@ When requirements are validated or regenerated, okfreq SHALL read tiers (or the 
   destination that names `lifecycle.field`, and `lifecycle.values` is reported as a
   conflict; an imported file that declares both `tiers` and `levels` is refused
 
-### Scenario: Use a custom lifecycle field name
+### Scenario S3: Use a custom lifecycle field name
 
 - GIVEN `lifecycle.field: state` and a hand-written base schema whose property and
   `required` entry are named `state` (`okfreq init` always generates `req_lifecycle`)
 - WHEN `okfreq validate`, `okfreq new`, `okfreq supersede` or `okfreq archive` runs
 - THEN each reads or writes `state`, and no `req_lifecycle` field is written
 
-### Scenario: Take the lifecycle values from the base schema
+### Scenario S4: Take the lifecycle values from the base schema
 
 - GIVEN no legacy `lifecycle.values` list
 - WHEN `okfreq validate` checks a requirement's lifecycle
 - THEN the accepted values are the `enum` of the configured lifecycle field in
   `tiers/_schema/base.schema.yaml`, and a legacy `values` list still wins
 
-### Scenario: Generate the default owner
+### Scenario S5: Generate the default owner
 
 - GIVEN `default_owner_email` listed in `generated_fields` and an `owner_email` set
   under `scopes.SCOPE.tiers.TIER`, `scopes.SCOPE` or `tiers.TIER`
@@ -94,7 +94,7 @@ When requirements are validated or regenerated, okfreq SHALL read tiers (or the 
   back to the tier setting, then to the default (a tier without `derives_from` is
   lockable, a derived tier is not)
 
-### Scenario: Guard an approved requirement
+### Scenario S6: Guard an approved requirement
 
 - GIVEN a requirement with `req_lifecycle: approved`
 - WHEN `okfreq validate` or `okfreq lint` runs
@@ -105,7 +105,7 @@ When requirements are validated or regenerated, okfreq SHALL read tiers (or the 
 - AND a `deprecated` or `superseded` requirement may keep its `approved_by` and
   `approved_at` as history
 
-### Scenario: Reject malformed ownership settings
+### Scenario S7: Reject malformed ownership settings
 
 - GIVEN an `approval_lock` that is not a boolean or an `owner_email` that is not an
   email address, in a tier or a scope

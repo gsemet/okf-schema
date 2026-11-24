@@ -4,6 +4,9 @@
 
 ### Acceptance paths
 
+- Aligned every declared scenario's body heading with its stable ID and title;
+  new acceptance-mode scaffolds and the shared guideline use the same convention.
+  Existing marker IDs and scenario semantics are unchanged.
 - Added [SwRS-OKFSCHEMA-OKFREQ-015](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-015.md)
   for scenario-aware markers and reporting, the acceptance-path mode, and
   schemas for authored scenarios and generated stakeholder test and acceptance

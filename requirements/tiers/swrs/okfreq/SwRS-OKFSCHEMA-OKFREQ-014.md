@@ -52,7 +52,7 @@ scenarios:
 
 When requirements are created, changed, regenerated or validated, okfreq SHALL project the lifecycle onto OKF status, the owner approval onto a human verified event and the relation fields onto a generated Links section as declared by the bundle schemas, and SHALL run the base OKF checks on the tiers folder.
 
-### Scenario: Generate the OKF fields
+### Scenario S1: Generate the OKF fields
 
 - GIVEN a bundle created by `okfreq init`, whose `req_lifecycle` property carries
   `x-okf-status-projection` and whose relation fields carry `link-projection`
@@ -64,7 +64,7 @@ When requirements are created, changed, regenerated or validated, okfreq SHALL p
   links every resolved relation; `status` and `verified` are generated only when
   listed in `generated_fields`
 
-### Scenario: Report what a plain OKF consumer would misread
+### Scenario S2: Report what a plain OKF consumer would misread
 
 - GIVEN a `status` that disagrees with the lifecycle, an `approved_at` that is not
   an ISO 8601 datetime with an offset, a `link-projection` on a resolution that
@@ -75,7 +75,7 @@ When requirements are created, changed, regenerated or validated, okfreq SHALL p
   too, except the recommendations requirement bundles cover otherwise (`W3`,
   `W4`, `W7`)
 
-### Scenario: Detect a stale projection
+### Scenario S3: Detect a stale projection
 
 - GIVEN a Links section, `status` or `verified` that no longer matches the frontmatter
 - WHEN `okfreq lint --check` or `okfreq update-coverage --check` runs

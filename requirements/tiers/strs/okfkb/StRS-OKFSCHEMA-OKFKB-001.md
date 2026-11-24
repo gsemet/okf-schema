@@ -45,17 +45,17 @@ knowledge depends.
 
 ### Main paths
 
-#### Path 1: Capture an immutable finding
+#### Path S1: Capture an immutable finding
 
 1. An engineer records an observation with provenance.
 2. The knowledge base retains it as an immutable finding.
 
-#### Path 2: Update a knowledge base's indexes and lint
+#### Path S2: Update a knowledge base's indexes and lint
 
 1. A maintainer updates the knowledge base.
 2. Navigation and validation describe the current knowledge.
 
-#### Path 3: Propose a consolidation for human review
+#### Path S3: Propose a consolidation for human review
 
 1. An agent gathers findings and prepares a consolidation proposal.
 2. A human can review the proposal without losing the underlying findings.

@@ -36,12 +36,12 @@ content.
 
 ### Main paths
 
-#### Path 1: Validate a conforming bundle
+#### Path S1: Validate a conforming bundle
 
 1. The maintainer selects a conforming bundle and requests validation.
 2. The CLI reports success without modifying its authored content.
 
-#### Path 2: Report a non-conforming bundle without changing it
+#### Path S2: Report a non-conforming bundle without changing it
 
 1. The maintainer requests validation of a non-conforming bundle.
 2. The CLI reports the violation and fails without modifying its authored content.

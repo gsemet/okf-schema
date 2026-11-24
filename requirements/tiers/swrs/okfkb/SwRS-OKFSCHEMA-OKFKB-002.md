@@ -46,7 +46,7 @@ When a user initializes or installs an `okfkb` knowledge base, the CLI SHALL
 create the configured bundle structure and supporting agent guidance without
 overwriting existing authored files.
 
-### Scenario: Scaffold a new knowledge base
+### Scenario S1: Scaffold a new knowledge base
 
 - GIVEN an empty target directory
 - WHEN the user initializes an `okfkb` knowledge base
@@ -57,7 +57,7 @@ overwriting existing authored files.
   `bundle-relative`/`plain`, while `derived_from`/`derives_to` string items use
   `bundle-relative-stem`/`plain`
 
-### Scenario: Install into existing content
+### Scenario S2: Install into existing content
 
 - GIVEN a target containing authored files
 - WHEN supporting `okfkb` guidance is installed

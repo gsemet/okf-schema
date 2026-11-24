@@ -45,7 +45,7 @@ scenarios:
 
 When OKF 0.2 metadata is validated, okf-schema SHALL enforce provenance, verification, lifecycle, resource, trust-tier, and staleness rules with actionable findings.
 
-### Scenario: Derive trust and staleness
+### Scenario S1: Derive trust and staleness
 
 - GIVEN a concept containing OKF 0.2 provenance, verification, and lifecycle
   metadata
@@ -53,7 +53,7 @@ When OKF 0.2 metadata is validated, okf-schema SHALL enforce provenance, verific
 - THEN the tool derives its trust tier and staleness consistently from that
   metadata
 
-### Scenario: Compare `stale_after` as an instant
+### Scenario S2: Compare `stale_after` as an instant
 
 - GIVEN a concept whose `stale_after` is an ISO 8601 datetime with an explicit
   UTC offset (`Z` or `±HH:MM`), quoted or as an unquoted YAML timestamp, or a
@@ -62,7 +62,7 @@ When OKF 0.2 metadata is validated, okf-schema SHALL enforce provenance, verific
 - THEN it is stale (W11, `stale: true`) once the current UTC instant, or for a
   bare date the current calendar day, has reached that value
 
-### Scenario: Report an unusable `stale_after`
+### Scenario S3: Report an unusable `stale_after`
 
 - GIVEN a concept whose `stale_after` is present but is not a bare ISO date or
   a datetime with an explicit UTC offset, such as a typo, a datetime without an
@@ -71,7 +71,7 @@ When OKF 0.2 metadata is validated, okf-schema SHALL enforce provenance, verific
 - THEN the result contains warning W16 and the concept is not reported stale,
   so the disabled staleness check is visible rather than silent
 
-### Scenario: Report inconsistent governed metadata
+### Scenario S4: Report inconsistent governed metadata
 
 - GIVEN invalid provenance, verification, lifecycle, or resource relationships
 - WHEN OKF 0.2 validation runs

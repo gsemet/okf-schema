@@ -53,14 +53,14 @@ default_owner_email: gaetan@xeberon.net
 
 The requirements tool SHALL track declared software transitions and stakeholder acceptance paths using validated scenario-specific markers and report their coverage.
 
-### Scenario: Scaffold scenario-aware requirements
+### Scenario S1: Scaffold scenario-aware requirements
 
 - GIVEN the acceptance-path coverage mode in a requirements bundle
 - WHEN a requirement is created
 - THEN its frontmatter declares stable scenarios corresponding to its template
   headings, and the schemas accept declared scenarios and acceptance fields.
 
-### Scenario: Validate and trace scenario markers
+### Scenario S2: Validate and trace scenario markers
 
 - GIVEN requirements and configured source and test markers
 - WHEN validation and tracing run
@@ -68,7 +68,7 @@ The requirements tool SHALL track declared software transitions and stakeholder 
   produce findings without counting as evidence, and missing stakeholder paths
   or acceptance evidence are reported as advisory warnings.
 
-### Scenario: Generate scenario coverage and reports
+### Scenario S3: Generate scenario coverage and reports
 
 - GIVEN a valid scenario-aware bundle with tests and acceptance markers
 - WHEN coverage and reports are generated
@@ -76,7 +76,7 @@ The requirements tool SHALL track declared software transitions and stakeholder 
   testing and acceptance separately, and the JSON and Markdown reports expose
   path counts and missing transitions without inventing evidence.
 
-### Scenario: Preserve existing modes and protect retirement
+### Scenario S4: Preserve existing modes and protect retirement
 
 - GIVEN an older coverage mode or a draft requirement named by a marker
 - WHEN coverage is computed or retirement is requested

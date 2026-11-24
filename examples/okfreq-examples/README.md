@@ -20,8 +20,10 @@ Rust CSV row formatter.
 The bundle uses `linked-swrs-and-acceptance-paths`. Its stakeholder path is
 exporting selected rows for offline review. SwRS tests use `@tests_req ...#S<n>`
 for their transitions; the in-process export test also names the StRS path.
-The acceptance test uses `@accepts_req StRS-CORE-001#S1` and runs the export in
-a separate process, then reads the CSV from disk as a user would.
+The fast acceptance test uses `@accepts_req StRS-CORE-001#S1` and runs the export
+in a separate process, then reads the CSV from disk as a user would. The same
+file outlines a slower acceptance test for that path as commented-out code. It
+is not implemented or run, and its nested marker does not count as evidence.
 
 Here, a software requirement (`SwRS`) is simply a promise about observable
 software behavior. `SwRS-CORE-001` says that the service writes CSV output, and

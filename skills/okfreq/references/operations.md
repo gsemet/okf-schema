@@ -120,7 +120,10 @@ scopes:
   first line number. In these modes acceptance markers do not count for coverage,
   but they block retirement of a referenced draft. Marker keywords must be distinct.
 - In `linked-swrs-and-acceptance-paths`, declare `scenarios:` as `id` / `title`
-  mappings, with stable IDs such as `S1` that are never reused. Each `@tests_req`
+  mappings, with stable IDs such as `S1` that are never reused. Each body
+  heading should repeat the matching ID and title, e.g.
+  `### Scenario S1: Export selected rows` or `#### Path S1: Export selected rows`.
+  This is guidance, not validation. Each `@tests_req`
   or `@accepts_req` targeting a declared requirement must carry a declared
   `#S<n>`; without scenarios use a fragmentless marker. Acceptance is StRS-only.
   Correct missing or unknown fragments instead of inventing test evidence.

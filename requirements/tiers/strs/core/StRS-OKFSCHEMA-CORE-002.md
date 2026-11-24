@@ -40,17 +40,17 @@ The okf-schema capability SHALL enable maintainers to author, normalize, navigat
 
 ### Main paths
 
-#### Path 1: Create a bundle and author a concept
+#### Path S1: Create a bundle and author a concept
 
 1. The maintainer initializes a bundle and creates a concept.
 2. The concept is present with its authored content and identity.
 
-#### Path 2: Normalize and index a bundle
+#### Path S2: Normalize and index a bundle
 
 1. The maintainer formats and indexes existing knowledge.
 2. Generated navigation is current and authored content remains intact.
 
-#### Path 3: Inspect bundle knowledge read-only
+#### Path S3: Inspect bundle knowledge read-only
 
 1. The maintainer inspects or searches the bundle.
 2. The CLI returns matching knowledge without modifying the bundle.

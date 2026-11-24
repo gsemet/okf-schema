@@ -1662,10 +1662,18 @@ def create_requirement(
         if level == "StRS":
             body = body.replace(
                 f"{description}\n\n",
-                f"{description}\n\n### Main paths\n\n#### Path 1: <main path title>\n\n"
+                f"{description}\n\n### Main paths\n\n#### Path S1: <main path title>\n\n"
                 "1. <first step the stakeholder observes>\n"
                 "2. <next step, up to the observable outcome>\n\n",
                 1,
+            )
+        else:
+            body = body.replace(
+                "### Scenario: <nominal behavior>", "### Scenario S1: <nominal behavior>"
+            )
+            body = body.replace(
+                "### Scenario: <boundary or failure behavior>",
+                "### Scenario S2: <boundary or failure behavior>",
             )
         data["scenarios"] = [
             {"id": f"S{index}", "title": heading}
@@ -2025,7 +2033,7 @@ def _scenario_headings(text: str) -> list[tuple[str, str]]:
         if level <= 3:
             in_paths = level == 3 and title == "Main paths"
         if (in_paths and level > 3) or (level == 3 and title.startswith("Scenario")):
-            scenario_title = re.sub(r"^(?:Path\s+\d+|Scenario):\s*", "", title)
+            scenario_title = re.sub(r"^(?:Path\s+(?:S)?\d+|Scenario(?:\s+S\d+)?):\s*", "", title)
             headings.append((line.strip(), scenario_title))
     return headings
 
@@ -2099,14 +2107,25 @@ def _scenario_analysis(
             continue
         if "scenarios" not in data:
             headings = _scenario_headings(text)
-            titles = [title for _, title in headings] or ["<main path title>"]
-            block = dump_yaml(
-                {
-                    "scenarios": [
-                        {"id": f"S{index}", "title": title} for index, title in enumerate(titles, 1)
-                    ]
-                }
-            ).rstrip()
+            declared_ids = [
+                match.group(1)
+                if (match := re.match(r"^#{3,6}\s+(?:Path|Scenario)\s+(S[1-9][0-9]*):", heading))
+                else None
+                for heading, _ in headings
+            ]
+            reserved = {scenario_id for scenario_id in declared_ids if scenario_id}
+            used: set[str] = set()
+            suggestions: list[dict[str, str]] = []
+            for index, (_, title) in enumerate(headings or [("", "<main path title>")]):
+                scenario_id = declared_ids[index] if headings else None
+                if scenario_id is None or scenario_id in used:
+                    number = 1
+                    while f"S{number}" in reserved or f"S{number}" in used:
+                        number += 1
+                    scenario_id = f"S{number}"
+                used.add(scenario_id)
+                suggestions.append({"id": scenario_id, "title": title})
+            block = dump_yaml({"scenarios": suggestions}).rstrip()
             quoted = ", ".join(f'"{heading}"' for heading, _ in headings) or "none found"
             findings.append(
                 f"W003 {file}: {identifier} declares no scenarios. Headings: {quoted}.\n"

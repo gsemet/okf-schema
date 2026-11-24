@@ -141,8 +141,11 @@ scenarios:
     title: Export an empty selection
 ```
 
-Declare them from `### Main paths` / `#### Path <n>:` or `### Scenario:`
-headings. For an approved requirement preserve the body and follow the
+Use the same ID and title in each body heading, for example
+`#### Path S1: Export selected rows` or `### Scenario S1: Export selected rows`.
+Keep them aligned when editing, and do not renumber stable IDs after a deletion
+or reorder. This is guidance, not a validation rule; legacy headings remain
+supported. For an approved requirement preserve the body and follow the
 approval exception above. See [Acceptance paths and scenario markers](okfreq-acceptance-paths.md)
 for marker rules and coverage.
 
@@ -180,7 +183,7 @@ scenarios:
 
 ### Main paths
 
-#### Path 1: Export selected rows
+#### Path S1: Export selected rows
 
 - <steps leading to the stakeholder outcome>
 ```
@@ -200,13 +203,13 @@ scenarios:
 
 <observable, bounded software SHALL response>
 
-### Scenario: <nominal behavior>
+### Scenario S1: <nominal behavior>
 
 - GIVEN <precondition and relevant inputs>
 - WHEN <trigger or action>
 - THEN <single observable, verifiable outcome>
 
-### Scenario: <boundary or failure behavior>
+### Scenario S2: <boundary or failure behavior>
 
 - GIVEN <boundary precondition or failure>
 - WHEN <trigger or action>
