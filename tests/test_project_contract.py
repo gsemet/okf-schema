@@ -27,7 +27,20 @@ def test_live_requirements_preserve_complete_real_evidence() -> None:
     stakeholder = result["stakeholder_test_coverage"]
     assert stakeholder["mode"] == "linked-swrs-and-acceptance-paths"
     assert stakeholder["covered"] == stakeholder["requirements"]
-    assert stakeholder["paths"]["accepted"] == stakeholder["paths"]["total"] > 0
+    # StRS-OKFSCHEMA-OKFKB-001 is covered through its justified acceptance waiver: its
+    # consolidation path stays unaccepted, and the waiver never fills the counters.
+    assert stakeholder["paths"]["accepted"] == stakeholder["paths"]["total"] - 1 > 0
+    waived = {
+        record["id"]: record["stakeholder_test_coverage"]
+        for record in result["requirements"]
+        if "acceptance_exemption" in record.get("stakeholder_test_coverage", {})
+    }
+    assert list(waived) == ["StRS-OKFSCHEMA-OKFKB-001"]
+    kb = waived["StRS-OKFSCHEMA-OKFKB-001"]
+    assert kb["status"] == "covered"
+    assert kb["accepted"] is False
+    assert kb["paths"]["accepted"] == kb["paths"]["total"] - 1
+    assert {"id": "SwRS-OKFSCHEMA-OKFKB-005", "status": "exempt"} in kb["linked_swrs"]
 
 
 def test_repository_guideline_is_the_installed_shipped_text() -> None:

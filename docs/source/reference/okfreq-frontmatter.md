@@ -27,6 +27,8 @@ notes. Unknown properties are allowed and must be preserved.
 | `verification_method` | no | authored | Controlled method used to verify the requirement, for example `test`, `analysis`, `inspection`, or `demonstration`. |
 | `verification_criteria` | no | authored | Optional pass criteria that make verification concrete. |
 | `user_need` | StRS | authored | Stakeholder outcome preserved separately from the normative StRS behavior. `okfreq new strs` leaves an explicit placeholder when `--user-need` is omitted. |
+| `acceptance_exemption` | StRS | authored | In mode `linked-swrs-and-acceptance-paths`, `true` waives the acceptance condition of the whole StRS's coverage, when no automated test can walk its paths. Never marks a path accepted; see {ref}`okfreq-acceptance-waivers`. |
+| `acceptance_exemption_reason` | StRS | authored | Non-empty justification, required when `acceptance_exemption` is `true`: why the StRS cannot be acceptance-tested. |
 | `annotation_exemption` | SwRS | authored | Whether implementation and test marker coverage is intentionally exempted. New SwRS documents default to `false`. |
 | `exemption_reason` | SwRS | authored | Conditional justification required when `annotation_exemption` is `true`. Explain why repository source/test coverage is not applicable and point to external justification or verification documents when available. |
 | `external_id` | no | authored | Identifier of the corresponding requirement in an external system. It is not a local file reference. |
@@ -273,6 +275,12 @@ justification. The reason does not make test execution available to the report;
 it records why repository marker coverage is intentionally excluded. See the
 **Generated and externally maintained fields** section above for the distinction
 between authored exemption metadata and generated coverage.
+
+In mode `linked-swrs-and-acceptance-paths`, an exempt SwRS with a non-empty
+reason no longer keeps its StRS from being covered, and the StRS report lists it as
+`exempt` in `linked_swrs`. It does not waive its StRS's acceptance: that is the
+StRS's own `acceptance_exemption`, described in {ref}`okfreq-acceptance-waivers`
+with {ref}`okfreq-waiver-rationale`.
 
 ## Supersession and related requirements
 

@@ -3150,3 +3150,66 @@ def test_retire_refuses_a_draft_named_by_an_acceptance_marker(tmp_path: Path, mo
 
     assert strs_file.exists()
     assert (root / "config.yml").read_text(encoding="utf-8") == config_before
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S7
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S9
+def test_justified_acceptance_waiver_lifts_only_the_acceptance_condition(tmp_path: Path) -> None:
+    from jsonschema import Draft202012Validator
+
+    from okf_schema.okfreq.core import report_schema
+
+    root = acceptance_bundle(tmp_path)
+    strs_file = new_strs(root, "Consolidate", "S1", "S2")
+    strs = strs_file.stem
+    unpathed = new_strs(root, "Review")
+    tested = new_swrs(root, "Propose", strs).stem
+    untested = new_swrs(root, "Confirm", strs)
+    new_swrs(root, "Show", unpathed.stem)
+    write_test(tmp_path, "test_flow.py", ("@tests_req", tested), ("@tests_req", f"{strs}#S1"))
+    assert any(strs in finding for finding in codes(root, "W004"))
+
+    edit_frontmatter(strs_file, acceptance_exemption=True, acceptance_exemption_reason="  ")
+    expected = (
+        f"{strs} acceptance_exemption requires a non-empty acceptance_exemption_reason "
+        "explaining why it cannot be acceptance-tested"
+    )
+    assert any(finding.endswith(expected) for finding in errors_of(root))
+    assert any(strs in finding for finding in codes(root, "W004"))
+
+    reason = "An interactive agent workflow under human review."
+    edit_frontmatter(strs_file, acceptance_exemption_reason=reason)
+    edit_frontmatter(unpathed, acceptance_exemption=True, acceptance_exemption_reason=reason)
+    assert errors_of(root) == []
+    assert not any(strs in finding for finding in codes(root, "W004"))
+    assert [finding for finding in codes(root, "W003") if unpathed.stem in finding]
+
+    def coverage() -> dict[str, object]:
+        records = {record["id"]: record for record in report(root)["requirements"]}
+        return records[strs]["stakeholder_test_coverage"]
+
+    waived = coverage()
+    assert waived["status"] == "missing"
+    assert waived["accepted"] is False
+    assert waived["paths"] == {"total": 2, "tested": 1, "accepted": 0}
+    assert waived["acceptance_exemption"] == {"reason": reason}
+    assert {"id": untested.stem, "status": "missing"} in waived["linked_swrs"]
+
+    edit_frontmatter(untested, annotation_exemption=True, exemption_reason=reason)
+    waived = coverage()
+    assert waived["status"] == "covered"
+    assert waived["accepted"] is False
+    assert {"id": untested.stem, "status": "exempt"} in waived["linked_swrs"]
+    payload = report(root)
+    assert list(Draft202012Validator(report_schema()).iter_errors(payload)) == []
+    destination = tmp_path / "report.md"
+    write_markdown_report(root, destination)
+    assert f"| {strs} | Consolidate | ✅ covered | 1/2 | ⚪ exempt |" in destination.read_text(
+        encoding="utf-8"
+    )
+
+    set_mode(root, "linked-swrs-and-validation-test")
+    old = coverage()
+    assert old["status"] == "missing"
+    assert "acceptance_exemption" not in old
+    assert {"id": untested.stem, "status": "missing"} in old["linked_swrs"]

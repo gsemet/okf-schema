@@ -19,11 +19,17 @@
 - Added `#S<n>` fragments to every test marker, replacing file-level markers by markers
   on the tests that exercise each scenario, and added tests for the scenarios that had
   none.
-- Added 13 acceptance tests, one per main path, in `tests/test_acceptance_core.py`,
+- Added 12 acceptance tests, one per main path, in `tests/test_acceptance_core.py`,
   `tests/test_acceptance_okfkb.py` and `tests/test_acceptance_okfreq.py`; they run the
   installed console scripts of the built wheel.
+- Waived acceptance on [StRS-OKFSCHEMA-OKFKB-001](strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md)
+  (`acceptance_exemption`, whole StRS, owner's decision) and exempted
+  [SwRS-OKFSCHEMA-OKFKB-005](swrs/okfkb/SwRS-OKFSCHEMA-OKFKB-005.md) from annotations:
+  consolidation is an interactive agent skill under human review, which no automated test
+  can execute; reading the skill text proves no consolidation. Its path 3 stays
+  unaccepted; only its deterministic steps are tested.
 - Verified: `okfreq validate requirements --prose --check-links --project-root .`
-  reports no error, no `W003` and no `W004`; all 5 StRS are covered and all 13 paths
+  reports no error, no `W003` and no `W004`; all 5 StRS are covered, 12 of the 13 paths
   accepted.
 
 ## 2026-10-30

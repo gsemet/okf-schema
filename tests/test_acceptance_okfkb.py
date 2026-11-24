@@ -100,15 +100,15 @@ def test_update_a_knowledge_bases_indexes_and_lint(installed_wheel, tmp_path: Pa
     )
 
 
-# @accepts_req StRS-OKFSCHEMA-OKFKB-001#S3
-def test_propose_a_consolidation_for_human_review(installed_wheel, tmp_path: Path) -> None:
-    """The distill skill proposes before writing; a confirmed Concept keeps its evidence links."""
+# StRS-OKFSCHEMA-OKFKB-001 carries an acceptance waiver: the consolidation itself is an
+# interactive agent skill under human review, which no automated test can execute. This test
+# checks only the deterministic steps around a consolidation a human already confirmed.
+# @tests_req StRS-OKFSCHEMA-OKFKB-001#S3
+def test_confirmed_consolidation_links_back_to_unchanged_findings(
+    installed_wheel, tmp_path: Path
+) -> None:
+    """A confirmed Structure names its Findings, which link back with their bodies unchanged."""
     installed_wheel.run("okfkb", "init", "knowledge", cwd=tmp_path)
-    installed_wheel.run("okfkb", "install-skills", "skills", cwd=tmp_path)
-    distill = (tmp_path / "skills" / "okfkb-distill" / "SKILL.md").read_text(encoding="utf-8")
-    assert "It proposes changes; a human confirms" in distill
-    assert "Ask before every write" in distill
-    assert "Never edit or delete a Finding body" in distill
 
     first = _record(installed_wheel, tmp_path, "PLL lock time", "--tags", "pll")
     second = _record(installed_wheel, tmp_path, "PLL cold wait", "--tags", "pll")

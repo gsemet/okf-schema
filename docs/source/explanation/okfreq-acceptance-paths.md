@@ -68,6 +68,48 @@ how a test runs: it reads markers in the scopes' `test_dirs`, and nothing else.
 `W004` says only that a live StRS has no acceptance test at all; it does not check
 which pipeline runs it.
 
+(okfreq-waiver-rationale)=
+
+## When an acceptance waiver is appropriate
+
+Some stakeholder outcomes cannot be walked by an automated test at all. The typical
+case is an interactive agent workflow under human review: an agent skill gathers
+evidence, proposes a decision, and writes only after a human confirms. No console
+command performs that decision, so no test can run it, and a test that reads the
+skill's text, or that writes the confirmed result itself, proves the instructions
+exist, not that the workflow works. Marking such a test `@accepts_req` would be a
+false claim of acceptance.
+
+For that case, the requirement owner can record an **acceptance waiver** on the
+whole StRS: `acceptance_exemption: true` with an `acceptance_exemption_reason` that
+says why its paths cannot be acceptance-tested. It is a policy decision, written in
+the requirement and reviewed like any change to it:
+
+- **Use it** when no automated test can execute the stakeholder outcome, because it
+  depends on human judgment, an agent's interactive session, or an environment the
+  project cannot automate. Agree it with the requirement's owner, state the reason
+  in the requirement, keep the manual evidence the project's process asks for, and
+  remove the waiver as soon as a real acceptance test becomes possible.
+- **Do not use it** because a test is missing, expensive or inconvenient. Write the
+  test; when it is costly, run it in the main-branch pipeline and keep a cheaper
+  `@tests_req` test on every pull or merge request, as in
+  {ref}`okfreq-execution-cost`.
+
+The waiver covers the whole StRS, not a single path: the decision is the owner's,
+about the requirement, and the paths that can be walked keep their honest markers.
+It changes the coverage decision only, never the facts. Unaccepted paths stay
+unaccepted, `Accepted` reads `⚪ exempt` instead of a fraction that would look
+complete, the path counters still count only real markers, `W003` still asks for
+the paths, and `W004` is the only warning it silences. okfreq records the reason
+and does not check that an owner approved it.
+
+The waiver is not the SwRS `annotation_exemption`. That one exempts a software
+requirement from its own source and test markers; a StRS waiver does not exempt its
+linked SwRS, and an exempt SwRS does not waive its StRS's acceptance. When the
+interactive workflow is also the behavior of a SwRS, that SwRS needs its own
+`annotation_exemption` and reason. See {ref}`okfreq-acceptance-waivers` for the
+fields and their effects.
+
 ## Why a fragment
 
 A fraction needs a numerator. A marker that says "this test is about StRS-X"

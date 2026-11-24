@@ -173,7 +173,10 @@ formats instead of applying one generic requirement template:
   `#S<n>` of the scenario its test really exercises, and mark
   `@accepts_req <StRS-ID>#S<n>` the acceptance test of each StRS path, chosen by
   what the test does and its execution cost (the test closest to the final
-  product). Never invent a test or a marker to fill a counter.
+  product). Never invent a test or a marker to fill a counter. A StRS that no
+  automated test can walk keeps its paths unaccepted; propose to its owner an
+  `acceptance_exemption: true` with an `acceptance_exemption_reason` rather than a
+  marker on a test that does not walk the path.
 - **SwRS — software behavior:** provide one observable, bounded `SHALL`
   response as `--description` and at least one valid StRS parent with
   `--derives-from`. Complete nominal and boundary/failure GIVEN-WHEN-THEN

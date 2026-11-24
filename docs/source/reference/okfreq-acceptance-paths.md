@@ -452,9 +452,49 @@ configured keywords.
 | `W003` | A live StRS (any lifecycle but `deprecated` and `superseded`) declares no `scenarios:`. The message quotes the headings under `### Main paths` and every `### Scenario…` heading, and gives the `scenarios:` block to paste | Paste the block into the frontmatter, fix the titles, and leave the body as it is. On an approved StRS, log the change in `tiers/log.md`; see {ref}`okfreq-declared-scenarios`. |
 | `W004` | A live StRS has no counting `@accepts_req` marker at all | Mark the test closest to the final product that walks each main path with `@accepts_req StRS-X#S<n>`; see {ref}`okfreq-execution-cost`. |
 
-`W004` disappears as soon as one `@accepts_req` counts, even when only one path of
+`W004` disappears as soon as one `@accepts_req` counts, or when the StRS carries a
+valid acceptance waiver ({ref}`okfreq-acceptance-waivers`), even when only one path of
 three is accepted: the report's `Accepted` column shows the rest. A SwRS that has
 `### Scenario` headings and no `scenarios:` gets no finding.
+
+(okfreq-acceptance-waivers)=
+
+### Acceptance waivers
+
+In the new mode, a StRS whose paths no automated test can walk can carry an
+owner-approved waiver, for the **whole StRS**, in its authored frontmatter:
+
+```yaml
+acceptance_exemption: true
+acceptance_exemption_reason: >-
+  Consolidation is an interactive agent skill requiring human review, not a
+  deterministic console command that an automated acceptance test can execute.
+```
+
+| | StRS acceptance waiver | SwRS annotation exemption |
+|---|---|---|
+| Fields | `acceptance_exemption: true`, `acceptance_exemption_reason` | `annotation_exemption: true`, `exemption_reason` |
+| Lifts | the acceptance condition of the StRS coverage, in the new mode only | the source and test marker coverage of the SwRS |
+| Warnings | silences `W004`; `W003` is still emitted | none |
+| Report | `status` may be `covered` while `accepted` is `false`; `acceptance_exemption.reason`; `Accepted` column `⚪ exempt` | listed in `exemptions`; in the new mode, `exempt` in its StRS's `linked_swrs` |
+| Counters | `paths.accepted`, `paths.tested` and the files count only real markers | not counted as tested |
+
+- `acceptance_exemption` is an optional boolean. When it is `true`,
+  `acceptance_exemption_reason` is required by the StRS schema `okfreq init` writes,
+  and `okfreq validate` reports, in the new mode, a missing or blank reason:
+  `<file>: <ID> acceptance_exemption requires a non-empty acceptance_exemption_reason
+  explaining why it cannot be acceptance-tested`. A waiver without a valid reason has
+  no effect.
+- Both fields are authored: `update-coverage` never writes nor removes them.
+- The StRS is covered when it has linked SwRS, each test-covered or exempt with a
+  non-empty `exemption_reason`, and, instead of every path being accepted, when it
+  carries a valid waiver. Neither exemption propagates to the other tier.
+- Markers still count and are checked as usual: an `@accepts_req` on a path still
+  counts, a missing or unknown fragment is still an error.
+- In the old modes both StRS fields are ignored and an exempt SwRS keeps blocking
+  its StRS, as before.
+- okfreq neither collects nor checks the owner's approval. Remove the waiver when
+  its reason no longer holds. See {ref}`okfreq-waiver-rationale` for when to use it.
 
 ### Update a bundle schema written before 0.18.0
 
@@ -506,6 +546,8 @@ below appear in the new mode only.
 | `….tested`, `….accepted` (StRS) | Booleans: every declared path tested, or accepted; for a StRS without paths, at least one counting fragmentless marker of that verb. |
 | `….tests` (StRS) | Files of the counting `@tests_req` markers on the StRS (its `tested_in_files`). |
 | `….acceptance_tests` (StRS) | Files of the counting `@accepts_req` markers (its `accepted_in_files`). |
+| `….acceptance_exemption` (StRS) | `{reason}`, only when the StRS carries a valid acceptance waiver; `accepted` and `paths` still count real markers only. |
+| `….linked_swrs[].status` (StRS) | `covered`, `missing`, or `exempt` for a linked SwRS with a valid `annotation_exemption`. |
 | `….validation_tests` (StRS) | Kept for compatibility: the same files and status as `acceptance_tests`. |
 | `requirements[].transitions` (SwRS that declares `scenarios:`) | `tested` and `missing` transition ids. |
 
@@ -530,7 +572,8 @@ with its first line) in every mode.
 
 The Markdown summary gains the line `- StRS paths: tested <t>/<n>, accepted
 <a>/<n>`, the stakeholder table the `Tested` and `Accepted` columns (`2/3`, `✅ 3/3`
-when complete, `✅ no paths` or `❌ no paths` for a StRS without `scenarios:`), and
+when complete, `✅ no paths` or `❌ no paths` for a StRS without `scenarios:`, `⚪ exempt`
+for an `Accepted` cell under an acceptance waiver), and
 the software table a `Missing transitions` column (`S2, S3`, or `—`). In the old
 modes the Markdown report is unchanged.
 

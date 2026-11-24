@@ -417,7 +417,8 @@
               "status": {
                 "enum": [
                   "covered",
-                  "missing"
+                  "missing",
+                  "exempt"
                 ]
               }
             }
@@ -507,6 +508,18 @@
             "count": {
               "type": "integer",
               "minimum": 0
+            }
+          }
+        },
+        "acceptance_exemption": {
+          "type": "object",
+          "required": [
+            "reason"
+          ],
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1
             }
           }
         }

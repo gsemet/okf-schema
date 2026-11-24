@@ -14,8 +14,10 @@ origin: native
 tier: SwRS
 derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
-annotation_exemption: false
-exemption_reason:
+annotation_exemption: true
+exemption_reason: >-
+  This interactive agent workflow requires human review; no deterministic
+  automated test can execute its consolidation and promotion decisions.
 scenarios:
 - id: S1
   title: Propose a supported consolidation
@@ -24,12 +26,12 @@ scenarios:
 derived_by: []
 implemented_in_files:
 - skills/okfkb-distill/SKILL.md
-tested_in_files:
-- tests/test_skill_resources.py
+tested_in_files: []
 owner: okf-schema maintainers
-verification_method: package tests and instruction inspection
-verification_criteria: The distill skill is shipped unchanged, and instruction
-  inspection confirms evidence preservation and explicit promotion confirmation.
+verification_method: human review of the interactive workflow
+verification_criteria: A human reviewing an okfkb-distill session confirms that
+  evidence is preserved and that every promotion waits for explicit
+  confirmation.
 agent_skill_files:
 - skills/okfkb-distill/SKILL.md
 default_owner_email: gaetan@xeberon.net

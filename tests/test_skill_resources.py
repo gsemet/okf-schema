@@ -87,8 +87,6 @@ def _build_wheel(repository_root: Path, wheel_directory: Path) -> Path:
     return next(wheel_directory.glob("*.whl"))
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-005#S1
-# @tests_req SwRS-OKFSCHEMA-OKFKB-005#S2
 def test_distill_skill_keeps_evidence_and_asks_before_promoting_or_marking() -> None:
     """The packaged distill workflow proposes, links evidence and waits for confirmation."""
     text = " ".join(

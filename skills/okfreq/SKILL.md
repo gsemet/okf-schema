@@ -115,7 +115,11 @@ satisfied. It is not an issue title, design choice, code comment, or task.
    as tested. By execution cost: when the test closest to the final product is
    expensive, mark it `@accepts_req` and a cheaper test of the same path
    `@tests_req`; when tests are cheap, put `@accepts_req` on the tests that walk
-   each path.
+   each path. When no automated test can walk a whole StRS (an interactive agent
+   workflow under human review), its owner may record `acceptance_exemption: true`
+   with an `acceptance_exemption_reason`: the StRS is then covered without being
+   accepted. Never propose it for a test that is only missing or costly, and
+   never mark a test that reads a skill's text as the acceptance of its workflow.
 - **Markers are links, not proof.** A test marker says where verification lives,
   not whether the test ran or passed. Run the project's real test suite.
 - **Coverage and reports are generated views.** Keep implementation coverage,

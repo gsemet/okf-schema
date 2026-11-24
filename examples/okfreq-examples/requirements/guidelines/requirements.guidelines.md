@@ -189,6 +189,13 @@ Requirement documents live only under `tiers/`.
   and run it on every pull or merge request. When the tests are cheap, put
   `@accepts_req` directly on the tests that walk each path. Never invent a test
   or a marker to fill a counter.
+- When no automated test can walk a whole StRS (for example an interactive agent
+  workflow decided under human review), its owner may record
+  `acceptance_exemption: true` with a non-empty `acceptance_exemption_reason`. The
+  StRS can then be covered without being accepted: unaccepted paths stay
+  unaccepted, its linked SwRS still need tests or their own `annotation_exemption`,
+  and `W003` still applies. Never use it for a test that is missing, costly or
+  inconvenient, and remove it when a real acceptance test becomes possible.
 - Markers must start a line after optional indentation and a supported comment
   opener (`//`, `#`, `/*`, `*` or `<!--`). A marker after executable code on
   the same line is not recognized. In JSDoc, use a separate ` * ` line rather

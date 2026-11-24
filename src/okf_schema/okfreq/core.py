@@ -767,6 +767,19 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                 f"in mode {ACCEPTANCE_PATHS_MODE}.",
                 "@accepts_req",
             )
+            properties["acceptance_exemption"] = {
+                "type": "boolean",
+                "description": (
+                    f"Authored. In mode {ACCEPTANCE_PATHS_MODE}, true lifts the acceptance "
+                    "condition of this StRS coverage: its paths cannot be acceptance-tested."
+                ),
+            }
+            properties["acceptance_exemption_reason"] = {
+                "type": "string",
+                "minLength": 1,
+                "description": "Authored. Why this stakeholder requirement cannot be "
+                "acceptance-tested.",
+            }
         else:
             properties["annotation_exemption"] = {
                 "type": "boolean",
@@ -780,6 +793,21 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                 "Generated test paths.", "@tests_req"
             )
             properties["accepted_in_files"] = _swrs_accepted_in_files_schema()
+        profile: dict[str, Any] = {
+            "type": "object",
+            "properties": properties,
+            "required": required,
+        }
+        if tier == "StRS":
+            profile["allOf"] = [
+                {
+                    "if": {
+                        "required": ["acceptance_exemption"],
+                        "properties": {"acceptance_exemption": {"const": True}},
+                    },
+                    "then": {"required": ["acceptance_exemption_reason"]},
+                }
+            ]
         schema = {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": f"{level}.schema.yaml",
@@ -792,10 +820,7 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                 if tier == "StRS"
                 else "SwRS defines observable software behavior and its traceability."
             ),
-            "allOf": [
-                {"$ref": "base.schema.yaml"},
-                {"type": "object", "properties": properties, "required": required},
-            ],
+            "allOf": [{"$ref": "base.schema.yaml"}, profile],
         }
         return dump_yaml(schema) + "\n"
 
@@ -2221,6 +2246,33 @@ def is_info_finding(finding: str) -> bool:
     return re.match(r"I\d+ ", finding) is not None
 
 
+def _acceptance_exempt(data: Mapping[str, Any]) -> bool:
+    """Return whether a StRS carries a justified acceptance waiver.
+
+    Examples:
+        >>> _acceptance_exempt({"acceptance_exemption": True, "acceptance_exemption_reason": "x"})
+        True
+        >>> _acceptance_exempt({"acceptance_exemption": True, "acceptance_exemption_reason": " "})
+        False
+    """
+    reason = data.get("acceptance_exemption_reason")
+    return (
+        data.get("acceptance_exemption") is True
+        and isinstance(reason, str)
+        and bool(reason.strip())
+    )
+
+
+def _annotation_exempt(data: Mapping[str, Any]) -> bool:
+    """Return whether a SwRS carries a justified annotation exemption."""
+    reason = data.get("exemption_reason")
+    return (
+        data.get("annotation_exemption") is True
+        and isinstance(reason, str)
+        and bool(reason.strip())
+    )
+
+
 def _declared_scenarios(data: Mapping[str, Any]) -> list[str] | None:
     """Return the valid declared scenario ids, or ``None`` when none are declared.
 
@@ -2516,11 +2568,20 @@ def _acceptance_paths_findings(
                     for marker in scan["scenario_markers"]
                     if marker["marker"] == "accepts" and marker["id"] == identifier
                 )
+        if (
+            entry["type"] == "StRS"
+            and data.get("acceptance_exemption") is True
+            and not _acceptance_exempt(data)
+        ):
+            findings.append(
+                f"{file}: {identifier} acceptance_exemption requires a non-empty "
+                "acceptance_exemption_reason explaining why it cannot be acceptance-tested"
+            )
         live = data.get(lifecycle_field(config)) not in _LIVE_EXCLUDED_LIFECYCLES
         if entry["type"] == "StRS" and live:
             if entry["declared"] is None:
                 findings.append(_w003(file, identifier, text))
-            if not entry["accepted"]:
+            if not entry["accepted"] and not _acceptance_exempt(data):
                 findings.append(
                     _w004(file, identifier, str(keywords["accepts"]), str(keywords["tests"]))
                 )
@@ -2949,15 +3010,34 @@ def report(root: Path) -> dict[str, Any]:
             for child in graph_result["derived_by"].get(identifier, [])
             if child in requirements and requirements[child][1].get("type") == "SwRS"
         )
+        exempt_children = {
+            child
+            for child in linked_swrs
+            if acceptance_paths and _annotation_exempt(requirements[child][1])
+        }
         linked_swrs_report = [
-            {"id": child, "status": "covered" if child in tested else "missing"}
+            {
+                "id": child,
+                "status": (
+                    "exempt"
+                    if child in exempt_children
+                    else "covered"
+                    if child in tested
+                    else "missing"
+                ),
+            }
             for child in linked_swrs
         ]
         validation_files = trace["validation_tests"].get(identifier, [])
-        linked_swrs_covered = bool(linked_swrs) and all(child in tested for child in linked_swrs)
+        linked_swrs_covered = bool(linked_swrs) and all(
+            child in tested or child in exempt_children for child in linked_swrs
+        )
         validation_defined = bool(validation_files)
+        waived = acceptance_paths and _acceptance_exempt(data)
         if acceptance_paths:
-            covered = linked_swrs_covered and scenario_coverage[identifier]["is_accepted"]
+            covered = linked_swrs_covered and (
+                scenario_coverage[identifier]["is_accepted"] or waived
+            )
         else:
             covered = linked_swrs_covered and (
                 strs_test_coverage_mode == "linked-swrs" or validation_defined
@@ -2987,6 +3067,10 @@ def report(root: Path) -> dict[str, Any]:
                     "acceptance_tests": dict(stakeholder_coverage[identifier]["validation_tests"]),
                 }
             )
+            if waived:
+                stakeholder_coverage[identifier]["acceptance_exemption"] = {
+                    "reason": str(data["acceptance_exemption_reason"])
+                }
 
     stakeholder_total = len(stakeholder_coverage)
     stakeholder_covered = sum(
@@ -3400,7 +3484,7 @@ def report_schema() -> dict[str, Any]:
                             "required": ["id", "status"],
                             "properties": {
                                 "id": {"type": "string"},
-                                "status": {"enum": ["covered", "missing"]},
+                                "status": {"enum": ["covered", "missing", "exempt"]},
                             },
                         },
                     },
@@ -3410,6 +3494,11 @@ def report_schema() -> dict[str, Any]:
                     "accepted": {"type": "boolean"},
                     "tests": files_linkage,
                     "acceptance_tests": files_linkage,
+                    "acceptance_exemption": {
+                        "type": "object",
+                        "required": ["reason"],
+                        "properties": {"reason": {"type": "string", "minLength": 1}},
+                    },
                 },
             },
             "paths": {
@@ -3532,7 +3621,12 @@ def write_markdown_report(root: Path, destination: Path) -> None:
         )
         if acceptance_paths:
             coverage = requirement["stakeholder_test_coverage"]
-            row += f" {path_cell(coverage, 'tested')} | {path_cell(coverage, 'accepted')} |"
+            accepted_cell = (
+                "⚪ exempt"
+                if "acceptance_exemption" in coverage
+                else path_cell(coverage, "accepted")
+            )
+            row += f" {path_cell(coverage, 'tested')} | {accepted_cell} |"
         lines.append(row)
     mode = stakeholder_totals["mode"]
     coverage_description = STRS_TEST_COVERAGE_DESCRIPTIONS[mode]

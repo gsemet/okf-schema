@@ -20,6 +20,10 @@ scenarios:
   title: Update a knowledge base's indexes and lint
 - id: S3
   title: Propose a consolidation for human review
+acceptance_exemption: true
+acceptance_exemption_reason: >-
+  Consolidation is an interactive agent skill requiring human review, not a
+  deterministic console command that an automated acceptance test can execute.
 derived_by:
 - SwRS-OKFSCHEMA-OKFKB-001
 - SwRS-OKFSCHEMA-OKFKB-002
@@ -29,6 +33,7 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFKB-006
 default_owner_email: gaetan@xeberon.net
 tested_in_files:
+- tests/test_acceptance_okfkb.py
 - tests/test_integration.py
 accepted_in_files:
 - tests/test_acceptance_okfkb.py

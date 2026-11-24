@@ -43,7 +43,22 @@ allOf:
             show_line_number: true
         description: 'Generated acceptance-test paths: files of @accepts_req markers that
           count, in mode linked-swrs-and-acceptance-paths.'
+      acceptance_exemption:
+        type: boolean
+        description: 'Authored. In mode linked-swrs-and-acceptance-paths, true lifts the
+          acceptance condition of this StRS coverage: its paths cannot be acceptance-tested.'
+      acceptance_exemption_reason:
+        type: string
+        minLength: 1
+        description: Authored. Why this stakeholder requirement cannot be acceptance-tested.
     required: [type, tier, user_need]
+    allOf:
+      - if:
+          required: [acceptance_exemption]
+          properties:
+            acceptance_exemption: {const: true}
+        then:
+          required: [acceptance_exemption_reason]
 examples:
   - type: StRS
     id: StRS-OKFSCHEMA-CORE-001
