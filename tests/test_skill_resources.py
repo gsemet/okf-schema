@@ -353,4 +353,4 @@ def test_shipped_guideline_teaches_acceptance_paths() -> None:
     assert "a marker without fragment counts for the whole requirement" in text
     assert "An edit that only adds `scenarios:` to an approved requirement" in text
     assert "leave `approved_by` and `approved_at` unchanged unless the owner gives a new" in text
-    assert "### Main paths" in text and "#### Path n: <title>" in text
+    assert "### Main paths" in text and "#### Path S<n>: <title>" in text

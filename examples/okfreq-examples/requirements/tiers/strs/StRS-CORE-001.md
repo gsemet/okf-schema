@@ -33,7 +33,7 @@ When export is requested, the reporting capability SHALL provide a portable repo
 
 ### Main paths
 
-#### Path 1: Export selected rows for offline review
+#### Path S1: Export selected rows for offline review
 
 1. The user selects rows and runs the export to a report file.
 2. The user reads the report file offline and finds exactly the selected rows.

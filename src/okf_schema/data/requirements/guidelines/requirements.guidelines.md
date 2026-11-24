@@ -180,6 +180,12 @@ Requirement documents live only under `tiers/`.
   target declares none, a marker without fragment counts for the whole
   requirement. A test that walks several scenarios carries one marker line per
   scenario.
+- In the body, each scenario heading recalls its id and title, for example
+  `#### Path S1: Export selected rows` under `### Main paths` of an StRS or
+  `### Scenario S1: Export selected rows` in an SwRS, so a reader of the body
+  finds the `#S<n>` a marker names. Keep heading and entry in step when editing,
+  and never renumber after a removal or reorder. This is authoring guidance,
+  not a validation rule: headings without id stay readable.
 - Two test verbs: `@tests_req <ID>#S<n>` tests an SwRS transition or an StRS
   main path; `@accepts_req <StRS-ID>#S<n>` is the acceptance test of an StRS main
   path, and never targets an SwRS. An StRS is covered when its linked SwRS are
@@ -242,7 +248,7 @@ declare.
   generated normative behavior, user need, and rationale/constraints sections.
   Do not add SwRS scenarios or verification notes. In the
   `linked-swrs-and-acceptance-paths` mode, list the distinct ways a stakeholder
-  reaches the outcome in a `### Main paths` section, one `#### Path n: <title>`
+  reaches the outcome in a `### Main paths` section, one `#### Path S<n>: <title>`
   heading each with its numbered steps up to the observable outcome, and declare
   them in `scenarios:` (`S1`, `S2`… in order).
 - For an SwRS, pass one observable, bounded `SHALL` response as `--description`
@@ -250,7 +256,7 @@ declare.
   GIVEN-WHEN-THEN scenarios, adding one per refusal or boundary of the same
   behaviour, and the objective verification notes. Do not add an StRS user-need
   or stakeholder-constraints section. In the `linked-swrs-and-acceptance-paths`
-  mode, declare one `scenarios:` entry per `### Scenario:` heading.
+  mode, declare one `scenarios:` entry per `### Scenario S<n>: <title>` heading.
 - Cover nominal behavior and relevant refusal, failure or boundary cases.
   Group equivalent inputs and outcomes in a scenario table. Split unrelated
   behaviors rather than growing an unbounded scenario list in one SwRS.

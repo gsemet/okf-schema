@@ -191,13 +191,13 @@ _SWRS_BODY = """## {title}
 
 {description}
 
-### Scenario: <nominal behavior>
+### Scenario S1: <nominal behavior>
 
 - GIVEN <precondition and relevant inputs>
 - WHEN <trigger or action>
 - THEN <single observable, verifiable outcome>
 
-### Scenario: <boundary or failure behavior>
+### Scenario S2: <boundary or failure behavior>
 
 - GIVEN <boundary precondition or failure>
 - WHEN <trigger or action>
@@ -215,7 +215,7 @@ _SWRS_BODY = """## {title}
 _STRS_MAIN_PATHS = """
 ### Main paths
 
-#### Path 1: <main path title>
+#### Path S1: <main path title>
 
 1. <first step the stakeholder observes>
 2. <next step, up to the observable outcome>
@@ -261,9 +261,9 @@ def ears_body(
 
     Examples:
         >>> body = ears_body("SwRS", "The tool SHALL validate the bundle.")
-        >>> "### Scenario:" in body
+        >>> "### Scenario S1:" in body
         True
-        >>> "#### Path 1:" in ears_body("StRS", "Users SHALL export.", main_paths=True)
+        >>> "#### Path S1:" in ears_body("StRS", "Users SHALL export.", main_paths=True)
         True
     """
     if level.lower().startswith("sw"):
@@ -2336,7 +2336,10 @@ def _scenario_problems(value: Any) -> list[str]:
 
 
 _HEADING = re.compile(r"^(?P<hashes>#{1,6})[ \t]+(?P<text>.+?)[ \t]*$")
-_SCENARIO_TITLE = re.compile(r"^(?:Path[ \t]+[0-9]+|Scenario)[ \t]*:[ \t]*(?P<title>.+)$")
+_SCENARIO_TITLE = re.compile(
+    r"^(?:Path[ \t]+(?P<path>S?[0-9]+)|Scenario(?:[ \t]+(?P<scenario>S[0-9]+))?)"
+    r"[ \t]*:[ \t]*(?P<title>.+)$"
+)
 
 
 def _scenario_headings(text: str) -> list[str]:
@@ -2397,12 +2400,48 @@ def _scenario_title(heading: str) -> str:
     return match.group("title").strip() if match else heading
 
 
+def _heading_scenario_id(heading: str) -> str | None:
+    """Return the ``S<n>`` id a heading recalls, if any.
+
+    Examples:
+        >>> _heading_scenario_id("Path S2: The source is gone")
+        'S2'
+        >>> _heading_scenario_id("Scenario S10: Reject")
+        'S10'
+        >>> _heading_scenario_id("Path 2: The source is gone") is None
+        True
+    """
+    match = _SCENARIO_TITLE.match(heading)
+    if match is None:
+        return None
+    candidate = match.group("path") or match.group("scenario")
+    return candidate if candidate and _SCENARIO_ID.fullmatch(candidate) else None
+
+
 def _proposed_scenarios(text: str) -> list[dict[str, str]]:
-    """Return the ``scenarios:`` entries a body's headings propose, ``S1`` first."""
-    return [
-        {"id": f"S{index}", "title": _scenario_title(heading)}
-        for index, heading in enumerate(_scenario_headings(text), start=1)
-    ]
+    """Return the ``scenarios:`` entries a body's headings propose.
+
+    A heading that recalls its id (``Path S2:``, ``Scenario S2:``) keeps it;
+    other headings take the lowest free ``S<n>``.
+
+    Examples:
+        >>> _proposed_scenarios("### Main paths\\n#### Path S5: Export\\n#### Path 2: Review\\n")
+        [{'id': 'S5', 'title': 'Export'}, {'id': 'S1', 'title': 'Review'}]
+    """
+    headings = _scenario_headings(text)
+    explicit = [_heading_scenario_id(heading) for heading in headings]
+    reserved = {identifier for identifier in explicit if identifier}
+    used: set[str] = set()
+    proposed: list[dict[str, str]] = []
+    for heading, identifier in zip(headings, explicit, strict=True):
+        if identifier is None or identifier in used:
+            number = 1
+            while f"S{number}" in reserved or f"S{number}" in used:
+                number += 1
+            identifier = f"S{number}"
+        used.add(identifier)
+        proposed.append({"id": identifier, "title": _scenario_title(heading)})
+    return proposed
 
 
 def _scenario_coverage(

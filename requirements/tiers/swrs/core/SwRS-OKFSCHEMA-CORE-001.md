@@ -47,19 +47,19 @@ When a user invokes a generic `okf-schema` validation or management command, the
 CLI SHALL apply the configured OKF schemas and bundle rules deterministically and
 report actionable results without silently changing authored content.
 
-### Scenario: Validate a conforming bundle
+### Scenario S1: Validate a conforming bundle
 
 - GIVEN an OKF bundle whose documents satisfy their declared schemas
 - WHEN the user runs the validation command
 - THEN the command reports no validation errors and exits successfully
 
-### Scenario: Reject an invalid document
+### Scenario S2: Reject an invalid document
 
 - GIVEN an OKF document with missing or invalid required metadata
 - WHEN the user runs the validation command
 - THEN the command identifies the invalid document and exits unsuccessfully
 
-### Scenario: Accept portable bundle contents
+### Scenario S3: Accept portable bundle contents
 
 - GIVEN an OKF bundle containing conforming concept documents at its root or in
   subdirectories and non-Markdown files referenced as attachments

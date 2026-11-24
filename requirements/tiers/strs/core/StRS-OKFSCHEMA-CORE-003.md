@@ -39,14 +39,14 @@ navigate their targets without changing authored value types.
 
 ### Main paths
 
-#### Path 1: Navigate declared file links
+#### Path S1: Navigate declared file links
 
 1. A schema declares a frontmatter value as a file link with `x-okf-link` and names its root.
 2. A consumer inspects a document's declared file links through the public API.
 3. It gets each link's field, root and resolved target; the value stays the authored string.
 4. The consumer opens the target.
 
-#### Path 2: Check declared file links on request
+#### Path S2: Check declared file links on request
 
 1. A document declares a file link whose target is missing.
 2. Default validation reports nothing about the target.

@@ -374,6 +374,6 @@ def test_new_prefills_scenarios_from_the_cli_in_the_acceptance_mode(tmp_path: Pa
 
     strs = tiers_path(root) / "strs" / f"{STRS_A}.md"
     assert _frontmatter(strs)["scenarios"] == [{"id": "S1", "title": "<main path title>"}]
-    assert "#### Path 1: <main path title>" in strs.read_text(encoding="utf-8")
+    assert "#### Path S1: <main path title>" in strs.read_text(encoding="utf-8")
     swrs = _frontmatter(tiers_path(root) / "swrs" / f"{SWRS_A}.md")
     assert [entry["id"] for entry in swrs["scenarios"]] == ["S1", "S2"]

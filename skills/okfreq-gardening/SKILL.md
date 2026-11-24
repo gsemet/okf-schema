@@ -167,7 +167,7 @@ formats instead of applying one generic requirement template:
   In the `linked-swrs-and-acceptance-paths` mode, declare `scenarios:` from the
   existing headings (`#### Path n:` under `### Main paths` on a StRS,
   `### Scenario:` on a SwRS): frontmatter only, `S1…` in body order, ids never
-  reused. On an approved requirement this frontmatter-only edit keeps
+  reused; a heading that already recalls an id (`Path S2:`) keeps it. On an approved requirement this frontmatter-only edit keeps
   `approved_by`/`approved_at` unless the owner approves again, and is logged in
   `tiers/log.md` naming the agreement. Then add to each existing test marker the
   `#S<n>` of the scenario its test really exercises, and mark

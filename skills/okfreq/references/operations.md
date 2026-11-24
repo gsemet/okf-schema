@@ -122,7 +122,9 @@ scopes:
   validation test, not proof of execution. Do not put implementation markers on StRS.
 - The `linked-swrs-and-acceptance-paths` mode measures StRS main paths. Each
   requirement declares `scenarios:` (`[{id: S1, title: ...}]`, ids never
-  reused): main paths on a StRS, transitions on a SwRS. In short: when the target
+  reused): main paths on a StRS, transitions on a SwRS. Each body heading
+  recalls its id and title (`#### Path S1: Export selected rows`,
+  `### Scenario S1: Export selected rows`); this is guidance, not validation. In short: when the target
   declares `scenarios:`, a `@tests_req` or `@accepts_req` marker must carry the
   `#S<n>` of a declared one, otherwise it is an error and counts for nothing;
   when it declares none, a fragmentless marker counts for the whole requirement.

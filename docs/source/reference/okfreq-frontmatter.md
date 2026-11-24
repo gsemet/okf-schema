@@ -105,8 +105,12 @@ scenarios:
   `okfreq validate` also checks it in code, including that ids are unique.
 - An id is never reused, even after its scenario is removed, so a test marker
   `@tests_req <ID>#S2` or `@accepts_req <ID>#S2` never silently changes meaning.
-- Declare it from the body: one entry per `#### Path n:` heading under a StRS's
-  `### Main paths`, or per `### Scenario:` heading of a SwRS, `S1…` in order. In
+- Declare it from the body: one entry per `#### Path S<n>:` heading under a StRS's
+  `### Main paths`, or per `### Scenario S<n>:` heading of a SwRS, `S1…` in order.
+  Each heading recalls the id and title of its entry, for example
+  `#### Path S1: Export the current view`; keep both in step and never renumber.
+  This is guidance, not a validation rule: a heading without id (`#### Path 1:`,
+  `### Scenario:`) is still read, and `W003` keeps the id a heading recalls. In
   the new mode, `okfreq new` pre-fills it from the body it writes, and `W003`
   proposes the block to paste for a live StRS that lacks it.
 - On an approved requirement, adding `scenarios:` is a frontmatter-only edit: the
@@ -181,7 +185,7 @@ An StRS preserves stakeholder intent without prescribing software design:
 
 ### Main paths
 
-#### Path 1: Export the current view
+#### Path S1: Export the current view
 
 1. The analyst opens the report view.
 2. The analyst exports it and receives a portable file.
@@ -198,7 +202,7 @@ An StRS preserves stakeholder intent without prescribing software design:
 ```
 
 The `### Main paths` section lists the distinct ways a stakeholder reaches the
-outcome, one `#### Path n:` heading each, and its frontmatter declares them:
+outcome, one `#### Path S<n>:` heading each, and its frontmatter declares them:
 
 ```yaml
 scenarios:
@@ -219,13 +223,13 @@ An SwRS describes software behavior that implementation and tests can observe:
 
 <observable, bounded software SHALL response>
 
-### Scenario: <nominal behavior>
+### Scenario S1: <nominal behavior>
 
 - GIVEN <precondition and relevant inputs>
 - WHEN <trigger or action>
 - THEN <single observable, verifiable outcome>
 
-### Scenario: <boundary or failure behavior>
+### Scenario S2: <boundary or failure behavior>
 
 - GIVEN <boundary precondition or failure>
 - WHEN <trigger or action>
@@ -237,7 +241,7 @@ An SwRS describes software behavior that implementation and tests can observe:
 - Criteria: <objective pass condition>
 ```
 
-Its frontmatter declares one entry per `### Scenario:` heading; in the mode
+Its frontmatter declares one entry per `### Scenario S<n>:` heading; in the mode
 `linked-swrs-and-acceptance-paths`, `okfreq new swrs` pre-fills them:
 
 ```yaml

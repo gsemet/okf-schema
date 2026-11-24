@@ -4,6 +4,9 @@
 
 ### Acceptance paths
 
+- Named every declared scenario's body heading with its stable id and title
+  (`#### Path S<n>:`, `### Scenario S<n>:`); a body-only presentation edit, so ids,
+  markers and scenario meaning are unchanged.
 - Switched this bundle to `strs_test_coverage_mode: linked-swrs-and-acceptance-paths`,
   with `markers.accepts: '@accepts_req'`, `accepted_in_files` in `generated_fields` and
   the new acceptance test modules in the `test_dirs` of their scopes.

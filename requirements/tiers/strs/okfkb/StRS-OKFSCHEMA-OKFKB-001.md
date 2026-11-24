@@ -49,7 +49,7 @@ knowledge depends.
 
 ### Main paths
 
-#### Path 1: Capture an immutable finding
+#### Path S1: Capture an immutable finding
 
 1. `okfkb init` scaffolds a knowledge base.
 2. `okfkb new-finding` records a dated Finding with its confidence, context and tags, and the
@@ -57,13 +57,13 @@ knowledge depends.
 3. `okfkb update` and later Findings leave the Finding's authored body unchanged.
 4. `okfkb get` returns the Finding, and the knowledge base validates.
 
-#### Path 2: Update a knowledge base's indexes and lint
+#### Path S2: Update a knowledge base's indexes and lint
 
 1. The knowledge base gains Findings and stable documents.
 2. `okfkb update` writes the tier indexes and normalizes frontmatter, keeping authored text.
 3. A second `okfkb update` changes nothing, and `okfkb validate` passes.
 
-#### Path 3: Propose a consolidation for human review
+#### Path S3: Propose a consolidation for human review
 
 1. The `okfkb-distill` skill, installed by `okfkb install-skills`, finds convergent Findings, for
    example with `okfkb query`.

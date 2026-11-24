@@ -2,7 +2,14 @@
 
 from pathlib import Path
 
-from okf_schema.okfreq.core import report, update_coverage, validate_requirements
+from okf_schema.okfreq.core import (
+    _scenario_headings,
+    _scenario_title,
+    load_requirements,
+    report,
+    update_coverage,
+    validate_requirements,
+)
 from okf_schema.okfreq.navigation import lint_indexes
 
 
@@ -54,3 +61,19 @@ def test_repository_guideline_is_the_installed_shipped_text() -> None:
         shipped.read_text(encoding="utf-8")
     )
     assert (project / "requirements/guidelines/project.guidelines.md").is_file()
+
+
+def test_scenario_headings_recall_their_declared_ids_and_titles() -> None:
+    """Every live and example body heading names its scenario as ``S<n>: <title>``."""
+    project = Path(__file__).parents[1]
+    for root in (project / "requirements", project / "examples/okfreq-examples/requirements"):
+        for identifier, (_, data, text) in load_requirements(root).items():
+            if "scenarios" not in data:
+                continue
+            kind = "Path" if data["type"] == "StRS" else "Scenario"
+            expected = [f"{kind} {entry['id']}: {entry['title']}" for entry in data["scenarios"]]
+            headings = _scenario_headings(text)
+            assert headings == expected, (root, identifier)
+            assert [_scenario_title(heading) for heading in headings] == [
+                entry["title"] for entry in data["scenarios"]
+            ]

@@ -48,7 +48,10 @@ Two test verbs are used:
   runs `src/export.py` in a separate process on a JSON file of selected rows,
   then reads the written CSV report back from disk. A separate process checks
   the command-line entry point, file writing and encoding that the in-process
-  test does not reach.
+  test does not reach. This fast acceptance test runs on every change. The same
+  file outlines, as commented-out code, a slower acceptance test of the same
+  path, on a large report, of the kind a main-branch pipeline would run. It is
+  not implemented, and its commented marker counts as no evidence.
 
 `StRS-CORE-001` is covered once both SwRS are test-covered on every transition
 and its main path is accepted: the report shows `Tested 1/1` and

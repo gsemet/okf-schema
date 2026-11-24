@@ -44,21 +44,21 @@ When a user invokes an `okfkb` command with the same bundle state and arguments,
 the CLI SHALL perform the same knowledge-base operation and produce equivalent
 structured results.
 
-### Scenario: Repeat a read-only operation
+### Scenario S1: Repeat a read-only operation
 
 - GIVEN an unchanged knowledge bundle
 - WHEN the same `okfkb` query is run more than once
 - THEN each invocation returns equivalent ordered results without changing the
   bundle
 
-### Scenario: Reject invalid input
+### Scenario S2: Reject invalid input
 
 - GIVEN arguments or bundle content that violate the selected command's contract
 - WHEN the command is invoked
 - THEN the CLI reports an actionable error and does not partially mutate the
   bundle
 
-### Scenario: Check evidence links using the base schema contract
+### Scenario S3: Check evidence links using the base schema contract
 
 - GIVEN a Concept with `derived_from: [findings/cache-run]` and
   `links: [structures/cache.md]`, and corresponding files inside the KB
@@ -66,7 +66,7 @@ structured results.
 - THEN base API checking resolves the extensionless evidence path as
   `findings/cache-run.md` and the exact link as `structures/cache.md`
 
-### Scenario: Report a missing evidence target without rewriting knowledge
+### Scenario S4: Report a missing evidence target without rewriting knowledge
 
 - GIVEN an annotated evidence path whose exact Markdown target is missing
 - WHEN KB validation opts into target checks

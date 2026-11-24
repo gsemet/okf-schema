@@ -43,20 +43,20 @@ The okf-schema capability SHALL enable maintainers to author, normalize, navigat
 
 ### Main paths
 
-#### Path 1: Create a bundle and author a concept
+#### Path S1: Create a bundle and author a concept
 
 1. `okf-schema init` on a new project folder creates a bundle with its root index and schemas.
 2. `okf-schema new` creates a typed concept from a frontmatter template.
 3. The maintainer writes the concept's body, and `okf-schema show` reads the concept back.
 
-#### Path 2: Normalize and index a bundle
+#### Path S2: Normalize and index a bundle
 
 1. Authored frontmatter holds block or nested lists.
 2. `okf-schema lint --check` and `okf-schema lint --diff` expose the changes without writing them.
 3. `okf-schema lint` normalizes the frontmatter and keeps comments, unknown metadata and the body.
 4. `okf-schema index` writes the directory indexes, and the bundle validates.
 
-#### Path 3: Inspect bundle knowledge read-only
+#### Path S3: Inspect bundle knowledge read-only
 
 1. The maintainer runs `okf-schema list`, `show`, `stats` and `backlinks` on a bundle.
 2. Each command answers from the bundle's concepts and links.

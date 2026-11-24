@@ -56,7 +56,7 @@ intent.
 
 ### Main paths
 
-#### Path 1: Set up a bundle and author linked requirements
+#### Path S1: Set up a bundle and author linked requirements
 
 1. `okfreq init` creates a requirements bundle with its configuration and guideline.
 2. `okfreq new strs` and `okfreq new swrs --derives-from` author a StRS and the SwRS that derive
@@ -64,14 +64,14 @@ intent.
 3. `okfreq lint` refreshes the generated navigation, and `okfreq validate` passes.
 4. `okfreq graph` and `okfreq index` show the requirements and their derivation.
 
-#### Path 2: Trace markers and refresh generated coverage
+#### Path S2: Trace markers and refresh generated coverage
 
 1. Source and test files carry `@implements_req` and `@tests_req` markers.
 2. `okfreq trace --json` lists the markers by requirement.
 3. `okfreq update-coverage --check` reports the stale generated fields without writing them.
 4. `okfreq update-coverage` writes them, and the authored fields stay unchanged.
 
-#### Path 3: Audit the requirements base with validate and a report
+#### Path S3: Audit the requirements base with validate and a report
 
 1. `okfreq validate --json` reports the bundle's findings.
 2. `okfreq generate-report` writes the JSON report and the Markdown summary.

@@ -38,13 +38,13 @@ content.
 
 ### Main paths
 
-#### Path 1: Validate a conforming bundle
+#### Path S1: Validate a conforming bundle
 
 1. A maintainer has an OKF bundle whose documents follow its declared structure and schemas.
 2. The maintainer runs `okf-schema validate --path` on the bundle.
 3. The CLI reports the bundle as conformant and exits with status 0; the bundle is unchanged.
 
-#### Path 2: Report a non-conforming bundle without changing it
+#### Path S2: Report a non-conforming bundle without changing it
 
 1. A bundle holds documents that break the OKF structure or their schemas.
 2. The maintainer runs `okf-schema validate --path` on the bundle.

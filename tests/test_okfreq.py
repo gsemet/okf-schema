@@ -119,8 +119,8 @@ def test_new_requirement_bodies_use_distinct_tier_templates(tmp_path: Path) -> N
     assert "### Scenario:" not in strs_text
     assert "### Verification notes" not in strs_text
     assert software_behavior in swrs_text
-    assert "### Scenario: <nominal behavior>" in swrs_text
-    assert "### Scenario: <boundary or failure behavior>" in swrs_text
+    assert "### Scenario S1: <nominal behavior>" in swrs_text
+    assert "### Scenario S2: <boundary or failure behavior>" in swrs_text
     assert "### Verification notes" in swrs_text
     assert "## User Need" not in swrs_text
     assert "### Rationale and constraints" not in swrs_text
@@ -2734,7 +2734,7 @@ def test_w003_quotes_the_main_path_headings(tmp_path: Path) -> None:
     strs_file = new_strs(root, "Export")
     strs = strs_file.stem
     text = strs_file.read_text(encoding="utf-8").replace(
-        "#### Path 1: <main path title>",
+        "#### Path S1: <main path title>",
         "#### Path 1: Export a report\n\n#### Path 2: The disk is full",
     )
     strs_file.write_text(text, encoding="utf-8")
@@ -2781,6 +2781,25 @@ def test_w003_reading_stops_at_the_next_section_and_the_links_block(tmp_path: Pa
 
 
 # @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S7
+def test_w003_keeps_the_ids_its_headings_recall(tmp_path: Path) -> None:
+    root = acceptance_bundle(tmp_path)
+    strs_file = new_strs(root, "Export")
+    text = strs_file.read_text(encoding="utf-8").replace(
+        "#### Path S1: <main path title>",
+        "#### Path S5: Export\n\n#### Path 2: Review\n\n#### Path S5: Again",
+    )
+    strs_file.write_text(text, encoding="utf-8")
+
+    (finding,) = codes(root, "W003")
+
+    assert 'Headings found in its body: "Path S5: Export"; "Path 2: Review"' in finding
+    assert (
+        "scenarios:\n- id: S5\n  title: Export\n- id: S1\n  title: Review\n"
+        "- id: S2\n  title: Again\n" in finding
+    )
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S7
 def test_w003_proposes_a_placeholder_without_headings(tmp_path: Path) -> None:
     root = acceptance_bundle(tmp_path)
     set_mode(root, "linked-swrs")
@@ -2806,7 +2825,7 @@ def test_acceptance_warnings_cover_live_strs_only(tmp_path: Path) -> None:
     rejected = new_strs(root, "Rejected", "S1")
     swrs = new_swrs(root, "Write", draft.stem)
     text = swrs.read_text(encoding="utf-8")
-    assert "### Scenario:" in text
+    assert "### Scenario S1:" in text
     write_test(
         tmp_path,
         "test_acceptance.py",
@@ -3100,7 +3119,7 @@ def test_new_prefills_scenarios_in_the_acceptance_mode(tmp_path: Path) -> None:
 
     assert frontmatter_of(strs_file)["scenarios"] == [{"id": "S1", "title": "<main path title>"}]
     assert (
-        "### Main paths\n\n#### Path 1: <main path title>\n\n1. <first step"
+        "### Main paths\n\n#### Path S1: <main path title>\n\n1. <first step"
         in strs_file.read_text(encoding="utf-8")
     )
     assert frontmatter_of(swrs_file)["scenarios"] == [

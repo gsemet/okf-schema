@@ -69,7 +69,7 @@ default_owner_email: gaetan@xeberon.net
 
 When a bundle uses strs_test_coverage_mode linked-swrs-and-acceptance-paths, okfreq SHALL count each StRS main path and each SwRS transition declared in scenarios: as tested or accepted only through test markers that name it with a #S<n> fragment, report the paths and transitions in coverage, and report the markers and requirements that break this rule.
 
-### Scenario: Activate the mode and keep the old modes
+### Scenario S1: Activate the mode and keep the old modes
 
 - GIVEN a bundle whose `config.yml` sets `strs_test_coverage_mode` to `linked-swrs`,
   `linked-swrs-and-validation-test` or `linked-swrs-and-acceptance-paths`
@@ -80,14 +80,14 @@ When a bundle uses strs_test_coverage_mode linked-swrs-and-acceptance-paths, okf
   retirement guard, the scaffold declarations and the removal of
   `tested_in_files`/`accepted_in_files` from a StRS)
 
-### Scenario: Declare scenarios in the frontmatter
+### Scenario S2: Declare scenarios in the frontmatter
 
 - GIVEN a StRS or a SwRS whose frontmatter lists `scenarios:` entries `{id: S<n>, title}`
 - WHEN the bundle is validated or its coverage is regenerated
 - THEN the base schema refuses a malformed entry in every mode, the acceptance mode also refuses
   duplicate ids, and `update-coverage` keeps the authored list unchanged
 
-### Scenario: Read three marker kinds and the scenario fragment
+### Scenario S3: Read three marker kinds and the scenario fragment
 
 - GIVEN `@implements_req`, `@tests_req` and `@accepts_req` markers (or their configured
   keywords) whose identifier may be followed by `#S<n>`
@@ -97,7 +97,7 @@ When a bundle uses strs_test_coverage_mode linked-swrs-and-acceptance-paths, okf
   `scenario_markers` with their line, an older `config.yml` gets the default `accepts` keyword,
   and two kinds sharing one keyword are refused
 
-### Scenario: Apply one fragment rule to every test marker
+### Scenario S4: Apply one fragment rule to every test marker
 
 - GIVEN the acceptance mode and a test marker on a StRS or a SwRS
 - WHEN the bundle is validated
@@ -106,7 +106,7 @@ When a bundle uses strs_test_coverage_mode linked-swrs-and-acceptance-paths, okf
   every other combination is an error naming the file, line, configured keyword and declared
   ids, and markers on project-added tiers keep their earlier handling
 
-### Scenario: Refuse an acceptance marker on a software requirement
+### Scenario S5: Refuse an acceptance marker on a software requirement
 
 - GIVEN the acceptance mode and an `@accepts_req` marker naming a SwRS, or a SwRS schema that
   does not refuse `accepted_in_files`
@@ -114,7 +114,7 @@ When a bundle uses strs_test_coverage_mode linked-swrs-and-acceptance-paths, okf
 - THEN the marker is reported with the description of the SwRS schema, or the schema is reported
   once with the declaration to add, and validation fails
 
-### Scenario: Count paths, transitions and generated evidence
+### Scenario S6: Count paths, transitions and generated evidence
 
 - GIVEN the acceptance mode and counting `@tests_req` and `@accepts_req` markers
 - WHEN coverage is computed and `update-coverage` runs
@@ -124,7 +124,7 @@ When a bundle uses strs_test_coverage_mode linked-swrs-and-acceptance-paths, okf
   `tested_in_files`/`accepted_in_files` list only the files of counting markers when listed in
   `generated_fields`
 
-### Scenario: Warn about a stakeholder requirement without paths or acceptance test
+### Scenario S7: Warn about a stakeholder requirement without paths or acceptance test
 
 - GIVEN the acceptance mode and a live StRS without `scenarios:` or without a counting
   `@accepts_req`
@@ -133,13 +133,13 @@ When a bundle uses strs_test_coverage_mode linked-swrs-and-acceptance-paths, okf
   `W004` asks for an acceptance test, neither changes the exit status, and a deprecated or
   superseded StRS gets neither
 
-### Scenario: Add scenarios to an approved requirement
+### Scenario S8: Add scenarios to an approved requirement
 
 - GIVEN an approved StRS with `approved_by` and `approved_at`
 - WHEN only `scenarios:` is added to its frontmatter
 - THEN the requirement still validates with its approval record unchanged
 
-### Scenario: Report paths and transitions
+### Scenario S9: Report paths and transitions
 
 - GIVEN the acceptance mode
 - WHEN the JSON or Markdown report is generated
@@ -148,7 +148,7 @@ When a bundle uses strs_test_coverage_mode linked-swrs-and-acceptance-paths, okf
   counting markers feed `marker_coverage`, the Markdown shows the path and transition columns,
   and every report validates against `report_schema()` with `format_version` 2
 
-### Scenario: Pre-fill scenarios in new requirements
+### Scenario S10: Pre-fill scenarios in new requirements
 
 - GIVEN the acceptance mode
 - WHEN `okfreq new strs` or `okfreq new swrs` writes a requirement
