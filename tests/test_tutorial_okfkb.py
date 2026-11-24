@@ -14,10 +14,8 @@ from okf_schema.cli import cli
 from okf_schema.okfkb.cli import kb
 from okf_schema.projection import strip_links_section
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-003
-# @tests_req SwRS-OKFSCHEMA-OKFKB-004
 
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S1
 def test_knowledge_tutorial_preserves_evidence_and_builds_a_navigable_synthesis(
     tmp_path: Path,
     monkeypatch,

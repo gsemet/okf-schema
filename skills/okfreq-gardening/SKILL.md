@@ -45,8 +45,9 @@ unrelated implementation task.
    `<bundle>/tiers/_schema/` before editing anything.
 - Preserve requirement IDs, UUIDs, authored frontmatter, unknown properties,
   YAML comments, and Markdown bodies.
-- Never hand-edit `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`,
-  `default_owner_email`, indexes or reports. Use explicit `okfreq` commands for generated data.
+- Never hand-edit `derived_by`, `supersedes`, `implemented_in_files`,
+  `tested_in_files`, `accepted_in_files`, `default_owner_email`, indexes or
+  reports. Use explicit `okfreq` commands for generated data.
 - Never claim implementation or test coverage without source evidence and
   markers. Markers are links, not proof that tests pass.
 - Never change lifecycle or approval state as an incidental edit.
@@ -164,6 +165,30 @@ formats instead of applying one generic requirement template:
   and `Rationale and constraints`. Do not add SwRS scenarios, verification
   notes, or implementation markers to an StRS. Add a direct validation-test
   marker only for a real stakeholder test, as required by the configured mode.
+
+  In mode `linked-swrs-and-acceptance-paths`, audit acceptance paths this way:
+
+  - Declare `scenarios:` from the headings the body already has, in the
+    frontmatter only: one `{id: S1, title: <heading title>}` per main path,
+    `S1…` in body order, an id never reused after its scenario is removed. Keep
+    the body exactly as it was; on an approved StRS the `scenarios:`-only edit
+    keeps `approved_by`/`approved_at` unless the owner gives a new approval, and
+    is logged in `tiers/log.md` naming the agreement (Rule 7), while a heading
+    alignment or any other body edit needs the normal approval.
+  - Add to each existing test marker the `#S<n>` of the scenario its test really
+    exercises; a requirement that declares no `scenarios:` keeps fragmentless
+    markers and takes no fragment.
+  - Choose the verb by what the test does and its execution cost: `@tests_req`
+    for a test of a requirement or one scenario, `@accepts_req` for the
+    acceptance test of a StRS main path that walks it end to end. Prefer the
+    cheaper tests on every pull or merge request and the `@accepts_req` one in
+    the main-branch pipeline.
+  - Use a justified whole-StRS waiver (`acceptance_exemption: true` with a
+    non-blank `acceptance_exemption_reason`) only when the paths genuinely
+    cannot be walked by an automated test, never to hide a writable acceptance
+    test and never for cost alone.
+  - Never invent a test or a marker to fill a counter. A path without an honest
+    test stays reported as a gap.
 - **SwRS — software behavior:** provide one observable, bounded `SHALL`
   response as `--description` and at least one valid StRS parent with
   `--derives-from`. Complete nominal and boundary/failure GIVEN-WHEN-THEN

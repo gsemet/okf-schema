@@ -3,6 +3,9 @@
 Run from the repository root with ``uv run python
 examples/okfreq-examples/showcase.py``. The checked-in CSV example is preserved;
 all configuration, lifecycle changes and intentional failures stay temporary.
+Its executable evidence lives in ``tests/test_export.py`` (cheap in-process
+tests) and in ``tests/test_acceptance_export.py`` (the acceptance test of the
+declared main path); the markers of this fixture only demonstrate linkage.
 """
 
 from __future__ import annotations
@@ -17,7 +20,13 @@ from jsonschema import Draft202012Validator
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.file_links import inspect_file_links
 from okf_schema.okfreq.cli import okfreq
-from okf_schema.okfreq.core import load_requirements, report
+from okf_schema.okfreq.core import (
+    load_requirements,
+    marker_scan,
+    report,
+    report_schema,
+    validate_requirements,
+)
 from okf_schema.projection import LINKS_START, strip_links_section
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-008
@@ -120,6 +129,200 @@ def run_showcase(project: Path) -> dict[str, str]:
     outcomes["strict_stakeholder_coverage"] = (
         "requires linked SwRS tests and a direct validation test"
     )
+
+    # Acceptance paths: declared main paths, their acceptance test and the SwRS
+    # transitions. The StRS was created in the old mode, so it has no
+    # ``### Main paths`` section yet: write one, declare it, then mark markers.
+    records = load_requirements(root)
+    strs_path = records[parent][0]
+    text = strs_path.read_text(encoding="utf-8")
+    main_paths = (
+        "### Main paths\n\n"
+        "#### Path S1: Export the manifest for offline review\n\n"
+        "1. The dispatcher selects the shipments to publish.\n"
+        "2. The dispatcher receives a manifest they can open without the service.\n\n"
+        "#### Path S2: Replace a superseded manifest\n\n"
+        "1. A shipment changes after the manifest was published.\n"
+        "2. The dispatcher receives the replacement and discards the old manifest.\n\n"
+    )
+    assert "### Preserved stakeholder intent" in text
+    strs_path.write_text(
+        text.replace(
+            "### Preserved stakeholder intent",
+            main_paths + "### Preserved stakeholder intent",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    config["markers"]["accepts"] = "@accepts"
+    config["strs_test_coverage_mode"] = "linked-swrs-and-acceptance-paths"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+
+    findings = validate_requirements(root)
+    w003 = next(item for item in findings if item.startswith("W003"))
+    w004 = next(item for item in findings if item.startswith("W004"))
+    assert parent in w003 and parent in w004
+    for heading in (
+        "Path S1: Export the manifest for offline review",
+        "Path S2: Replace a superseded manifest",
+    ):
+        assert f'  - "{heading}"' in w003
+    assert (
+        "scenarios:\n"
+        "  - id: S1\n"
+        "    title: Export the manifest for offline review\n"
+        "  - id: S2\n"
+        "    title: Replace a superseded manifest\n"
+    ) in w003
+    assert "@accepts" in w004 and "#S<n>" in w004
+
+    edit(
+        records[parent][0],
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Export the manifest for offline review"},
+                {"id": "S2", "title": "Replace a superseded manifest"},
+            ]
+        },
+    )
+    edit(
+        records[swrs][0],
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Write the selected shipments"},
+                {"id": "S2", "title": "Write the replacement manifest"},
+            ]
+        },
+    )
+    swrs_path = records[swrs][0]
+    swrs_text = swrs_path.read_text(encoding="utf-8").replace(
+        "### Scenario: <nominal behavior>", "### Scenario S1: Write the selected shipments"
+    )
+    swrs_path.write_text(
+        swrs_text.replace(
+            "### Scenario: <boundary or failure behavior>",
+            "### Scenario S2: Write the replacement manifest",
+        ),
+        encoding="utf-8",
+    )
+    findings = validate_requirements(root)
+    assert any(
+        f"@verifies {swrs} has no scenario fragment" in item and "declares scenarios S1, S2" in item
+        for item in findings
+    )
+    assert any(f"@verifies {parent} has no scenario fragment" in item for item in findings)
+    assert not any(replacement in item and "no scenario fragment" in item for item in findings)
+    assert not any(item.startswith("W003") for item in findings)
+    current = {item["id"]: item for item in report(root)["requirements"]}
+    assert current[parent]["stakeholder_test_coverage"]["paths"] == {
+        "total": 2,
+        "tested": 0,
+        "accepted": 0,
+    }
+    assert current[swrs]["transitions"] == {"tested": [], "missing": ["S1", "S2"]}
+    assert current[swrs]["tests"]["status"] == "missing"
+    assert current[replacement]["tests"]["files"] == ["tests/test_manifest.py"]
+
+    test_path.write_text(
+        test_path.read_text(encoding="utf-8") + f"# @verifies {parent}#S9\n",
+        encoding="utf-8",
+    )
+    assert any(
+        f"@verifies {parent}#S9 names no declared scenario of {parent} (declared: S1, S2)" in item
+        for item in validate_requirements(root)
+    )
+    test_path.write_text(
+        f"# @verifies {swrs}#S1\n# @verifies {replacement}\n# @accepts {parent}#S1\n",
+        encoding="utf-8",
+    )
+    findings = validate_requirements(root)
+    assert not any(item.startswith("W004") for item in findings), findings
+    details = next(
+        item["stakeholder_test_coverage"]
+        for item in report(root)["requirements"]
+        if item["id"] == parent
+    )
+    assert details["accepted"] is False and details["tested"] is False
+    assert details["paths"] == {"total": 2, "tested": 0, "accepted": 1}
+    assert details["status"] == "missing"
+
+    test_path.write_text(
+        test_path.read_text(encoding="utf-8") + f"# @verifies {parent}#S1\n",
+        encoding="utf-8",
+    )
+    test_path.write_text(
+        test_path.read_text(encoding="utf-8") + f"# @verifies {parent}#S2\n",
+        encoding="utf-8",
+    )
+    report_now = {item["id"]: item for item in report(root)["requirements"]}
+    assert report_now[parent]["stakeholder_test_coverage"]["paths"] == {
+        "total": 2,
+        "tested": 2,
+        "accepted": 1,
+    }
+    assert report_now[parent]["stakeholder_test_coverage"]["tested"] is True
+    assert report_now[parent]["stakeholder_test_coverage"]["status"] == "missing"
+    test_path.write_text(
+        test_path.read_text(encoding="utf-8") + f"# @accepts {parent}#S2\n",
+        encoding="utf-8",
+    )
+    report_now = {item["id"]: item for item in report(root)["requirements"]}
+    accepted = report_now[parent]["stakeholder_test_coverage"]
+    assert accepted["paths"] == {"total": 2, "tested": 2, "accepted": 2}
+    assert accepted["tested"] is True and accepted["accepted"] is True
+    # Both paths are now marked, and both SwRS still miss a transition.
+    assert accepted["status"] == "missing"
+
+    # An SwRS counts only once every declared transition has a test marker.
+    transitions = {item["id"]: item for item in report(root)["requirements"]}
+    assert transitions[swrs]["transitions"] == {"tested": ["S1"], "missing": ["S2"]}
+    assert transitions[swrs]["tests"]["status"] == "covered"
+    assert transitions[parent]["stakeholder_test_coverage"]["status"] == "missing"
+    swrs_test = test_path.read_text(encoding="utf-8").replace(
+        f"# @verifies {swrs}#S1\n", f"# @verifies {swrs}#S1\n# @verifies {swrs}#S2\n"
+    )
+    test_path.write_text(swrs_test, encoding="utf-8")
+    complete = {item["id"]: item for item in report(root)["requirements"]}
+    assert complete[swrs]["transitions"] == {"tested": ["S1", "S2"], "missing": []}
+    assert complete[swrs]["tests"]["status"] == "covered"
+    assert complete[parent]["stakeholder_test_coverage"]["status"] == "covered"
+
+    # The SwRS schema owns the rule and its wording: @accepts names a StRS main
+    # path only, so the declaration refuses any acceptance file on an SwRS.
+    swrs_schema = make_yaml().load(
+        (root / "tiers/_schema/swrs.schema.yaml").read_text(encoding="utf-8")
+    )
+    refusal = next(
+        part["properties"]["accepted_in_files"]
+        for part in swrs_schema["allOf"][1:]
+        if "accepted_in_files" in part.get("properties", {})
+    )
+    assert refusal["maxItems"] == 0
+    assert refusal["description"] == (
+        "Never present. @accepts_req names a StRS main path; mark a SwRS test with "
+        "@tests_req <SwRS-ID>#S<n>."
+    )
+    for files in ([], ["tests/test_manifest.py"]):
+        assert bool(list(Draft202012Validator(refusal).iter_errors(files))) is bool(files)
+    test_path.write_text(
+        test_path.read_text(encoding="utf-8") + f"# @accepts {swrs}\n", encoding="utf-8"
+    )
+    assert [
+        item
+        for item in marker_scan(root)["scenario_markers"]
+        if item["marker"] == "accepts" and item["id"] == swrs and item["fragment"] is None
+    ]
+    test_path.write_text(
+        test_path.read_text(encoding="utf-8").replace(f"# @accepts {swrs}\n", ""),
+        encoding="utf-8",
+    )
+    Draft202012Validator(report_schema()).validate(report(root))
+    outcomes["acceptance_paths"] = (
+        "declared main paths need #S<n> markers; acceptance and tests count separately"
+    )
+
+    # The old modes accept the scenarios and the main paths: the next steps run
+    # them again, so restore only the mode.
     config["strs_test_coverage_mode"] = "linked-swrs"
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(f"# @verifies {swrs}\n# @verifies {replacement}\n", encoding="utf-8")
@@ -128,7 +331,9 @@ def run_showcase(project: Path) -> dict[str, str]:
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(test_path.read_text() + f"# @verifies {parent}\n", encoding="utf-8")
     # These markers demonstrate linkage only. Actual CSV behavior is tested in
-    # tests/test_export.py in the checked-in example, not claimed by this fixture.
+    # tests/test_export.py, and the acceptance path in
+    # tests/test_acceptance_export.py, in the checked-in example; this fixture
+    # claims neither.
     preserved = load_requirements(root)[swrs][1]
     command("update-coverage", str(root), "--diff")
     command("update-coverage", str(root))

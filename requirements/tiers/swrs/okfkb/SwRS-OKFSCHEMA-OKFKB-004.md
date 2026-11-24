@@ -11,6 +11,11 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Locate matching knowledge
+- id: S2
+  title: Query an absent target
 derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
@@ -21,7 +26,6 @@ implemented_in_files:
 - src/okf_schema/okfkb/navigate.py
 tested_in_files:
 - tests/test_kb_navigate.py
-- tests/test_tutorial_okfkb.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
@@ -47,13 +51,13 @@ When a user navigates an `okfkb` bundle, the CLI SHALL expose deterministic
 search, read, query, backlink, and managed-update operations over the bundle's
 knowledge and evidence.
 
-### Scenario: Locate matching knowledge
+### Scenario S1: Locate matching knowledge
 
 - GIVEN a bundle containing indexed knowledge documents
 - WHEN the user searches or queries for a matching term or relationship
 - THEN the CLI returns the matching documents in a stable, inspectable form
 
-### Scenario: Query an absent target
+### Scenario S2: Query an absent target
 
 - GIVEN a query that matches no known document or relationship
 - WHEN the navigation command runs

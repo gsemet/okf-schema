@@ -558,6 +558,15 @@ on the StRS ID in a real stakeholder-level test. This adds a defined validation
 link; it still does not establish test execution or approval. Keep the default
 unless this additional policy fits the project's review process.
 
+If the project instead wants to know which stakeholder paths are tested and which
+are accepted, select `strs_test_coverage_mode: linked-swrs-and-acceptance-paths`,
+declare each requirement's `scenarios:`, and split the work between `@tests_req`
+on the cheap tests and `@accepts_req` on the test closest to the final product.
+The report then shows a fraction per requirement instead of one answer. Read
+[Why `okfreq` measures acceptance paths](../explanation/okfreq-acceptance-paths.md)
+for the trade-off and [Acceptance paths and scenario
+markers](../reference/okfreq-acceptance-paths.md) for the exact rules.
+
 ## Further reading
 
 - [Configuration](../reference/okfreq-configuration.md): scopes, ID allocation,
@@ -567,6 +576,10 @@ unless this additional policy fits the project's review process.
 - [CLI reference](../reference/okfreq-cli.md): command options and failure behavior.
 - [Coverage boundaries](../explanation/okfreq-coverage-boundaries.md): what file
   linkage establishes and what executed-test evidence would require.
+- [Why `okfreq` measures acceptance paths](../explanation/okfreq-acceptance-paths.md):
+  the two test verbs, the acceptance waiver and how to choose by execution cost.
+- [Acceptance paths and scenario markers](../reference/okfreq-acceptance-paths.md):
+  the marker rules, the findings and the report fields.
 - [Build a requirement base](../how-to/okfreq-build-requirement-base.md): a shorter
   procedural path for applying the workflow to another repository.
 - [Design choices](../explanation/okfreq-choices.md): why requirements are separate

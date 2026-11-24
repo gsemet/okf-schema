@@ -92,7 +92,11 @@ choice below has a fixed default. Stop only on the stop rules.
 10. **Review each scope** with a reader who did not write it: every claim checked against the
     code, no bundled behaviours, no desired state. Fix what the review finds, once.
 11. **Mark.** Add `@implements_req` at the code that produces each behaviour and `@tests_req` at
-    the test that checks it. Markers are comments only: do not change code.
+    the test that checks it. Markers are comments only: do not change code. A marker carries a
+    `#S<n>` fragment when its requirement declares `scenarios:` (the scenario the test really
+    exercises), and in mode `linked-swrs-and-acceptance-paths` each StRS main path gets an
+    `@accepts_req StRS-…#S<n>` on the test closest to the final product, unless a justified
+    whole-StRS acceptance waiver applies.
 12. **Close test gaps.** For each SwRS with no test, add a test in the existing suites that
     passes on the current code and asserts today's behaviour, known issues included. Never fix a
     known issue during setup. When a behaviour cannot be tested in the repository, set

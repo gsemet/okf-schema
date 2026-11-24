@@ -12,6 +12,13 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Retire a draft
+- id: S2
+  title: Refuse an unsafe retirement
+- id: S3
+  title: Detect a reused retired ID
 derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
@@ -46,7 +53,7 @@ default_owner_email: gaetan@xeberon.net
 
 When a confirmed retire operation targets an unreferenced draft requirement, okfreq SHALL delete the requirement, record its ID as retired, and SHALL NOT allocate that number again.
 
-### Scenario: Retire a draft
+### Scenario S1: Retire a draft
 
 - GIVEN a draft requirement that no other requirement or source or test marker references
 - WHEN the user runs `okfreq retire <ID> --yes`
@@ -55,14 +62,14 @@ When a confirmed retire operation targets an unreferenced draft requirement, okf
 - AND `okfreq new` allocates the next number after the highest number ever used in that
   level prefix and scope, counting existing requirements and retired IDs
 
-### Scenario: Refuse an unsafe retirement
+### Scenario S2: Refuse an unsafe retirement
 
 - GIVEN confirmation is absent, the ID is unknown, the requirement is not a draft, another
   requirement derives from, depends on or is superseded by it, or a marker references it
 - WHEN the user runs `okfreq retire`
 - THEN the command exits unsuccessfully, names the reason, and changes no file
 
-### Scenario: Detect a reused retired ID
+### Scenario S3: Detect a reused retired ID
 
 - GIVEN a requirement document whose ID is listed in `retired_ids`
 - WHEN the bundle is validated

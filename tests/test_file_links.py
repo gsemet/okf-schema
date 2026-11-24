@@ -17,9 +17,6 @@ from okf_schema.okfreq.core import (
     validate_requirements,
 )
 
-# @tests_req SwRS-OKFSCHEMA-CORE-007
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-005
-
 
 def _link_schema(resolution: str, syntax: str = "plain") -> dict[str, object]:
     return {"type": "string", "x-okf-link": {"resolution": resolution, "syntax": syntax}}
@@ -297,7 +294,7 @@ def test_check_file_links_supports_wikilink_labels_and_fragments(tmp_path: Path)
     )
 
 
-# @tests_req StRS-OKFSCHEMA-CORE-003
+# @tests_req StRS-OKFSCHEMA-CORE-003#S1
 def test_inspect_file_links_exposes_successes_failures_and_suffixes(tmp_path: Path) -> None:
     """Structured inspection preserves identity, resolution, and parsed suffix metadata."""
     document = tmp_path / "docs" / "source.md"
@@ -749,6 +746,8 @@ def test_check_file_links_reports_invalid_annotations_and_values(tmp_path: Path)
     assert "wikilink target is empty" in diagnostics[6].message
 
 
+# @tests_req StRS-OKFSCHEMA-CORE-003#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S2
 def test_check_file_links_reports_missing_exact_targets(tmp_path: Path) -> None:
     """A missing target is an error when its root is available."""
     document = tmp_path / "source.md"
@@ -924,6 +923,7 @@ def test_check_file_links_reports_malformed_annotations(tmp_path: Path) -> None:
     assert "must be an object" in diagnostics[0].message
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S3
 def test_normal_schema_validation_ignores_file_link_annotation() -> None:
     """The annotation remains non-validating when optional checking is disabled."""
     from okf_schema.validator import validate_against_schema
@@ -941,6 +941,8 @@ def test_normal_schema_validation_ignores_file_link_annotation() -> None:
     assert validate_against_schema({"target": "missing.md"}, schema, "concept") == []
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S5
 def test_validate_bundle_checks_links_only_when_opted_in(tmp_path: Path) -> None:
     """The generic API exposes opt-in checking without changing default validation."""
     bundle = tmp_path / "bundle"
@@ -998,6 +1000,7 @@ def test_malformed_link_annotation_is_reported_by_api_and_cli(tmp_path: Path) ->
     assert "unhashable" not in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S1
 def test_local_link_refs_work_through_generic_api_and_cli(tmp_path: Path) -> None:
     """Generic schema loading preserves local link annotations for API and CLI checks."""
     bundle = tmp_path / "bundle"
@@ -1102,6 +1105,7 @@ def test_generic_validate_md_cli_accepts_link_check_options(tmp_path: Path) -> N
     assert "E10" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S4
 def test_okfreq_cli_accepts_link_check_options(tmp_path: Path) -> None:
     """The okfreq validator exposes opt-in link checking without fatal skips."""
     root = init_requirements(tmp_path)
@@ -1144,6 +1148,8 @@ def test_okfreq_cli_accepts_link_check_options(tmp_path: Path) -> None:
     assert "W15" in lint_with_unavailable_root.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S3
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S5
 def test_generated_okfreq_schemas_and_link_check_preserve_requirement_semantics(
     tmp_path: Path,
 ) -> None:
@@ -1224,6 +1230,7 @@ def test_union_refs_keep_sibling_constraints_and_recursive_scope(tmp_path: Path)
     assert [item.code for item in diagnostics] == ["E10"]
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S4
 def test_conditional_link_checks_only_the_selected_branch(tmp_path: Path) -> None:
     """Both conditional outcomes can declare links; inactive branches stay unchecked."""
     schema = {
@@ -1242,6 +1249,7 @@ def test_conditional_link_checks_only_the_selected_branch(tmp_path: Path) -> Non
     ]
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S4
 def test_value_identity_is_an_unambiguous_json_pointer(tmp_path: Path) -> None:
     """Literal dots, brackets, slashes and tildes cannot alias nested values."""
     link = _link_schema("document-relative")
@@ -1266,6 +1274,7 @@ def test_value_identity_is_an_unambiguous_json_pointer(tmp_path: Path) -> None:
     assert len(results) == 5
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S5
 def test_malformed_target_does_not_interrupt_other_results(tmp_path: Path) -> None:
     """A user-provided NUL produces E10 and preserves subsequent valid results."""
     (tmp_path / "target.md").write_text("", encoding="utf-8")
@@ -1276,6 +1285,7 @@ def test_malformed_target_does_not_interrupt_other_results(tmp_path: Path) -> No
     assert [(r.status, r.code) for r in results] == [("invalid", "E10"), ("valid", None)]
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S5
 def test_stem_index_is_shared_across_bundle_documents_and_refreshed(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -1314,6 +1324,7 @@ def test_stem_index_is_shared_across_bundle_documents_and_refreshed(
     assert scans.count(bundle.resolve()) == 2 * (discovery_scans + 1)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S2
 def test_inaccessible_exact_target_reports_skipped_and_keeps_other_results(
     tmp_path: Path, monkeypatch
 ) -> None:

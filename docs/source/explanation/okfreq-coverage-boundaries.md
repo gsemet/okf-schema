@@ -39,6 +39,13 @@ SwRS test-link coverage applies only to leaf `SwRS` requirements. A SwRS is
 test-link covered when at least one configured `@tests_req SwRS-ID` marker is
 found. This is a file-level relationship, not a test execution result.
 
+In `linked-swrs-and-acceptance-paths`, an SwRS that declares `scenarios:` is
+test-link covered only when its markers name each declared transition, that is
+when every declared `S<n>` has a `@tests_req SwRS-ID#S<n>` marker. A transition
+without one is listed as missing and keeps the SwRS, and therefore its parent
+StRS, uncovered. A fragment on a requirement that declares no scenarios is an
+error rather than a coverage claim, in every mode.
+
 ### StRS test coverage
 
 StRS test coverage is computed from its directly derived SwRS requirements. The
@@ -48,6 +55,7 @@ rule is selected by `strs_test_coverage_mode` in `config.yml`:
 |---|---|
 | `linked-swrs` | It links to at least one SwRS and every linked SwRS has a test marker. |
 | `linked-swrs-and-validation-test` | The `linked-swrs` rule is satisfied and at least one validation test is defined directly for the StRS. |
+| `linked-swrs-and-acceptance-paths` | The `linked-swrs` rule is satisfied and every declared main path carries an `@accepts_req` marker (a fragmentless one when the requirement declares no `scenarios:`), or the whole StRS carries a justified acceptance waiver. |
 
 A validation test is defined by placing the normal test marker on the StRS ID
 in a configured test file:
@@ -61,10 +69,21 @@ This direct StRS marker is collected as validation-test evidence. An
 source coverage. The generated Markdown report therefore renders StRS and
 SwRS in separate tables, and places the active StRS rule below the StRS table.
 
-The two StRS modes deliberately answer different questions. The first asks
-whether the stakeholder outcome is decomposed into test-linked software
-behavior. The second also asks whether the stakeholder outcome has an explicit
-validation test definition of its own.
+The first mode asks whether the stakeholder outcome is decomposed into
+test-linked software behavior. The second also asks whether the stakeholder
+outcome has an explicit validation test definition of its own. The third goes
+further: it asks whether each stakeholder path has the test closest to the final
+product, the acceptance test, and reports separately how many paths have a
+cheaper test. Why the distinction matters, and how to choose between the two test
+verbs, is in
+[Why `okfreq` measures acceptance paths](okfreq-acceptance-paths.md); the marker
+rules and report fields are in
+[Acceptance paths and scenario markers](../reference/okfreq-acceptance-paths.md).
+
+Inside the acceptance-paths mode the StRS table gains two columns, `Accepted` and
+`Missing transitions`, and the counters are fractions over the declared paths
+rather than one yes-or-no answer. That is still linkage: no test is executed and
+no result is read, so `execution_evidence` stays `not_collected` in every mode.
 
 ## The simple distinction
 

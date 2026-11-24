@@ -99,7 +99,6 @@ def _build_wheel(repository_root: Path, wheel_directory: Path) -> Path:
     return next(wheel_directory.glob("*.whl"))
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-005
 def test_built_wheel_contains_canonical_skill_trees_unchanged(tmp_path: Path) -> None:
     """A wheel contains exactly the canonical skill files under package resources."""
     repository_root = Path(__file__).parents[1]
@@ -144,6 +143,39 @@ def test_base_skills_document_cli_and_agent_skill_installation(skill_root: str) 
     assert "install-skills" in text
 
 
+_ACCEPTANCE_PATH_VOCABULARY = (
+    "linked-swrs-and-acceptance-paths",
+    "@accepts_req",
+    "scenarios:",
+    "#S<n>",
+)
+
+
+def _assert_acceptance_path_vocabulary(path: Path) -> None:
+    text = path.read_text(encoding="utf-8")
+    for term in _ACCEPTANCE_PATH_VOCABULARY:
+        assert term in text, (path.name, term)
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="entrypoint", document="SKILL.md")
+@Parametrization.case(name="operations", document="references/operations.md")
+def test_okfreq_skill_documents_acceptance_paths(document: str) -> None:
+    """The shipped okfreq entrypoint and reference teach the acceptance-path mode."""
+    path = _canonical_root() / "okfreq" / document
+    _assert_acceptance_path_vocabulary(path)
+    assert "accepted_in_files" in path.read_text(encoding="utf-8")
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="gardening", skill_root="okfreq-gardening")
+@Parametrization.case(name="setup", skill_root="okfreq-setup")
+def test_okfreq_maintenance_skills_document_acceptance_paths(skill_root: str) -> None:
+    """The gardening and setup skills carry the same acceptance-path vocabulary."""
+    _assert_acceptance_path_vocabulary(_canonical_root() / skill_root / "SKILL.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S2
 def test_installed_wheel_commands_install_complete_families_without_source_checkout(
     tmp_path: Path,
 ) -> None:
@@ -255,7 +287,7 @@ def test_source_checkout_commands_install_families(
         assert (destination / skill_root / "SKILL.md").is_file()
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-008
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S1
 def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) -> None:
     """Operational links remain usable when the installation has no docs/source tree."""
     from okf_schema.skill_installer import install_skill_family
@@ -271,7 +303,7 @@ def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) ->
             assert resource.is_file(), (document, target)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S1
 def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
     tmp_path: Path,
 ) -> None:
@@ -290,7 +322,9 @@ def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
         assert "references/requirements.guidelines.md" not in text
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S3
 def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: Path) -> None:
     """The setup skill ships with the okfreq family and states its stop rules and delivery."""
     from okf_schema.skill_installer import install_skill_family

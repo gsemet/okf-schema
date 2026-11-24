@@ -21,8 +21,6 @@ from okf_schema.okfreq.core import (
 from okf_schema.projection import LINKS_START
 from okf_schema.validator import validate_bundle
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-014
-
 
 def _family(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
     root = init_requirements(tmp_path)
@@ -54,6 +52,7 @@ def _edit(path: Path, **fields: object) -> None:
     path.write_text(f"---\n{dump_yaml(data)}---\n{body}", encoding="utf-8")
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S1
 def test_new_and_update_coverage_project_status_and_links(tmp_path: Path) -> None:
     root, paths = _family(tmp_path)
     requirements = load_requirements(root)
@@ -79,6 +78,7 @@ def test_okf_validator_finds_no_orphan_and_no_error_in_the_tiers(tmp_path: Path)
     assert {finding.code for finding in report.warnings} <= {"W3", "W6", "W7"}
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S3
 def test_approval_becomes_a_human_verified_event(tmp_path: Path) -> None:
     root, paths = _family(tmp_path)
     strs = paths["StRS-default-001"]
@@ -100,6 +100,7 @@ def test_approval_becomes_a_human_verified_event(tmp_path: Path) -> None:
     assert "verified" not in load_requirements(root)["StRS-default-001"][1]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S3
 def test_lifecycle_commands_write_the_status(tmp_path: Path) -> None:
     root, paths = _family(tmp_path)
     runner = CliRunner()
@@ -116,6 +117,7 @@ def test_lifecycle_commands_write_the_status(tmp_path: Path) -> None:
     )
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S2
 def test_validate_reports_a_status_that_disagrees_with_the_lifecycle(tmp_path: Path) -> None:
     root, paths = _family(tmp_path)
     _edit(paths["SwRS-default-001"], req_lifecycle="deprecated")
@@ -131,6 +133,7 @@ def test_validate_reports_a_status_that_disagrees_with_the_lifecycle(tmp_path: P
     assert validate_requirements(root) == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S2
 def test_validate_reports_malformed_projection_annotations(tmp_path: Path) -> None:
     root = init_requirements(tmp_path)
     schema = tiers_path(root) / "_schema" / "base.schema.yaml"
@@ -158,6 +161,7 @@ def test_validate_reports_malformed_projection_annotations(tmp_path: Path) -> No
     )
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S3
 def test_lint_check_fails_on_a_stale_links_section_and_a_log_heading(tmp_path: Path) -> None:
     root, paths = _family(tmp_path)
     runner = CliRunner()
@@ -190,6 +194,7 @@ def test_a_malformed_links_section_is_a_domain_error(tmp_path: Path) -> None:
     assert "one complete generated Links section" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S2
 def test_okf_errors_are_okfreq_errors(tmp_path: Path) -> None:
     root, _ = _family(tmp_path)
     (tiers_path(root) / "strs" / "log.md").write_text("# Log\n", encoding="utf-8")

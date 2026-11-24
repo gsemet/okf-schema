@@ -12,15 +12,22 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Propose a supported consolidation
+- id: S2
+  title: Encounter contradictory evidence
 derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
-annotation_exemption: false
-exemption_reason:
+annotation_exemption: true
+exemption_reason: >-
+  Consolidation is an interactive workflow that reads findings and asks a human to
+  confirm each promotion; no source or test file can carry a faithful marker for it.
+  Reviewed and verified through skills/okfkb-distill/SKILL.md instruction inspection.
 derived_by: []
 implemented_in_files:
 - skills/okfkb-distill/SKILL.md
-tested_in_files:
-- tests/test_skill_resources.py
+tested_in_files: []
 owner: okf-schema maintainers
 verification_method: package tests and instruction inspection
 verification_criteria: The distill skill is shipped unchanged, and instruction
@@ -38,14 +45,14 @@ When accumulated findings are reviewed for consolidation, the `okfkb-distill`
 workflow SHALL identify supporting and contradictory evidence and require human
 confirmation before promoting a synthesized conclusion.
 
-### Scenario: Propose a supported consolidation
+### Scenario S1: Propose a supported consolidation
 
 - GIVEN multiple findings that support a reusable conclusion
 - WHEN the distill workflow evaluates them
 - THEN it presents the evidence links and a proposed destination knowledge layer
   for human review
 
-### Scenario: Encounter contradictory evidence
+### Scenario S2: Encounter contradictory evidence
 
 - GIVEN findings that do not support one unambiguous conclusion
 - WHEN consolidation is attempted

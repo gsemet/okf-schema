@@ -1,5 +1,51 @@
 # Update Log
 
+## 2026-11-24
+
+### Acceptance paths
+
+- Switched this bundle to `strs_test_coverage_mode: linked-swrs-and-acceptance-paths`,
+  the third StRS coverage policy: a stakeholder requirement is now accepted
+  through `@accepts_req` markers that name a declared main path, and its
+  transitions through `@tests_req` markers on its SwRS. Added the
+  `markers.accepts` keyword and `accepted_in_files` to `generated_fields`.
+- Added [SwRS-OKFSCHEMA-OKFREQ-015](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-015.md):
+  the mode itself — its activation, the `scenarios:` field and whole-StRS
+  acceptance waiver, the two test verbs and their `#S<n>` fragments, what each
+  marker counts, the path and transition counters, `W003`/`W004`, and the
+  `format_version` 2 report with its pre-filled `okfreq new` scaffolding.
+- Schemas: `base.schema.yaml` declares `scenarios:` and the approved-requirement
+  exception for a `scenarios:`-only frontmatter edit; `strs.schema.yaml`
+  declares the authored `acceptance_exemption`/`acceptance_exemption_reason`
+  waiver and the generated `tested_in_files`/`accepted_in_files`;
+  `swrs.schema.yaml` declares the same `tested_in_files` and refuses
+  `accepted_in_files` (a SwRS has no acceptance test).
+- Declared the main paths and transition scenarios of every requirement: the 5
+  StRS gained a `### Main paths` section and its `scenarios:` entries, the 29
+  SwRS gained a `scenarios:` list and `### Scenario S<n>: <title>` headings
+  aligned with their IDs and titles. 13 paths are declared in total.
+- Added the fragment of the scenario each test really exercises to every
+  existing `@tests_req` marker (the 6 StRS markers stay `@tests_req`, now with
+  their path fragment), and replaced file-level fragmentless markers with
+  per-test markers.
+- Added the 12 installed-wheel acceptance tests, one per executable path, in
+  `tests/test_acceptance_core.py`, `tests/test_acceptance_okfkb.py` and
+  `tests/test_acceptance_okfreq.py`, sharing the wheel and environment through
+  the `installed_distribution` fixture. They build the wheel, install it
+  isolated and drive the installed console scripts in a fresh temporary project;
+  the navigation path calls the installed Python API in a subprocess.
+- Two justified exemptions, not evidence: `StRS-OKFSCHEMA-OKFKB-001` carries a
+  whole-StRS `acceptance_exemption` because interactive consolidation for human
+  review cannot be acceptance-tested, and `SwRS-OKFSCHEMA-OKFKB-005` keeps its
+  `annotation_exemption` for the same reason. No other requirement is exempt.
+- Migrated the checked-in example to the new mode with a real acceptance test of
+  its export, taught the showcase the mode, and documented it: a new explanation
+  page and a new reference page, plus the four updated skills.
+- Verified: `okfreq validate requirements --prose --check-links --project-root .`
+  reports 35 requirements, 0 errors and 0 warnings; `okfreq lint`, `okfreq
+  update-coverage --check`, the full test suite and `just preflight` pass, so
+  every live path is either accepted or covered by its declared waiver.
+
 ## 2026-10-30
 
 ### Native OKF projection

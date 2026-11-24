@@ -11,6 +11,15 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Create a stakeholder requirement
+- id: S2
+  title: Create a software requirement
+- id: S3
+  title: Identify a requirement when reading its body
+- id: S4
+  title: Never reuse a requirement number
 derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
@@ -47,7 +56,7 @@ When a user creates a native requirement, `okfreq` SHALL allocate a collision-sa
 configured ID and UUID, validate its hierarchy, and write the tier-specific StRS
 or SwRS authoring format without changing existing requirements.
 
-### Scenario: Create a stakeholder requirement
+### Scenario S1: Create a stakeholder requirement
 
 - GIVEN a configured StRS level and scope
 - WHEN the user runs `okfreq new strs` with normative behavior and stakeholder
@@ -57,7 +66,7 @@ or SwRS authoring format without changing existing requirements.
 - AND when stakeholder need is omitted, the document retains a visible authoring
   placeholder instead of duplicating or inventing stakeholder intent
 
-### Scenario: Create a software requirement
+### Scenario S2: Create a software requirement
 
 - GIVEN a configured SwRS level and a valid StRS parent
 - WHEN the user runs `okfreq new swrs` with normative behavior and the parent ID
@@ -65,14 +74,14 @@ or SwRS authoring format without changing existing requirements.
   behavior, nominal and boundary scenarios, and verification prompts
 - AND the CLI rejects a stakeholder `user_need` supplied to the SwRS tier
 
-### Scenario: Identify a requirement when reading its body
+### Scenario S3: Identify a requirement when reading its body
 
 - GIVEN a requirement title supplied during StRS or SwRS creation
 - WHEN the scaffold is generated
 - THEN the first Markdown heading repeats the frontmatter title verbatim,
   rather than using a generic EARS label
 
-### Scenario: Never reuse a requirement number
+### Scenario S4: Never reuse a requirement number
 
 - GIVEN requirements of a level and scope whose highest number is N, or a retired ID
   with a higher number recorded in `retired_ids`

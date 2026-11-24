@@ -12,6 +12,13 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Discover requirements through scope indexes
+- id: S2
+  title: Preserve authored guidance and history
+- id: S3
+  title: Preview drift or reject unsafe input
 derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
@@ -45,7 +52,7 @@ default_owner_email: gaetan@xeberon.net
 When requirement linting succeeds, okfreq SHALL refresh navigation indexes
 throughout the tiers tree while preserving authored text and change history.
 
-### Scenario: Discover requirements through scope indexes
+### Scenario S1: Discover requirements through scope indexes
 
 - GIVEN configured tiers and requirements stored in nested scope directories
 - WHEN `okfreq lint` succeeds
@@ -53,7 +60,7 @@ throughout the tiers tree while preserving authored text and change history.
   directory contain an index linking their children and listing local requirements
   by ID, title and description
 
-### Scenario: Preserve authored guidance and history
+### Scenario S2: Preserve authored guidance and history
 
 - GIVEN existing frontmatter, introductions, authored text after an index block
   and entries in `tiers/log.md`
@@ -61,7 +68,7 @@ throughout the tiers tree while preserving authored text and change history.
 - THEN only the marked generated block changes, while outside text, the optional
   bundle-root overview and authored history remain unchanged
 
-### Scenario: Preview drift or reject unsafe input
+### Scenario S3: Preview drift or reject unsafe input
 
 - GIVEN missing/stale indexes, invalid requirement metadata or malformed delimiters
 - WHEN lint runs with `--check` or `--diff`, or validation fails

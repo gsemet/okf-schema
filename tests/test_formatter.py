@@ -62,9 +62,7 @@ def test_flatten_value_mixed_nesting() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_frontmatter_no_frontmatter() -> None:
     """Returns None when no frontmatter is present."""
     text = "# Hello\n\nBody text.\n"
@@ -82,6 +80,7 @@ def test_format_frontmatter_flatten_nested_tags() -> None:
     assert "[[" not in result
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_frontmatter_preserves_non_list_values() -> None:
     """Non-list values are preserved."""
     text = "---\ntitle: Hello\ntype: concept\n---\n\n# Hello\n"
@@ -296,6 +295,7 @@ def test_lint_frontmatter_converts_block_list_to_inline() -> None:
     assert "tags: [a, b]" in result
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_lint_frontmatter_leaves_inline_list_unchanged() -> None:
     """Already-inline lists are untouched."""
     text = "---\ntype: concept\ntags: [a, b]\n---\n\n# Body\n"

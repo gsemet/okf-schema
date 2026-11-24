@@ -104,7 +104,14 @@ satisfied. It is not an issue title, design choice, code comment, or task.
    test. The same ID may repeat at distinct evidence points in one file.
    StRS never receives implementation markers; in the stricter
    `linked-swrs-and-validation-test` mode, a direct `@tests_req <StRS-ID>` marker
-   defines a stakeholder validation test.
+   defines a stakeholder validation test. In `linked-swrs-and-acceptance-paths`
+   mode, every test marker naming a requirement that declares `scenarios:`
+   carries the `#S<n>` fragment of the scenario that test really exercises, a
+   requirement that declares none takes no fragment, and
+   `@accepts_req <StRS-ID>#S<n>` marks the acceptance test of a stakeholder main
+   path; that test sits closest to the final product, so keep a cheaper
+   `@tests_req` test on every pull or merge request and run the `@accepts_req`
+   one in the main-branch pipeline.
 - **Markers are links, not proof.** A test marker says where verification lives,
   not whether the test ran or passed. Run the project's real test suite.
 - **Coverage and reports are generated views.** Keep implementation coverage,
@@ -115,8 +122,12 @@ satisfied. It is not an issue title, design choice, code comment, or task.
   its code starts `proposed`; `draft` is a proposal not implemented yet.
 - **`approved` belongs to the owner.** It freezes a requirement; only the owner
   agrees to approve or change one, recorded in `approved_by` and `approved_at`.
-  Owners and approval locks come from `config.yml` per tier and scope. Repair
-  steps for an agent: [references/operations.md](references/operations.md#lifecycle-ownership-and-approval).
+  Owners and approval locks come from `config.yml` per tier and scope. One
+  exception: an edit that only adds `scenarios:` (and the `#S<n>` fragments of
+  existing test markers) leaves the body intact, so it may keep `approved_by` and
+  `approved_at` unchanged when the owner gives no new approval, and is logged in
+  `tiers/log.md` naming the agreement. Repair steps for an agent:
+  [references/operations.md](references/operations.md#lifecycle-ownership-and-approval).
 - **The bundle stays a native OKF bundle.** okfreq generates `status` from
   `req_lifecycle`, a `human:` `verified` event from the approval and a Links
   section from the relations, as the schemas declare. Never edit them by hand.
@@ -233,12 +244,12 @@ identifier. The fields are still ordinary strings and lists of strings.
 The optional navigation hints make the next editor action deterministic:
 `basename_marker` records the marker prefix to search for in the resolved source
 or test file, and `id_marker: id` says to use the requirement's `id` value as
-the marker identity. A consumer can then find `@implements_req <id>` or
-`@tests_req <id>` and open directly on that line. For a requirement link,
-`id_marker: id` identifies the target frontmatter `id` line. A basename means
-the filename without its extension. These hints are `x-okf-link` metadata for
-consumers; `okfreq --check-links` verifies target files but does not scan marker
-lines or treat them as proof of implementation or test success.
+the marker identity. A consumer can then find `@implements_req <id>`,
+`@tests_req <id>`, or `@accepts_req <id>` and open directly on that line. For a
+requirement link, `id_marker: id` identifies the target frontmatter `id` line. A
+basename means the filename without its extension. These hints are `x-okf-link`
+metadata for consumers; `okfreq --check-links` verifies target files but does not
+scan marker lines or treat them as proof of implementation or test success.
 
 New bundles created by `okfreq init` also include advisory display hints:
 `tooltip_shows_fields` and `preview_shows_fields` suggest that a consumer show
@@ -253,8 +264,9 @@ diagnostics together. Use `check_file_links` for validation-only workflows.
 Neither API executes tests or treats a marker as proof beyond the configured
 traceability report.
 
-`implemented_in_files` and `tested_in_files` use exact project-relative paths.
-`derives_from`, `derived_by`, `depends_on`, `superseded_by`, `supersedes`, and
+`implemented_in_files`, `tested_in_files` and `accepted_in_files` use exact
+project-relative paths. `derives_from`, `derived_by`, `depends_on`,
+`superseded_by`, `supersedes`, and
 `relates_to` use case-sensitive Markdown
 filename stems without `.md`. Preserve the existing requirement-ID graph
 validation and use matching requirement IDs and basenames for file navigation.
@@ -286,7 +298,10 @@ format, not a generic document heading.
    stakeholder-observable normative behavior, the stakeholder's user need, and
    any known rationale or constraints. Do not add software scenarios or source
    markers. Add a direct test marker only when the configured StRS coverage mode
-   requires an explicit validation test.
+   requires an explicit validation test: `linked-swrs-and-validation-test` needs
+   a `@tests_req <StRS-ID>`, while `linked-swrs-and-acceptance-paths` needs one
+   `@accepts_req <StRS-ID>#S<n>` per declared `scenarios:` path on the acceptance
+   test closest to the final product.
 2. Derive one or more SwRS requirements for independently observable software
    behaviors. Each SwRS needs a valid StRS parent, nominal and boundary/failure
    scenarios, and objective verification notes.
@@ -311,7 +326,8 @@ format, not a generic document heading.
 3. Never renumber an existing requirement. Allocate new identities through
    `okfreq new` under the configured ID policy.
 4. Never treat generated `derived_by`, `supersedes`, `implemented_in_files`,
-   `tested_in_files` or `default_owner_email` as authored truth.
+   `tested_in_files`, `accepted_in_files` or `default_owner_email` as authored
+   truth.
 5. Keep `okfreq` requirements independent from `okfkb` knowledge documents.
    They may coexist and both use OKF-compatible Markdown, but they have distinct
    purposes and lifecycles.

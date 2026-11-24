@@ -141,9 +141,8 @@ def test_load_nodes_node_fields_parsed(kb_bundle: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-004
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S1
 def test_search_search_ranks_title_and_tags(kb_bundle: Path) -> None:
     hits = navigate.search(kb_bundle, "pll")
     assert hits, "expected at least one hit"
@@ -156,11 +155,13 @@ def test_search_search_tier_filter(kb_bundle: Path) -> None:
     assert all(h.node.tier == "concepts" for h in hits)
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S1
 def test_search_search_limit(kb_bundle: Path) -> None:
     hits = navigate.search(kb_bundle, "temperature", limit=1)
     assert len(hits) == 1
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S2
 def test_search_empty_query_returns_nothing(kb_bundle: Path) -> None:
     assert navigate.search(kb_bundle, "   ") == []
 
@@ -195,6 +196,7 @@ def test_get_get_missing_raises(kb_bundle: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S1
 def test_read_read_tier(kb_bundle: Path) -> None:
     nodes = navigate.read_tier(kb_bundle, "findings")
     assert len(nodes) == 2
@@ -387,6 +389,7 @@ def test_navigation_cli_query_traversal_json(kb_bundle: Path) -> None:
     assert payload[0]["path"] == "principles/firmware-timeouts-must-be-polled.md"
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S2
 def test_navigation_cli_query_bad_expr_exits_1(kb_bundle: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(kb, ["query", "bareword", str(kb_bundle)])

@@ -11,6 +11,11 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Record one finding
+- id: S2
+  title: Preserve earlier evidence
 derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
@@ -46,14 +51,14 @@ default_owner_email: gaetan@xeberon.net
 When a user records an empirical observation, the `okfkb` CLI SHALL create one
 new immutable Finding containing the supplied observation context and provenance.
 
-### Scenario: Record one finding
+### Scenario S1: Record one finding
 
 - GIVEN a valid knowledge bundle and observation metadata
 - WHEN the user invokes the finding-recording command once
 - THEN exactly one new Finding document is created with a unique identity and the
   supplied evidence context
 
-### Scenario: Preserve earlier evidence
+### Scenario S2: Preserve earlier evidence
 
 - GIVEN a bundle containing existing Finding documents
 - WHEN another observation is recorded

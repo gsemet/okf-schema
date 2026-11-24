@@ -12,6 +12,11 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Inspect matching knowledge
+- id: S2
+  title: Reject an invalid inspection target
 derives_from:
 - StRS-OKFSCHEMA-CORE-002
 annotation_exemption: false
@@ -37,14 +42,14 @@ default_owner_email: gaetan@xeberon.net
 
 When a user inspects an OKF bundle, okf-schema SHALL provide deterministic list, show, search, graph, backlink, and statistics results without modifying the bundle.
 
-### Scenario: Inspect matching knowledge
+### Scenario S1: Inspect matching knowledge
 
 - GIVEN a valid bundle containing concepts and Markdown relationships
 - WHEN the user lists, shows, searches, graphs, requests backlinks, or requests
   statistics
 - THEN the command returns stable results derived from current bundle content
 
-### Scenario: Reject an invalid inspection target
+### Scenario S2: Reject an invalid inspection target
 
 - GIVEN a missing bundle or concept path
 - WHEN an inspection operation targets it

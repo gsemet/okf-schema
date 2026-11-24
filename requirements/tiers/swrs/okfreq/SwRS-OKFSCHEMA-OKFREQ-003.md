@@ -11,6 +11,13 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Resolve valid markers
+- id: S2
+  title: Encounter suspect markers
+- id: S3
+  title: Accept repeated markers in one file
 derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
@@ -46,7 +53,7 @@ When traceability is scanned or refreshed, `okfreq` SHALL derive implementation
 and test coverage from configured source markers while preserving authored
 requirement fields and Markdown bodies.
 
-### Scenario: Resolve valid markers
+### Scenario S1: Resolve valid markers
 
 - GIVEN configured source and test locations containing markers for known SwRS
   identities
@@ -54,14 +61,14 @@ requirement fields and Markdown bodies.
 - THEN each marker is associated with its source-relative file and the generated
   coverage fields reflect those associations
 
-### Scenario: Encounter suspect markers
+### Scenario S2: Encounter suspect markers
 
 - GIVEN a marker for an unknown ID or a marker on a non-leaf requirement
 - WHEN traceability is scanned
 - THEN `okfreq` reports the discrepancy separately without treating it as valid
   coverage evidence
 
-### Scenario: Accept repeated markers in one file
+### Scenario S3: Accept repeated markers in one file
 
 - GIVEN a test file with several tests, each preceded by a marker for the same SwRS
   identity

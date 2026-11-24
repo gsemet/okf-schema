@@ -41,9 +41,7 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S1
 def test_validate_bundle_returns_report_for_valid_bundle() -> None:
     """Returns a conformant Report for a valid bundle."""
     report = validate_bundle(VALID_BUNDLE)
@@ -234,6 +232,7 @@ def test_validate_markdown_files_block_style_lists_warning(tmp_path: Path) -> No
     assert any(f.code == "W7" for f in report.warnings)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S4
 def test_validate_markdown_files_schema_validation_error(tmp_path: Path) -> None:
     """Detects schema validation errors (E4 error)."""
     from okf_schema.api import validate_markdown_files
@@ -416,9 +415,7 @@ def test_validate_markdown_files_absolute_directory_path(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_bundle_returns_list_of_formatted_results() -> None:
     """Returns a list of FormattedResult objects."""
     results = format_bundle(VALID_BUNDLE)
@@ -469,9 +466,7 @@ def test_format_bundle_diff_mode(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-005
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_list_bundle_returns_sorted_concept_summaries() -> None:
     """Returns sorted list of ConceptSummary objects."""
     concepts = list_bundle(VALID_BUNDLE)
@@ -483,6 +478,7 @@ def test_list_bundle_returns_sorted_concept_summaries() -> None:
         assert concept.title
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_list_bundle_sorted_by_path() -> None:
     """Results are sorted by path."""
     concepts = list_bundle(VALID_BUNDLE)
@@ -490,6 +486,7 @@ def test_list_bundle_sorted_by_path() -> None:
     assert paths == sorted(paths)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_list_bundle_nonexistent_path_raises() -> None:
     """Raises FileNotFoundError for nonexistent bundle path."""
     with pytest.raises(FileNotFoundError):
@@ -549,9 +546,7 @@ def test_list_bundle_datetime_stale_after_has_stale_true(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_show_bundle_returns_concept_detail() -> None:
     """Returns ConceptDetail with frontmatter and body."""
     detail = show_bundle(VALID_BUNDLE, "subdir/concept-a.md")
@@ -562,6 +557,7 @@ def test_show_bundle_returns_concept_detail() -> None:
     assert "# Concept A" in detail.body
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_show_bundle_invalid_concept_path_raises() -> None:
     """Raises FileNotFoundError for nonexistent concept path."""
     with pytest.raises(FileNotFoundError):
@@ -590,6 +586,7 @@ def test_show_bundle_concept_without_frontmatter(tmp_path: Path) -> None:
     assert "# No Frontmatter" in detail.body
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_show_bundle_trust_tier_unverified_for_new_concept(tmp_path: Path) -> None:
     """OKF 0.2: unverified concept has trust_tier='unverified'."""
     bundle = tmp_path / "bundle"
@@ -605,6 +602,7 @@ def test_show_bundle_trust_tier_unverified_for_new_concept(tmp_path: Path) -> No
     assert detail.stale is False
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_show_bundle_trust_tier_human_reviewed(tmp_path: Path) -> None:
     """OKF 0.2: human-verified concept has trust_tier='human-reviewed'."""
     bundle = tmp_path / "bundle"
@@ -639,9 +637,7 @@ def test_show_bundle_stale_concept_detected(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-004
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_returns_index_updates() -> None:
     """Returns list of IndexUpdate objects."""
     updates = index_bundle(VALID_BUNDLE)
@@ -651,6 +647,7 @@ def test_index_bundle_returns_index_updates() -> None:
         assert update.action in ("created", "updated", "unchanged")
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_creates_missing_index(tmp_path: Path) -> None:
     """Creates missing index.md files."""
     import shutil
@@ -666,6 +663,7 @@ def test_index_bundle_creates_missing_index(tmp_path: Path) -> None:
     assert (bundle / "subdir" / "index.md").exists()
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_preserves_root_frontmatter(tmp_path: Path) -> None:
     """Preserves frontmatter in bundle-root index.md."""
     import shutil
@@ -734,6 +732,7 @@ def test_index_bundle_index_bundle_accepts_string_path() -> None:
         assert isinstance(update, IndexUpdate)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_preserves_existing_descriptions(tmp_path: Path) -> None:
     """Preserves custom descriptions from existing index.md."""
     bundle = tmp_path / "bundle"
@@ -1636,6 +1635,7 @@ def test_rewrite_superseded_links_rewrites_link_to_superseded_doc(tmp_path: Path
     assert "old.md" not in text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S2
 def test_rewrite_superseded_links_deferred_when_no_superseded_by(tmp_path: Path) -> None:
     """Defers superseded doc without superseded_by field."""
     from okf_schema.api import DeferredRewrite, rewrite_superseded_links
@@ -1867,7 +1867,7 @@ def test_update_bundle_superseded_rewrite_body_with_non_matching_links(tmp_path:
     assert "[Other](other.md)" in text  # preserved
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
 def test_validate_bundle_reports_schema_load_diagnostics(tmp_path: Path) -> None:
     """validate_bundle surfaces I1 in ``infos`` and W17 in ``warnings`` with the file path."""
     schema_dir = tmp_path / "schemas"

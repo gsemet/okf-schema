@@ -13,6 +13,19 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Record several replacements
+- id: S2
+  title: Compute the inverse supersedes list
+- id: S3
+  title: Require a replacement for a superseded requirement
+- id: S4
+  title: Reject unsafe replacement references
+- id: S5
+  title: Keep the legacy single replacement readable
+- id: S6
+  title: Relate requirements laterally
 derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
@@ -49,7 +62,7 @@ default_owner_email: gaetan@xeberon.net
 
 When a requirement is superseded or related to others, okfreq SHALL record the replacing requirements in an authored superseded_by list, compute the inverse supersedes list, accept an authored relates_to list, and reject inconsistent or cyclic references.
 
-### Scenario: Record several replacements
+### Scenario S1: Record several replacements
 
 - GIVEN known requirements A, B and C
 - WHEN `okfreq supersede A B C --yes` runs
@@ -57,35 +70,35 @@ When a requirement is superseded or related to others, okfreq SHALL record the r
   are unchanged, and a previous `superseded_by` (a list, or the legacy single ID) is
   replaced; a single replacement is written as a one-item list
 
-### Scenario: Compute the inverse supersedes list
+### Scenario S2: Compute the inverse supersedes list
 
 - GIVEN `supersedes` is listed in `generated_fields`
 - WHEN `okfreq update-coverage` runs
 - THEN B and C list A in `supersedes` (sorted), `--check` fails while those values are
   stale, and a requirement that replaces nothing gains no `supersedes` line
 
-### Scenario: Require a replacement for a superseded requirement
+### Scenario S3: Require a replacement for a superseded requirement
 
 - GIVEN a requirement with `lifecycle: superseded` and no `superseded_by`, or a
   `superseded_by` on a requirement that is not superseded
 - WHEN `okfreq validate` or `okfreq lint` runs
 - THEN validation fails naming the file and the missing or misplaced field
 
-### Scenario: Reject unsafe replacement references
+### Scenario S4: Reject unsafe replacement references
 
 - GIVEN a `superseded_by` or `relates_to` target that is unknown, repeated or the
   requirement itself, a `superseded_by` cycle, or a field that is not a list of IDs
 - WHEN `okfreq validate`, `okfreq lint` or `okfreq supersede` runs
 - THEN the command fails naming the problem, and `okfreq supersede` writes nothing
 
-### Scenario: Keep the legacy single replacement readable
+### Scenario S5: Keep the legacy single replacement readable
 
 - GIVEN a requirement written by an earlier release with `superseded_by: ID`
 - WHEN validation, the graph, reports or `okfreq retire` read it
 - THEN it is treated as a one-item list; validation passes and adds the informational
   finding `I2` suggesting the list form, and nothing is rewritten
 
-### Scenario: Relate requirements laterally
+### Scenario S6: Relate requirements laterally
 
 - GIVEN a requirement with `relates_to: [X]` where X exists
 - WHEN validation, `okfreq graph --json` or `okfreq generate-report` runs

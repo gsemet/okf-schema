@@ -20,9 +20,6 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
-
-
 def test_global_options_version() -> None:
     """--version prints version and exits 0."""
     runner = CliRunner()
@@ -176,9 +173,7 @@ def test_install_skills_reports_staging_failure_without_mutating_destination(
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-002
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-002#S1
 def test_init_creates_bundle_structure(tmp_path: Path) -> None:
     """init creates bundle/, _schema/, index.md, and log.md."""
     runner = CliRunner()
@@ -214,6 +209,7 @@ def test_init_log_md_has_date_heading(tmp_path: Path) -> None:
     assert today in text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-002#S2
 def test_init_exits_1_when_directory_exists(tmp_path: Path) -> None:
     """init exits 1 if target already exists."""
     runner = CliRunner()
@@ -224,6 +220,7 @@ def test_init_exits_1_when_directory_exists(tmp_path: Path) -> None:
     assert "already exists" in result.output.lower() or "exists" in result.output.lower()
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-002#S1
 def test_init_creates_base_schema(tmp_path: Path) -> None:
     """init creates _base.schema.yaml with OKF fields."""
     runner = CliRunner()
@@ -384,6 +381,8 @@ def test_validate_valid_bundle_exits_0() -> None:
     assert "conformant" in result.output.lower() or "0 error" in result.output.lower()
 
 
+# @tests_req StRS-OKFSCHEMA-CORE-001#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S2
 def test_validate_invalid_bundle_exits_1() -> None:
     """validate exits 1 for a non-conformant bundle."""
     runner = CliRunner()
@@ -455,7 +454,7 @@ def _bundle_with_schema_files(tmp_path: Path, schema_files: dict[str, str]) -> P
     return bundle
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
 def test_validate_empty_schema_file_is_info_and_passes_strict(tmp_path: Path) -> None:
     """An empty schema file is shown as INFO and does not fail --strict."""
     bundle = _bundle_with_schema_files(tmp_path, {"task.schema.yaml": "# todo\n"})
@@ -466,6 +465,7 @@ def test_validate_empty_schema_file_is_info_and_passes_strict(tmp_path: Path) ->
     assert "[W17]" not in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
 def test_validate_unparsable_schema_file_warns_w17(tmp_path: Path) -> None:
     """A syntax error in a schema file is W17: shown, passes by default, fails --strict."""
     bundle = _bundle_with_schema_files(tmp_path, {"note.schema.json": '{"type": "object",'})
@@ -476,6 +476,7 @@ def test_validate_unparsable_schema_file_warns_w17(tmp_path: Path) -> None:
     assert strict.exit_code == 1
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
 def test_validate_info_alone_does_not_fail_strict(tmp_path: Path) -> None:
     """With a usable schema for the concept type, an empty extra schema file only informs."""
     bundle = _bundle_with_schema_files(

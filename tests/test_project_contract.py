@@ -25,7 +25,7 @@ def test_live_requirements_preserve_complete_real_evidence() -> None:
     ):
         assert evidence[category] == [], (category, evidence[category])
     stakeholder = result["stakeholder_test_coverage"]
-    assert stakeholder["mode"] == "linked-swrs-and-validation-test"
+    assert stakeholder["mode"] == "linked-swrs-and-acceptance-paths"
     assert stakeholder["covered"] == stakeholder["requirements"]
 
 

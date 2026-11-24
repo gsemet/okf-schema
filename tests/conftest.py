@@ -139,3 +139,15 @@ def nested_list_bundle(tmp_path: Path) -> Path:
     )
 
     return bundle
+
+
+@pytest.fixture(scope="session")
+def installed_distribution():
+    """Return the wheel installed once for the whole pytest session.
+
+    The acceptance tests run the product as a user receives it. Building the
+    wheel and its isolated environment once keeps that fidelity affordable.
+    """
+    from tests.installed_wheel import installed_distribution as build
+
+    return build()

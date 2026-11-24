@@ -52,9 +52,10 @@ lifecycle:
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email, status, verified]
+  accepted_in_files, default_owner_email, status, verified]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -75,10 +76,10 @@ scopes:
 | `version` | Configuration contract version. |
 | `tiers` | Maps each tier to its document folder, ID prefix, allowed parent tiers, `approval_lock` and optional `owner_email` (see {ref}`okfreq-ownership-and-approval`). Additional tiers use the same generic derivation rules. Configurations written before 0.16.0 use the key `levels`, which is still read; a file must not declare both. |
 | `id_policy` | Allocation strategy. `scope-prefix-sequence` is currently supported; `okfreq new` rejects unsupported values. Existing documents are never renumbered. |
-| `strs_test_coverage_mode` | StRS test-coverage rule. Choose `linked-swrs` or `linked-swrs-and-validation-test`; the default is `linked-swrs`. |
+| `strs_test_coverage_mode` | StRS test-coverage rule. Choose `linked-swrs`, `linked-swrs-and-validation-test` or `linked-swrs-and-acceptance-paths`; the default is `linked-swrs`. See {ref}`okfreq-strs-test-coverage-modes`. |
 | `lifecycle.field` | Frontmatter field that holds the lifecycle state, `req_lifecycle` by default, so it never collides with the OKF `status` that okfreq generates from it. The accepted values are the `enum` of that field in `tiers/_schema/base.schema.yaml`; their meanings are in {ref}`okfreq-lifecycle-states`. A schema you write by hand must use the same name for the property and its `required` entry; `okfreq init` always generates `req_lifecycle`, with its `x-okf-status-projection` mapping, because it runs before you can edit `config.yml`. A legacy `lifecycle.values` list is still read and takes precedence over the schema. |
-| `markers` | Implementation/test marker keywords and the regular expression used to recognise IDs. The entire match is the requirement ID. |
-| `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `default_owner_email`, `status` and `verified` (see {ref}`okfreq-okf-projection`); unsupported values fail explicitly. A configuration that lists the fields explicitly keeps that list: add `supersedes` to maintain the backlink of `superseded_by`, and `default_owner_email` to write each requirement's configured owner. |
+| `markers` | Marker keywords and the regular expression used to recognise IDs: `implements`, `tests`, and `accepts` (the acceptance verb of the acceptance-paths mode). The entire match is the requirement ID, optionally followed by a `#S<n>` scenario fragment. A keyword glued to the ID with `#` is what the fragment scanner looks for, so keep `id_pattern` free of `#`: it matches the ID part only. |
+| `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `accepted_in_files`, `default_owner_email`, `status` and `verified` (see {ref}`okfreq-okf-projection`); unsupported values fail explicitly. A configuration that lists the fields explicitly keeps that list: add `supersedes` to maintain the backlink of `superseded_by`, and `default_owner_email` to write each requirement's configured owner. |
 | `retired_ids` | IDs that were deleted with `okfreq retire` and must never be allocated again. Optional list of ID strings, written by `okfreq retire`; `okfreq new` numbers after the highest of the existing and retired IDs, `okfreq validate` rejects a document with a listed ID, and `okfreq import`/`config-merge` take the union of both lists. |
 | `scopes` | Per-scope ID token, requirement subfolder, source/test ownership, and optional ownership overrides (`owner_email`, `tiers.<tier>.approval_lock`, `tiers.<tier>.owner_email`). Keep `source_dirs` and `test_dirs` separate. |
 
@@ -86,6 +87,8 @@ A scope entry may name individual files as well as directories, and it may point
 at non-Python deliverables. When a requirement is satisfied by shipped prompt or
 data content rather than by executable code, add that location to the scope and
 place the marker in the file itself instead of forcing a misleading code marker.
+
+(okfreq-strs-test-coverage-modes)=
 
 ### StRS test-coverage modes
 
@@ -117,6 +120,31 @@ The marker establishes that a validation test is defined. `okfreq` does not
 parse test-runner results, so it cannot infer whether that test executed or
 passed. StRS source coverage is not computed; StRS requirements are reported
 in a separate stakeholder table without a source column.
+
+The acceptance-paths mode replaces the third condition with two counters:
+
+```yaml
+strs_test_coverage_mode: linked-swrs-and-acceptance-paths
+```
+
+an StRS is covered when the linked-SwRS rule holds and every declared main path
+carries an `@accepts_req` marker (or, when the requirement declares no
+`scenarios:`, at least one fragmentless `@accepts_req` marker exists), or when the
+requirement carries a justified whole-StRS acceptance waiver. A separate tested
+counter reports the paths covered by an `@tests_req` marker:
+
+```python
+# @tests_req StRS-CORE-001#S1        a cheap test of path S1, run on every change
+# @accepts_req StRS-CORE-001#S1      the acceptance test of the same path
+```
+
+This is the only mode that reads the `scenarios:` frontmatter field, the only one
+that uses the `markers.accepts` keyword, and the only one that writes
+`accepted_in_files` and, on an StRS, `tested_in_files`. A requirement that declares
+`scenarios:` there must have every test marker on it carry a `#S<n>` fragment; a
+marker without one is an error and does not count. See
+[Acceptance paths and scenario markers](okfreq-acceptance-paths.md) for the marker
+rules, the combinations and the report fields.
 
 Set `id_token` when the identifier spelling differs from the frontmatter scope
 name, such as `scope: core` with `id_token: CORE`. Set `folder` to group newly

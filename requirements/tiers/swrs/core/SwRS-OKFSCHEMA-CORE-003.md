@@ -12,6 +12,11 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Normalize supported content
+- id: S2
+  title: Preview without writing
 derives_from:
 - StRS-OKFSCHEMA-CORE-002
 annotation_exemption: false
@@ -38,14 +43,14 @@ default_owner_email: gaetan@xeberon.net
 
 When formatting or linting is requested, okf-schema SHALL normalize supported frontmatter and Markdown while preserving comments, semantic values, and authored content.
 
-### Scenario: Normalize supported content
+### Scenario S1: Normalize supported content
 
 - GIVEN a bundle containing supported but non-canonical frontmatter or whitespace
 - WHEN formatting or linting is applied
 - THEN the resulting document uses canonical formatting while retaining its
   semantic values, comments, links, and Markdown body
 
-### Scenario: Preview without writing
+### Scenario S2: Preview without writing
 
 - GIVEN a document that would be changed by normalization
 - WHEN the operation runs in check or diff mode

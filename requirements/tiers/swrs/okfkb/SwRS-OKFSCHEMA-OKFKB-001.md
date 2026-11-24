@@ -10,6 +10,15 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Repeat a read-only operation
+- id: S2
+  title: Reject invalid input
+- id: S3
+  title: Check evidence links using the base schema contract
+- id: S4
+  title: Report a missing evidence target without rewriting knowledge
 derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
@@ -19,6 +28,7 @@ implemented_in_files:
 - src/okf_schema/okfkb/cli.py
 tested_in_files:
 - tests/test_kb_cli.py
+- tests/test_kb_navigate.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project
@@ -34,21 +44,21 @@ When a user invokes an `okfkb` command with the same bundle state and arguments,
 the CLI SHALL perform the same knowledge-base operation and produce equivalent
 structured results.
 
-### Scenario: Repeat a read-only operation
+### Scenario S1: Repeat a read-only operation
 
 - GIVEN an unchanged knowledge bundle
 - WHEN the same `okfkb` query is run more than once
 - THEN each invocation returns equivalent ordered results without changing the
   bundle
 
-### Scenario: Reject invalid input
+### Scenario S2: Reject invalid input
 
 - GIVEN arguments or bundle content that violate the selected command's contract
 - WHEN the command is invoked
 - THEN the CLI reports an actionable error and does not partially mutate the
   bundle
 
-### Scenario: Check evidence links using the base schema contract
+### Scenario S3: Check evidence links using the base schema contract
 
 - GIVEN a Concept with `derived_from: [findings/cache-run]` and
   `links: [structures/cache.md]`, and corresponding files inside the KB
@@ -56,7 +66,7 @@ structured results.
 - THEN base API checking resolves the extensionless evidence path as
   `findings/cache-run.md` and the exact link as `structures/cache.md`
 
-### Scenario: Report a missing evidence target without rewriting knowledge
+### Scenario S4: Report a missing evidence target without rewriting knowledge
 
 - GIVEN an annotated evidence path whose exact Markdown target is missing
 - WHEN KB validation opts into target checks

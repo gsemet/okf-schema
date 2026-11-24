@@ -14,6 +14,13 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Generate the Links section and status from the schemas
+- id: S2
+  title: Follow the annotations, not hard-coded names
+- id: S3
+  title: Reject malformed annotations and log headings
 derives_from:
 - StRS-OKFSCHEMA-CORE-002
 annotation_exemption: false
@@ -45,7 +52,7 @@ default_owner_email: gaetan@xeberon.net
 
 When a bundle is linted, okf-schema SHALL generate, from the link-projection labels and x-okf-status-projection mappings of its schemas, a delimited Links section of Markdown links and the OKF status of each document, and SHALL report malformed projection annotations and log.md headings that are not exactly YYYY-MM-DD, newest first.
 
-### Scenario: Generate the Links section and status from the schemas
+### Scenario S1: Generate the Links section and status from the schemas
 
 - GIVEN a bundle schema whose relation fields carry an `x-okf-link` with a
   `link-projection` label and whose lifecycle property carries an
@@ -57,14 +64,14 @@ When a bundle is linted, okf-schema SHALL generate, from the link-projection lab
   the target title; a value that does not resolve stays as code; `--check`
   fails on a stale section
 
-### Scenario: Follow the annotations, not hard-coded names
+### Scenario S2: Follow the annotations, not hard-coded names
 
 - GIVEN documents that already carry a generated Links section
 - WHEN a `link-projection` label is renamed or removed from the schema and lint runs
 - THEN the group is renamed or removed in every document; a section without any
   group is removed, and the `lint --links` body scan ignores the section
 
-### Scenario: Reject malformed annotations and log headings
+### Scenario S3: Reject malformed annotations and log headings
 
 - GIVEN a `link-projection` that is empty or uses a resolution outside the bundle
   (`project-relative`, `document-relative`), a status mapping to a value outside

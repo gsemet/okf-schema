@@ -45,9 +45,8 @@ def test_slugify_digits_preserved() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-003
-
-
+# @tests_req StRS-OKFSCHEMA-OKFKB-001#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S1
 def test_new_finding_happy_path_creates_file_in_findings_dir(tmp_path: Path) -> None:
     """Creates a file inside <kb_path>/findings/."""
     (tmp_path / "findings").mkdir()
@@ -56,6 +55,7 @@ def test_new_finding_happy_path_creates_file_in_findings_dir(tmp_path: Path) -> 
     assert filepath.exists()
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S2
 def test_new_finding_happy_path_creates_findings_dir_if_missing(tmp_path: Path) -> None:
     """Creates findings/ when it does not exist yet."""
     assert not (tmp_path / "findings").exists()

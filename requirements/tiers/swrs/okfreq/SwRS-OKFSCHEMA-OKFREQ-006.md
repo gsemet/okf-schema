@@ -12,6 +12,11 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Merge compatible configuration
+- id: S2
+  title: Preserve an existing conflicting value
 derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
@@ -46,13 +51,13 @@ default_owner_email: gaetan@xeberon.net
 
 When configuration is imported or merged, okfreq SHALL preserve existing conflicting values and unknown keys while reporting every conflict for review.
 
-### Scenario: Merge compatible configuration
+### Scenario S1: Merge compatible configuration
 
 - GIVEN current and imported configurations with distinct keys
 - WHEN the user imports or merges the configuration
 - THEN missing keys are added and unknown producer metadata is preserved
 
-### Scenario: Preserve an existing conflicting value
+### Scenario S2: Preserve an existing conflicting value
 
 - GIVEN current and imported configurations assign different values to the same
   key

@@ -46,7 +46,10 @@ properties:
         usual plan and review, without an explicit owner agreement.
       - approved: frozen by its owner. Any significant change (normative statement,
         scenarios, criteria, deprecation or supersession) needs the owner's explicit,
-        justified agreement, recorded in approved_by and approved_at. Allowed only where
+        justified agreement, recorded in approved_by and approved_at. An edit that only
+        adds declared scenarios (the scenarios frontmatter field, body intact) leaves
+        approved_by and approved_at unchanged unless the owner gives a new approval, and
+        is logged in the tier log.md naming the agreement. Allowed only where
         approval_lock is true for the requirement's tier and scope.
       - deprecated: no longer in force and not replaced; kept for history.
       - superseded: replaced by the requirements listed in superseded_by; kept for history.
@@ -191,6 +194,24 @@ properties:
         link-projection: Relates to
     description: Requirement IDs this one is laterally related to; carries no
       derivation, supersession or coverage meaning.
+  scenarios:
+    type: array
+    minItems: 1
+    description: |-
+      Authored main paths (StRS) or transition scenarios (SwRS). Each id S<n> is stable and never reused, even after its scenario is removed. Test markers name one with a #S<n> fragment.
+    items:
+      type: object
+      required:
+      - id
+      - title
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^S[1-9][0-9]*$
+        title:
+          type: string
+          minLength: 1
 required:
 - type
 - id

@@ -12,6 +12,11 @@ req_lifecycle: proposed
 status: stable
 origin: native
 tier: SwRS
+scenarios:
+- id: S1
+  title: Initialize and author content
+- id: S2
+  title: Reject an existing target
 derives_from:
 - StRS-OKFSCHEMA-CORE-002
 annotation_exemption: false
@@ -34,14 +39,14 @@ default_owner_email: gaetan@xeberon.net
 
 When a user initializes a bundle or creates a concept, okf-schema SHALL create the requested structure and metadata without overwriting an existing target.
 
-### Scenario: Initialize and author content
+### Scenario S1: Initialize and author content
 
 - GIVEN a target path that does not contain the requested bundle or concept
 - WHEN the user runs `okf-schema init` or `okf-schema new`
 - THEN the CLI creates valid bundle metadata or a concept document with the
   requested type, title, and relative location
 
-### Scenario: Reject an existing target
+### Scenario S2: Reject an existing target
 
 - GIVEN the destination bundle or concept already exists
 - WHEN the same creation command is requested without an explicit supported

@@ -31,7 +31,11 @@ Implement the behavior and test it. Put comment markers near the corresponding
 source and tests, using the configured spellings:
 
 Use `# @implements_req SwRS-default-001` in source and
-`# @tests_req SwRS-default-001` in the corresponding test file.
+`# @tests_req SwRS-default-001` in the corresponding test file. When the
+requirement declares `scenarios:`, add the fragment of the scenario the test
+really exercises (`# @tests_req SwRS-default-001#S1`), and in mode
+`linked-swrs-and-acceptance-paths` mark an StRS main path's acceptance test with
+`# @accepts_req StRS-default-001#S1`.
 
 ```bash
 okfreq trace . --json
@@ -69,15 +73,16 @@ tiers:
     owner_email: product-owner@example.org}
   SwRS: {folder: swrs, prefix: SwRS, derives_from: [StRS], approval_lock: false}
 id_policy: scope-prefix-sequence
-strs_test_coverage_mode: linked-swrs-and-validation-test
+strs_test_coverage_mode: linked-swrs-and-acceptance-paths
 lifecycle:
   field: req_lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email, status, verified]
+  accepted_in_files, default_owner_email, status, verified]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -107,13 +112,33 @@ scopes:
   lateral links that mean neither derivation nor replacement; it has no inverse,
   so declare it on one side only. A legacy scalar `superseded_by: ID` is still read
   (validation adds the informational `I2`); convert it to a list.
-- Only the seven listed `generated_fields` are supported. Omitting a generated
-  field leaves it unmanaged; unsupported names fail. StRS never carries generated
-  source/test file arrays, even when the setting lists those fields.
+- Only the eight listed `generated_fields` are supported: `derived_by`,
+  `supersedes`, `implemented_in_files`, `tested_in_files`, `accepted_in_files`,
+  `default_owner_email`, `status` and `verified`. Omitting a generated field
+  leaves it unmanaged; unsupported names fail. A StRS never carries
+  `implemented_in_files`; it carries `tested_in_files` and `accepted_in_files`
+  only in mode `linked-swrs-and-acceptance-paths`, and an SwRS carries
+  `tested_in_files` but never `accepted_in_files`.
 - The default StRS mode is `linked-swrs`: every linked SwRS needs a test marker
-  and at least one SwRS must exist. The stricter mode also needs a direct
-  `@tests_req StRS-...` marker in a configured test file. This is a defined
-  validation test, not proof of execution. Do not put implementation markers on StRS.
+  and at least one SwRS must exist. `linked-swrs-and-validation-test` also needs
+  a direct `@tests_req StRS-...` marker in a configured test file.
+  `linked-swrs-and-acceptance-paths` adds declared `scenarios:` and a third
+  marker kind, `markers.accepts` (default `@accepts_req`), and follows Rule 4:
+  - an StRS or SwRS that declares `scenarios:` needs a declared `#S<n>` fragment
+    on each of its test markers, and a marker without one does not count;
+  - a requirement that declares none takes no fragment, and a fragment on it is
+    an error;
+  - `@tests_req` marks a test of a requirement or of one of its scenarios, and
+    `@accepts_req` marks the acceptance test of an StRS main path (on an SwRS it
+    is refused by its schema);
+  - the counters are independent: `total`/`tested`/`accepted` count declared
+    paths with at least one counting marker, and an StRS is `covered` only when
+    it is accepted or has a justified whole-StRS waiver.
+
+  A defined validation test is not proof of execution. Do not put implementation
+  markers on StRS. Prefer `@tests_req` for tests cheap enough to run on every
+  pull or merge request; mark the expensive test closest to the final product
+  `@accepts_req` and run it in the main-branch pipeline.
 - `annotation_exemption: true` needs a non-empty `exemption_reason`. Use only
   for an agreed exception; report it separately, never as observed coverage.
 - Unknown producer metadata is preserved. `external_id` and `external_url`
@@ -244,6 +269,30 @@ informational and does not fail validation. For stale coverage preview and
 regenerate it. Execute the project's actual tests separately and report their
 results independently from marker percentages. For broad drift audits locate
 the installed `okfreq-gardening` skill by name.
+
+### Repairing acceptance-path errors, W003 and W004
+
+In mode `linked-swrs-and-acceptance-paths`, each error names its file, line and
+marker; repair the marker or the frontmatter, never the generator:
+
+| Message | Repair |
+|---|---|
+| `<file>:<line>: <kw> <ID> has no scenario fragment; <ID> declares scenarios S1, S2: write <kw> <ID>#S<n> (this marker does not count)` | Add the `#S<n>` of the scenario the test really exercises to the marker. |
+| `<file>:<line>: <kw> <ID>#S4 names no declared scenario of <ID> (declared: S1, S2)` | Use a declared id, or declare the scenario in `scenarios:`; when the message ends `(<ID> declares no scenarios:)`, remove the fragment instead. |
+| `<file>:<line>: @accepts_req <SwRS-ID>: Never present. …` | `@accepts_req` names a StRS main path only; mark the SwRS test `@tests_req <SwRS-ID>#S<n>`. |
+| `<swrs.schema.yaml path>: accepted_in_files is not refused; mode … needs the okf-schema 0.18.0 declaration: …` | Add the declaration the message quotes under `properties:` of the bundle's SwRS schema; `okfreq init` never rewrites an existing schema. |
+| `<file>: scenarios: <problem> (each entry is {id: S<n>, title: <text>}, ids unique)` | Make `scenarios:` a non-empty list of `{id, title}` mappings with `S<n>` ids unique and non-blank titles. |
+
+`okfreq validate` and `okfreq lint` fail on those errors. Two warnings never
+change the exit code: `W003` means a live StRS declares no `scenarios:`; paste
+the block it prints into the frontmatter (body unchanged), then add each `#S<n>`
+fragment to its markers and, on an approved StRS, log the change in
+`tiers/log.md`. `W004` means no acceptance marker counts on a live StRS; mark
+the test closest to the final product with `@accepts_req <StRS-ID>#S<n>`, or,
+only when the paths genuinely cannot be walked by an automated test, set
+`acceptance_exemption: true` with a non-blank `acceptance_exemption_reason`.
+Cost alone is not a waiver: prefer the `@accepts_req` test in the main-branch
+pipeline.
 
 ## Navigation and authored change history
 

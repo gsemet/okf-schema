@@ -62,9 +62,10 @@ lifecycle:
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email, status, verified]
+  accepted_in_files, default_owner_email, status, verified]
 retired_ids: []
 scopes:
   default: {source_dirs: [src], test_dirs: [tests]}
@@ -96,7 +97,10 @@ LIFECYCLE_DESCRIPTION = """Explicit, human-controlled lifecycle state.
   usual plan and review, without an explicit owner agreement.
 - approved: frozen by its owner. Any significant change (normative statement,
   scenarios, criteria, deprecation or supersession) needs the owner's explicit,
-  justified agreement, recorded in approved_by and approved_at. Allowed only where
+  justified agreement, recorded in approved_by and approved_at. An edit that only
+  adds declared scenarios (the scenarios frontmatter field, body intact) leaves
+  approved_by and approved_at unchanged unless the owner gives a new approval, and
+  is logged in the tier log.md naming the agreement. Allowed only where
   approval_lock is true for the requirement's tier and scope.
 - deprecated: no longer in force and not replaced; kept for history.
 - superseded: replaced by the requirements listed in superseded_by; kept for history.
@@ -110,15 +114,37 @@ SUPPORTED_GENERATED_FIELDS = frozenset(
         "supersedes",
         "implemented_in_files",
         "tested_in_files",
+        "accepted_in_files",
         "default_owner_email",
         "status",
         "verified",
     }
 )
+ACCEPTANCE_PATHS_MODE = "linked-swrs-and-acceptance-paths"
+_SCENARIO_ID_PATTERN = re.compile(r"S[1-9][0-9]*")
+_SCENARIO_FRAGMENT_PATTERN = re.compile(r"S[0-9]+")
+_LIVE_EXCLUDED_LIFECYCLES = frozenset({"deprecated", "superseded"})
+_SCENARIOS_DOC_LINK = (
+    "https://okf-schema.readthedocs.io/en/stable/reference/okfreq-frontmatter.html"
+    "#okfreq-declared-scenarios"
+)
+_EXECUTION_COST_DOC_LINK = (
+    "https://okf-schema.readthedocs.io/en/stable/explanation/okfreq-acceptance-paths.html"
+    "#okfreq-execution-cost"
+)
+_LINKS_BLOCK_START = "<!-- okf:links:start -->"
+_HEADING_PATTERN = re.compile(r"^(?P<level>#{1,6})[ \t]+(?P<text>.*?)[ \t]*$", re.MULTILINE)
+_PATH_HEADING_PATTERN = re.compile(
+    r"^(?:Path\s+(?:(?P<explicit>S[1-9][0-9]*)|(?P<legacy>\d+)):\s*)?(?P<title>.+)$"
+)
+_SCENARIO_HEADING_PATTERN = re.compile(
+    r"^(?:Scenario\s+(?:(?P<explicit>S[1-9][0-9]*))?:\s*)?(?P<title>.+)$"
+)
 _EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 STRS_TEST_COVERAGE_MODES = (
     "linked-swrs",
     "linked-swrs-and-validation-test",
+    ACCEPTANCE_PATHS_MODE,
 )
 STRS_TEST_COVERAGE_DESCRIPTIONS = {
     "linked-swrs": (
@@ -130,6 +156,16 @@ STRS_TEST_COVERAGE_DESCRIPTIONS = {
         "linked SwRS has at least one test marker, and at least one validation test "
         "is defined directly for the StRS."
     ),
+    ACCEPTANCE_PATHS_MODE: (
+        "An StRS is considered as covered when it is linked to at least one SwRS, every "
+        "linked SwRS has at least one test marker (or is individually exempted), and "
+        "either every declared main path is accepted by an @accepts_req marker (or, when "
+        "it declares no scenarios:, at least one fragmentless @accepts_req marker exists) "
+        "or the whole StRS carries a justified acceptance waiver. A separate tested "
+        "counter reports declared paths covered by an @tests_req marker. When scenarios "
+        "are declared, every test marker on the requirement must name one with a "
+        "#S<n> fragment."
+    ),
 }
 
 _EARS_PLACEHOLDER = "<"
@@ -140,6 +176,13 @@ _STRS_BODY = """## {title}
 ### Normative behavior
 
 {description}
+
+### Main paths
+
+#### Path S1: <main path title>
+
+1. <first step the stakeholder observes>
+2. <next step, up to the observable outcome>
 
 ### Preserved stakeholder intent
 
@@ -161,13 +204,13 @@ _SWRS_BODY = """## {title}
 
 {description}
 
-### Scenario: <nominal behavior>
+### Scenario S1: <nominal behavior>
 
 - GIVEN <precondition and relevant inputs>
 - WHEN <trigger or action>
 - THEN <single observable, verifiable outcome>
 
-### Scenario: <boundary or failure behavior>
+### Scenario S2: <boundary or failure behavior>
 
 - GIVEN <boundary precondition or failure>
 - WHEN <trigger or action>
@@ -182,6 +225,15 @@ _SWRS_BODY = """## {title}
 - Criteria: <objective pass condition>
 """
 
+_LEGACY_STRS_BODY = _STRS_BODY.replace(
+    "\n### Main paths\n\n#### Path S1: <main path title>\n\n"
+    "1. <first step the stakeholder observes>\n2. <next step, up to the observable outcome>\n",
+    "",
+)
+_LEGACY_SWRS_BODY = _SWRS_BODY.replace("### Scenario S1:", "### Scenario:").replace(
+    "### Scenario S2:", "### Scenario:"
+)
+
 
 def ears_body(
     level: str,
@@ -189,11 +241,18 @@ def ears_body(
     *,
     user_need: str | None = None,
     title: str | None = None,
+    acceptance_paths: bool = False,
 ) -> str:
     """Return the EARS scaffold for a configured tier.
 
     .. versionchanged:: 0.13.0
         Use the requirement title as the first Markdown heading.
+
+    .. versionchanged:: 0.18.0
+        With ``acceptance_paths`` (mode ``linked-swrs-and-acceptance-paths``),
+        an StRS body gains a ``### Main paths`` section and SwRS scenario
+        headings carry explicit ``S<n>`` ids, so ``scenarios:`` can be
+        pre-filled from them.
 
     The scaffold is deliberately full of bracketed placeholders so an agent or
     author can see exactly which parts must be filled in.
@@ -208,6 +267,9 @@ def ears_body(
         title:
             Human-readable requirement title. Defaults to the description
             when called directly without a title.
+        acceptance_paths:
+            Emit the ``### Main paths`` section (StRS) and explicit
+            ``### Scenario S<n>:`` headings (SwRS).
 
     Returns:
         A Markdown body template for the tier.
@@ -216,12 +278,16 @@ def ears_body(
         >>> body = ears_body("SwRS", "The tool SHALL validate the bundle.")
         >>> "### Scenario:" in body
         True
+        >>> "### Scenario S1:" in ears_body("SwRS", "x", acceptance_paths=True)
+        True
     """
     if level.lower().startswith("sw"):
-        return _SWRS_BODY.format(
+        template = _SWRS_BODY if acceptance_paths else _LEGACY_SWRS_BODY
+        return template.format(
             title=title if title is not None else description, description=description
         )
-    return _STRS_BODY.format(
+    template = _STRS_BODY if acceptance_paths else _LEGACY_STRS_BODY
+    return template.format(
         title=title if title is not None else description,
         description=description,
         user_need=user_need or _USER_NEED_PLACEHOLDER,
@@ -609,6 +675,24 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                         "derivation, supersession or coverage meaning."
                     ),
                 },
+                "scenarios": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": LiteralScalarString(
+                        "Authored main paths (StRS) or transition scenarios (SwRS). Each id "
+                        "S<n> is stable and never reused, even after its scenario is removed. "
+                        "Test markers name one with a #S<n> fragment."
+                    ),
+                    "items": {
+                        "type": "object",
+                        "required": ["id", "title"],
+                        "additionalProperties": False,
+                        "properties": {
+                            "id": {"type": "string", "pattern": "^S[1-9][0-9]*$"},
+                            "title": {"type": "string", "minLength": 1},
+                        },
+                    },
+                },
             },
             "required": [
                 "type",
@@ -656,6 +740,53 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                 "description": "The stakeholder need this requirement formalizes.",
             }
             required.append("user_need")
+            properties["tested_in_files"] = {
+                "type": "array",
+                "description": "Generated test paths.",
+                "items": {
+                    "type": "string",
+                    "x-okf-link": {
+                        "resolution": "project-relative",
+                        "syntax": "plain",
+                        "basename_marker": "@tests_req",
+                        "id_marker": "id",
+                        "show_line_number": True,
+                    },
+                },
+            }
+            properties["accepted_in_files"] = {
+                "type": "array",
+                "description": (
+                    "Generated acceptance-test paths: files of @accepts_req markers that "
+                    "count, in mode linked-swrs-and-acceptance-paths."
+                ),
+                "items": {
+                    "type": "string",
+                    "x-okf-link": {
+                        "resolution": "project-relative",
+                        "syntax": "plain",
+                        "basename_marker": "@accepts_req",
+                        "id_marker": "id",
+                        "show_line_number": True,
+                    },
+                },
+            }
+            properties["acceptance_exemption"] = {
+                "type": "boolean",
+                "description": (
+                    "Authored StRS waiver: true when the whole requirement cannot be "
+                    "acceptance-tested by an automated test. Requires a non-empty "
+                    "acceptance_exemption_reason. A waiver is not acceptance evidence."
+                ),
+            }
+            properties["acceptance_exemption_reason"] = {
+                "type": "string",
+                "minLength": 1,
+                "description": (
+                    "Why automated acceptance is not possible for this StRS. Reviewed "
+                    "by the owner and removed when no longer justified."
+                ),
+            }
         else:
             properties["annotation_exemption"] = {
                 "type": "boolean",
@@ -690,21 +821,34 @@ def initialize_bundle(path: Path, force: bool = False) -> tuple[Path, str]:
                     },
                 },
             }
+            properties["accepted_in_files"] = _accepted_in_files_refusal()
+        tier_rules: dict[str, Any] = {
+            "type": "object",
+            "properties": properties,
+            "required": required,
+        }
+        if tier == "StRS":
+            tier_rules["allOf"] = [
+                {
+                    "if": {
+                        "required": ["acceptance_exemption"],
+                        "properties": {"acceptance_exemption": {"const": True}},
+                    },
+                    "then": {"required": ["acceptance_exemption_reason"]},
+                }
+            ]
         schema = {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": f"{level}.schema.yaml",
             "title": f"okfreq {level} requirement profile",
             "description": (
-                "StRS records stakeholder intent and does not carry implementation "
-                "or source coverage fields. Stakeholder test coverage is computed "
-                "from linked SwRS according to configuration."
+                "StRS records stakeholder intent and carries no implementation fields; in "
+                "mode linked-swrs-and-acceptance-paths it carries the generated "
+                "tested_in_files and accepted_in_files."
                 if tier == "StRS"
                 else "SwRS defines observable software behavior and its traceability."
             ),
-            "allOf": [
-                {"$ref": "base.schema.yaml"},
-                {"type": "object", "properties": properties, "required": required},
-            ],
+            "allOf": [{"$ref": "base.schema.yaml"}, tier_rules],
         }
         return dump_yaml(schema) + "\n"
 
@@ -806,8 +950,15 @@ def load_config(root: Path) -> dict[str, Any]:
     if "tiers" not in data and "levels" not in data:
         data["tiers"] = {}
     data.setdefault("scopes", {"default": {"source_dirs": ["src"], "test_dirs": ["tests"]}})
-    data.setdefault("markers", {"implements": "@implements_req", "tests": "@tests_req"})
+    data.setdefault(
+        "markers",
+        {"implements": "@implements_req", "tests": "@tests_req", "accepts": "@accepts_req"},
+    )
+    data["markers"].setdefault("implements", "@implements_req")
+    data["markers"].setdefault("tests", "@tests_req")
+    data["markers"].setdefault("accepts", "@accepts_req")
     data["markers"].setdefault("id_pattern", DEFAULT_ID_PATTERN)
+    _marker_keywords(data["markers"])
     lifecycle = data.setdefault("lifecycle", {})
     if "values" not in lifecycle:
         lifecycle.setdefault("field", DEFAULT_LIFECYCLE_FIELD)
@@ -838,6 +989,68 @@ def _strs_test_coverage_mode(config: dict[str, Any]) -> str:
             f"unsupported strs_test_coverage_mode: {mode}; expected one of: {allowed}"
         )
     return mode
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _accepted_in_files_refusal() -> dict[str, Any]:
+    """Return the SwRS schema declaration that refuses ``accepted_in_files``.
+
+    ``okfreq init`` writes it into ``swrs.schema.yaml``; the new mode's error
+    message for a bundle that predates it prints exactly this declaration.
+
+    .. versionadded:: 0.18.0
+
+    Returns:
+        The JSON Schema property declaration.
+
+    Examples:
+        >>> _accepted_in_files_refusal()["maxItems"]
+        0
+    """
+    return {
+        "type": "array",
+        "maxItems": 0,
+        "description": (
+            "Never present. @accepts_req names a StRS main path; mark a SwRS test "
+            "with @tests_req <SwRS-ID>#S<n>."
+        ),
+    }
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _marker_keywords(markers: Mapping[str, Any]) -> dict[str, str]:
+    """Return the three configured marker keywords, refusing a duplicate.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        markers:
+            The ``markers`` mapping of a configuration.
+
+    Returns:
+        ``implements``, ``tests`` and ``accepts`` keywords.
+
+    Raises:
+        RequirementError:
+            If two kinds share one keyword, which would make its kind ambiguous.
+
+    Examples:
+        >>> _marker_keywords({"implements": "@i", "tests": "@t", "accepts": "@a"})
+        {'implements': '@i', 'tests': '@t', 'accepts': '@a'}
+    """
+    keywords = {
+        "implements": str(markers.get("implements", "@implements_req")),
+        "tests": str(markers.get("tests", "@tests_req")),
+        "accepts": str(markers.get("accepts", "@accepts_req")),
+    }
+    seen: dict[str, str] = {}
+    for kind, keyword in keywords.items():
+        if keyword in seen:
+            raise RequirementError(
+                f"markers.{seen[keyword]} and markers.{kind} use the same keyword {keyword}"
+            )
+        seen[keyword] = kind
+    return keywords
 
 
 def _id_pattern(config: dict[str, Any]) -> re.Pattern[str]:
@@ -1427,6 +1640,12 @@ def create_requirement(
         Accept ``lifecycle`` to create a ``proposed`` requirement delivered with
         its implementation.
 
+    .. versionchanged:: 0.18.0
+        In mode ``linked-swrs-and-acceptance-paths`` the body carries an StRS
+        ``### Main paths`` section or explicit ``### Scenario S<n>:`` SwRS
+        headings, and ``scenarios:`` is pre-filled from them. The other modes
+        write exactly what they wrote before.
+
     The document body is an EARS scaffold for the tier, so the author or agent
     can see which parts still need to be written.
 
@@ -1543,7 +1762,21 @@ def create_requirement(
     target = folder / f"{identifier}.md"
     if target.exists() or identifier in existing:
         raise RequirementError(f"requirement ID collision: {identifier}")
-    body = ears_body(level, description, user_need=user_need, title=title)
+    acceptance_paths = _strs_test_coverage_mode(config) == ACCEPTANCE_PATHS_MODE
+    body = ears_body(
+        level,
+        description,
+        user_need=user_need,
+        title=title,
+        acceptance_paths=acceptance_paths,
+    )
+    if acceptance_paths:
+        declared = [
+            {"id": scenario["id"], "title": scenario["title"]}
+            for scenario in _scenario_headings(body)
+        ]
+        if declared:
+            data["scenarios"] = declared
     text = f"---\n{dump_yaml(data)}---\n\n{body}"
     _atomic_write(target, _projected(root, target, text))
     return target
@@ -1636,10 +1869,11 @@ def retire_requirement(root: Path, identifier: str, *, reason: str | None = None
     if references:
         raise RequirementError(f"cannot retire {identifier}: referenced by {', '.join(references)}")
     markers = marker_scan(root)
+    # ``accepted`` is a marker of every mode: a counting @accepts_req pins the ID.
     marked = sorted(
         {
             location
-            for kind in ("implemented", "tested", "validation_tests")
+            for kind in ("implemented", "tested", "validation_tests", "accepted")
             for location in markers[kind].get(identifier, [])
         }
     )
@@ -1746,6 +1980,621 @@ def _render_frontmatter(text: str, updates: dict[str, Any]) -> str:
     return f"---\n{dump_yaml(data)}---\n{body}"
 
 
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _schema_property(schema: Any, name: str) -> dict[str, Any] | None:
+    """Find one property declaration anywhere in a composed schema.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        schema:
+            A JSON Schema, possibly composed with ``allOf``.
+        name:
+            The property to find.
+
+    Returns:
+        The first matching declaration, or ``None``.
+
+    Examples:
+        >>> _schema_property({"allOf": [{"properties": {"a": {"type": "string"}}}]}, "a")
+        {'type': 'string'}
+    """
+    if not isinstance(schema, Mapping):
+        return None
+    properties = schema.get("properties")
+    if isinstance(properties, Mapping) and name in properties:
+        return dict(properties[name])
+    for key in ("allOf", "anyOf", "oneOf"):
+        for part in schema.get(key) or []:
+            found = _schema_property(part, name)
+            if found is not None:
+                return found
+    return None
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _accepted_in_files_findings(
+    identifier: str,
+    data: Mapping[str, Any],
+    schema_data: Mapping[str, Any],
+    accepted_by_id: Mapping[str, list[str]],
+    scan: Mapping[str, Any],
+    keyword: str = "@accepts_req",
+) -> list[str]:
+    """Report markers the tier schema refuses through ``accepted_in_files``.
+
+    The rule's text and its tier live in the schema: the frontmatter is validated
+    with ``accepted_in_files`` set to the marker-derived value, and each refusal is
+    reported once per marker, with the schema's own description.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        identifier:
+            The requirement the markers name.
+        data:
+            Its frontmatter.
+        schema_data:
+            The composed tier schema.
+        accepted_by_id:
+            Counting ``@accepts_req`` files per requirement.
+        scan:
+            The result of :func:`marker_scan`.
+        keyword:
+            The configured ``markers.accepts`` keyword, quoted in each message.
+
+    Returns:
+        One message per offending marker.
+
+    Examples:
+        >>> schema = {"properties": {"accepted_in_files": {
+        ...     "type": "array", "maxItems": 0, "description": "Never present.",
+        ...     "x-okf-link": {"basename_marker": "@accepts_req"}}}}
+        >>> scan = {"scenario_markers": [
+        ...     {"marker": "accepts", "id": "SwRS-X", "fragment": None,
+        ...      "file": "tests/t.py", "line": 3}]}
+        >>> _accepted_in_files_findings("SwRS-X", {}, schema, {"SwRS-X": ["t.py"]}, scan)
+        ['tests/t.py:3: @accepts_req SwRS-X: Never present.']
+    """
+    files = list(accepted_by_id.get(identifier, []))
+    if not files:
+        return []
+    validator = Draft202012Validator(dict(schema_data), format_checker=FormatChecker())
+    merged = {**data, "accepted_in_files": files}
+    if not any(
+        list(error.absolute_path)[:1] == ["accepted_in_files"]
+        for error in validator.iter_errors(merged)
+    ):
+        return []
+    declaration = _schema_property(schema_data, "accepted_in_files") or {}
+    description = str(declaration.get("description", "")).strip()
+    findings: list[str] = []
+    for entry in scan.get("scenario_markers", []):
+        if entry.get("marker") != "accepts" or str(entry.get("id")) != identifier:
+            continue
+        where = (
+            f"{entry['file']}:{entry['line']}"
+            if entry.get("line") is not None
+            else str(entry.get("file"))
+        )
+        findings.append(f"{where}: {keyword} {identifier}: {description}".rstrip())
+    return findings
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _swrs_schema_findings(
+    schemas_dir: Path,
+    schemas: Mapping[str, Any],
+    normalized: Mapping[str, Any],
+) -> list[str]:
+    """Refuse a SwRS tier schema that does not reject ``accepted_in_files``.
+
+    ``okfreq init`` never replaces schemas, so a bundle written before 0.18.0 does
+    not declare the property. ``okfreq`` applies no shipped declaration and has no
+    silent fallback: it names the file and the declaration to add.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        schemas_dir:
+            The bundle's schema directory.
+        schemas:
+            The schemas as :func:`load_schema_database_with_diagnostics` returns them.
+        normalized:
+            The same schemas keyed by casefolded type.
+
+    Returns:
+        One message, empty when the SwRS schema refuses the property.
+
+    Examples:
+        >>> _swrs_schema_findings(Path("s"), {"swrs.schema.yaml": {
+        ...     "properties": {"accepted_in_files": {"type": "array", "maxItems": 0}}}},
+        ...     {"swrs": {"properties": {"accepted_in_files": {
+        ...         "type": "array", "maxItems": 0}}}})
+        []
+    """
+    swrs = normalized.get("swrs") or {}
+    declaration = _schema_property(swrs, "accepted_in_files")
+    refused = False
+    if declaration is not None:
+        probe = Draft202012Validator(declaration, format_checker=FormatChecker())
+        refused = next(iter(probe.iter_errors(["example.py"])), None) is not None
+    if refused:
+        return []
+    name = next(
+        (
+            path.name
+            for path in sorted(schemas_dir.iterdir())
+            if path.is_file() and path.name.split(".schema")[0].casefold() == "swrs"
+        ),
+        "swrs.schema.yaml",
+    )
+    rendered = dump_yaml({"accepted_in_files": _accepted_in_files_refusal()})
+    indented = "\n".join(f"  {line}" for line in rendered.rstrip("\n").split("\n"))
+    return [
+        f"{schemas_dir / name}: accepted_in_files is not refused; mode "
+        f"{ACCEPTANCE_PATHS_MODE} needs the okf-schema 0.18.0 declaration: update the "
+        "bundle schema by adding under properties:\n" + indented
+    ]
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _declared_scenarios(data: Mapping[str, Any]) -> list[dict[str, str]] | None:
+    """Return a requirement's declared scenarios, or ``None`` when it declares none.
+
+    ``None`` means "no ``scenarios:`` key at all"; an empty list means a declared
+    but empty value, which validation refuses separately.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        data:
+            Requirement frontmatter.
+
+    Returns:
+        The declared ``[{id, title}]`` entries, or ``None`` when the key is absent.
+
+    Examples:
+        >>> _declared_scenarios({"scenarios": [{"id": "S1", "title": "Go"}]})
+        [{'id': 'S1', 'title': 'Go'}]
+        >>> _declared_scenarios({}) is None
+        True
+    """
+    if "scenarios" not in data:
+        return None
+    value = data.get("scenarios")
+    if not isinstance(value, list):
+        return []
+    entries: list[dict[str, str]] = []
+    for entry in value:
+        if isinstance(entry, Mapping):
+            entries.append({"id": str(entry.get("id", "")), "title": str(entry.get("title", ""))})
+    return entries
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _scenarios_problems(data: Mapping[str, Any]) -> list[str]:
+    """Return the code-level problems of a declared ``scenarios:`` field.
+
+    JSON Schema covers the shape; ids uniqueness cannot be expressed there, so
+    the new mode checks it here.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        data:
+            Requirement frontmatter.
+
+    Returns:
+        One message per problem, empty when the field is absent or valid.
+
+    Examples:
+        >>> _scenarios_problems({"scenarios": [{"id": "S1", "title": "a"},
+        ...                                    {"id": "S1", "title": "b"}]})
+        ['ids must be unique']
+    """
+    if "scenarios" not in data:
+        return []
+    value = data.get("scenarios")
+    problems: list[str] = []
+    if not isinstance(value, list) or not value:
+        return ["expected a non-empty list"]
+    seen: set[str] = set()
+    for entry in value:
+        if not isinstance(entry, Mapping):
+            problems.append("each entry must be a mapping with id and title")
+            continue
+        identifier = entry.get("id")
+        title = entry.get("title")
+        if not isinstance(identifier, str) or _SCENARIO_ID_PATTERN.fullmatch(identifier) is None:
+            problems.append(f"invalid id {identifier!r}; expected S<n>")
+        elif identifier in seen:
+            problems.append("ids must be unique")
+        else:
+            seen.add(identifier)
+        if not isinstance(title, str) or not title.strip():
+            problems.append(f"scenario {identifier!r} needs a non-empty title")
+    extra = sorted(
+        {
+            str(key)
+            for entry in value
+            if isinstance(entry, Mapping)
+            for key in entry
+            if key not in ("id", "title")
+        }
+    )
+    if extra:
+        problems.append(f"unexpected keys: {', '.join(extra)}")
+    return problems
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _acceptance_waiver(data: Mapping[str, Any]) -> str | None:
+    """Return a StRS acceptance waiver's reason when it is justified, else ``None``.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        data:
+            Requirement frontmatter.
+
+    Returns:
+        The non-blank ``acceptance_exemption_reason`` when
+        ``acceptance_exemption`` is true, otherwise ``None``.
+
+    Examples:
+        >>> _acceptance_waiver({"acceptance_exemption": True,
+        ...                     "acceptance_exemption_reason": "Interactive"})
+        'Interactive'
+        >>> _acceptance_waiver({"acceptance_exemption": True}) is None
+        True
+    """
+    if data.get("acceptance_exemption") is not True:
+        return None
+    reason = data.get("acceptance_exemption_reason")
+    if not isinstance(reason, str) or not reason.strip():
+        return None
+    return reason
+
+
+def _heading_matches(text: str) -> list[tuple[int, str, str]]:
+    """Return ``(level, raw heading text, heading line)`` for each Markdown heading."""
+    return [
+        (len(match.group("level")), match.group("text"), match.group(0))
+        for match in _HEADING_PATTERN.finditer(text)
+    ]
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _scenario_headings(body: str) -> list[dict[str, str]]:
+    """Read the declared-scenario headings an author can copy into ``scenarios:``.
+
+    Every heading under ``### Main paths`` up to the next heading of level 1 to 3
+    or the generated links block, plus every ``### Scenario…`` heading. The title
+    is the text after ``Path <n>:`` / ``Scenario:``, or the whole heading; an
+    explicit ``Path S<n>:`` / ``Scenario S<n>:`` id is preserved.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        body:
+            The requirement body (frontmatter removed).
+
+    Returns:
+        ``{"id": "S<n>", "title": ..., "heading": ...}`` entries in document order,
+        ids assigned without colliding with explicit ones.
+
+    Examples:
+        >>> _scenario_headings("### Main paths\\n\\n#### Path 1: Go\\n")[0]["title"]
+        'Go'
+        >>> _scenario_headings("### Scenario: Go\\n")[0]["id"]
+        'S1'
+    """
+    raw: list[tuple[str | None, str, str]] = []
+    headings = _heading_matches(body)
+    inside_paths = False
+    for level, text, raw_heading in headings:
+        if level == 3 and text.strip().casefold() == "main paths":
+            inside_paths = True
+            continue
+        if inside_paths and level <= 3:
+            inside_paths = False
+        if inside_paths and level > 3:
+            if _LINKS_BLOCK_START in raw_heading:
+                inside_paths = False
+                continue
+            match = _PATH_HEADING_PATTERN.match(text.strip())
+            if match:
+                raw.append((match.group("explicit"), match.group("title").strip(), text.strip()))
+            continue
+        if level == 3 and text.strip().casefold().startswith("scenario"):
+            match = _SCENARIO_HEADING_PATTERN.match(text.strip())
+            if match:
+                raw.append((match.group("explicit"), match.group("title").strip(), text.strip()))
+    explicit_ids = {item[0] for item in raw if item[0]}
+    used = set(explicit_ids)
+    next_number = 1
+    result: list[dict[str, str]] = []
+    for explicit, title, heading in raw:
+        if explicit:
+            identifier = explicit
+        else:
+            while f"S{next_number}" in used:
+                next_number += 1
+            identifier = f"S{next_number}"
+            used.add(identifier)
+            next_number += 1
+        result.append({"id": identifier, "title": title, "heading": heading})
+    return result
+
+
+def _scenarios_suggestion(headings: list[dict[str, str]]) -> str:
+    """Render the ``scenarios:`` block an agent can paste into the frontmatter."""
+    if not headings:
+        return "scenarios:\n  - id: S1\n    title: <main path title>\n"
+    lines = ["scenarios:"]
+    for heading in headings:
+        title = heading["title"].replace('"', '\\"')
+        lines.append(f"  - id: {heading['id']}")
+        lines.append(f'    title: "{title}"' if _needs_quotes(title) else f"    title: {title}")
+    return "\n".join(lines) + "\n"
+
+
+def _needs_quotes(value: str) -> bool:
+    """Return whether a YAML plain scalar would be ambiguous for this text."""
+    return bool(re.search(r"[:#\[\]{}&*!|>'\"%@`]", value)) or value.strip() != value
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _scenario_rules(
+    config: Mapping[str, Any],
+    requirements: Mapping[str, tuple[Path, dict[str, Any], str]],
+    scan: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Apply the marker rules of mode ``linked-swrs-and-acceptance-paths``.
+
+    One fragment rule serves both test verbs and both tiers: when the targeted
+    requirement declares ``scenarios:``, a ``#S<n>`` fragment naming a declared
+    id is mandatory; when it declares none, a fragmentless marker counts for the
+    whole requirement and any fragment is an error.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        config:
+            A configuration returned by :func:`load_config`.
+        requirements:
+            Requirement documents keyed by ID, as :func:`load_requirements` returns.
+        scan:
+            The result of :func:`marker_scan`.
+
+    Returns:
+        ``errors``, ``warnings``, ``tested``/``accepted`` fragment and file sets per
+        ID, ``strs`` coverage data and ``swrs`` transition data.
+
+    Examples:
+        >>> _scenario_rules({}, {}, {"scenario_markers": []})["errors"]
+        []
+    """
+    keywords = _marker_keywords(config.get("markers", {}))
+    lifecycle_key = lifecycle_field(dict(config))
+    live_excluded = _LIVE_EXCLUDED_LIFECYCLES
+    errors: list[str] = []
+    warnings: list[str] = []
+    tested_fragments: dict[str, set[str | None]] = {}
+    accepted_fragments: dict[str, set[str | None]] = {}
+    tested_files: dict[str, set[str]] = {}
+    accepted_files: dict[str, set[str]] = {}
+    scenario_titles: dict[str, list[str]] = {}
+    declared_by_id: dict[str, list[dict[str, str]] | None] = {}
+    for identifier, (_, data, _) in requirements.items():
+        if data.get("type") not in ("StRS", "SwRS"):
+            continue
+        declared = _declared_scenarios(data)
+        declared_by_id[identifier] = declared
+        if declared:
+            scenario_titles[identifier] = [entry["id"] for entry in declared]
+    for entry in scan.get("scenario_markers", []):
+        identifier = str(entry["id"])
+        if identifier not in requirements:
+            continue
+        data = requirements[identifier][1]
+        target_type = data.get("type")
+        if target_type not in ("StRS", "SwRS"):
+            continue
+        kind = str(entry["marker"])
+        fragment = entry.get("fragment")
+        fragment = str(fragment) if fragment else None
+        file = str(entry["file"])
+        line = entry.get("line")
+        keyword = keywords[kind]
+        declared = declared_by_id.get(identifier)
+        declared_ids = scenario_titles.get(identifier, [])
+        where = f"{file}:{line}" if line is not None else file
+        if target_type == "SwRS" and kind == "accepts":
+            # Reported by the schema-driven check, which names the schema rule.
+            continue
+        if declared:
+            if fragment is None:
+                errors.append(
+                    f"{where}: {keyword} {identifier} has no scenario fragment; "
+                    f"{identifier} declares scenarios {', '.join(declared_ids)}: write "
+                    f"{keyword} {identifier}#S<n> (this marker does not count)"
+                )
+                continue
+            if fragment not in declared_ids:
+                errors.append(
+                    f"{where}: {keyword} {identifier}#{fragment} names no declared scenario "
+                    f"of {identifier} (declared: {', '.join(declared_ids)})"
+                )
+                continue
+            target_map = tested_fragments if kind == "tests" else accepted_fragments
+            target_map.setdefault(identifier, set()).add(fragment)
+        else:
+            if fragment is not None:
+                parenthetical = (
+                    f"(declared: {', '.join(declared_ids)})"
+                    if declared_ids
+                    else f"({identifier} declares no scenarios:)"
+                )
+                errors.append(
+                    f"{where}: {keyword} {identifier}#{fragment} names no declared scenario "
+                    f"of {identifier} {parenthetical}"
+                )
+                continue
+            target_map = tested_fragments if kind == "tests" else accepted_fragments
+            target_map.setdefault(identifier, set()).add(None)
+        files_map = tested_files if kind == "tests" else accepted_files
+        files_map.setdefault(identifier, set()).add(file)
+    for identifier, (requirement_file, data, text) in requirements.items():
+        target_type = data.get("type")
+        if target_type != "StRS":
+            continue
+        if str(data.get(lifecycle_key)) in live_excluded:
+            continue
+        declared = declared_by_id.get(identifier)
+        if not declared:
+            headings = _scenario_headings(extract_frontmatter(text)[1])
+            if headings:
+                quoted = "\n".join(f'  - "{heading["heading"]}"' for heading in headings)
+                found = f"headings found:\n{quoted}"
+            else:
+                found = "no path or scenario heading was found in the body"
+            warnings.append(
+                f"W003 {requirement_file}: {identifier} declares no scenarios:; {found}\n"
+                "Add this block to the frontmatter (body intact), then add a #S<n> "
+                "fragment to each test marker:\n"
+                f"{_scenarios_suggestion(headings)}\n"
+                "On an approved StRS, log the change in the bundle's tiers/log.md.\n"
+                f"{_SCENARIOS_DOC_LINK}"
+            )
+        if identifier not in accepted_fragments and _acceptance_waiver(data) is None:
+            keyword = keywords["accepts"]
+            tests_keyword = keywords["tests"]
+            warnings.append(
+                f"W004 {requirement_file}: {identifier} has no acceptance test: "
+                f"no {keyword} marker that counts names it. Mark the test closest to the final "
+                "product that "
+                f"walks each main path with {keyword} {identifier}#S<n> "
+                f"({keyword} {identifier} while it declares no scenarios:). That test may "
+                "be costly and run in the main-branch pipeline, beside cheaper "
+                f"{tests_keyword} tests run on every pull or merge request. See "
+                f"{_EXECUTION_COST_DOC_LINK}"
+            )
+    return {
+        "errors": errors,
+        "warnings": warnings,
+        "tested_fragments": tested_fragments,
+        "accepted_fragments": accepted_fragments,
+        "tested_files": {identifier: sorted(files) for identifier, files in tested_files.items()},
+        "accepted_files": {
+            identifier: sorted(files) for identifier, files in accepted_files.items()
+        },
+        "declared": declared_by_id,
+    }
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _scenario_coverage(
+    rules: Mapping[str, Any],
+    requirements: Mapping[str, tuple[Path, dict[str, Any], str]],
+    identifier: str,
+    *,
+    accepted_files: Mapping[str, list[str]] | None = None,
+    tested_files: Mapping[str, list[str]] | None = None,
+) -> dict[str, Any]:
+    """Return one requirement's path counters from the marker rules.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        rules:
+            The result of :func:`_scenario_rules`.
+        requirements:
+            Requirement documents keyed by ID.
+        identifier:
+            The requirement to summarize.
+        accepted_files:
+            Counting ``@accepts_req`` files, defaulting to the rules' own.
+        tested_files:
+            Counting ``@tests_req`` files, defaulting to the rules' own.
+
+    Returns:
+        ``paths``, ``tested``, ``accepted`` and the counting files.
+
+    Examples:
+        >>> data = {"type": "StRS", "scenarios": [{"id": "S1", "title": "a"}]}
+        >>> rules = {"tested_fragments": {}, "accepted_fragments": {},
+        ...          "tested_files": {}, "accepted_files": {}, "declared": {}}
+        >>> _scenario_coverage(rules, {"X": (None, data, "")}, "X")["paths"]
+        {'total': 1, 'tested': 0, 'accepted': 0}
+    """
+    data = requirements[identifier][1]
+    declared = rules["declared"].get(identifier)
+    if declared is None and "declared" not in rules:
+        declared = _declared_scenarios(data)
+    if declared is None:
+        declared = _declared_scenarios(data)
+    accepted_fragments = set(rules["accepted_fragments"].get(identifier, set()))
+    tested_fragments = set(rules["tested_fragments"].get(identifier, set()))
+    if declared:
+        declared_ids = [entry["id"] for entry in declared]
+        total = len(declared_ids)
+        tested_count = len([item for item in declared_ids if item in tested_fragments])
+        accepted_count = len([item for item in declared_ids if item in accepted_fragments])
+        tested = tested_count == total
+        accepted = accepted_count == total
+    else:
+        total = tested_count = accepted_count = 0
+        tested = None in tested_fragments
+        accepted = None in accepted_fragments
+    files = accepted_files if accepted_files is not None else rules["accepted_files"]
+    test_files = tested_files if tested_files is not None else rules["tested_files"]
+    return {
+        "paths": {"total": total, "tested": tested_count, "accepted": accepted_count},
+        "tested": tested,
+        "accepted": accepted,
+        "acceptance_files": list(files.get(identifier, [])),
+        "test_files": list(test_files.get(identifier, [])),
+        "acceptance_defined": bool(files.get(identifier)),
+    }
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _swrs_transitions(
+    rules: Mapping[str, Any],
+    data: Mapping[str, Any],
+) -> dict[str, list[str]] | None:
+    """Return a SwRS's declared transition coverage, or ``None`` without declarations.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        rules:
+            The result of :func:`_scenario_rules`.
+        data:
+            SwRS frontmatter.
+
+    Returns:
+        ``{"tested": [...], "missing": [...]}``, or ``None`` when no scenarios are declared.
+
+    Examples:
+        >>> _swrs_transitions({"tested_fragments": {}}, {"scenarios": [
+        ...     {"id": "S1", "title": "a"}]})["missing"]
+        ['S1']
+    """
+    declared = _declared_scenarios(data)
+    if not declared:
+        return None
+    identifier = str(data.get("id"))
+    tested = set(rules["tested_fragments"].get(identifier, set()))
+    declared_ids = [entry["id"] for entry in declared]
+    return {
+        "tested": [item for item in declared_ids if item in tested],
+        "missing": [item for item in declared_ids if item not in tested],
+    }
+
+
 def marker_scan(root: Path) -> dict[str, Any]:
     """Scan configured source and test directories for requirement markers.
 
@@ -1760,27 +2609,32 @@ def marker_scan(root: Path) -> dict[str, Any]:
         >>> from tempfile import TemporaryDirectory
         >>> with TemporaryDirectory() as directory:
         ...     root = init_requirements(Path(directory) / "requirements")
-        ...     sorted(marker_scan(root))
-        ['duplicates', 'implemented', 'missing_ids', 'non_leaf', 'tested',
-         'validation_tests', 'warnings']
+        ...     keys = sorted(marker_scan(root))
+        ...     keys[0], keys[-1], "accepted" in keys, "scenario_markers" in keys
+        ('accepted', 'warnings', True, True)
     """
     # @implements_req SwRS-OKFSCHEMA-OKFREQ-003
     config = load_config(root)
     project = project_path(root)
-    markers = config["markers"]
-    implements = str(markers.get("implements", "@implements_req"))
-    tests = str(markers.get("tests", "@tests_req"))
+    keywords = _marker_keywords(config["markers"])
+    implements = keywords["implements"]
+    tests = keywords["tests"]
+    accepts = keywords["accepts"]
     configured_id = _id_pattern(config)
     embedded_id_pattern = configured_id.pattern.removeprefix("^").removesuffix("$")
     pattern = re.compile(
         rf"(?m)^\s*(?:(?:#|//|/\*|\*|<!--)\s*)?"
-        rf"(?P<marker>{re.escape(implements)}|{re.escape(tests)})\s+"
+        rf"(?P<marker>{re.escape(implements)}|{re.escape(tests)}|{re.escape(accepts)})\s+"
         rf"(?P<identifier>{embedded_id_pattern})"
+        rf"(?:#(?P<fragment>S[0-9]+)(?![A-Za-z0-9_-]))?"
     )
+    marker_kind = {implements: "implements", tests: "tests", accepts: "accepts"}
     result: dict[str, Any] = {
         "implemented": {},
         "tested": {},
         "validation_tests": {},
+        "accepted": {},
+        "scenario_markers": [],
         # Kept for report compatibility; repeated markers are accepted, so it stays empty.
         "duplicates": [],
         "non_leaf": [],
@@ -1789,7 +2643,7 @@ def marker_scan(root: Path) -> dict[str, Any]:
     }
     requirements = load_requirements(root)
     leaf_levels = _leaf_levels(config)
-    seen_markers: set[tuple[str, str, str]] = set()
+    seen_markers: set[tuple[str, str, str, str | None]] = set()
     scanned_files: set[tuple[str, Path]] = set()
     for scope, mapping in config.get("scopes", {}).items():
         if not isinstance(mapping, dict):  # pragma: no branch - malformed scope is defensive input
@@ -1817,17 +2671,28 @@ def marker_scan(root: Path) -> dict[str, Any]:
                     scanned_files.add(scan_key)
                     text = file.read_text(encoding="utf-8", errors="ignore")
                     for match in pattern.finditer(text):
-                        marker = match.group("marker")
+                        kind = marker_kind[match.group("marker")]
                         identifier = match.group("identifier")
-                        if _kind == "implemented" and marker != implements:
+                        fragment = match.group("fragment")
+                        if _kind == "implemented" and kind != "implements":
                             continue
-                        if _kind == "tested" and marker != tests:
+                        if _kind == "tested" and kind == "implements":
                             continue
-                        target = "implemented" if marker == implements else "tested"
+                        line = text.count("\n", 0, match.start()) + 1
                         # Requirement reports use portable project-relative paths
                         # regardless of the host platform.
                         relative = file.relative_to(project).as_posix()
-                        occurrence = (target, identifier, relative)
+                        if kind != "implements":
+                            result["scenario_markers"].append(
+                                {
+                                    "marker": kind,
+                                    "id": identifier,
+                                    "fragment": fragment,
+                                    "file": relative,
+                                    "line": line,
+                                }
+                            )
+                        occurrence = (kind, identifier, relative, fragment)
                         if occurrence in seen_markers:
                             # Several tests or code points in one file may carry
                             # the same ID; the file is listed once.
@@ -1838,14 +2703,24 @@ def marker_scan(root: Path) -> dict[str, Any]:
                             continue
                         requirement_type = requirements[identifier][1].get("type")
                         if requirement_type not in leaf_levels:
-                            if target == "tested" and requirement_type == "StRS":
+                            if kind == "tests" and requirement_type == "StRS":
                                 validation_locations = result["validation_tests"].setdefault(
                                     identifier, []
                                 )
                                 validation_locations.append(relative)
                                 continue
+                            if kind == "accepts":
+                                # Whether it counts is decided by the mode rules; the
+                                # file is recorded so the report can decide.
+                                result["accepted"].setdefault(identifier, []).append(relative)
+                                continue
                             result["non_leaf"].append(identifier)
                             continue
+                        target = (
+                            "implemented"
+                            if kind == "implements"
+                            else ("accepted" if kind == "accepts" else "tested")
+                        )
                         locations = result[target].setdefault(identifier, [])
                         locations.append(relative)
     for key in ("duplicates", "non_leaf", "missing_ids"):
@@ -2094,6 +2969,7 @@ def validate_requirements(
     config = load_config(root)
     requirements = load_requirements(root)
     errors: list[str] = _ownership_config_findings(config)
+    warnings_out: list[str] = []
     lifecycle_key = lifecycle_field(config)
     accepted_lifecycles = lifecycle_values(root, config)
     fields = (
@@ -2133,6 +3009,20 @@ def validate_requirements(
     projections: dict[str, Any] = {}
     link_context = _FileLinkContext()
     retired = set(config["retired_ids"])
+    mode = _strs_test_coverage_mode(config)
+    acceptance_paths = mode == ACCEPTANCE_PATHS_MODE
+    scan: dict[str, Any] = {}
+    rules: dict[str, Any] = {}
+    accepted_by_id: dict[str, list[str]] = {}
+    if acceptance_paths:
+        scan = marker_scan(root)
+        rules = _scenario_rules(config, requirements, scan)
+        errors.extend(rules["errors"])
+        warnings_out.extend(rules["warnings"])
+        accepted_by_id = {
+            identifier: sorted(set(files)) for identifier, files in scan["accepted"].items()
+        }
+        errors.extend(_swrs_schema_findings(schemas_dir, schemas, normalized_schemas))
     for identifier, (file, data, text) in requirements.items():
         if prose and body_is_unfilled(text):
             errors.append(f"W002 {file}: body has no filled EARS expression")
@@ -2147,6 +3037,17 @@ def validate_requirements(
             schema_data["allOf"] = [base, *schema_data.get("allOf", [])[1:]]
             validator = Draft202012Validator(schema_data, format_checker=FormatChecker())
             errors.extend(f"{file}: {error.message}" for error in validator.iter_errors(data))
+            if acceptance_paths:
+                errors.extend(
+                    _accepted_in_files_findings(
+                        identifier,
+                        data,
+                        schema_data,
+                        accepted_by_id,
+                        scan,
+                        _marker_keywords(config.get("markers", {}))["accepts"],
+                    )
+                )
             projection = projections.setdefault(level, schema_projection(schema_data))
             if projection.status_field not in (None, "status"):
                 expected = projected_status(data, projection)
@@ -2196,6 +3097,20 @@ def validate_requirements(
                 errors.append(f"{file}: invalid parent tier")
         if prose and len(str(data.get("description", "")).split()) < 3:
             errors.append(f"W001 {file}: description is unusually short")
+        if acceptance_paths:
+            for problem in _scenarios_problems(data):
+                errors.append(
+                    f"{file}: scenarios: {problem} "
+                    "(each entry is {id: S<n>, title: <text>}, ids unique)"
+                )
+            exemption_reason = data.get("acceptance_exemption_reason")
+            if data.get("acceptance_exemption") is True and (
+                not isinstance(exemption_reason, str) or not exemption_reason.strip()
+            ):
+                errors.append(
+                    f"{file}: acceptance exemption requires a non-empty acceptance_exemption_reason"
+                )
+    errors.extend(warnings_out)
     errors.extend(graph(root)["errors"])
     errors.extend(_relation_findings(requirements, lifecycle_key))
     errors.extend(_okf_findings(root))
@@ -2263,6 +3178,8 @@ def update_coverage(
     requirements = load_requirements(root)
     config = load_config(root)
     scan = marker_scan(root)
+    acceptance_paths = _strs_test_coverage_mode(config) == ACCEPTANCE_PATHS_MODE
+    rules = _scenario_rules(config, requirements, scan) if acceptance_paths else None
     configured_fields = config.get("generated_fields", [])
     if not isinstance(configured_fields, list):
         raise RequirementError("generated_fields must be a list")
@@ -2291,24 +3208,38 @@ def update_coverage(
         )
         # None removes a stale value once no owner is configured any more.
         available_updates["default_owner_email"] = owner
-        if str(requirements[identifier][1].get("type")) == "SwRS":
+        tier_type = str(requirements[identifier][1].get("type"))
+        if tier_type == "SwRS":
+            tested_files = (
+                list(rules["tested_files"].get(identifier, []))
+                if rules is not None
+                else sorted(scan["tested"].get(identifier, []))
+            )
             available_updates.update(
                 {
                     "implemented_in_files": sorted(scan["implemented"].get(identifier, [])),
-                    "tested_in_files": sorted(scan["tested"].get(identifier, [])),
+                    "tested_in_files": tested_files,
+                }
+            )
+        elif rules is not None and tier_type == "StRS":
+            available_updates.update(
+                {
+                    "tested_in_files": list(rules["tested_files"].get(identifier, [])),
+                    "accepted_in_files": list(rules["accepted_files"].get(identifier, [])),
                 }
             )
         updates = {
             key: available_updates[key] for key in configured_fields if key in available_updates
         }
         rendered = _render_frontmatter(text, updates)
-        if str(requirements[identifier][1].get("type")) == "StRS":
+        if str(requirements[identifier][1].get("type")) == "StRS" and not acceptance_paths:
             frontmatter, body = extract_frontmatter(rendered)
             if frontmatter is not None:
                 data = make_yaml().load(frontmatter)
                 if isinstance(data, dict):
                     data.pop("implemented_in_files", None)
                     data.pop("tested_in_files", None)
+                    data.pop("accepted_in_files", None)
                     rendered = f"---\n{dump_yaml(data)}---\n{body}"
         try:
             rendered = projector.project(file, rendered)
@@ -2331,6 +3262,55 @@ def update_coverage(
         elif not check:
             _atomic_write(file, rendered)
     return changed
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _stakeholder_summary(
+    mode: str,
+    coverage: Mapping[str, Mapping[str, Any]],
+    total: int,
+    covered: int,
+    percentage: Any,
+    acceptance_paths: bool,
+) -> dict[str, Any]:
+    """Build the aggregate ``stakeholder_test_coverage`` section of a report.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        mode:
+            The configured stakeholder-test coverage mode.
+        coverage:
+            The per-StRS coverage entries.
+        total:
+            Their count.
+        covered:
+            How many are covered.
+        percentage:
+            The report's percentage helper.
+        acceptance_paths:
+            Whether the new mode applies.
+
+    Returns:
+        The aggregate section, with path sums in the new mode only.
+
+    Examples:
+        >>> _stakeholder_summary("linked-swrs", {}, 0, 0, lambda c, t: 100.0, False)
+        {'mode': 'linked-swrs', 'requirements': 0, 'covered': 0, 'coverage_percent': 100.0}
+    """
+    summary: dict[str, Any] = {
+        "mode": mode,
+        "requirements": total,
+        "covered": covered,
+        "coverage_percent": percentage(covered, total),
+    }
+    if acceptance_paths:
+        paths = {"total": 0, "tested": 0, "accepted": 0}
+        for entry in coverage.values():
+            for key in paths:
+                paths[key] += int(entry.get("paths", {}).get(key, 0))
+        summary["paths"] = paths
+    return summary
 
 
 def report(root: Path) -> dict[str, Any]:
@@ -2390,8 +3370,20 @@ def report(root: Path) -> dict[str, Any]:
     }
     implemented = set(trace["implemented"]) & set(coverage_targets)
     tested = set(trace["tested"]) & set(coverage_targets)
-    fully_traceable = implemented & tested
     strs_test_coverage_mode = _strs_test_coverage_mode(config)
+    acceptance_paths = strs_test_coverage_mode == ACCEPTANCE_PATHS_MODE
+    rules: dict[str, Any] = {}
+    scenarios: dict[str, dict[str, Any]] = {}
+    if acceptance_paths:
+        rules = _scenario_rules(config, requirements, trace)
+        scenarios = {
+            identifier: _scenario_coverage(rules, requirements, identifier)
+            for identifier in requirements
+        }
+        tested = {identifier for identifier, entry in scenarios.items() if entry["tested"]}
+        tested &= set(coverage_targets)
+        missing_tests = sorted(set(coverage_targets) - tested)
+    fully_traceable = implemented & tested
     stakeholder_coverage: dict[str, dict[str, Any]] = {}
     for identifier, (_, data, _) in requirements.items():
         if data.get("type") != "StRS":
@@ -2401,17 +3393,35 @@ def report(root: Path) -> dict[str, Any]:
             for child in graph_result["derived_by"].get(identifier, [])
             if child in requirements and requirements[child][1].get("type") == "SwRS"
         )
+        exempt_swrs = {
+            child
+            for child in linked_swrs
+            if requirements[child][1].get("annotation_exemption") is True
+            and (
+                not acceptance_paths
+                or str(requirements[child][1].get("exemption_reason") or "").strip()
+            )
+        }
         linked_swrs_report = [
-            {"id": child, "status": "covered" if child in tested else "missing"}
+            {
+                "id": child,
+                "status": (
+                    "exempt"
+                    if child in exempt_swrs
+                    else ("covered" if child in tested else "missing")
+                ),
+            }
             for child in linked_swrs
         ]
         validation_files = trace["validation_tests"].get(identifier, [])
-        linked_swrs_covered = bool(linked_swrs) and all(child in tested for child in linked_swrs)
+        linked_swrs_covered = bool(linked_swrs) and all(
+            child in tested or child in exempt_swrs for child in linked_swrs
+        )
         validation_defined = bool(validation_files)
         covered = linked_swrs_covered and (
             strs_test_coverage_mode == "linked-swrs" or validation_defined
         )
-        stakeholder_coverage[identifier] = {
+        entry: dict[str, Any] = {
             "status": "covered" if covered else "missing",
             "mode": strs_test_coverage_mode,
             "linked_swrs": linked_swrs_report,
@@ -2421,6 +3431,30 @@ def report(root: Path) -> dict[str, Any]:
                 "count": len(validation_files),
             },
         }
+        if acceptance_paths:
+            paths = scenarios[identifier]
+            acceptance_files = paths["acceptance_files"]
+            waiver = _acceptance_waiver(data)
+            accepted = bool(paths["accepted"]) or waiver is not None
+            covered = linked_swrs_covered and accepted
+            entry["status"] = "covered" if covered else "missing"
+            entry["paths"] = dict(paths["paths"])
+            entry["tested"] = bool(paths["tested"])
+            entry["accepted"] = bool(paths["accepted"])
+            entry["tests"] = {
+                "status": "defined" if paths["test_files"] else "missing",
+                "files": list(paths["test_files"]),
+                "count": len(paths["test_files"]),
+            }
+            entry["acceptance_tests"] = {
+                "status": "defined" if acceptance_files else "missing",
+                "files": list(acceptance_files),
+                "count": len(acceptance_files),
+            }
+            entry["validation_tests"] = dict(entry["acceptance_tests"])
+            if waiver is not None:
+                entry["acceptance_exemption"] = {"reason": waiver}
+        stakeholder_coverage[identifier] = entry
 
     stakeholder_total = len(stakeholder_coverage)
     stakeholder_covered = sum(
@@ -2435,6 +3469,10 @@ def report(root: Path) -> dict[str, Any]:
     for identifier, (file, data, text) in sorted(requirements.items()):
         source_links = trace["implemented"].get(identifier, [])
         test_links = trace["tested"].get(identifier, [])
+        if acceptance_paths and str(data.get("type")) in leaf_levels:
+            # Only counting markers: a fragmentless marker on a SwRS that declares
+            # transitions, or a marker on an undeclared one, is an error, not a link.
+            test_links = list(rules["tested_files"].get(identifier, []))
         coverage_target = identifier in coverage_targets
         stakeholder_details = stakeholder_coverage.get(identifier)
         implementation = {
@@ -2481,6 +3519,10 @@ def report(root: Path) -> dict[str, Any]:
         }
         if stakeholder_details:
             record["stakeholder_test_coverage"] = stakeholder_details
+        if acceptance_paths:
+            transitions = _swrs_transitions(rules, data)
+            if transitions is not None and not stakeholder_details:
+                record["transitions"] = transitions
         requirement_records.append(record)
 
     scopes: dict[str, dict[str, Any]] = {}
@@ -2511,7 +3553,7 @@ def report(root: Path) -> dict[str, Any]:
         package_version = "unknown"
     detailed = {
         "report_format": "okfreq-requirements-report",
-        "format_version": 1,
+        "format_version": 2,
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "generated_by": {
             "tool": "okfreq",
@@ -2529,7 +3571,12 @@ def report(root: Path) -> dict[str, Any]:
         "coverage_definition": {
             "population": "configured leaf requirements without annotation exemptions",
             "source": "at least one @implements_req marker for each SwRS coverage target",
-            "tests": "at least one @tests_req marker for each SwRS coverage target",
+            "tests": (
+                "every declared transition has a test marker with its fragment, or at "
+                "least one test marker when none is declared"
+                if acceptance_paths
+                else "at least one @tests_req marker for each SwRS coverage target"
+            ),
             "combined": "at least one source marker and one test marker",
             "stakeholder_tests": STRS_TEST_COVERAGE_DESCRIPTIONS[strs_test_coverage_mode],
             "stakeholder_test_coverage_mode": strs_test_coverage_mode,
@@ -2544,12 +3591,14 @@ def report(root: Path) -> dict[str, Any]:
             "test_coverage_percent": percentage(len(tested), total),
             "combined_coverage_percent": percentage(len(fully_traceable), total),
         },
-        "stakeholder_test_coverage": {
-            "mode": strs_test_coverage_mode,
-            "requirements": stakeholder_total,
-            "covered": stakeholder_covered,
-            "coverage_percent": percentage(stakeholder_covered, stakeholder_total),
-        },
+        "stakeholder_test_coverage": _stakeholder_summary(
+            strs_test_coverage_mode,
+            stakeholder_coverage,
+            stakeholder_total,
+            stakeholder_covered,
+            percentage,
+            acceptance_paths,
+        ),
         "scopes": scopes,
         "requirements": requirement_records,
         # Keep the original aggregate section stable for callers that consumed
@@ -2563,7 +3612,14 @@ def report(root: Path) -> dict[str, Any]:
             "warnings": trace["warnings"],
             "missing_implementation": sorted(missing_implementation),
             "missing_tests": sorted(missing_tests),
-            "validation_tests": trace["validation_tests"],
+            "validation_tests": (
+                {
+                    identifier: list(details["acceptance_tests"]["files"])
+                    for identifier, details in sorted(stakeholder_coverage.items())
+                }
+                if acceptance_paths
+                else trace["validation_tests"]
+            ),
             "exemptions": exemptions,
         },
         "legacy": {
@@ -2633,7 +3689,7 @@ def report_schema() -> dict[str, Any]:
         ],
         "properties": {
             "report_format": {"const": "okfreq-requirements-report"},
-            "format_version": {"type": "integer", "const": 1},
+            "format_version": {"type": "integer", "const": 2},
             "generated_at": {"type": "string", "format": "date-time"},
             "generated_by": {
                 "type": "object",
@@ -2693,6 +3749,7 @@ def report_schema() -> dict[str, Any]:
                     "requirements": {"type": "integer", "minimum": 0},
                     "covered": {"type": "integer", "minimum": 0},
                     "coverage_percent": {"type": "number", "minimum": 0, "maximum": 100},
+                    "paths": {"$ref": "#/$defs/paths"},
                 },
             },
             "scopes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/scope"}},
@@ -2754,6 +3811,14 @@ def report_schema() -> dict[str, Any]:
                     "stakeholder_test_coverage": {
                         "$ref": "#/$defs/stakeholder_requirement_coverage"
                     },
+                    "transitions": {
+                        "type": "object",
+                        "required": ["tested", "missing"],
+                        "properties": {
+                            "tested": {"type": "array", "items": {"type": "string"}},
+                            "missing": {"type": "array", "items": {"type": "string"}},
+                        },
+                    },
                     "execution": {
                         "type": "object",
                         "required": ["status", "results"],
@@ -2780,6 +3845,9 @@ def report_schema() -> dict[str, Any]:
                 "properties": {
                     "status": {"enum": ["covered", "missing"]},
                     "mode": {"enum": list(STRS_TEST_COVERAGE_MODES)},
+                    "paths": {"$ref": "#/$defs/paths"},
+                    "tested": {"type": "boolean"},
+                    "accepted": {"type": "boolean"},
                     "linked_swrs": {
                         "type": "array",
                         "items": {
@@ -2787,19 +3855,36 @@ def report_schema() -> dict[str, Any]:
                             "required": ["id", "status"],
                             "properties": {
                                 "id": {"type": "string"},
-                                "status": {"enum": ["covered", "missing"]},
+                                "status": {"enum": ["covered", "missing", "exempt"]},
                             },
                         },
                     },
-                    "validation_tests": {
+                    "tests": {"$ref": "#/$defs/acceptance_tests"},
+                    "acceptance_tests": {"$ref": "#/$defs/acceptance_tests"},
+                    "acceptance_exemption": {
                         "type": "object",
-                        "required": ["status", "files", "count"],
-                        "properties": {
-                            "status": {"enum": ["defined", "missing"]},
-                            "files": {"type": "array", "items": {"type": "string"}},
-                            "count": {"type": "integer", "minimum": 0},
-                        },
+                        "required": ["reason"],
+                        "properties": {"reason": {"type": "string"}},
                     },
+                    "validation_tests": {"$ref": "#/$defs/acceptance_tests"},
+                },
+            },
+            "paths": {
+                "type": "object",
+                "required": ["total", "tested", "accepted"],
+                "properties": {
+                    "total": {"type": "integer", "minimum": 0},
+                    "tested": {"type": "integer", "minimum": 0},
+                    "accepted": {"type": "integer", "minimum": 0},
+                },
+            },
+            "acceptance_tests": {
+                "type": "object",
+                "required": ["status", "files", "count"],
+                "properties": {
+                    "status": {"enum": ["defined", "missing"]},
+                    "files": {"type": "array", "items": {"type": "string"}},
+                    "count": {"type": "integer", "minimum": 0},
                 },
             },
         },
@@ -2814,6 +3899,42 @@ def write_report_schema(destination: Path) -> None:
             Output JSON path, whose parent directory must exist.
     """
     _atomic_write(destination, json.dumps(report_schema(), indent=2) + "\n")
+
+
+# @implements_req SwRS-OKFSCHEMA-OKFREQ-015
+def _path_cell(details: Mapping[str, Any], kind: str) -> str:
+    """Render one ``Tested`` or ``Accepted`` cell of the Markdown report.
+
+    A StRS without declared paths shows whether its fragmentless marker counts; a
+    waived StRS shows ``exempt`` rather than claiming an acceptance it does not have.
+
+    .. versionadded:: 0.18.0
+
+    Args:
+        details:
+            A ``stakeholder_test_coverage`` entry, or its ``paths`` mapping.
+        kind:
+            ``"tested"`` or ``"accepted"``.
+
+    Returns:
+        The cell text, without the surrounding table pipes.
+
+    Examples:
+        >>> _path_cell({"paths": {"total": 3, "tested": 2, "accepted": 2}}, "tested")
+        '2/3'
+        >>> _path_cell({"total": 0, "tested": 0, "accepted": 0}, "accepted")
+        '❌ no paths'
+    """
+    paths = details.get("paths", details)
+    total = int(paths.get("total", 0))
+    count = int(paths.get(kind, 0))
+    if kind == "accepted" and "acceptance_exemption" in details:
+        return "exempt"
+    if total == 0:
+        return f"{'✅' if details.get(kind) else '❌'} no paths"
+    if count == total:
+        return f"✅ {count}/{total}"
+    return f"{count}/{total}"
 
 
 def write_markdown_report(root: Path, destination: Path) -> None:
@@ -2848,6 +3969,16 @@ def write_markdown_report(root: Path, destination: Path) -> None:
         f"({totals['tested']}/{totals['coverage_target_requirements']})",
         f"- StRS test coverage: {stakeholder_totals['coverage_percent']}% "
         f"({stakeholder_totals['covered']}/{stakeholder_totals['requirements']})",
+        *(
+            [
+                f"- StRS paths: tested {stakeholder_totals['paths']['tested']}/"
+                f"{stakeholder_totals['paths']['total']}, accepted "
+                f"{stakeholder_totals['paths']['accepted']}/"
+                f"{stakeholder_totals['paths']['total']}"
+            ]
+            if "paths" in stakeholder_totals
+            else []
+        ),
         f"- Combined traceability: {totals['combined_coverage_percent']}% "
         f"({totals['fully_traceable']}/{totals['coverage_target_requirements']})",
         "",
@@ -2872,44 +4003,48 @@ def write_markdown_report(root: Path, destination: Path) -> None:
     stakeholder_requirements = [
         requirement for requirement in requirements if requirement["tier"] == "StRS"
     ]
-    lines.extend(
-        [
-            "",
-            "## By stakeholder requirement",
-            "",
-            "| Scope | Tier | ID | Name | Tests |",
-            "| --- | --- | --- | --- | --- |",
-        ]
-    )
+    new_mode = stakeholder_totals["mode"] == ACCEPTANCE_PATHS_MODE
+    if new_mode:
+        header = "| Scope | Tier | ID | Name | Tests | Tested | Accepted |"
+        rule = "| --- | --- | --- | --- | --- | --- | --- |"
+    else:
+        header = "| Scope | Tier | ID | Name | Tests |"
+        rule = "| --- | --- | --- | --- | --- |"
+    lines.extend(["", "## By stakeholder requirement", "", header, rule])
     for requirement in stakeholder_requirements:
         name = str(requirement["frontmatter"].get("title", requirement["id"]))
-        lines.append(
+        prefix = (
             f"| {requirement['scope']} | {requirement['tier']} | "
             f"{requirement['id']} | {name} | "
             f"{status_emoji(requirement['tests']['status'])} {requirement['tests']['status']} |"
         )
+        if new_mode:
+            details = requirement.get("stakeholder_test_coverage", {})
+            prefix += f" {_path_cell(details, 'tested')} |"
+            prefix += f" {_path_cell(details, 'accepted')} |"
+        lines.append(prefix)
     mode = stakeholder_totals["mode"]
     coverage_description = STRS_TEST_COVERAGE_DESCRIPTIONS[mode]
     coverage_sentence = coverage_description[0].lower() + coverage_description[1:]
     coverage_note = f"*Note: current configuration is that {coverage_sentence}*"
-    lines.extend(
-        [
-            "",
-            coverage_note,
-            "",
-            "## By software requirement",
-            "",
-            "| Scope | Tier | ID | Name | Source | Tests |",
-            "| --- | --- | --- | --- | --- | --- |",
-        ]
-    )
+    if new_mode:
+        header = "| Scope | Tier | ID | Name | Source | Tests | Missing transitions |"
+        rule = "| --- | --- | --- | --- | --- | --- | --- |"
+    else:
+        header = "| Scope | Tier | ID | Name | Source | Tests |"
+        rule = "| --- | --- | --- | --- | --- | --- |"
+    lines.extend(["", coverage_note, "", "## By software requirement", "", header, rule])
     for requirement in (item for item in requirements if item["coverage_target"]):
         name = str(requirement["frontmatter"].get("title", requirement["id"]))
-        lines.append(
+        row = (
             f"| {requirement['scope']} | {requirement['tier']} | "
             f"{requirement['id']} | {name} | "
             f"{status_emoji(requirement['implementation']['status'])} "
             f"{requirement['implementation']['status']} | "
             f"{status_emoji(requirement['tests']['status'])} {requirement['tests']['status']} |"
         )
+        if new_mode:
+            missing = requirement.get("transitions", {}).get("missing") or []
+            row += f" {', '.join(missing) if missing else '—'} |"
+        lines.append(row)
     _atomic_write(destination, "\n".join(lines) + "\n")

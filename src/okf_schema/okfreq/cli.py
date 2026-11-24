@@ -245,6 +245,13 @@ def validate(
     Advisory prose warnings are reported separately and never change the exit
     status; only structural errors do.
 
+    .. versionchanged:: 0.18.0
+        In mode ``linked-swrs-and-acceptance-paths``, also reports the declared
+        ``scenarios:`` problems, the ``@accepts_req`` markers a tier schema refuses,
+        a ``swrs.schema.yaml`` that does not reject ``accepted_in_files``, the
+        scenario-fragment errors, and the advisory ``W003`` (live StRS with no
+        declared paths) and ``W004`` (live StRS with no counting acceptance test).
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -361,6 +368,10 @@ def lint(
         ``verified``); ``--check`` also fails on a stale projection and on a
         ``log.md`` heading that is not ``## YYYY-MM-DD``, newest first (W5, W18).
 
+    .. versionchanged:: 0.18.0
+        Fails on the ``W003``/``W004`` acceptance-path findings in mode
+        ``linked-swrs-and-acceptance-paths``, like any other validation error.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -436,6 +447,13 @@ def search(query: str, path: str) -> None:
 def trace(path: str, as_json: bool) -> None:
     """Scan configured source and test directories for markers.
 
+    .. versionchanged:: 0.18.0
+        Also reads ``@accepts_req`` (``markers.accepts``) and ``#S<n>`` scenario
+        fragments: the summary line prints ``accepted: N`` and ``--json`` gains the
+        ``accepted`` and ``scenario_markers`` keys. ``validation_tests`` keeps the
+        raw ``@tests_req`` files on an StRS, unlike the report's
+        ``validation_tests`` in mode ``linked-swrs-and-acceptance-paths``.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -446,6 +464,7 @@ def trace(path: str, as_json: bool) -> None:
     summary = (
         f"implemented: {len(result['implemented'])}; "
         f"tested: {len(result['tested'])}; "
+        f"accepted: {len(result['accepted'])}; "
         f"missing IDs: {len(result['missing_ids'])}"
     )
     click.echo(json.dumps(result, indent=2) if as_json else summary)
@@ -568,6 +587,12 @@ def coverage(
     .. versionchanged:: 0.13.0
         ``--check`` exits non-zero when generated metadata is stale.
 
+    .. versionchanged:: 0.18.0
+        In mode ``linked-swrs-and-acceptance-paths``, maintains an StRS's
+        ``tested_in_files`` and ``accepted_in_files`` from its counting markers,
+        each only when listed in ``generated_fields``; outside it, removes both
+        from an StRS whatever ``generated_fields`` says.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -628,6 +653,14 @@ def generate_report(
     output_summary_md: str | None,
 ) -> None:
     """Generate detailed JSON and summary Markdown traceability reports.
+
+    .. versionchanged:: 0.18.0
+        Reports ``format_version`` 2. In mode ``linked-swrs-and-acceptance-paths``
+        each StRS record gains path counters, ``tested``/``accepted``,
+        ``tests``/``acceptance_tests`` (``validation_tests`` then lists the
+        acceptance files) and an optional ``acceptance_exemption``, each SwRS with
+        declared transitions gains ``transitions``, and the Markdown summary gains
+        the ``Tested``, ``Accepted`` and ``Missing transitions`` columns.
 
     Args:
         path:
@@ -716,6 +749,9 @@ def retire(
     requirements.
 
     .. versionadded:: 0.14.0
+
+    .. versionchanged:: 0.18.0
+        A counting ``@accepts_req`` marker also blocks the retirement, in every mode.
 
     Args:
         target:

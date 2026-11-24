@@ -25,9 +25,7 @@ from okf_schema.validator import (
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_derive_trust_tier_no_verified_returns_unverified() -> None:
     assert _derive_trust_tier({}) == "unverified"
 
@@ -143,6 +141,7 @@ def test_is_stale_datetime_forms(value: object, expected: bool) -> None:
     assert _is_stale({"stale_after": value}) is expected
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S2
 def test_is_stale_compares_instants_across_offsets() -> None:
     """The same wall-clock time is a different instant in each offset."""
     soon = datetime.now(timezone.utc) + timedelta(hours=1)
@@ -469,6 +468,7 @@ def test_validate_okf2_lifecycle_past_stale_after_emits_w11(tmp_path: Path) -> N
     assert any(f.code == "W11" for f in report.warnings)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S2
 def test_validate_okf2_lifecycle_past_datetime_stale_after_emits_w11(tmp_path: Path) -> None:
     """W11: past stale_after ISO 8601 datetime with UTC offset."""
     path = tmp_path / "f.md"
@@ -478,6 +478,7 @@ def test_validate_okf2_lifecycle_past_datetime_stale_after_emits_w11(tmp_path: P
     assert [f.code for f in report.warnings] == ["W11"]
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S3
 @Parametrization.autodetect_parameters()
 @Parametrization.case(name="typo", value="tomorrow")
 @Parametrization.case(name="naive_datetime", value="2026-01-01T00:00:00")
