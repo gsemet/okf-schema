@@ -2818,8 +2818,8 @@ def test_acceptance_warnings_cover_live_strs_only(tmp_path: Path) -> None:
 
     w003 = [finding for finding in findings if finding.startswith("W003 ")]
     w004 = [finding for finding in findings if finding.startswith("W004 ")]
-    assert [finding.split(":")[0] for finding in w003] == [f"W003 {draft}"]
-    assert sorted(finding.split(":")[0] for finding in w004) == sorted(
+    assert [finding.startswith(f"W003 {draft}: ") for finding in w003] == [True]
+    assert sorted(finding.split(": ", 1)[0] for finding in w004) == sorted(
         [f"W004 {draft}", f"W004 {rejected}"]
     )
     assert w004[0].endswith(
