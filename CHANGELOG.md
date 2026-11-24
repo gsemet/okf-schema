@@ -1,5 +1,12 @@
 ## Unreleased
 
+### Feat
+
+- **okfreq**: identify scenarios in requirement headings
+- **okfreq**: measure StRS acceptance paths with declared scenarios
+
+## v0.17.0 (2026-10-30)
+
 ### BREAKING CHANGE
 
 - okfreq bundles use req_lifecycle and approved_at.

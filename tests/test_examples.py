@@ -4,7 +4,12 @@ import runpy
 import shutil
 from pathlib import Path
 
-from okf_schema.okfreq.core import marker_scan, validate_requirements
+from okf_schema.okfreq.core import (
+    _scenario_headings,
+    load_requirements,
+    marker_scan,
+    validate_requirements,
+)
 
 
 # @tests_req StRS-OKFSCHEMA-OKFREQ-001#S1
@@ -20,6 +25,19 @@ def test_okfreq_showcase_runs_in_an_empty_project(tmp_path: Path) -> None:
     assert "okf_projection" in outcomes
     assert (tmp_path / "shipping/dist/requirements-report.json").is_file()
     assert not (tmp_path / "shipping/requirements/tiers/strs/broken.md").exists()
+
+    records = load_requirements(tmp_path / "shipping/requirements")
+    for identifier, prefix in (
+        ("StRS-DELIVERY-001", "#### Path"),
+        ("SwRS-DELIVERY-001", "### Scenario"),
+    ):
+        _, data, text = records[identifier]
+        assert data["scenarios"]
+        expected = [
+            (f"{prefix} {scenario['id']}: {scenario['title']}", scenario["title"])
+            for scenario in data["scenarios"]
+        ]
+        assert _scenario_headings(text) == expected
 
 
 def test_commented_slow_acceptance_test_does_not_count_as_evidence(tmp_path: Path) -> None:

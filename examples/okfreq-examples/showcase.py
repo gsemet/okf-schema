@@ -124,8 +124,8 @@ def run_showcase(project: Path) -> dict[str, str]:
     parent_file.write_text(
         parent_file.read_text(encoding="utf-8").replace(
             "### Preserved stakeholder intent",
-            "### Main paths\n\n#### Path 1: Export a manifest\n\n"
-            "#### Path 2: Export an empty manifest\n\n### Preserved stakeholder intent",
+            "### Main paths\n\n#### Path S1: Export a manifest\n\n"
+            "#### Path S2: Export an empty manifest\n\n### Preserved stakeholder intent",
         ),
         encoding="utf-8",
     )
@@ -133,7 +133,7 @@ def run_showcase(project: Path) -> dict[str, str]:
     config["strs_test_coverage_mode"] = "linked-swrs-and-acceptance-paths"
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     findings = command("validate", str(root))
-    assert "W003" in findings and "#### Path 1: Export a manifest" in findings
+    assert "W003" in findings and "#### Path S1: Export a manifest" in findings
     assert "W004" in findings
     edit(
         parent_file,
@@ -144,8 +144,18 @@ def run_showcase(project: Path) -> dict[str, str]:
             ]
         },
     )
+    swrs_file = records[swrs][0]
+    swrs_file.write_text(
+        swrs_file.read_text(encoding="utf-8")
+        .replace("### Scenario: <nominal behavior>", "### Scenario S1: Export a manifest")
+        .replace(
+            "### Scenario: <boundary or failure behavior>",
+            "### Scenario S2: Reject a bad manifest",
+        ),
+        encoding="utf-8",
+    )
     edit(
-        records[swrs][0],
+        swrs_file,
         {
             "scenarios": [
                 {"id": "S1", "title": "Export a manifest"},
