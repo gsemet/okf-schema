@@ -16,6 +16,11 @@ derives_from:
 - StRS-OKFSCHEMA-CORE-002
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Normalize supported content
+- id: S2
+  title: Preview without writing
 derived_by: []
 implemented_in_files:
 - src/okf_schema/_internal/yaml.py
@@ -24,6 +29,7 @@ implemented_in_files:
 - src/okf_schema/formatter.py
 tested_in_files:
 - tests/test_api.py
+- tests/test_cli_core.py
 - tests/test_formatter.py
 owner: okf-schema maintainers
 verification_method: test

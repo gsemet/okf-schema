@@ -3,6 +3,8 @@
 Run from the repository root with ``uv run python
 examples/okfreq-examples/showcase.py``. The checked-in CSV example is preserved;
 all configuration, lifecycle changes and intentional failures stay temporary.
+Its markers are linkage fixtures: the checked-in example's executable evidence is
+``tests/test_export.py`` and its acceptance test ``tests/test_acceptance_export.py``.
 """
 
 from __future__ import annotations
@@ -17,7 +19,12 @@ from jsonschema import Draft202012Validator
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.file_links import inspect_file_links
 from okf_schema.okfreq.cli import okfreq
-from okf_schema.okfreq.core import load_requirements, report
+from okf_schema.okfreq.core import (
+    load_requirements,
+    report,
+    report_schema,
+    validate_requirements,
+)
 from okf_schema.projection import LINKS_START, strip_links_section
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-008
@@ -120,6 +127,100 @@ def run_showcase(project: Path) -> dict[str, str]:
     outcomes["strict_stakeholder_coverage"] = (
         "requires linked SwRS tests and a direct validation test"
     )
+
+    # Acceptance paths: the StRS declares its main paths, the SwRS its transitions,
+    # and each test marker names one with a #S<n> fragment.
+    earlier_mode = config["strs_test_coverage_mode"]
+    earlier_tests = test_path.read_text(encoding="utf-8")
+    strs_file = records[parent][0]
+    strs_file.write_text(
+        strs_file.read_text(encoding="utf-8").replace(
+            "### Preserved stakeholder intent",
+            "### Main paths\n\n#### Path 1: Pick ready shipments\n\n"
+            "1. The dispatcher selects the ready shipments.\n"
+            "2. The manifest lists them for offline review.\n\n"
+            "#### Path 2: Replace a sent manifest\n\n"
+            "1. The dispatcher corrects a sent shipment.\n"
+            "2. A replacement manifest lists the corrected shipment.\n\n"
+            "### Preserved stakeholder intent",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    config["markers"]["accepts"] = "@accepts"
+    config["strs_test_coverage_mode"] = "linked-swrs-and-acceptance-paths"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+
+    def strs_coverage() -> dict:
+        by_id = {record["id"]: record for record in report(root)["requirements"]}
+        return by_id[parent]["stakeholder_test_coverage"]
+
+    def write_tests(*markers: str) -> list[str]:
+        test_path.write_text("".join(f"# {marker}\n" for marker in markers), encoding="utf-8")
+        return validate_requirements(root)
+
+    findings = validate_requirements(root)
+    w003 = next(item for item in findings if item.startswith("W003") and parent in item)
+    assert '"Path 1: Pick ready shipments"; "Path 2: Replace a sent manifest"' in w003
+    assert "- id: S1\n  title: Pick ready shipments\n- id: S2\n" in w003
+    assert any(item.startswith("W004") and parent in item for item in findings)
+    scenarios = [{"id": "S1", "title": "Nominal manifest"}, {"id": "S2", "title": "Replacement"}]
+    edit(strs_file, {"scenarios": [{**item} for item in scenarios]})
+    edit(records[swrs][0], {"scenarios": [{**item} for item in scenarios]})
+    findings = validate_requirements(root)
+    assert not any(item.startswith("W003") for item in findings)
+    for line, target in ((1, swrs), (3, parent)):
+        assert any(
+            item.startswith(f"tests/test_manifest.py:{line}: @verifies {target} has no scenario")
+            for item in findings
+        ), findings
+    assert not any(f"@verifies {replacement}" in item for item in findings)
+    tests_status = {
+        record["id"]: record["tests"]["status"] for record in report(root)["requirements"]
+    }
+    assert tests_status[swrs] == "missing" and tests_status[replacement] == "covered"
+    assert strs_coverage()["paths"]["tested"] == 0
+    findings = write_tests(f"@verifies {swrs}#S9")
+    assert any(f"@verifies {swrs}#S9 names no declared scenario" in item for item in findings)
+    markers = [f"@verifies {replacement}", f"@accepts {parent}#S1"]
+    findings = write_tests(*markers)
+    assert not any(item.startswith("W004") for item in findings)
+    coverage = strs_coverage()
+    assert coverage["paths"] == {"total": 2, "tested": 0, "accepted": 1}
+    assert (coverage["tested"], coverage["accepted"], coverage["status"]) == (
+        False,
+        False,
+        "missing",
+    )
+    markers += [f"@verifies {parent}#S1", f"@verifies {parent}#S2"]
+    write_tests(*markers)
+    coverage = strs_coverage()
+    assert coverage["paths"] == {"total": 2, "tested": 2, "accepted": 1}
+    assert (coverage["tested"], coverage["accepted"]) == (True, False)
+    markers.append(f"@accepts {parent}#S2")
+    write_tests(*markers)
+    coverage = strs_coverage()
+    assert coverage["paths"] == {"total": 2, "tested": 2, "accepted": 2}
+    assert (coverage["accepted"], coverage["status"]) == (True, "missing")
+    markers.append(f"@verifies {swrs}#S1")
+    write_tests(*markers)
+    assert strs_coverage()["linked_swrs"][0] == {"id": swrs, "status": "missing"}
+    markers.append(f"@verifies {swrs}#S2")
+    write_tests(*markers)
+    assert strs_coverage()["status"] == "covered"
+    findings = write_tests(*markers, f"@accepts {swrs}")
+    assert any(
+        item.startswith(f"tests/test_manifest.py:{len(markers) + 1}: @accepts {swrs}: Never")
+        for item in findings
+    ), findings
+    Draft202012Validator(report_schema()).validate(report(root))
+    outcomes["acceptance_paths"] = (
+        "main paths accepted and tested apart; fragments checked; W003/W004 guide the author"
+    )
+    config["strs_test_coverage_mode"] = earlier_mode
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    test_path.write_text(earlier_tests, encoding="utf-8")
+
     config["strs_test_coverage_mode"] = "linked-swrs"
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(f"# @verifies {swrs}\n# @verifies {replacement}\n", encoding="utf-8")
@@ -128,7 +229,8 @@ def run_showcase(project: Path) -> dict[str, str]:
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(test_path.read_text() + f"# @verifies {parent}\n", encoding="utf-8")
     # These markers demonstrate linkage only. Actual CSV behavior is tested in
-    # tests/test_export.py in the checked-in example, not claimed by this fixture.
+    # tests/test_export.py in the checked-in example, and its acceptance test is
+    # tests/test_acceptance_export.py; this fixture claims neither.
     preserved = load_requirements(root)[swrs][1]
     command("update-coverage", str(root), "--diff")
     command("update-coverage", str(root))

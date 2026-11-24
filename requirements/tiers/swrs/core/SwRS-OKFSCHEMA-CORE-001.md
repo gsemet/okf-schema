@@ -15,6 +15,13 @@ derives_from:
 - StRS-OKFSCHEMA-CORE-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Validate a conforming bundle
+- id: S2
+  title: Reject an invalid document
+- id: S3
+  title: Accept portable bundle contents
 derived_by: []
 implemented_in_files:
 - src/okf_schema/api.py

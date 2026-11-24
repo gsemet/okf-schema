@@ -62,15 +62,13 @@ def test_flatten_value_mixed_nesting() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
 def test_format_frontmatter_no_frontmatter() -> None:
     """Returns None when no frontmatter is present."""
     text = "# Hello\n\nBody text.\n"
     assert format_frontmatter(text) is None
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_frontmatter_flatten_nested_tags() -> None:
     """Flattens nested list values in frontmatter."""
     text = "---\ntags: [[a, b], c]\n---\n\n# Hello\n"

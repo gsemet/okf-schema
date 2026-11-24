@@ -14,11 +14,21 @@ derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Repeat a read-only operation
+- id: S2
+  title: Reject invalid input
+- id: S3
+  title: Check evidence links using the base schema contract
+- id: S4
+  title: Report a missing evidence target without rewriting knowledge
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfkb/cli.py
 tested_in_files:
 - tests/test_kb_cli.py
+- tests/test_kb_navigate.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project

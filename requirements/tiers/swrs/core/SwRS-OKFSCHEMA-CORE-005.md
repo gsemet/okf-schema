@@ -16,6 +16,11 @@ derives_from:
 - StRS-OKFSCHEMA-CORE-002
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Inspect matching knowledge
+- id: S2
+  title: Reject an invalid inspection target
 derived_by: []
 implemented_in_files:
 - src/okf_schema/_internal/utils.py

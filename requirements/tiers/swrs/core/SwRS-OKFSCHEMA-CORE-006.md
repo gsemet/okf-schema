@@ -16,6 +16,15 @@ derives_from:
 - StRS-OKFSCHEMA-CORE-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Derive trust and staleness
+- id: S2
+  title: Compare `stale_after` as an instant
+- id: S3
+  title: Report an unusable `stale_after`
+- id: S4
+  title: Report inconsistent governed metadata
 derived_by: []
 implemented_in_files:
 - src/okf_schema/api.py

@@ -16,9 +16,18 @@ derives_from: []
 user_need: Consumers need to recognize one file link or a list of file links
   without guessing from field names, while existing documents remain usable
   without migration.
+scenarios:
+- id: S1
+  title: Navigate declared file links
+- id: S2
+  title: Check declared file links on request
 derived_by:
 - SwRS-OKFSCHEMA-CORE-007
 default_owner_email: gaetan@xeberon.net
+tested_in_files:
+- tests/test_file_links.py
+accepted_in_files:
+- tests/test_acceptance_core.py
 ---
 
 ## Recognize file references without changing knowledge values
@@ -27,6 +36,23 @@ default_owner_email: gaetan@xeberon.net
 
 The OKF capability SHALL enable consumers to distinguish file references from ordinary strings and
 navigate their targets without changing authored value types.
+
+### Main paths
+
+#### Path 1: Navigate declared file links
+
+1. A schema declares a frontmatter value as a file link with `x-okf-link` and names its root.
+2. A consumer inspects a document's declared file links through the public API.
+3. It gets each link's field, root and resolved target; the value stays the authored string.
+4. The consumer opens the target.
+
+#### Path 2: Check declared file links on request
+
+1. A document declares a file link whose target is missing.
+2. Default validation reports nothing about the target.
+3. `okf-schema validate --check-links` reports `E10` naming the field and fails, without changing
+   the bundle.
+4. Once the target exists, the same check passes.
 
 ### Preserved stakeholder intent
 

@@ -31,6 +31,13 @@ agent_skill_files:
 - skills/okfreq/references/operations.md
 example_files:
 - examples/okfreq-examples/showcase.py
+scenarios:
+- id: S1
+  title: Generate the OKF fields
+- id: S2
+  title: Report what a plain OKF consumer would misread
+- id: S3
+  title: Detect a stale projection
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py

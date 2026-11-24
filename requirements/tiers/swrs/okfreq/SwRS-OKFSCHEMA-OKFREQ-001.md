@@ -14,10 +14,20 @@ derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Operate on a resolved bundle
+- id: S2
+  title: Reject an invalid operation
+- id: S3
+  title: Declare navigable references in new requirements schemas
+- id: S4
+  title: Install and refresh the shared guideline
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/cli.py
 tested_in_files:
+- tests/test_file_links.py
 - tests/test_okfreq.py
 owner: okf-schema maintainers
 verification_method: test

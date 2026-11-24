@@ -30,6 +30,13 @@ agent_skill_files:
 - src/okf_schema/data/requirements/guidelines/requirements.guidelines.md
 example_files:
 - examples/okfreq-examples/showcase.py
+scenarios:
+- id: S1
+  title: Discover requirements through scope indexes
+- id: S2
+  title: Preserve authored guidance and history
+- id: S3
+  title: Preview drift or reject unsafe input
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/navigation.py

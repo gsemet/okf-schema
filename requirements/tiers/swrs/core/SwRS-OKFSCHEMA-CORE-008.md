@@ -17,6 +17,13 @@ derives_from:
 - StRS-OKFSCHEMA-CORE-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Report an empty schema file informationally
+- id: S2
+  title: Warn about an unparsable or non-mapping schema file
+- id: S3
+  title: Keep the legacy loader silent
 derived_by: []
 implemented_in_files:
 - src/okf_schema/validator.py

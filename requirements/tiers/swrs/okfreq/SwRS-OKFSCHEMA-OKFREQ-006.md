@@ -16,6 +16,11 @@ derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Merge compatible configuration
+- id: S2
+  title: Preserve an existing conflicting value
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/cli.py

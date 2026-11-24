@@ -52,9 +52,10 @@ lifecycle:
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email, status, verified]
+  accepted_in_files, default_owner_email, status, verified]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -75,10 +76,10 @@ scopes:
 | `version` | Configuration contract version. |
 | `tiers` | Maps each tier to its document folder, ID prefix, allowed parent tiers, `approval_lock` and optional `owner_email` (see {ref}`okfreq-ownership-and-approval`). Additional tiers use the same generic derivation rules. Configurations written before 0.16.0 use the key `levels`, which is still read; a file must not declare both. |
 | `id_policy` | Allocation strategy. `scope-prefix-sequence` is currently supported; `okfreq new` rejects unsupported values. Existing documents are never renumbered. |
-| `strs_test_coverage_mode` | StRS test-coverage rule. Choose `linked-swrs` or `linked-swrs-and-validation-test`; the default is `linked-swrs`. |
+| `strs_test_coverage_mode` | StRS test-coverage rule. Choose `linked-swrs`, `linked-swrs-and-validation-test` or `linked-swrs-and-acceptance-paths` (see the [acceptance paths reference](okfreq-acceptance-paths.md)); the default is `linked-swrs`. |
 | `lifecycle.field` | Frontmatter field that holds the lifecycle state, `req_lifecycle` by default, so it never collides with the OKF `status` that okfreq generates from it. The accepted values are the `enum` of that field in `tiers/_schema/base.schema.yaml`; their meanings are in {ref}`okfreq-lifecycle-states`. A schema you write by hand must use the same name for the property and its `required` entry; `okfreq init` always generates `req_lifecycle`, with its `x-okf-status-projection` mapping, because it runs before you can edit `config.yml`. A legacy `lifecycle.values` list is still read and takes precedence over the schema. |
-| `markers` | Implementation/test marker keywords and the regular expression used to recognise IDs. The entire match is the requirement ID. |
-| `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `default_owner_email`, `status` and `verified` (see {ref}`okfreq-okf-projection`); unsupported values fail explicitly. A configuration that lists the fields explicitly keeps that list: add `supersedes` to maintain the backlink of `superseded_by`, and `default_owner_email` to write each requirement's configured owner. |
+| `markers` | Implementation (`implements`), test (`tests`) and acceptance (`accepts`) marker keywords, and the regular expression used to recognise IDs. The entire match is the requirement ID; an optional `#S<n>` fragment may follow it, so a custom `id_pattern` must not admit `#`. A configuration without `accepts` reads `@accepts_req`. |
+| `generated_fields` | Fields `update-coverage` may regenerate. Supported values are `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `accepted_in_files`, `default_owner_email`, `status` and `verified` (see {ref}`okfreq-okf-projection`); unsupported values fail explicitly. A configuration that lists the fields explicitly keeps that list: add `supersedes` to maintain the backlink of `superseded_by`, `default_owner_email` to write each requirement's configured owner, and `accepted_in_files` to record a StRS's acceptance-test files in the mode `linked-swrs-and-acceptance-paths`. |
 | `retired_ids` | IDs that were deleted with `okfreq retire` and must never be allocated again. Optional list of ID strings, written by `okfreq retire`; `okfreq new` numbers after the highest of the existing and retired IDs, `okfreq validate` rejects a document with a listed ID, and `okfreq import`/`config-merge` take the union of both lists. |
 | `scopes` | Per-scope ID token, requirement subfolder, source/test ownership, and optional ownership overrides (`owner_email`, `tiers.<tier>.approval_lock`, `tiers.<tier>.owner_email`). Keep `source_dirs` and `test_dirs` separate. |
 
@@ -117,6 +118,24 @@ The marker establishes that a validation test is defined. `okfreq` does not
 parse test-runner results, so it cannot infer whether that test executed or
 passed. StRS source coverage is not computed; StRS requirements are reported
 in a separate stakeholder table without a source column.
+
+With the acceptance-paths mode:
+
+```yaml
+strs_test_coverage_mode: linked-swrs-and-acceptance-paths
+```
+
+each requirement declares its main paths (StRS) or transition scenarios (SwRS)
+in `scenarios:`, and test markers name one with a `#S<n>` fragment. A StRS is
+covered when the linked-SwRS rule is satisfied and every main path has an
+acceptance test, marked `@accepts_req StRS-ID#S<n>`; `@tests_req StRS-ID#S<n>`
+marks a path tested, which is reported but never required. A SwRS that declares
+`scenarios:` is test-link covered only when each transition has a
+`@tests_req SwRS-ID#S<n>` marker. The
+[acceptance paths reference](okfreq-acceptance-paths.md) gives every rule and
+worked examples, and
+[Why okfreq measures acceptance paths](../explanation/okfreq-acceptance-paths.md)
+explains how to choose between the two verbs.
 
 Set `id_token` when the identifier spelling differs from the frontmatter scope
 name, such as `scope: core` with `id_token: CORE`. Set `folder` to group newly

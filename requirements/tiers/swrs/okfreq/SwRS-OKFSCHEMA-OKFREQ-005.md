@@ -16,6 +16,17 @@ derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Validate a conforming requirement graph
+- id: S2
+  title: Refuse to omit an invalid document
+- id: S3
+  title: Keep prose guidance advisory
+- id: S4
+  title: Check requirement navigation and implementation evidence
+- id: S5
+  title: Keep target checks explicitly opt-in
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py

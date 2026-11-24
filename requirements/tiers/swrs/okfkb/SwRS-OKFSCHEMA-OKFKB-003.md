@@ -15,6 +15,11 @@ derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Record one finding
+- id: S2
+  title: Preserve earlier evidence
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfkb/cli.py

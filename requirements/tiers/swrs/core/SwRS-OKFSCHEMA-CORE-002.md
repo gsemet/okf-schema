@@ -16,6 +16,11 @@ derives_from:
 - StRS-OKFSCHEMA-CORE-002
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Initialize and author content
+- id: S2
+  title: Reject an existing target
 derived_by: []
 implemented_in_files:
 - src/okf_schema/cli.py

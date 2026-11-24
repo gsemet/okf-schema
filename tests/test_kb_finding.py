@@ -45,9 +45,7 @@ def test_slugify_digits_preserved() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-003
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S1
 def test_new_finding_happy_path_creates_file_in_findings_dir(tmp_path: Path) -> None:
     """Creates a file inside <kb_path>/findings/."""
     (tmp_path / "findings").mkdir()
@@ -182,6 +180,7 @@ def test_new_finding_errors_nonexistent_kb_path_raises(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-003#S1
 def test_kb_new_finding_cli_new_finding_creates_file(tmp_path: Path) -> None:
     """new-finding creates a finding file and prints the path."""
     runner = CliRunner()

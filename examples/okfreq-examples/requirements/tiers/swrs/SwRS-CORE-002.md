@@ -15,6 +15,11 @@ derives_from:
 - StRS-CORE-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Return a Rust CSV row
+- id: S2
+  title: Export an empty Rust row
 derived_by: []
 implemented_in_files:
 - src/rust_export.rs

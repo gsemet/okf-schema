@@ -10,8 +10,6 @@ import pytest
 from okf_schema.okfkb.install import install_kb
 from okf_schema.skill_installer import SKILL_FAMILIES, InstallationError, resolve_destination
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
-
 
 def test_install_kb_installs_exact_family_at_supplied_destination(tmp_path: Path) -> None:
     """The compatibility facade installs all and only the packaged okfkb family."""
@@ -24,6 +22,7 @@ def test_install_kb_installs_exact_family_at_supplied_destination(tmp_path: Path
     assert all((destination / skill / "SKILL.md").is_file() for skill in SKILL_FAMILIES["okfkb"])
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S2
 def test_install_kb_updates_owned_directory_and_preserves_unrelated_content(
     tmp_path: Path,
 ) -> None:
@@ -43,6 +42,7 @@ def test_install_kb_updates_owned_directory_and_preserves_unrelated_content(
     assert (unrelated / "keep.txt").read_text(encoding="utf-8") == "keep"
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S2
 def test_install_kb_does_not_mutate_guidelines_or_agents_file(tmp_path: Path) -> None:
     """The retired guideline and AGENTS.md mutations are absent from the facade."""
     destination = tmp_path / "skills"

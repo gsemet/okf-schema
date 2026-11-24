@@ -20,9 +20,6 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
-
-
 def test_global_options_version() -> None:
     """--version prints version and exits 0."""
     runner = CliRunner()
@@ -176,9 +173,7 @@ def test_install_skills_reports_staging_failure_without_mutating_destination(
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-002
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-002#S1
 def test_init_creates_bundle_structure(tmp_path: Path) -> None:
     """init creates bundle/, _schema/, index.md, and log.md."""
     runner = CliRunner()
@@ -279,6 +274,7 @@ def test_init_init_without_pattern_is_unchanged(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-002#S1
 def test_new_creates_file_with_frontmatter(tmp_path: Path) -> None:
     """new creates a concept file with frontmatter."""
     runner = CliRunner()
@@ -356,6 +352,7 @@ def test_new_exits_2_when_name_missing(tmp_path: Path) -> None:
     assert "--name" in result.output or "Missing option" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-002#S2
 def test_new_exits_1_when_file_exists(tmp_path: Path) -> None:
     """new exits 1 when file already exists."""
     runner = CliRunner()
@@ -369,6 +366,7 @@ def test_new_exits_1_when_file_exists(tmp_path: Path) -> None:
     )
     assert result.exit_code == 1
     assert "already exists" in result.output.lower() or "exists" in result.output.lower()
+    assert (root / "concepts" / "idea.md").read_text(encoding="utf-8") == "# Existing\n"
 
 
 # ---------------------------------------------------------------------------
@@ -376,6 +374,7 @@ def test_new_exits_1_when_file_exists(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S1
 def test_validate_valid_bundle_exits_0() -> None:
     """validate exits 0 for a conformant bundle."""
     runner = CliRunner()
@@ -384,6 +383,7 @@ def test_validate_valid_bundle_exits_0() -> None:
     assert "conformant" in result.output.lower() or "0 error" in result.output.lower()
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S2
 def test_validate_invalid_bundle_exits_1() -> None:
     """validate exits 1 for a non-conformant bundle."""
     runner = CliRunner()
@@ -455,7 +455,7 @@ def _bundle_with_schema_files(tmp_path: Path, schema_files: dict[str, str]) -> P
     return bundle
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S1
 def test_validate_empty_schema_file_is_info_and_passes_strict(tmp_path: Path) -> None:
     """An empty schema file is shown as INFO and does not fail --strict."""
     bundle = _bundle_with_schema_files(tmp_path, {"task.schema.yaml": "# todo\n"})
@@ -466,6 +466,7 @@ def test_validate_empty_schema_file_is_info_and_passes_strict(tmp_path: Path) ->
     assert "[W17]" not in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
 def test_validate_unparsable_schema_file_warns_w17(tmp_path: Path) -> None:
     """A syntax error in a schema file is W17: shown, passes by default, fails --strict."""
     bundle = _bundle_with_schema_files(tmp_path, {"note.schema.json": '{"type": "object",'})
@@ -501,6 +502,7 @@ def test_validate_validate_not_a_directory() -> None:
 # ---------------------------------------------------------------------------
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_lint_modifies_files_in_place(tmp_path: Path) -> None:
     """lint converts block lists to inline in-place."""
     runner = CliRunner()
@@ -535,6 +537,7 @@ def test_lint_modifies_files_with_links_default(tmp_path: Path) -> None:
     assert "backlinks: []" in text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_lint_check_exits_1_when_changes_needed(tmp_path: Path) -> None:
     """lint --check exits 1 when block lists are found."""
     runner = CliRunner()
@@ -578,6 +581,7 @@ def test_lint_check_exits_0_with_links_when_already_linted(tmp_path: Path) -> No
     assert result.exit_code == 0
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_lint_diff_prints_diff(tmp_path: Path) -> None:
     """lint --diff prints unified diff without modifying files."""
     runner = CliRunner()

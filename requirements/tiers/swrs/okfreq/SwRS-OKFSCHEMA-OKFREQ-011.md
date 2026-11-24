@@ -31,6 +31,13 @@ agent_skill_files:
 example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
+scenarios:
+- id: S1
+  title: Retire a draft
+- id: S2
+  title: Refuse an unsafe retirement
+- id: S3
+  title: Detect a reused retired ID
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py

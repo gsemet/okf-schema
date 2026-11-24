@@ -12,11 +12,20 @@ origin: native
 tier: StRS
 derives_from: []
 user_need: Teams need deterministic validation of ordinary OKF bundles.
+scenarios:
+- id: S1
+  title: Validate a conforming bundle
+- id: S2
+  title: Report a non-conforming bundle without changing it
 derived_by:
 - SwRS-OKFSCHEMA-CORE-001
 - SwRS-OKFSCHEMA-CORE-006
 - SwRS-OKFSCHEMA-CORE-008
 default_owner_email: gaetan@xeberon.net
+tested_in_files:
+- tests/test_integration.py
+accepted_in_files:
+- tests/test_acceptance_core.py
 ---
 
 ## Validate OKF bundle structures
@@ -26,6 +35,21 @@ default_owner_email: gaetan@xeberon.net
 When a maintainer validates an OKF bundle, the `okf-schema` CLI SHALL report
 structural and schema violations without modifying the bundle's authored
 content.
+
+### Main paths
+
+#### Path 1: Validate a conforming bundle
+
+1. A maintainer has an OKF bundle whose documents follow its declared structure and schemas.
+2. The maintainer runs `okf-schema validate --path` on the bundle.
+3. The CLI reports the bundle as conformant and exits with status 0; the bundle is unchanged.
+
+#### Path 2: Report a non-conforming bundle without changing it
+
+1. A bundle holds documents that break the OKF structure or their schemas.
+2. The maintainer runs `okf-schema validate --path` on the bundle.
+3. The CLI names each violation with its code and file and exits with status 1.
+4. Every authored byte of the bundle is unchanged.
 
 ### Preserved stakeholder intent
 

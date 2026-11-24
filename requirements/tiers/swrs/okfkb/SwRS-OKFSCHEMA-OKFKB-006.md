@@ -17,6 +17,13 @@ derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Materialize reciprocal derivations
+- id: S2
+  title: Project derivations as Markdown links
+- id: S3
+  title: Detect stale or invalid computed graph data
 derived_by: []
 implemented_in_files:
 - src/okf_schema/formatter.py

@@ -75,9 +75,10 @@ lifecycle:
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email, status, verified]
+  accepted_in_files, default_owner_email, status, verified]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -107,13 +108,48 @@ scopes:
   lateral links that mean neither derivation nor replacement; it has no inverse,
   so declare it on one side only. A legacy scalar `superseded_by: ID` is still read
   (validation adds the informational `I2`); convert it to a list.
-- Only the seven listed `generated_fields` are supported. Omitting a generated
-  field leaves it unmanaged; unsupported names fail. StRS never carries generated
-  source/test file arrays, even when the setting lists those fields.
+- Only the eight listed `generated_fields` are supported. Omitting a generated
+  field leaves it unmanaged; unsupported names fail. StRS never carries
+  `implemented_in_files`, and carries `tested_in_files` and `accepted_in_files`
+  only in the `linked-swrs-and-acceptance-paths` mode, even when the setting
+  lists those fields.
+- The three marker keys are `implements`, `tests` and `accepts`; a configuration
+  without `accepts` reads `@accepts_req`. A test marker's ID may be followed by
+  a `#S<n>` fragment, so a custom `id_pattern` must not admit `#`.
 - The default StRS mode is `linked-swrs`: every linked SwRS needs a test marker
   and at least one SwRS must exist. The stricter mode also needs a direct
   `@tests_req StRS-...` marker in a configured test file. This is a defined
   validation test, not proof of execution. Do not put implementation markers on StRS.
+- The `linked-swrs-and-acceptance-paths` mode measures StRS main paths. Each
+  requirement declares `scenarios:` (`[{id: S1, title: ...}]`, ids never
+  reused): main paths on a StRS, transitions on a SwRS. In short: when the target
+  declares `scenarios:`, a `@tests_req` or `@accepts_req` marker must carry the
+  `#S<n>` of a declared one, otherwise it is an error and counts for nothing;
+  when it declares none, a fragmentless marker counts for the whole requirement.
+  `@accepts_req <StRS-ID>#S<n>` makes a path accepted, `@tests_req
+  <StRS-ID>#S<n>` makes it tested; neither implies the other. A StRS is covered
+  when its linked SwRS are covered and every path is accepted. A SwRS that
+  declares `scenarios:` is test-covered when every transition has a
+  `@tests_req <SwRS-ID>#S<n>`. `@accepts_req` on a SwRS is always an error.
+- Fix the mode's findings:
+  - *has no scenario fragment*: add the `#S<n>` of the scenario the test really
+    walks (one marker line per scenario it walks), or remove the marker.
+  - *names no declared scenario*: name a declared id, or declare the scenario
+    with a new id.
+  - *`@accepts_req <SwRS-ID>`*: use `@tests_req <SwRS-ID>#S<n>`, or move the
+    acceptance marker to the StRS path the test walks.
+  - *`scenarios:` malformed*: each entry is exactly `{id: S<n>, title: <text>}`,
+    ids unique.
+  - *SwRS schema does not refuse `accepted_in_files`*: the bundle schema
+    predates okf-schema 0.18.0; add the declaration the message prints under
+    `properties:` of `tiers/_schema/swrs.schema.yaml`.
+  - `W003` (live StRS without `scenarios:`): paste the proposed block into the
+    frontmatter, fix the titles from the body's headings, leave the body
+    unchanged; on an approved StRS keep `approved_by`/`approved_at` unless the
+    owner approves again, and log the change in `tiers/log.md`.
+  - `W004` (live StRS with no acceptance test): mark the real test closest to
+    the final product that walks each path `@accepts_req <StRS-ID>#S<n>`. Never
+    invent a test or a marker to silence it.
 - `annotation_exemption: true` needs a non-empty `exemption_reason`. Use only
   for an agreed exception; report it separately, never as observed coverage.
 - Unknown producer metadata is preserved. `external_id` and `external_url`

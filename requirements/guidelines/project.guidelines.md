@@ -19,8 +19,16 @@ never touched. Our paths, scopes and checks follow; where they specialize the ba
 
 - Store requirements under `requirements/tiers/strs/<scope>/` and
   `requirements/tiers/swrs/<scope>/`, named like `SwRS-OKFSCHEMA-OKFREQ-002.md`.
-- This project uses `linked-swrs-and-validation-test`: add a direct StRS marker
-  only to a real stakeholder validation test.
+- This project uses `linked-swrs-and-acceptance-paths`: every StRS declares its
+  main paths and every SwRS its transitions in `scenarios:`, and every test marker
+  names the scenario its test exercises with a `#S<n>` fragment.
+- An acceptance test (`@accepts_req StRS-…#S<n>`) runs the product as a user gets
+  it: it installs the built wheel in an isolated venv (the session `installed_wheel`
+  fixture of `tests/conftest.py`) and runs the installed `okf-schema`, `okfkb` or
+  `okfreq` console scripts as subprocesses in a fresh temporary project, with no
+  source checkout on `PYTHONPATH`, walking one declared main path and asserting its
+  observable outcome. Keep them in `tests/test_acceptance_*.py`. An in-process test
+  (`CliRunner`, API calls, `runpy`) that walks a path keeps `@tests_req`.
 - Keep core `okf-schema`, knowledge-base `okfkb`, and requirements `okfreq`
   concerns in their configured scopes rather than combining unrelated claims.
 
@@ -49,7 +57,9 @@ validation/tests fail.
 
 - Keep the three supported generated fields enabled and refresh them through
   `okfreq update-coverage`; `--check` must fail when they are stale.
-- Keep the strict StRS coverage mode and direct validation-test evidence current.
+- Keep the acceptance-paths coverage mode current: no `W003` or `W004`, one
+  acceptance test per declared StRS main path, and one exercising test per declared
+  SwRS transition.
 - Maintain authored `documentation_files`, `agent_skill_files`, `example_files`,
   dependencies and verification criteria as actual existing project evidence.
 - Review `docs/source/explanation/project-feature-coverage.md` for feature usage.

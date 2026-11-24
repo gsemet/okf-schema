@@ -30,6 +30,13 @@ agent_skill_files:
 - skills/okf-schema/SKILL.md
 example_files:
 - examples/okfkb-hw-knowledge-base/_schema/Base.schema.yaml
+scenarios:
+- id: S1
+  title: Generate the Links section and status from the schemas
+- id: S2
+  title: Follow the annotations, not hard-coded names
+- id: S3
+  title: Reject malformed annotations and log headings
 derived_by: []
 implemented_in_files:
 - src/okf_schema/projection.py

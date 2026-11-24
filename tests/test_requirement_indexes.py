@@ -16,8 +16,6 @@ from okf_schema.okfreq.core import (
 )
 from okf_schema.okfreq.navigation import lint_indexes
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-009
-
 
 def _bundle(tmp_path: Path) -> Path:
     root = init_requirements(tmp_path / "requirements")
@@ -51,6 +49,8 @@ def _bundle(tmp_path: Path) -> Path:
     return root
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S2
 def test_lint_generates_all_ancestors_and_preserves_authored_material(tmp_path: Path) -> None:
     root = _bundle(tmp_path)
     root_index = root / "index.md"
@@ -101,6 +101,8 @@ def test_coverage_evidence_paths_are_sorted(tmp_path: Path) -> None:
     assert requirement["tested_in_files"] == ["tests/a.py", "tests/z.py"]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S3
 def test_index_previews_are_read_only_and_preserve_text_after_block(tmp_path: Path) -> None:
     root = _bundle(tmp_path)
     runner = CliRunner()
@@ -123,6 +125,7 @@ def test_index_previews_are_read_only_and_preserve_text_after_block(tmp_path: Pa
     assert index.read_text().endswith("\n## Decision\n\nKeep CSV compatibility.\n")
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S3
 @Parametrization.autodetect_parameters()
 @Parametrization.case("unclosed", content="<!-- okfreq:index:start -->\n")
 @Parametrization.case("reversed", content="<!-- okfreq:index:end --><!-- okfreq:index:start -->")
@@ -141,6 +144,7 @@ def test_invalid_blocks_abort_without_partial_writes(tmp_path: Path, content: st
     assert {p: p.read_bytes() for p in root.rglob("*") if p.is_file()} == original
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S3
 def test_invalid_requirements_do_not_generate_indexes(tmp_path: Path) -> None:
     root = _bundle(tmp_path)
     (root / "tiers/swrs/broken.md").write_text("---\ntype: SwRS\n---\n", encoding="utf-8")
@@ -151,6 +155,7 @@ def test_invalid_requirements_do_not_generate_indexes(tmp_path: Path) -> None:
     assert not (root / "tiers/swrs/index.md").exists()
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S3
 def test_level_folder_cannot_escape_bundle(tmp_path: Path) -> None:
     root = _bundle(tmp_path)
     config = root / "config.yml"
@@ -174,6 +179,7 @@ def test_removed_last_requirement_does_not_leave_stale_scope_links(tmp_path: Pat
     assert lint_indexes(root, check=True) == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-009#S1
 def test_empty_tiers_get_indexes_and_scope_paths_are_url_encoded(tmp_path: Path) -> None:
     root = init_requirements(tmp_path / "requirements")
     lint_indexes(root)

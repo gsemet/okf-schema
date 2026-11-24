@@ -15,6 +15,13 @@ derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Generate a machine-readable report
+- id: S2
+  title: Report replacement and related requirements
+- id: S3
+  title: Report unhealthy requirements
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py

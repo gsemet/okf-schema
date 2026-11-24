@@ -15,6 +15,11 @@ derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Locate matching knowledge
+- id: S2
+  title: Query an absent target
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfkb/cli.py

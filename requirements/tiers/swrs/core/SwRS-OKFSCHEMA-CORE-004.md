@@ -16,12 +16,18 @@ derives_from:
 - StRS-OKFSCHEMA-CORE-002
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Regenerate deterministic indexes
+- id: S2
+  title: Defer an unsafe superseded-link rewrite
 derived_by: []
 implemented_in_files:
 - src/okf_schema/api.py
 - src/okf_schema/cli.py
 tested_in_files:
 - tests/test_api.py
+- tests/test_kb_cli.py
 owner: okf-schema maintainers
 verification_method: test
 verification_criteria: Focused regression tests and the complete project

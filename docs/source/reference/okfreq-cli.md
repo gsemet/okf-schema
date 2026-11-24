@@ -13,8 +13,8 @@ okfreq COMMAND --help
 | Command | Purpose |
 |---|---|
 | `okfreq init [PATH] [--force]` | Create or merge the default requirements scaffold. Existing files are not replaced, except with `--force`, which replaces `guidelines/requirements.guidelines.md` with the packaged text. The command prints whether that guideline was installed, kept, replaced or already up to date. |
-| `okfreq new strs TITLE --description TEXT --project TEXT [--scope NAME] [--origin NAME] [--derives-from ID]... [--user-need TEXT] [--lifecycle draft\|proposed] [--path PATH]` | Create a stakeholder requirement with a stable allocated ID and UUID. `--lifecycle proposed` marks a requirement delivered with its implementation; the default is `draft`. |
-| `okfreq new swrs TITLE --description TEXT --project TEXT --derives-from ID [--derives-from ID]... [--scope NAME] [--origin NAME] [--lifecycle draft\|proposed] [--path PATH]` | Create a software requirement derived from one or more configured parent requirements. `--user-need` is rejected for derived tiers. `--lifecycle` works as for StRS. |
+| `okfreq new strs TITLE --description TEXT --project TEXT [--scope NAME] [--origin NAME] [--derives-from ID]... [--user-need TEXT] [--lifecycle draft\|proposed] [--path PATH]` | Create a stakeholder requirement with a stable allocated ID and UUID. `--lifecycle proposed` marks a requirement delivered with its implementation; the default is `draft`. In the mode `linked-swrs-and-acceptance-paths`, the body gains a `### Main paths` section and `scenarios:` is pre-filled with its first path. |
+| `okfreq new swrs TITLE --description TEXT --project TEXT --derives-from ID [--derives-from ID]... [--scope NAME] [--origin NAME] [--lifecycle draft\|proposed] [--path PATH]` | Create a software requirement derived from one or more configured parent requirements. `--user-need` is rejected for derived tiers. `--lifecycle` works as for StRS. In the mode `linked-swrs-and-acceptance-paths`, `scenarios:` is pre-filled from the body's two `### Scenario:` headings. |
 | `okfreq import SOURCE [--path PATH]` | Merge configuration while preserving destination values on conflicts and preserving unknown keys. |
 | `okfreq config-merge SOURCE [--path PATH]` | Explicit spelling of the same conflict-preserving configuration merge. |
 
@@ -25,14 +25,14 @@ supports `scope-prefix-sequence`; it never renumbers existing documents.
 
 | Command | Purpose |
 |---|---|
-| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation, supersession and `relates_to` links, and optionally annotated file targets. Prose and skipped-root findings are advisory. Requirement schema files that are unparsable or not mappings produce `W17`; empty ones produce informational `I1`, and a legacy single-ID `superseded_by` produces `I2` (listed, never counted as errors, and `--json` has an `infos` list). Also reports a `status` that disagrees with the lifecycle, an `approved_at` without a UTC offset, malformed projection annotations, and the base OKF findings of `okf-schema validate` on `tiers/` (except `W3`, `W4` and `W7`). |
+| `okfreq validate [PATH] [--json] [--prose] [--check-links] [--project-root DIR]` | Validate metadata, configuration, IDs, hierarchy, exemptions, derivation, supersession and `relates_to` links, and optionally annotated file targets. Prose and skipped-root findings are advisory. Requirement schema files that are unparsable or not mappings produce `W17`; empty ones produce informational `I1`, and a legacy single-ID `superseded_by` produces `I2` (listed, never counted as errors, and `--json` has an `infos` list). Also reports a `status` that disagrees with the lifecycle, an `approved_at` without a UTC offset, malformed projection annotations, and the base OKF findings of `okf-schema validate` on `tiers/` (except `W3`, `W4` and `W7`). In the mode `linked-swrs-and-acceptance-paths`, also reports a malformed `scenarios:`, a test marker without the `#S<n>` fragment its target requires, a fragment that names no declared scenario, an `@accepts_req` on a SwRS, a SwRS schema that does not refuse `accepted_in_files` (a bundle written before 0.18.0), and the warnings `W003` (a live StRS declares no `scenarios:`) and `W004` (a live StRS has no acceptance test); see the [acceptance paths reference](okfreq-acceptance-paths.md). |
 | `okfreq lint [PATH] [--prose] [--check-links] [--project-root DIR] [--check|--diff]` | Validate, then regenerate requirement-directory navigation and the OKF projection of each requirement (`status`, `verified`, Links section). `--check` fails on stale indexes or projections and on a `log.md` heading that is not `## YYYY-MM-DD`, newest first, without writing; `--diff` previews changes. |
 | `okfreq index [PATH]` | Print the stable requirement ID index. |
 | `okfreq search QUERY [PATH]` | Search IDs, titles, and descriptions. |
 | `okfreq in-file FILE` | Print one requirement document. |
 | `okfreq scope [PATH]` | Print configured scope-to-source/test mappings as JSON. |
 | `okfreq graph [PATH] [--json]` | Show computed `derived_by` links; `--json` adds authored `derives_from`, `superseded_by`, `relates_to` and computed `supersedes`. Exit non-zero for broken targets. |
-| `okfreq trace [PATH] [--json]` | Scan configured source and test locations for markers. |
+| `okfreq trace [PATH] [--json]` | Scan configured source and test locations for markers. Prints `implemented: N; tested: N; accepted: N; missing IDs: N`. |
 | `okfreq status [PATH]` | Print lifecycle counts and structural health. |
 
 `trace` separates valid leaf coverage, unknown IDs, non-leaf markers, and scan
@@ -40,6 +40,14 @@ warnings. The same ID may be marked several times in one file, for example besid
 distinct tests; the file is listed once. The `duplicates` key remains in the JSON
 reports for compatibility and is always empty. Marker spellings and the ID regular
 expression come from `config.yml`.
+
+`trace` reads `@tests_req` and `@accepts_req` in test directories, with an optional
+`#S<n>` fragment after the ID. `--json` lists `accepted` beside `implemented` and
+`tested`, and `scenario_markers`: one entry per test marker kind, ID, fragment and
+file, with its first line. Its
+`validation_tests` key keeps, in every mode, the raw `@tests_req` files on a StRS;
+in the mode `linked-swrs-and-acceptance-paths` the generated report's
+`validation_tests` holds the `@accepts_req` files instead.
 
 Every non-reserved Markdown document under `tiers/` must have mapping
 frontmatter and a non-empty string `id`. Missing or malformed documents fail
@@ -102,8 +110,8 @@ unavailable. A missing stem in a known bundle is `E10`. Warnings do not make `ok
 
 | Command | Purpose |
 |---|---|
-| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `default_owner_email`, `status`, `verified`) and the generated Links section of every `link-projection` field; see {ref}`okfreq-okf-projection`. `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. |
-| `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. Each requirement record also lists `derives_from`, `superseded_by`, the computed `supersedes` and `relates_to`. |
+| `okfreq update-coverage [PATH] [--check|--diff]` | Recompute only configured generated fields (`derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`, `accepted_in_files`, `default_owner_email`, `status`, `verified`) and the generated Links section of every `link-projection` field; see {ref}`okfreq-okf-projection`. `--check` reports drift and exits non-zero when stale; `--diff` prints previews; both are read-only. In the mode `linked-swrs-and-acceptance-paths`, a StRS gets `tested_in_files` and `accepted_in_files` from its counting `@tests_req` and `@accepts_req` markers, and a SwRS lists only its counting `@tests_req` files. |
+| `okfreq generate-report [PATH] [--output-json FILE] [--output-summary-md FILE]` | Generate a detailed JSON report and concise Markdown summary with SwRS source/test-link coverage, configured StRS test coverage, and combined leaf traceability coverage. StRS source coverage is not applicable. Each requirement record also lists `derives_from`, `superseded_by`, the computed `supersedes` and `relates_to`. The JSON `format_version` is 2. In the mode `linked-swrs-and-acceptance-paths`, each StRS reports its tested and accepted paths and the StRS table gains the columns `Tested` and `Accepted`; each SwRS that declares `scenarios:` reports its tested and missing transitions, in a `Missing transitions` column; see the [report fields](okfreq-acceptance-paths.md). |
 
 Without output options, the command writes JSON, JSON Schema and Markdown
 under the resolved bundle's parent directory in `dist/` and prints their paths.
@@ -135,7 +143,7 @@ because other documents, commits and reviews may cite it.
 `retire` changes nothing and exits non-zero when `--yes` is absent, the ID is
 unknown, the requirement is not a `draft`, another requirement lists it in
 `derives_from`, `depends_on` or `relates_to` or in `superseded_by`, or a configured source or
-test marker still names it. The error says which. After a successful retirement,
+test marker still names it, including an `@accepts_req` marker. The error says which. After a successful retirement,
 run `okfreq update-coverage` and `okfreq lint` to refresh generated fields and
 indexes of the parents that lost a child.
 
@@ -159,5 +167,6 @@ still skipped, but the highest one would be allocated again. Use `retire`.
 
 - [Configuration](okfreq-configuration) — hierarchy, scopes, markers, and generated fields.
 - [Frontmatter](okfreq-frontmatter) — authored and generated field ownership.
+- [Acceptance paths](okfreq-acceptance-paths) — scenarios, fragments and the `@accepts_req` marker.
 - [Requirements traceability tutorial](../tutorials/okfreq-traceability) — end-to-end workflow.
 - [Coverage boundaries](../explanation/okfreq-coverage-boundaries) — why test execution and pass/fail results are not parsed yet.

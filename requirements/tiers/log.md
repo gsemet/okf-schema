@@ -1,5 +1,31 @@
 # Update Log
 
+## 2026-11-24
+
+### Acceptance paths
+
+- Switched this bundle to `strs_test_coverage_mode: linked-swrs-and-acceptance-paths`,
+  with `markers.accepts: '@accepts_req'`, `accepted_in_files` in `generated_fields` and
+  the new acceptance test modules in the `test_dirs` of their scopes.
+- Added [SwRS-OKFSCHEMA-OKFREQ-015](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-015.md): in the
+  acceptance mode, StRS main paths and SwRS transitions are declared in `scenarios:`,
+  counted only through markers carrying a `#S<n>` fragment, accepted through
+  `@accepts_req`, warned about by `W003`/`W004` and reported in `format_version` 2.
+- Updated the schemas in `_schema/` to what `okfreq init` writes: `scenarios` in the base
+  schema (with the approval exception in the `req_lifecycle` description),
+  `accepted_in_files` on the StRS schema, refused on the SwRS schema.
+- Declared 13 main paths on the 5 StRS (a `### Main paths` section and `scenarios:`) and
+  the transitions of every SwRS from their `### Scenario:` headings.
+- Added `#S<n>` fragments to every test marker, replacing file-level markers by markers
+  on the tests that exercise each scenario, and added tests for the scenarios that had
+  none.
+- Added 13 acceptance tests, one per main path, in `tests/test_acceptance_core.py`,
+  `tests/test_acceptance_okfkb.py` and `tests/test_acceptance_okfreq.py`; they run the
+  installed console scripts of the built wheel.
+- Verified: `okfreq validate requirements --prose --check-links --project-root .`
+  reports no error, no `W003` and no `W004`; all 5 StRS are covered and all 13 paths
+  accepted.
+
 ## 2026-10-30
 
 ### Native OKF projection

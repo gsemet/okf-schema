@@ -5,15 +5,16 @@ tiers:
   SwRS: {folder: swrs, prefix: SwRS-OKFSCHEMA, derives_from: [StRS], approval_lock: false,
     owner_email: gaetan@xeberon.net}
 id_policy: scope-prefix-sequence
-strs_test_coverage_mode: linked-swrs-and-validation-test
+strs_test_coverage_mode: linked-swrs-and-acceptance-paths
 lifecycle:
   field: req_lifecycle
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
-generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files, default_owner_email,
-  status, verified]
+generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
+  accepted_in_files, default_owner_email, status, verified]
 scopes:
   core:
     id_token: CORE
@@ -29,7 +30,7 @@ scopes:
         tests/test_integration.py, tests/test_internal.py,
         tests/test_okf2_compliance.py, tests/test_package.py,
         tests/test_validator.py, tests/test_examples.py,
-        tests/test_projection.py]
+        tests/test_projection.py, tests/test_acceptance_core.py]
   okfkb:
     id_token: OKFKB
     folder: okfkb
@@ -39,7 +40,8 @@ scopes:
         tests/test_kb_finding.py, tests/test_kb_install.py,
         tests/test_kb_navigate.py, tests/test_kb_patterns.py,
         tests/test_kb_scaffold.py, tests/test_skill_installer.py,
-        tests/test_skill_resources.py, tests/test_tutorial_okfkb.py]
+        tests/test_skill_resources.py, tests/test_tutorial_okfkb.py,
+        tests/test_acceptance_okfkb.py]
   okfreq:
     id_token: OKFREQ
     folder: okfreq
@@ -49,4 +51,5 @@ scopes:
     test_dirs: [tests/test_okfreq.py, tests/test_file_links.py,
         tests/test_examples.py, tests/test_skill_resources.py,
         tests/test_okfreq_cli.py, tests/test_requirement_indexes.py,
-        tests/test_tutorial_okfreq.py, tests/test_okfreq_projection.py]
+        tests/test_tutorial_okfreq.py, tests/test_okfreq_projection.py,
+        tests/test_acceptance_okfreq.py]

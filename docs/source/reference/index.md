@@ -14,4 +14,5 @@ validation-codes
 okfreq-cli
 okfreq-frontmatter
 okfreq-configuration
+okfreq-acceptance-paths
 ```

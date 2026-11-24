@@ -36,6 +36,15 @@ agent_skill_files:
 example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
+scenarios:
+- id: S1
+  title: Operate without the tool source checkout
+- id: S2
+  title: Diagnose incomplete evidence and invalid documents
+- id: S3
+  title: Run the shipping-manifest demonstration safely
+- id: S4
+  title: Follow the adoption tutorial without inferred project setup
 derived_by: []
 implemented_in_files:
 - examples/okfreq-examples/showcase.py

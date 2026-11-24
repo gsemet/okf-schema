@@ -164,6 +164,11 @@ def _register_new(level: str, name: str) -> None:
     ) -> None:
         """Create one requirement of the registered level.
 
+        .. versionchanged:: 0.18.0
+            In mode ``linked-swrs-and-acceptance-paths``, a StRS body gains a
+            ``### Main paths`` section and ``scenarios:`` is pre-filled from the
+            body's main-path or scenario headings.
+
         Args:
             title:
                 Concise statement of the requirement's subject.
@@ -244,6 +249,12 @@ def validate(
 
     Advisory prose warnings are reported separately and never change the exit
     status; only structural errors do.
+
+    .. versionchanged:: 0.18.0
+        In mode ``linked-swrs-and-acceptance-paths``, also checks ``scenarios:``
+        and the ``#S<n>`` fragments of ``@tests_req``/``@accepts_req`` markers,
+        and warns (``W003``, ``W004``) about a live StRS with no ``scenarios:``
+        or no acceptance test, with or without ``--prose``.
 
     Args:
         path:
@@ -361,6 +372,10 @@ def lint(
         ``verified``); ``--check`` also fails on a stale projection and on a
         ``log.md`` heading that is not ``## YYYY-MM-DD``, newest first (W5, W18).
 
+    .. versionchanged:: 0.18.0
+        Runs the checks of mode ``linked-swrs-and-acceptance-paths`` (scenario
+        fragments, ``W003``, ``W004``) when the bundle uses it.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -436,6 +451,14 @@ def search(query: str, path: str) -> None:
 def trace(path: str, as_json: bool) -> None:
     """Scan configured source and test directories for markers.
 
+    ``@implements_req`` is read in source directories, ``@tests_req`` and
+    ``@accepts_req`` (with an optional ``#S<n>`` scenario fragment) in test
+    directories.
+
+    .. versionchanged:: 0.18.0
+        Read ``@accepts_req``; the summary gains ``accepted: N`` and ``--json``
+        the keys ``accepted`` and ``scenario_markers``.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -446,6 +469,7 @@ def trace(path: str, as_json: bool) -> None:
     summary = (
         f"implemented: {len(result['implemented'])}; "
         f"tested: {len(result['tested'])}; "
+        f"accepted: {len(result['accepted'])}; "
         f"missing IDs: {len(result['missing_ids'])}"
     )
     click.echo(json.dumps(result, indent=2) if as_json else summary)
@@ -568,6 +592,12 @@ def coverage(
     .. versionchanged:: 0.13.0
         ``--check`` exits non-zero when generated metadata is stale.
 
+    .. versionchanged:: 0.18.0
+        Maintains ``accepted_in_files``. In mode
+        ``linked-swrs-and-acceptance-paths``, a StRS lists its counting
+        ``@tests_req`` and ``@accepts_req`` files, a SwRS only its counting
+        ``@tests_req`` files.
+
     Args:
         path:
             Project or requirements-bundle path.
@@ -628,6 +658,11 @@ def generate_report(
     output_summary_md: str | None,
 ) -> None:
     """Generate detailed JSON and summary Markdown traceability reports.
+
+    .. versionchanged:: 0.18.0
+        The report's ``format_version`` is 2. In mode
+        ``linked-swrs-and-acceptance-paths`` it reports the tested and accepted
+        main paths of each StRS and the missing transitions of each SwRS.
 
     Args:
         path:
@@ -712,10 +747,13 @@ def retire(
     The ID is recorded in ``retired_ids`` of ``config.yml`` and in the tier
     ``log.md``, so ``okfreq new`` never allocates that number again. Refused
     when TARGET is not a draft or when another requirement or a source or test
-    marker references it; use ``archive`` or ``supersede`` for published
-    requirements.
+    marker (``@implements_req``, ``@tests_req`` or ``@accepts_req``) references
+    it; use ``archive`` or ``supersede`` for published requirements.
 
     .. versionadded:: 0.14.0
+
+    .. versionchanged:: 0.18.0
+        Also refused when an ``@accepts_req`` marker names TARGET.
 
     Args:
         target:

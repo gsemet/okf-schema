@@ -25,9 +25,6 @@ from okf_schema.validator import (
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
-
-
 def test_derive_trust_tier_no_verified_returns_unverified() -> None:
     assert _derive_trust_tier({}) == "unverified"
 
@@ -36,11 +33,13 @@ def test_derive_trust_tier_empty_verified_list_returns_unverified() -> None:
     assert _derive_trust_tier({"verified": []}) == "unverified"
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_derive_trust_tier_human_actor_returns_human_reviewed() -> None:
     fm = {"verified": [{"by": "human:alice", "at": "2026-01-01"}]}
     assert _derive_trust_tier(fm) == "human-reviewed"
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_derive_trust_tier_bot_actor_returns_machine_confirmed() -> None:
     fm = {"verified": [{"by": "bot:ci", "at": "2026-01-01"}]}
     assert _derive_trust_tier(fm) == "machine-confirmed"
@@ -104,6 +103,7 @@ def test_is_stale_future_date_returns_false() -> None:
     assert _is_stale({"stale_after": "2099-12-31"}) is False
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_is_stale_past_date_returns_true() -> None:
     assert _is_stale({"stale_after": "2000-01-01"}) is True
 
@@ -143,6 +143,7 @@ def test_is_stale_datetime_forms(value: object, expected: bool) -> None:
     assert _is_stale({"stale_after": value}) is expected
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S2
 def test_is_stale_compares_instants_across_offsets() -> None:
     """The same wall-clock time is a different instant in each offset."""
     soon = datetime.now(timezone.utc) + timedelta(hours=1)
@@ -154,6 +155,7 @@ def test_is_stale_compares_instants_across_offsets() -> None:
     assert _is_stale({"stale_after": behind.isoformat()}) is True
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S3
 @Parametrization.autodetect_parameters()
 @Parametrization.case(name="word", value="not-a-date")
 @Parametrization.case(name="bad_calendar_date", value="2026-99-99")
@@ -180,6 +182,7 @@ def test_validate_okf2_generated_no_generated_no_timestamp_no_finding(tmp_path: 
     assert report.warnings == []
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S4
 def test_validate_okf2_generated_e7_generated_missing_at(tmp_path: Path) -> None:
     """E7: generated block present but missing `at`."""
     path = tmp_path / "f.md"
@@ -233,6 +236,7 @@ def test_validate_okf2_sources_no_sources_no_findings(tmp_path: Path) -> None:
     assert report.warnings == []
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S4
 def test_validate_okf2_sources_e8_entry_missing_resource(tmp_path: Path) -> None:
     """E8: sources entry missing `resource`."""
     path = tmp_path / "f.md"
@@ -370,6 +374,7 @@ def test_validate_okf2_verified_no_verified_no_findings(tmp_path: Path) -> None:
     assert report.warnings == []
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S4
 def test_validate_okf2_verified_e9_missing_by(tmp_path: Path) -> None:
     """E9: verified entry missing `by`."""
     path = tmp_path / "f.md"
@@ -469,6 +474,7 @@ def test_validate_okf2_lifecycle_past_stale_after_emits_w11(tmp_path: Path) -> N
     assert any(f.code == "W11" for f in report.warnings)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S2
 def test_validate_okf2_lifecycle_past_datetime_stale_after_emits_w11(tmp_path: Path) -> None:
     """W11: past stale_after ISO 8601 datetime with UTC offset."""
     path = tmp_path / "f.md"
@@ -478,6 +484,7 @@ def test_validate_okf2_lifecycle_past_datetime_stale_after_emits_w11(tmp_path: P
     assert [f.code for f in report.warnings] == ["W11"]
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S3
 @Parametrization.autodetect_parameters()
 @Parametrization.case(name="typo", value="tomorrow")
 @Parametrization.case(name="naive_datetime", value="2026-01-01T00:00:00")

@@ -15,6 +15,13 @@ derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Resolve valid markers
+- id: S2
+  title: Encounter suspect markers
+- id: S3
+  title: Accept repeated markers in one file
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/core.py

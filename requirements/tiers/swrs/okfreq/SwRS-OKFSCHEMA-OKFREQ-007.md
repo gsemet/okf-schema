@@ -16,6 +16,11 @@ derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Apply a confirmed lifecycle transition
+- id: S2
+  title: Reject an unsafe transition
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfreq/cli.py

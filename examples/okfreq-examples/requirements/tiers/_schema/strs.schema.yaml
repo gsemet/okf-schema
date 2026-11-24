@@ -1,9 +1,10 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: strs.schema.yaml
 title: okfreq strs requirement profile
-description: StRS records stakeholder intent and does not carry implementation
-  or source coverage fields. Stakeholder test coverage is computed from linked
-  SwRS according to configuration.
+description: StRS records stakeholder intent and carries no implementation
+  fields. In mode linked-swrs-and-acceptance-paths it carries the generated
+  tested_in_files and accepted_in_files. Stakeholder test coverage is computed
+  from linked SwRS according to configuration.
 allOf:
 - $ref: base.schema.yaml
 - type: object
@@ -18,6 +19,29 @@ allOf:
       type: string
       minLength: 1
       description: The stakeholder need this requirement formalizes.
+    tested_in_files:
+      type: array
+      description: Generated test paths.
+      items:
+        type: string
+        x-okf-link:
+          resolution: project-relative
+          syntax: plain
+          basename_marker: '@tests_req'
+          id_marker: id
+          show_line_number: true
+    accepted_in_files:
+      type: array
+      description: 'Generated acceptance-test paths: files of @accepts_req markers
+        that count, in mode linked-swrs-and-acceptance-paths.'
+      items:
+        type: string
+        x-okf-link:
+          resolution: project-relative
+          syntax: plain
+          basename_marker: '@accepts_req'
+          id_marker: id
+          show_line_number: true
   required:
   - type
   - tier

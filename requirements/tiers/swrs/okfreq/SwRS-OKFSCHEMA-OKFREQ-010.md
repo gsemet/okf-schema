@@ -31,6 +31,13 @@ documentation_files:
 agent_skill_files:
 - skills/okfreq-setup/SKILL.md
 - skills/okfreq/SKILL.md
+scenarios:
+- id: S1
+  title: Set up a project that has no bundle
+- id: S2
+  title: Refuse to set up over an existing bundle
+- id: S3
+  title: Stop outside a usable git repository
 derived_by: []
 implemented_in_files:
 - skills/okfreq-setup/SKILL.md

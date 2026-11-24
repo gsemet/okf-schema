@@ -16,6 +16,17 @@ derives_from:
 - StRS-OKFSCHEMA-CORE-003
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Resolve scalar and list references through the shared API
+- id: S2
+  title: Reject invalid targets and identify checks that cannot run
+- id: S3
+  title: Preserve ordinary validation and existing bundles
+- id: S4
+  title: Inspect composed links without losing field identity
+- id: S5
+  title: Bound filesystem work and tolerate malformed targets
 derived_by: []
 implemented_in_files:
 - src/okf_schema/file_links.py

@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+import sysconfig
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -139,3 +144,90 @@ def nested_list_bundle(tmp_path: Path) -> Path:
     )
 
     return bundle
+
+
+@dataclass(frozen=True)
+class InstalledWheel:
+    """A virtual environment holding only the built okf-schema wheel."""
+
+    environment: Path
+    environment_variables: dict[str, str]
+    repository_root: Path
+
+    @property
+    def interpreter(self) -> Path:
+        return self.environment / "bin" / "python"
+
+    def executable(self, name: str) -> Path:
+        return self.environment / "bin" / name
+
+    def run(
+        self, name: str, *args: str, cwd: Path, check: bool = True
+    ) -> subprocess.CompletedProcess[str]:
+        """Run an installed console script with no source checkout on ``PYTHONPATH``."""
+        result = subprocess.run(
+            [str(self.executable(name)), *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            env=self.environment_variables,
+        )
+        if check:
+            assert result.returncode == 0, (name, args, result.stdout, result.stderr)
+        return result
+
+
+def _link_runtime_dependencies(destination: Path) -> None:
+    source = Path(sysconfig.get_paths()["purelib"])
+    destination.mkdir()
+    for entry in source.iterdir():
+        if entry.suffix == ".pth" or entry.name.startswith("okf_schema"):
+            continue
+        (destination / entry.name).symlink_to(entry, target_is_directory=entry.is_dir())
+
+
+@pytest.fixture(scope="session")
+def installed_wheel(tmp_path_factory: pytest.TempPathFactory) -> InstalledWheel:
+    """Build the wheel once per pytest worker and install it into an isolated environment."""
+    if sys.platform == "win32":
+        pytest.skip("installed console scripts are exercised on POSIX layouts only")
+    repository_root = Path(__file__).parents[1]
+    workspace = tmp_path_factory.mktemp("installed-wheel")
+    wheel_directory = workspace / "wheel"
+    subprocess.run(
+        ["uv", "build", "--offline", "--wheel", "--out-dir", str(wheel_directory)],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    wheel_path = next(wheel_directory.glob("*.whl"))
+    environment = workspace / "venv"
+    subprocess.run(
+        ["uv", "venv", "--python", sys.executable, str(environment)],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [
+            "uv",
+            "pip",
+            "install",
+            "--python",
+            str(environment / "bin" / "python"),
+            "--no-deps",
+            str(wheel_path),
+        ],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    runtime_dependencies = workspace / "runtime-dependencies"
+    _link_runtime_dependencies(runtime_dependencies)
+    environment_variables = os.environ.copy()
+    environment_variables["PYTHONPATH"] = str(runtime_dependencies)
+    environment_variables["PYTHONNOUSERSITE"] = "1"
+    return InstalledWheel(environment, environment_variables, repository_root)

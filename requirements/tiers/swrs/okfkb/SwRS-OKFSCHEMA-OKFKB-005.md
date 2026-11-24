@@ -16,6 +16,11 @@ derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Propose a supported consolidation
+- id: S2
+  title: Encounter contradictory evidence
 derived_by: []
 implemented_in_files:
 - skills/okfkb-distill/SKILL.md

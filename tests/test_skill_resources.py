@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
-import sys
-import sysconfig
 from importlib import resources
 from pathlib import Path
 from zipfile import ZipFile
@@ -36,15 +33,6 @@ def _relative_files(root: Path) -> set[Path]:
 
 def _resource_root():
     return resources.files("skills")
-
-
-def _link_runtime_dependencies(destination: Path) -> None:
-    source = Path(sysconfig.get_paths()["purelib"])
-    destination.mkdir()
-    for entry in source.iterdir():
-        if entry.suffix == ".pth" or entry.name.startswith("okf_schema"):
-            continue
-        (destination / entry.name).symlink_to(entry, target_is_directory=entry.is_dir())
 
 
 def test_canonical_skills_are_importable_resources() -> None:
@@ -99,7 +87,27 @@ def _build_wheel(repository_root: Path, wheel_directory: Path) -> Path:
     return next(wheel_directory.glob("*.whl"))
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-005
+# @tests_req SwRS-OKFSCHEMA-OKFKB-005#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-005#S2
+def test_distill_skill_keeps_evidence_and_asks_before_promoting_or_marking() -> None:
+    """The packaged distill workflow proposes, links evidence and waits for confirmation."""
+    text = " ".join(
+        (_resource_root() / "okfkb-distill" / "SKILL.md").read_text(encoding="utf-8").split()
+    )
+
+    assert "It proposes changes; a human confirms each mutation." in text
+    assert "Never edit or delete a Finding body." in text
+    assert "Never promote a Finding to a Principle without explicit human confirmation." in text
+    assert "For convergent Findings, propose a promotion:" in text
+    for destination in ("`Structure`", "`Concept`", "`Principle`"):
+        assert destination in text
+    assert "Link promoted documents to their sources with authored `derived_from`" in text
+    assert "Present every candidate contradiction to the human." in text
+    assert "On confirmation, add `contradicts: [<old-id>]` to the newer Finding" in text
+    assert "Keep both bodies unchanged." in text
+    assert "For unresolved or low-confidence contradictions, propose an `Experiment`" in text
+
+
 def test_built_wheel_contains_canonical_skill_trees_unchanged(tmp_path: Path) -> None:
     """A wheel contains exactly the canonical skill files under package resources."""
     repository_root = Path(__file__).parents[1]
@@ -146,44 +154,13 @@ def test_base_skills_document_cli_and_agent_skill_installation(skill_root: str) 
 
 def test_installed_wheel_commands_install_complete_families_without_source_checkout(
     tmp_path: Path,
+    installed_wheel,
 ) -> None:
     """Installed console scripts deploy packaged families and nested resources in isolation."""
-    if sys.platform == "win32":
-        return
-
-    repository_root = Path(__file__).parents[1]
-    wheel_directory = tmp_path / "wheel"
-    subprocess.run(
-        ["uv", "build", "--offline", "--wheel", "--out-dir", str(wheel_directory)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    wheel_path = next(wheel_directory.glob("*.whl"))
-    environment = tmp_path / "venv"
-    subprocess.run(
-        ["uv", "venv", "--python", sys.executable, str(environment)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    interpreter = environment / "bin" / "python"
-    subprocess.run(
-        ["uv", "pip", "install", "--python", str(interpreter), "--no-deps", str(wheel_path)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-
-    runtime_dependencies = tmp_path / "runtime-dependencies"
-    _link_runtime_dependencies(runtime_dependencies)
-    isolated_environment = os.environ.copy()
-    isolated_environment.pop("PYTHONPATH", None)
-    isolated_environment["PYTHONPATH"] = str(runtime_dependencies)
-    isolated_environment["PYTHONNOUSERSITE"] = "1"
+    repository_root = installed_wheel.repository_root
+    environment = installed_wheel.environment
+    interpreter = installed_wheel.interpreter
+    isolated_environment = installed_wheel.environment_variables
     destinations = {
         "okf-schema": ("okf-schema",),
         "okfkb": ("okfkb", "okfkb-distill", "okfkb-gardening", "okfkb-record-findings"),
@@ -255,7 +232,7 @@ def test_source_checkout_commands_install_families(
         assert (destination / skill_root / "SKILL.md").is_file()
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-008
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S1
 def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) -> None:
     """Operational links remain usable when the installation has no docs/source tree."""
     from okf_schema.skill_installer import install_skill_family
@@ -271,7 +248,29 @@ def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) ->
             assert resource.is_file(), (document, target)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S2
+def test_installed_okfreq_reference_separates_errors_skips_and_coverage_gaps(
+    tmp_path: Path,
+) -> None:
+    """The installed operations reference tells errors, skipped checks and gaps apart."""
+    from okf_schema.skill_installer import install_skill_family
+
+    destination = tmp_path / "agent-skills"
+    install_skill_family("okfreq", destination)
+    text = " ".join(
+        (destination / "okfreq" / "references" / "operations.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+
+    assert "`missing_ids` needs a real requirement or a corrected marker" in text
+    assert "For structural errors repair the indicated file" in text
+    assert "For `E10` fix the target, filename ambiguity, or annotation" in text
+    assert "`W15` provide the correct root or restore access" in text
+    assert "Missing scan directories make coverage incomplete." in text
+    assert "Execute the project's actual tests separately and report their results" in text
+
+
 def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
     tmp_path: Path,
 ) -> None:
@@ -290,7 +289,9 @@ def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
         assert "references/requirements.guidelines.md" not in text
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S3
 def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: Path) -> None:
     """The setup skill ships with the okfreq family and states its stop rules and delivery."""
     from okf_schema.skill_installer import install_skill_family
@@ -312,9 +313,46 @@ def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: P
         "owner_email",
         "approval_lock",
         "Nothing is approved during setup",
+        "`okfreq-gardening` applies.",
+        "The directory is not a git repository, or the default branch cannot be determined",
+        "Never modify, stage or revert changes that were in the worktree before you started.",
     ):
         assert required in text
     for target in re.findall(r"\]\(([^)]+)\)", text):
         if "://" in target or target.startswith("#"):
             continue
         assert (skill.parent / target.split("#")[0]).resolve().is_file(), target
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="okfreq", document="okfreq/SKILL.md")
+@Parametrization.case(name="operations", document="okfreq/references/operations.md")
+@Parametrization.case(name="gardening", document="okfreq-gardening/SKILL.md")
+@Parametrization.case(name="setup", document="okfreq-setup/SKILL.md")
+def test_okfreq_skills_teach_acceptance_paths(document: str) -> None:
+    """Each shipped okfreq skill teaches the acceptance-paths mode on its own."""
+    text = (_resource_root() / document).read_text(encoding="utf-8")
+
+    for expected in ("linked-swrs-and-acceptance-paths", "@accepts_req", "scenarios:", "#S<n>"):
+        assert expected in text, (document, expected)
+
+
+def test_shipped_guideline_teaches_acceptance_paths() -> None:
+    """The shipped guideline states both verbs, the cost rule, the fragment rule and Rule 7."""
+    guideline = resources.files("okf_schema").joinpath(
+        "data", "requirements", "guidelines", "requirements.guidelines.md"
+    )
+    text = " ".join(guideline.read_text(encoding="utf-8").split())
+
+    assert "`@tests_req <ID>#S<n>` tests an SwRS transition or an StRS main path" in text
+    assert "`@accepts_req <StRS-ID>#S<n>` is the acceptance test of an StRS main path" in text
+    assert "Choose the verb by execution cost." in text
+    assert "When the tests are cheap, put `@accepts_req` directly" in text
+    assert (
+        "when the target declares `scenarios:`, a test marker must carry the `#S<n>` of a "
+        "declared scenario, otherwise it is an error and counts for nothing" in text
+    )
+    assert "a marker without fragment counts for the whole requirement" in text
+    assert "An edit that only adds `scenarios:` to an approved requirement" in text
+    assert "leave `approved_by` and `approved_at` unchanged unless the owner gives a new" in text
+    assert "### Main paths" in text and "#### Path n: <title>" in text

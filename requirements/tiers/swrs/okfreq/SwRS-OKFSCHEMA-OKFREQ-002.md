@@ -15,6 +15,15 @@ derives_from:
 - StRS-OKFSCHEMA-OKFREQ-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Create a stakeholder requirement
+- id: S2
+  title: Create a software requirement
+- id: S3
+  title: Identify a requirement when reading its body
+- id: S4
+  title: Never reuse a requirement number
 derived_by: []
 implemented_in_files:
 - src/okf_schema/data/requirements/guidelines/requirements.guidelines.md

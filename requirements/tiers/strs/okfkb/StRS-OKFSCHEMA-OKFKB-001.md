@@ -13,6 +13,13 @@ origin: native
 tier: StRS
 derives_from: []
 user_need: Teams need to capture and organize engineering knowledge reliably.
+scenarios:
+- id: S1
+  title: Capture an immutable finding
+- id: S2
+  title: Update a knowledge base's indexes and lint
+- id: S3
+  title: Propose a consolidation for human review
 derived_by:
 - SwRS-OKFSCHEMA-OKFKB-001
 - SwRS-OKFSCHEMA-OKFKB-002
@@ -21,6 +28,10 @@ derived_by:
 - SwRS-OKFSCHEMA-OKFKB-005
 - SwRS-OKFSCHEMA-OKFKB-006
 default_owner_email: gaetan@xeberon.net
+tested_in_files:
+- tests/test_integration.py
+accepted_in_files:
+- tests/test_acceptance_okfkb.py
 ---
 
 ## Maintain trustworthy engineering knowledge
@@ -30,6 +41,31 @@ default_owner_email: gaetan@xeberon.net
 The `okfkb` capability SHALL enable engineering teams to capture, organize, and
 mature knowledge while retaining the evidence and provenance on which that
 knowledge depends.
+
+### Main paths
+
+#### Path 1: Capture an immutable finding
+
+1. `okfkb init` scaffolds a knowledge base.
+2. `okfkb new-finding` records a dated Finding with its confidence, context and tags, and the
+   engineer writes the observation.
+3. `okfkb update` and later Findings leave the Finding's authored body unchanged.
+4. `okfkb get` returns the Finding, and the knowledge base validates.
+
+#### Path 2: Update a knowledge base's indexes and lint
+
+1. The knowledge base gains Findings and stable documents.
+2. `okfkb update` writes the tier indexes and normalizes frontmatter, keeping authored text.
+3. A second `okfkb update` changes nothing, and `okfkb validate` passes.
+
+#### Path 3: Propose a consolidation for human review
+
+1. The `okfkb-distill` skill, installed by `okfkb install-skills`, finds convergent Findings, for
+   example with `okfkb query`.
+2. It proposes a consolidation and writes it only after a human confirms.
+3. The confirmed stable document names its Findings in `derived_from`, and `okfkb update` links the
+   Findings back to it.
+4. The Finding bodies stay unchanged, and `okfkb validate --check-links` passes.
 
 ### Preserved stakeholder intent
 

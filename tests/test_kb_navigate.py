@@ -141,9 +141,6 @@ def test_load_nodes_node_fields_parsed(kb_bundle: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-004
-
-
 def test_search_search_ranks_title_and_tags(kb_bundle: Path) -> None:
     hits = navigate.search(kb_bundle, "pll")
     assert hits, "expected at least one hit"
@@ -309,6 +306,7 @@ def test_navigation_cli_search_command_table(kb_bundle: Path) -> None:
     assert "PLL lock time" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S1
 def test_navigation_cli_search_command_json(kb_bundle: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(kb, ["search", "pll", str(kb_bundle), "--format", "json"])
@@ -333,6 +331,7 @@ def test_navigation_cli_get_command_frontmatter(kb_bundle: Path) -> None:
     assert "Boot PLL startup margin" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S2
 def test_navigation_cli_get_command_missing_exits_1(kb_bundle: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(kb, ["get", "nope", str(kb_bundle)])
@@ -354,6 +353,7 @@ def test_navigation_cli_read_command_unknown_tier_exits_1(kb_bundle: Path) -> No
     assert "Error" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S1
 def test_navigation_cli_query_filter_paths(kb_bundle: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(
@@ -387,11 +387,39 @@ def test_navigation_cli_query_traversal_json(kb_bundle: Path) -> None:
     assert payload[0]["path"] == "principles/firmware-timeouts-must-be-polled.md"
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S2
 def test_navigation_cli_query_bad_expr_exits_1(kb_bundle: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(kb, ["query", "bareword", str(kb_bundle)])
     assert result.exit_code == 1
     assert "Error" in result.output
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S2
+def test_navigation_cli_repeated_and_absent_queries_leave_the_bundle_unchanged(
+    kb_bundle: Path,
+) -> None:
+    """Repeated reads answer identically; absent targets report not found; nothing is written."""
+    runner = CliRunner()
+    snapshot = {path: path.read_bytes() for path in kb_bundle.rglob("*") if path.is_file()}
+    query = ["query", "finding[tag=pll] ^ concept", str(kb_bundle), "--format", "json"]
+    search = ["search", "pll", str(kb_bundle), "--format", "paths"]
+
+    first = [runner.invoke(kb, query), runner.invoke(kb, search)]
+    second = [runner.invoke(kb, query), runner.invoke(kb, search)]
+    missing = runner.invoke(kb, ["get", "concepts/absent", str(kb_bundle)])
+    empty = runner.invoke(kb, ["query", "type:playbook", str(kb_bundle), "--format", "paths"])
+
+    assert all(result.exit_code == 0 for result in first + second)
+    assert json.loads(first[0].output)
+    assert first[1].output.split()
+    assert [result.output for result in second] == [result.output for result in first]
+    assert missing.exit_code == 1
+    assert "Error" in missing.output
+    assert empty.exit_code == 0
+    assert empty.output.strip() == ""
+    assert {path: path.read_bytes() for path in kb_bundle.rglob("*") if path.is_file()} == snapshot
 
 
 def test_navigation_cli_kb_help_lists_navigation_commands() -> None:
@@ -530,6 +558,7 @@ def test_read_and_get_markdown_get_md_format_cli(kb_bundle: Path) -> None:
     assert "Hardcoded wait too short" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-004#S2
 def test_read_and_get_markdown_query_table_no_matches(kb_bundle: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(kb, ["query", "type:playbook", str(kb_bundle)])

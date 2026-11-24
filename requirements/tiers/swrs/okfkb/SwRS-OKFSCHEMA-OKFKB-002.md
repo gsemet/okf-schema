@@ -15,6 +15,11 @@ derives_from:
 - StRS-OKFSCHEMA-OKFKB-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Scaffold a new knowledge base
+- id: S2
+  title: Install into existing content
 derived_by: []
 implemented_in_files:
 - src/okf_schema/okfkb/cli.py
@@ -23,10 +28,8 @@ implemented_in_files:
 - src/okf_schema/okfkb/scaffold.py
 - src/okf_schema/skill_installer.py
 tested_in_files:
-- tests/test_integration.py
 - tests/test_kb_cli.py
 - tests/test_kb_install.py
-- tests/test_kb_patterns.py
 - tests/test_kb_scaffold.py
 - tests/test_skill_installer.py
 depends_on: []
