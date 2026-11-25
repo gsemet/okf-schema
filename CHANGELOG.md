@@ -1,3 +1,10 @@
+## Unreleased
+
+### Fix
+
+- **release**: publish even when note generation fails
+- **release**: allow manually authored release notes
+
 ## v0.18.0 (2026-11-25)
 
 ### Feat
