@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+from importlib.resources import files
 from pathlib import Path
 
 import pytest
@@ -196,6 +197,25 @@ def test_schema_files_are_valid_yaml_schema_file_is_valid_yaml(
     content = (target / "_schema" / schema_name).read_bytes()
     result = yaml.safe_load(content)
     assert result is not None, f"{schema_name} parsed to None (empty file?)"
+
+
+def test_shipped_base_schema_teaches_okf02_actor_forms() -> None:
+    """The shipped `generated.by` description teaches OKF 0.2 forms, and the example matches it."""
+    shipped = files("okf_schema.data.kb").joinpath("_schema/Base.schema.yaml")
+    example = (
+        Path(__file__).parents[1]
+        / "examples"
+        / "okfkb-hw-knowledge-base"
+        / "_schema"
+        / "Base.schema.yaml"
+    )
+    shipped_description, example_description = (
+        yaml.safe_load(text)["properties"]["generated"]["properties"]["by"]["description"]
+        for text in (shipped.read_text(encoding="utf-8"), example.read_text(encoding="utf-8"))
+    )
+    assert "reference_agent/gemini-2.5-pro" in shipped_description
+    assert "bot:" not in shipped_description
+    assert example_description == shipped_description
 
 
 # ---------------------------------------------------------------------------

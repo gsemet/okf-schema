@@ -621,6 +621,22 @@ def test_show_bundle_trust_tier_human_reviewed(tmp_path: Path) -> None:
     assert detail.trust_tier == "human-reviewed"
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+def test_show_bundle_trust_tier_producer_version_actor(tmp_path: Path) -> None:
+    """OKF 0.2: a `<producer>/<version>` verification gives trust_tier='machine-confirmed'."""
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    subdir = bundle / "things"
+    subdir.mkdir()
+    (subdir / "c.md").write_text(
+        "---\ntype: concept\ntitle: T\ndescription: D\n"
+        "verified:\n  - by: reference_agent/gemini-2.5-pro\n    at: '2026-01-01'\n---\n\n# T\n",
+        encoding="utf-8",
+    )
+    detail = show_bundle(bundle, "things/c.md")
+    assert detail.trust_tier == "machine-confirmed"
+
+
 # @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_show_bundle_stale_concept_detected(tmp_path: Path) -> None:
     """OKF 0.2: concept with past stale_after is stale=True."""

@@ -22,6 +22,7 @@ implemented_in_files:
 - src/okf_schema/validator.py
 tested_in_files:
 - tests/test_api.py
+- tests/test_cli_remaining.py
 - tests/test_okf2_compliance.py
 owner: okf-schema maintainers
 verification_method: test
@@ -36,6 +37,8 @@ scenarios:
   title: Report an unusable `stale_after`
 - id: S4
   title: Report inconsistent governed metadata
+- id: S5
+  title: Count every OKF 0.2 actor form
 default_owner_email: gaetan@xeberon.net
 ---
 
@@ -77,6 +80,15 @@ When OKF 0.2 metadata is validated, okf-schema SHALL enforce provenance, verific
 - WHEN OKF 0.2 validation runs
 - THEN the result contains the corresponding actionable error or warning code
   without altering the concept
+
+### Scenario S5: Count every OKF 0.2 actor form
+
+- GIVEN a concept whose `verified[].by` actor is written as `{producer}/{version}`,
+  `human:<id>`, `process:<id>`, any other `{prefix}:{identifier}`, or in no recognized form
+- WHEN the concept is validated or inspected
+- THEN a `human:<id>` actor makes it human-reviewed, any other non-empty actor (`human:`
+  with no identifier included) makes it machine-confirmed, and only an actor in no
+  recognized form raises warning W10
 
 ### Verification notes
 

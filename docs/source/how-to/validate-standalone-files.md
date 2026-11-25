@@ -173,7 +173,7 @@ The `validate-md` command checks the following (unless noted as bundle-only):
 | **W7** | Lists use inline notation, not block style | Use `tags: [a, b]` not `tags:\n  - a\n  - b` |
 | **W8** | Legacy `timestamp` is absent | Run bundle lint or migrate it to `generated.at` |
 | **W9** | Legacy `# Citations` section is absent | Use `sources` and footnotes |
-| **W10** | Verification actors are well formed | Use `<prefix>:<identifier>` |
+| **W10** | Verification actors use an OKF 0.2 form | Use `<producer>/<version>`, `human:<id>` or `process:<id>` |
 | **W11** | Content is not stale | Refresh or revise `stale_after` (ISO 8601 datetime with offset, e.g. `2026-12-31T00:00:00Z`) |
 | **W16** | `stale_after` is parseable | Use a datetime with a UTC offset, or a bare date |
 | **W12** | Footnotes match source IDs | Add the corresponding `sources[].id` |

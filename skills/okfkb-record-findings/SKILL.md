@@ -42,7 +42,7 @@ or outcomes. Those are deliberately promoted by `okfkb-distill`.
    tags: [relevant, keywords]
    generated:
      at: <ISO-8601 UTC, e.g. 2026-07-02T14:30:00Z>
-     by: <actor, e.g. human:alice or bot:collector>
+     by: <actor, e.g. human:alice or reference_agent/gemini-2.5-pro>
    confidence: low | medium | high | confirmed
    kb_status: active
    context: >-
