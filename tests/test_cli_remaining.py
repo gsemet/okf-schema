@@ -1,12 +1,16 @@
-"""Tests for CLI remaining commands: list, show, index, stats."""
+"""Tests for CLI remaining commands: list, show, trust, index, stats."""
 
 from __future__ import annotations
 
+import itertools
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
+from parametrization import Parametrization
 
 from okf_schema.cli import cli
 
@@ -57,6 +61,34 @@ def _make_bundle(path: Path) -> Path:
     )
 
     return bundle
+
+
+def _snapshot(root: Path) -> dict[str, tuple[bytes, int]]:
+    """Return the content and modification time of every file below *root*."""
+    return {
+        path.relative_to(root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
+
+
+class _ShortWriteStream:
+    """A raw standard output that takes five bytes, then returns ``None``, then ``0``."""
+
+    def __init__(self) -> None:
+        self.received = bytearray()
+        self._limits = itertools.cycle([5, None, 0])
+
+    def write(self, data: bytes) -> int | None:
+        limit = next(self._limits)
+        if limit is None:
+            return None
+        taken = bytes(data[:limit])
+        self.received += taken
+        return len(taken)
+
+    def flush(self) -> None:
+        """Do nothing: a raw stream holds no buffer."""
 
 
 # ---------------------------------------------------------------------------
@@ -187,6 +219,276 @@ def test_show_show_reads_names_from_the_bundle_root(
     assert rooted.output == expected.output
     assert relative.exit_code == 0
     assert relative.output == expected.output
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+def test_show_show_prints_the_stored_flow_style_file(tmp_path: Path) -> None:
+    """show keeps flow style and adds no trust line."""
+    bundle = _make_bundle(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["show", "--path", str(bundle), "concept-a.md"])
+    assert result.exit_code == 0
+    assert result.stdout_bytes == (bundle / "concept-a.md").read_bytes()
+    assert b"trust:" not in result.stdout_bytes
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+def test_show_show_adds_no_trust_or_stale_line(tmp_path: Path) -> None:
+    """show adds nothing to a verified and stale concept."""
+    bundle = _make_bundle(tmp_path)
+    concept = bundle / "old.md"
+    concept.write_bytes(
+        b"---\ntype: concept\ntitle: Old\n"
+        b'verified: [{by: "human:alice", at: "2026-11-01"}]\n'
+        b"stale_after: 2020-01-01\n---\n\n# Old\n"
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["show", "--path", str(bundle), "old.md"])
+    assert result.exit_code == 0
+    assert result.stdout_bytes == concept.read_bytes()
+    assert b"trust:" not in result.stdout_bytes
+    assert b"stale: true" not in result.stdout_bytes
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="no_frontmatter", content=b"# Title\n\nBody.\n")
+@Parametrization.case(name="invalid_yaml", content=b"---\ntitle: [unclosed\n---\nBody\n")
+@Parametrization.case(name="crlf", content=b"---\r\ntitle: T\r\n---\r\nBody\r\n")
+@Parametrization.case(name="no_final_newline", content=b"---\ntitle: T\n---\nBody")
+@Parametrization.case(name="not_utf8", content=b"---\ntitle: caf\xe9\n---\nBody\n")
+@Parametrization.case(name="empty", content=b"")
+def test_show_show_prints_any_file_byte_for_byte(tmp_path: Path, content: bytes) -> None:
+    """show neither validates nor changes the file, and reports nothing on stderr."""
+    bundle = _make_bundle(tmp_path)
+    (bundle / "raw.md").write_bytes(content)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["show", "--path", str(bundle), "raw.md"])
+    assert result.exit_code == 0
+    assert result.exception is None
+    assert result.stdout_bytes == content
+    assert result.stderr == ""
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+def test_show_show_does_not_translate_newlines_in_a_real_process(tmp_path: Path) -> None:
+    """The standard output of a process holds the stored bytes, on Windows too."""
+    bundle = _make_bundle(tmp_path)
+    concept = bundle / "lf.md"
+    concept.write_bytes(b"---\ntitle: T\n---\n\nBody\n")
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from okf_schema.cli import cli; cli()",
+            "show",
+            "--path",
+            str(bundle),
+            "lf.md",
+        ],
+        capture_output=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout == concept.read_bytes()
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+def test_show_show_writes_every_byte_through_short_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """show writes the rest of the file when an unbuffered stdout takes only a part."""
+    bundle = _make_bundle(tmp_path)
+    stream = _ShortWriteStream()
+    monkeypatch.setattr("okf_schema.cli.click.get_binary_stream", lambda name: stream)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["show", "--path", str(bundle), "concept-a.md"])
+    assert result.exit_code == 0
+    assert bytes(stream.received) == (bundle / "concept-a.md").read_bytes()
+
+
+# ---------------------------------------------------------------------------
+# trust
+# ---------------------------------------------------------------------------
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S6
+def test_trust_trust_reports_unverified_without_verification(tmp_path: Path) -> None:
+    """trust prints one line for a concept without a verified field, and succeeds."""
+    bundle = _make_bundle(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["trust", "--path", str(bundle), "concept-a.md"])
+    assert result.exit_code == 0
+    assert result.output == "trust: unverified\n"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S6
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="human_in_a_list",
+    verified='\n  - {by: "human:alice", at: "2026-11-01"}',
+    tier="human-reviewed",
+)
+@Parametrization.case(
+    name="process_as_a_bare_mapping",
+    verified=' {by: "process:ci-lint", at: "2026-11-01"}',
+    tier="machine-confirmed",
+)
+@Parametrization.case(
+    name="producer_and_version",
+    verified='\n  - {by: reference_agent/gemini-2.5-pro, at: "2026-11-01"}',
+    tier="machine-confirmed",
+)
+def test_trust_trust_prints_the_tier_of_the_verification(
+    tmp_path: Path, verified: str, tier: str
+) -> None:
+    """trust prints the tier derived from the verified field."""
+    bundle = _make_bundle(tmp_path)
+    (bundle / "checked.md").write_text(
+        f"---\ntype: concept\ntitle: Checked\nverified:{verified}\n---\n\n# Checked\n",
+        encoding="utf-8",
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["trust", "--path", str(bundle), "checked.md"])
+    assert result.exit_code == 0
+    assert result.output == f"trust: {tier}\n"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S6
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="past_date",
+    metadata="stale_after: 2020-01-01",
+    expected="trust: unverified\nstale: true\n",
+)
+@Parametrization.case(
+    name="past_offset_datetime",
+    metadata="stale_after: 2020-01-01T00:00:00Z",
+    expected="trust: unverified\nstale: true\n",
+)
+@Parametrization.case(
+    name="past_date_of_a_reviewed_concept",
+    metadata='verified: {by: "human:alice", at: "2019-01-01"}\nstale_after: 2020-01-01',
+    expected="trust: human-reviewed\nstale: true\n",
+)
+@Parametrization.case(
+    name="future_date",
+    metadata="stale_after: 2999-01-01",
+    expected="trust: unverified\n",
+)
+@Parametrization.case(
+    name="unparseable",
+    metadata="stale_after: not-a-date",
+    expected="trust: unverified\n",
+)
+def test_trust_trust_adds_the_stale_line_once_reached_and_writes_nothing(
+    tmp_path: Path, metadata: str, expected: str
+) -> None:
+    """The stale line follows the tier only when stale_after is reached; no file changes."""
+    bundle = _make_bundle(tmp_path)
+    (bundle / "dated.md").write_text(
+        f"---\ntype: concept\ntitle: Dated\n{metadata}\n---\n\n# Dated\n",
+        encoding="utf-8",
+    )
+    before = _snapshot(bundle)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["trust", "--path", str(bundle), "dated.md"])
+    assert result.exit_code == 0
+    assert result.output == expected
+    assert _snapshot(bundle) == before
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S6
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="no_frontmatter", content=b"# Title\n\nBody.\n")
+@Parametrization.case(name="invalid_yaml", content=b"---\ntitle: [unclosed\n---\nBody\n")
+def test_trust_trust_reports_unverified_without_usable_frontmatter(
+    tmp_path: Path, content: bytes
+) -> None:
+    """A file without frontmatter, or with invalid YAML, is unverified and succeeds."""
+    bundle = _make_bundle(tmp_path)
+    (bundle / "raw.md").write_bytes(content)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["trust", "--path", str(bundle), "raw.md"])
+    assert result.exit_code == 0
+    assert result.output == "trust: unverified\n"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S6
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="without_extension", concept_path="concept-a")
+@Parametrization.case(name="leading_slash", concept_path="/concept-a")
+def test_trust_trust_resolves_a_name_as_show_does(tmp_path: Path, concept_path: str) -> None:
+    """A name without .md, or with a leading /, gives the output of the file name."""
+    bundle = _make_bundle(tmp_path)
+    runner = CliRunner()
+    expected = runner.invoke(cli, ["trust", "--path", str(bundle), "concept-a.md"])
+    result = runner.invoke(cli, ["trust", "--path", str(bundle), concept_path])
+    assert result.exit_code == 0
+    assert result.output == expected.output == "trust: unverified\n"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S7
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="with_extension", concept_path="missing.md")
+@Parametrization.case(name="without_extension", concept_path="missing")
+def test_trust_trust_exits_2_on_missing_concept(tmp_path: Path, concept_path: str) -> None:
+    """trust refuses a missing concept with the message of show, and writes nothing."""
+    bundle = _make_bundle(tmp_path)
+    before = _snapshot(bundle)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["trust", "--path", str(bundle), concept_path])
+    assert result.exit_code == 2
+    assert "Error: Concept not found" in result.stderr
+    assert result.stdout == ""
+    assert "Traceback" not in result.output
+    assert isinstance(result.exception, SystemExit)
+    assert _snapshot(bundle) == before
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S1
+def test_trust_trust_exits_2_on_path_outside_the_bundle(tmp_path: Path) -> None:
+    """trust refuses a path leaving the bundle."""
+    bundle = _make_bundle(tmp_path)
+    (tmp_path / "outside.md").write_text("# Outside\n", encoding="utf-8")
+    before = _snapshot(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["trust", "--path", str(bundle), "../outside.md"])
+    assert result.exit_code == 2
+    assert "Error: Concept path is outside the bundle" in result.stderr
+    assert result.stdout == ""
+    assert _snapshot(tmp_path) == before
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S8
+def test_trust_trust_refuses_a_file_that_is_not_utf8(tmp_path: Path) -> None:
+    """trust writes one error line naming the file, with no traceback and no tier."""
+    bundle = _make_bundle(tmp_path)
+    (bundle / "latin1.md").write_bytes(b"---\ntitle: caf\xe9\n---\nBody\n")
+    before = _snapshot(bundle)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["trust", "--path", str(bundle), "latin1.md"])
+    assert result.exit_code == 2
+    assert result.stderr == (
+        f"Error: Concept file is not valid UTF-8: {bundle.resolve() / 'latin1.md'}\n"
+    )
+    assert result.stdout == ""
+    assert "Traceback" not in result.output
+    assert isinstance(result.exception, SystemExit)
+    assert _snapshot(bundle) == before
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S6
+def test_trust_trust_is_listed_with_its_summary_in_help() -> None:
+    """The command group lists trust, and its help gives the summary."""
+    runner = CliRunner()
+    group_help = runner.invoke(cli, ["--help"])
+    command_help = runner.invoke(cli, ["trust", "--help"])
+    assert group_help.exit_code == 0
+    assert any(line.split()[:1] == ["trust"] for line in group_help.output.splitlines())
+    assert command_help.exit_code == 0
+    assert "Print a concept's trust tier and staleness." in command_help.output
 
 
 # ---------------------------------------------------------------------------
@@ -331,11 +633,22 @@ def test_defensive_error_handling_list_exits_2_on_api_error(tmp_path: Path) -> N
 
 
 def test_defensive_error_handling_show_exits_2_on_api_error(tmp_path: Path) -> None:
-    """show exits 2 when show_bundle raises NotADirectoryError."""
+    """show exits 2 when the concept resolution raises NotADirectoryError."""
+    bundle = _make_bundle(tmp_path)
+    with patch("okf_schema.cli._resolve_concept_file", side_effect=NotADirectoryError("boom")):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["show", "--path", str(bundle), "concept-a.md"])
+    assert result.exit_code == 2
+    assert "boom" in result.output
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S6
+def test_defensive_error_handling_trust_exits_2_on_api_error(tmp_path: Path) -> None:
+    """trust exits 2 when show_bundle raises NotADirectoryError."""
     bundle = _make_bundle(tmp_path)
     with patch("okf_schema.cli.show_bundle", side_effect=NotADirectoryError("boom")):
         runner = CliRunner()
-        result = runner.invoke(cli, ["show", "--path", str(bundle), "concept-a.md"])
+        result = runner.invoke(cli, ["trust", "--path", str(bundle), "concept-a.md"])
     assert result.exit_code == 2
     assert "boom" in result.output
 

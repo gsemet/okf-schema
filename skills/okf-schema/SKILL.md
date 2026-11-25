@@ -42,7 +42,7 @@ both locations for the same configuration.
 - **Bundle integrity checks** (broken links, missing `index.md`, malformed `log.md`, reserved-file violations)
 - **Linting** of frontmatter: flattens nested lists and converts block-style to inline while preserving inline and block comments, key order, custom quotes, and unknown keys
 - **OKF 0.2 provenance/trust/lifecycle** validation (E7-E9, W8-W13)
-- **Bundle management** via CLI and Python API: init, list, show, stats, index
+- **Bundle management** via CLI and Python API: init, list, show, trust, stats, index
 
 In other words: **all `okf-schema` bundles are OKF bundles, but not all OKF bundles need `okf-schema`.** You can author plain OKF without schemas, then opt into validation later by adding a `_schema/` directory.
 
@@ -132,7 +132,8 @@ okf-schema validate --path my-bundle --strict
 | `validate --path <bundle> --strict` | Validate and treat warnings as errors |
 | `lint --path <bundle>` | Lint frontmatter: flatten nested lists and convert block-style to inline |
 | `list --path <bundle>` | List all concepts in a bundle |
-| `show --path <bundle> <concept>` | Show a single concept's frontmatter and body; `.md` is optional; names start from the bundle root (a leading `/` is allowed); paths and symlinks leaving the bundle are refused (exit 2) |
+| `show --path <bundle> <concept>` | Print a concept file exactly as stored (not reformatted, not validated, no trust line); `.md` is optional; names start from the bundle root (a leading `/` is allowed); paths and symlinks leaving the bundle are refused (exit 2) |
+| `trust --path <bundle> <concept>` | Print `trust: <tier>` (`unverified`, `machine-confirmed`, `human-reviewed`, from `verified`) and `stale: true` once `stale_after` is reached; exit 0 for every tier; a file that is not valid UTF-8 is refused (exit 2); writes nothing |
 | `index --path <bundle>` | Regenerate all `index.md` files. Uses schema `title` and `x-okf-summary` for richer headings and descriptions when a directory contains a single concept type. Otherwise a subdirectory summary already written is kept, whatever the spelling of its link (`tables/`, `./tables/`, `./tables`); a missing or generic one comes from the whole introduction before the first list of the subdirectory `index.md` (links rewritten, cut at 120 characters; never a list entry or heading), else a generic sentence. Summaries damaged by copied links that only work from the subdirectory are repaired |
 | `stats --path <bundle>` | Show bundle statistics. Broken links are counted in concept bodies as W2 counts them (`#...` anchors ignored, paths percent-decoded) |
 | `backlinks --path <bundle> <target>...` | List concepts that link to the given target(s) |

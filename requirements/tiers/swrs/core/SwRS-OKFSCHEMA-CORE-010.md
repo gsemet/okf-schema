@@ -3,9 +3,9 @@ type: SwRS
 id: SwRS-OKFSCHEMA-CORE-010
 uuid: ed4105d8-1145-4f3a-94cf-0a41aa80c5ca
 title: Stay inside the bundle
-description: When a user shows a concept, okf-schema SHALL refuse, without
-  reading it, a concept path whose real path, symbolic links followed, is
-  outside the bundle.
+description: When a user shows a concept or prints its trust tier, okf-schema
+  SHALL refuse, without reading it, a concept path whose real path, symbolic
+  links followed, is outside the bundle.
 project: okf-schema
 scope: core
 req_lifecycle: proposed
@@ -45,7 +45,7 @@ default_owner_email: gaetan@xeberon.net
 
 ### Normative behavior
 
-When a user shows a concept, okf-schema SHALL refuse, without reading it, a concept path whose real path, symbolic links followed, is outside the bundle.
+When a user shows a concept or prints its trust tier, okf-schema SHALL refuse, without reading it, a concept path whose real path, symbolic links followed, is outside the bundle.
 
 ### Scenario S1: Refuse a concept path that leaves the bundle
 
@@ -53,7 +53,7 @@ When a user shows a concept, okf-schema SHALL refuse, without reading it, a conc
   path outside the bundle, on Windows a name starting with `\` (a path from the
   root of the drive) outside the bundle, or `.` when a file named like the bundle
   folder with `.md` added sits beside the bundle
-- WHEN the user shows it
+- WHEN the user shows it or prints its trust tier
 - THEN okf-schema reports
   `Concept path is outside the bundle: PATH (bundle: BUNDLE)`, naming the concept
   path and the bundle, exits 2 on the CLI, raises `FileNotFoundError` in the API,
@@ -63,14 +63,14 @@ When a user shows a concept, okf-schema SHALL refuse, without reading it, a conc
 
 - GIVEN a symlinked file inside the bundle whose target is outside it, or a file
   reached through a symlinked directory that points outside
-- WHEN the user shows it
+- WHEN the user shows it or prints its trust tier
 - THEN the same refusal as S1 applies and the target is not read
 
 ### Scenario S3: Keep paths that stay inside
 
 - GIVEN `sub/../concept-a.md`, an absolute disk path inside the bundle, or a
   symlink inside the bundle whose target is inside
-- WHEN the user shows it
+- WHEN the user shows it or prints its trust tier
 - THEN the concept is shown as before
 
 ### Boundaries and known issues
@@ -91,7 +91,7 @@ When a user shows a concept, okf-schema SHALL refuse, without reading it, a conc
 
 ### Verification notes
 
-- Method: public API and CLI tests of `show`.
+- Method: public API and CLI tests of `show` and `trust`.
 - Criteria: a path, Windows drive path or symlink whose real path is outside the
   bundle is refused without being read; a POSIX absolute path outside the bundle
   is searched in the bundle and never read; a `..` path, an absolute disk path or
