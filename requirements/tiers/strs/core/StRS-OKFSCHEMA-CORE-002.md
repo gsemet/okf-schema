@@ -28,6 +28,7 @@ derived_by:
 - SwRS-OKFSCHEMA-CORE-004
 - SwRS-OKFSCHEMA-CORE-005
 - SwRS-OKFSCHEMA-CORE-009
+- SwRS-OKFSCHEMA-CORE-010
 default_owner_email: gaetan@xeberon.net
 tested_in_files:
 - tests/test_integration.py
@@ -83,4 +84,5 @@ Maintainers need one deterministic toolchain for creating, formatting, indexing,
   - [SwRS-OKFSCHEMA-CORE-004](../../swrs/core/SwRS-OKFSCHEMA-CORE-004.md): Maintain indexes and superseded links
   - [SwRS-OKFSCHEMA-CORE-005](../../swrs/core/SwRS-OKFSCHEMA-CORE-005.md): Inspect and query bundle knowledge
   - [SwRS-OKFSCHEMA-CORE-009](../../swrs/core/SwRS-OKFSCHEMA-CORE-009.md): Project schema-declared metadata for plain OKF consumers
+  - [SwRS-OKFSCHEMA-CORE-010](../../swrs/core/SwRS-OKFSCHEMA-CORE-010.md): Stay inside the bundle
 <!-- okf:links:end -->

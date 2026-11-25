@@ -228,6 +228,75 @@ Show a single concept's frontmatter and body.
 okf-schema show --path BUNDLE CONCEPT_PATH
 ```
 
+The command prints the frontmatter, the derived trust tier, `stale: true` when
+the concept is stale, and the body. It writes no file.
+
+### `CONCEPT_PATH`
+
+`CONCEPT_PATH` is one of the following:
+
+- A name from the bundle root, with or without a leading `/`: `api/health-check`
+  and `/api/health-check` name the same concept, from any terminal folder. A name
+  is never read from the current working directory.
+- An absolute disk path inside the bundle. It is inside the bundle when one of its
+  folders, symbolic links followed, is the real path of `--path` (links followed
+  too), so a path spelled through a symlinked folder (macOS `/tmp`, a symlinked
+  `--path`) is accepted.
+
+A `/` path that is not a disk path inside the bundle is read from the bundle root,
+so on POSIX `/etc/passwd` is searched in the bundle and not found.
+
+The `.md` extension is optional. The exact path is used when it is a file, else
+`<name>.md`. A directory is never a concept: with both `api/` and `api.md`,
+`api` shows `api.md`.
+
+```bash
+# A name from the bundle root, with or without ".md"
+okf-schema show --path my-bundle api/health-check
+okf-schema show --path my-bundle api/health-check.md
+
+# The same concept, with a leading "/"
+okf-schema show --path my-bundle /api/health-check
+
+# An absolute disk path inside the bundle
+okf-schema show --path /home/me/my-bundle /home/me/my-bundle/api/health-check
+```
+
+### Errors
+
+`show` exits with code `2` and reads nothing outside the bundle when the concept
+cannot be shown:
+
+| Message | Meaning |
+|---------|---------|
+| `Error: Concept not found: <path>` | No file matches the name inside the bundle. A directory with no matching `.md` file gets this error too. |
+| `Error: Concept path is outside the bundle: <name> (bundle: <bundle>)` | The real path leaves the bundle, for example `../outside`, a Windows drive path elsewhere, or a symbolic link whose target is outside the bundle (a linked file, or a file reached through a linked directory). The error is the same whether or not something exists there. |
+
+A path with `..` or a symbolic link whose real path stays inside the bundle works.
+
+For the bundle root (`.` or `/`), `show` reports "not found", unless a file
+`<bundle name>.md` exists beside the bundle: that file is outside the bundle, so
+the "outside the bundle" error is reported.
+
+### Limits
+
+- Following links does not change letter case. On a case-insensitive file system
+  such as macOS, an absolute `CONCEPT_PATH` whose bundle part is spelled in
+  another case than the real path of `--path` (for example `/Users/me/KB/x.md`
+  when that real path is `/Users/me/kb`) is not recognized as inside the bundle:
+  it is read from the bundle root and reported as
+  `Error: Concept not found: ...`. Spell the bundle part as its real path does,
+  or pass a name from the bundle root.
+- The bundle-root reading is for a leading `/` only. On Windows, a `CONCEPT_PATH`
+  starting with `\` (for example `\api\status`) is a path from the root of the
+  drive, as Windows reads it, and gets
+  `Error: Concept path is outside the bundle: ...` unless that path is inside the
+  bundle.
+- Git Bash on Windows rewrites an argument starting with `/` into a path under its
+  install folder before `okf-schema` receives it (`/api/status` becomes
+  `C:/Program Files/Git/api/status`), which is then refused as outside the bundle.
+  Write the name without `/` (`api/status`), or set `MSYS_NO_PATHCONV=1`.
+
 ---
 
 ## `okf-schema index`

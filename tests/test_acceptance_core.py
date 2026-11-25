@@ -224,6 +224,7 @@ def test_inspection_reports_matching_concepts_and_changes_no_file(
     found = inspect("kb", "search", "clock", str(bundle), "--format", "paths")
     listed = inspect("list", "--path", str(bundle))
     shown = inspect("show", "--path", str(bundle), "concepts/clock.md")
+    shown_by_name = inspect("show", "--path", str(bundle), "concepts/clock")
     backlinks = inspect("backlinks", "--path", str(bundle), "concepts/timer")
     statistics = inspect("stats", "--path", str(bundle))
 
@@ -231,6 +232,7 @@ def test_inspection_reports_matching_concepts_and_changes_no_file(
     assert "concepts/clock.md" in listed
     assert "concepts/timer.md" in listed
     assert "The clock ticks." in shown
+    assert "The clock ticks." in shown_by_name
     assert "concepts/timer.md ← concepts/clock.md" in backlinks
     assert "2 concepts" in statistics
     assert _snapshot(tmp_path) == before

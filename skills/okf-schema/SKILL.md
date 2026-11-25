@@ -132,7 +132,7 @@ okf-schema validate --path my-bundle --strict
 | `validate --path <bundle> --strict` | Validate and treat warnings as errors |
 | `lint --path <bundle>` | Lint frontmatter: flatten nested lists and convert block-style to inline |
 | `list --path <bundle>` | List all concepts in a bundle |
-| `show --path <bundle> <concept>` | Show a single concept's frontmatter and body |
+| `show --path <bundle> <concept>` | Show a single concept's frontmatter and body; `.md` is optional; names start from the bundle root (a leading `/` is allowed); paths and symlinks leaving the bundle are refused (exit 2) |
 | `index --path <bundle>` | Regenerate all `index.md` files. Uses schema `title` and `x-okf-summary` for richer headings and descriptions when a directory contains a single concept type |
 | `stats --path <bundle>` | Show bundle statistics |
 | `backlinks --path <bundle> <target>...` | List concepts that link to the given target(s) |

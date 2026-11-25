@@ -736,20 +736,30 @@ def show(
 ) -> None:
     """Show a single concept's frontmatter and body.
 
+    .. versionchanged:: 0.18.2
+        Accept a concept name without ``.md`` or with a leading ``/``,
+        and refuse a path that leaves the bundle.
+
+    The concept name starts from the bundle root (a leading ``/`` is allowed),
+    the ``.md`` extension is optional, and a path outside the bundle is refused.
+
     Args:
         ctx:
             Active Click command context.
         bundle_path:
             Root directory of the bundle containing the concept.
         concept_path:
-            Bundle-relative path of the concept to display.
+            Name of the concept from the bundle root,
+            or absolute disk path inside the bundle.
 
     Examples:
         okf-schema show --path bundle concepts/clock.md
+
+        okf-schema show --path bundle concepts/clock
     """
     try:
         detail = show_bundle(bundle_path, concept_path)
-    except (FileNotFoundError, NotADirectoryError) as exc:  # pragma: no cover
+    except (FileNotFoundError, NotADirectoryError) as exc:
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(2)
 

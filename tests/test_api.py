@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
+from typing import Any
 
 import pytest
+from parametrization import Parametrization
 
 from okf_schema._internal.models import (
     BacklinkResult,
@@ -631,6 +634,253 @@ def test_show_bundle_stale_concept_detected(tmp_path: Path) -> None:
     )
     detail = show_bundle(bundle, "things/c.md")
     assert detail.stale is True
+
+
+# ---------------------------------------------------------------------------
+# show_bundle: name resolution and containment
+# ---------------------------------------------------------------------------
+
+
+def _write_concept(path: Path, title: str) -> Path:
+    """Write a small concept whose title identifies the file that was read."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"---\ntype: concept\ntitle: {title}\n---\n\n# {title}\n", encoding="utf-8")
+    return path
+
+
+def _make_show_bundle(parent: Path) -> Path:
+    """Create ``parent/bundle`` holding the concept ``concept-a.md``."""
+    bundle = parent / "bundle"
+    _write_concept(bundle / "concept-a.md", "Concept A")
+    return bundle
+
+
+def _symlink_or_skip(link: Path, target: Path, *, target_is_directory: bool = False) -> None:
+    """Create a symbolic link, or skip the test on a host that does not permit it."""
+    try:
+        link.symlink_to(target, target_is_directory=target_is_directory)
+    except OSError:
+        pytest.skip("symlinks not permitted on this host")
+
+
+@pytest.fixture
+def read_paths(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    """Record every file read as text while the test runs."""
+    paths: list[Path] = []
+    original = Path.read_text
+
+    def recording_read_text(self: Path, *args: Any, **kwargs: Any) -> str:
+        paths.append(self)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", recording_read_text)
+    return paths
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S3
+def test_show_bundle_resolves_a_name_without_extension(tmp_path: Path) -> None:
+    """``api/health-check`` shows ``api/health-check.md``."""
+    bundle = tmp_path / "bundle"
+    _write_concept(bundle / "api" / "health-check.md", "Health check")
+
+    detail = show_bundle(bundle, "api/health-check")
+
+    assert detail.frontmatter["title"] == "Health check"
+    assert detail == show_bundle(bundle, "api/health-check.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S3
+def test_show_bundle_prefers_the_exact_file_over_the_markdown_one(tmp_path: Path) -> None:
+    """When both ``notes`` and ``notes.md`` exist, ``notes`` reads the exact file."""
+    bundle = tmp_path / "bundle"
+    _write_concept(bundle / "notes", "Extensionless")
+    _write_concept(bundle / "notes.md", "Markdown")
+
+    assert show_bundle(bundle, "notes").frontmatter["title"] == "Extensionless"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S3
+def test_show_bundle_reads_the_markdown_file_beside_a_directory(tmp_path: Path) -> None:
+    """With ``api/`` and ``api.md``, ``api`` reads ``api.md``."""
+    bundle = tmp_path / "bundle"
+    _write_concept(bundle / "api" / "health-check.md", "Health check")
+    _write_concept(bundle / "api.md", "API")
+
+    assert show_bundle(bundle, "api").frontmatter["title"] == "API"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
+def test_show_bundle_directory_without_concept_is_not_found(tmp_path: Path) -> None:
+    """A directory with no matching ``.md`` file is reported as not found."""
+    bundle = tmp_path / "bundle"
+    _write_concept(bundle / "api" / "health-check.md", "Health check")
+
+    with pytest.raises(FileNotFoundError, match="Concept not found"):
+        show_bundle(bundle, "api")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="dot", name_of_root=".")
+@Parametrization.case(name="slash", name_of_root="/")
+def test_show_bundle_root_is_not_found(tmp_path: Path, name_of_root: str) -> None:
+    """The bundle root is a directory, so it is reported as not found."""
+    bundle = _make_show_bundle(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="Concept not found"):
+        show_bundle(bundle, name_of_root)
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S1
+def test_show_bundle_root_with_a_file_beside_it_is_outside(
+    tmp_path: Path, read_paths: list[Path]
+) -> None:
+    """``.`` names ``<bundle>.md`` beside the bundle, which is refused without being read."""
+    bundle = _make_show_bundle(tmp_path)
+    _write_concept(tmp_path / "bundle.md", "Beside")
+
+    with pytest.raises(FileNotFoundError, match="outside the bundle"):
+        show_bundle(bundle, ".")
+
+    assert read_paths == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S1
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="with_extension", concept_path="../outside.md")
+@Parametrization.case(name="without_extension", concept_path="../outside")
+@Parametrization.case(name="nothing_there", concept_path="../missing")
+def test_show_bundle_refuses_a_path_leaving_the_bundle(
+    tmp_path: Path, read_paths: list[Path], concept_path: str
+) -> None:
+    """A ``..`` path leaving the bundle is refused, whether or not a file exists there."""
+    bundle = _make_show_bundle(tmp_path)
+    _write_concept(tmp_path / "outside.md", "Outside")
+
+    with pytest.raises(FileNotFoundError, match="outside the bundle"):
+        show_bundle(bundle, concept_path)
+
+    assert read_paths == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S3
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S4
+def test_show_bundle_absolute_disk_path_is_accepted_inside_only(
+    tmp_path: Path, read_paths: list[Path]
+) -> None:
+    """An absolute disk path is shown inside the bundle and never read outside it."""
+    bundle = _make_show_bundle(tmp_path)
+    outside = _write_concept(tmp_path / "outside.md", "Outside")
+
+    assert show_bundle(bundle, str(bundle / "concept-a.md")) == show_bundle(bundle, "concept-a.md")
+    read_paths.clear()
+
+    # A POSIX absolute path starts with "/", so outside the bundle it is read from the root.
+    expected = "outside the bundle" if os.name == "nt" else "Concept not found"
+    with pytest.raises(FileNotFoundError, match=expected):
+        show_bundle(bundle, str(outside))
+
+    assert read_paths == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S2
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S3
+def test_show_bundle_accepts_a_disk_path_spelled_through_a_symlinked_folder(
+    tmp_path: Path, read_paths: list[Path]
+) -> None:
+    """The link form and the real form of the bundle path are recognized as the same bundle."""
+    real = tmp_path / "real"
+    bundle = _make_show_bundle(real)
+    alias = tmp_path / "alias"
+    _symlink_or_skip(alias, real, target_is_directory=True)
+    expected = show_bundle(bundle, "concept-a.md")
+    linked_name = str(alias / "bundle" / "concept-a.md")
+
+    assert show_bundle(alias / "bundle", linked_name) == expected
+    assert show_bundle(bundle, linked_name) == expected
+    assert show_bundle(alias / "bundle", str(bundle / "concept-a.md")) == expected
+
+    _symlink_or_skip(bundle / "leak.md", _write_concept(tmp_path / "outside.md", "Outside"))
+    read_paths.clear()
+    with pytest.raises(FileNotFoundError, match="outside the bundle"):
+        show_bundle(bundle, str(alias / "bundle" / "leak.md"))
+
+    assert read_paths == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S4
+def test_show_bundle_reads_a_leading_slash_name_from_the_bundle_root(tmp_path: Path) -> None:
+    """A leading ``/`` starts from the bundle root, never from the root of the disk."""
+    bundle = _make_show_bundle(tmp_path)
+    _write_concept(bundle / "etc" / "notes.md", "Notes")
+    expected = show_bundle(bundle, "concept-a.md")
+
+    assert show_bundle(bundle, "/concept-a") == expected
+    assert show_bundle(bundle, "/concept-a.md") == expected
+    assert show_bundle(bundle, "/etc/notes").frontmatter["title"] == "Notes"
+    with pytest.raises(FileNotFoundError, match="Concept not found"):
+        show_bundle(bundle, "/etc/passwd")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S1
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
+def test_show_bundle_keeps_the_host_meaning_of_a_leading_backslash(tmp_path: Path) -> None:
+    """A leading backslash is a drive-rooted path on Windows and an ordinary name elsewhere."""
+    bundle = _make_show_bundle(tmp_path)
+
+    expected = "outside the bundle" if os.name == "nt" else "Concept not found"
+    with pytest.raises(FileNotFoundError, match=expected):
+        show_bundle(bundle, "\\concept-a")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S3
+def test_show_bundle_accepts_parent_references_staying_inside(tmp_path: Path) -> None:
+    """``sub/../concept-a.md`` stays inside the bundle and is shown."""
+    bundle = _make_show_bundle(tmp_path)
+    (bundle / "sub").mkdir()
+
+    assert show_bundle(bundle, "sub/../concept-a.md") == show_bundle(bundle, "concept-a.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S2
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="linked_file", concept_path="leak.md")
+@Parametrization.case(name="linked_file_without_extension", concept_path="leak")
+@Parametrization.case(name="linked_directory", concept_path="away/outside.md")
+@Parametrization.case(name="linked_directory_itself", concept_path="away")
+def test_show_bundle_refuses_a_symlink_leaving_the_bundle(
+    tmp_path: Path, read_paths: list[Path], concept_path: str
+) -> None:
+    """A linked file or a linked directory pointing outside is refused without being read."""
+    bundle = _make_show_bundle(tmp_path)
+    outside = _write_concept(tmp_path / "elsewhere" / "outside.md", "Outside")
+    _symlink_or_skip(bundle / "leak.md", outside)
+    _symlink_or_skip(bundle / "away", outside.parent, target_is_directory=True)
+
+    with pytest.raises(FileNotFoundError, match="outside the bundle"):
+        show_bundle(bundle, concept_path)
+
+    assert read_paths == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S3
+def test_show_bundle_follows_a_symlink_staying_inside_the_bundle(tmp_path: Path) -> None:
+    """A link inside the bundle whose target is inside shows the concept."""
+    bundle = _make_show_bundle(tmp_path)
+    _symlink_or_skip(bundle / "alias.md", bundle / "concept-a.md")
+
+    assert show_bundle(bundle, "alias") == show_bundle(bundle, "concept-a.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
+def test_show_bundle_reports_a_symlink_loop_as_not_found(tmp_path: Path) -> None:
+    """A link that loops names no file: not found, on every supported Python version."""
+    bundle = _make_show_bundle(tmp_path)
+    _symlink_or_skip(bundle / "loop", bundle / "loop")
+
+    with pytest.raises(FileNotFoundError, match="Concept not found"):
+        show_bundle(bundle, "loop")
 
 
 # ---------------------------------------------------------------------------
