@@ -45,9 +45,47 @@ def test_derive_trust_tier_bot_actor_returns_machine_confirmed() -> None:
     assert _derive_trust_tier(fm) == "machine-confirmed"
 
 
-def test_derive_trust_tier_malformed_actor_returns_unverified() -> None:
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+def test_derive_trust_tier_unrecognized_actor_returns_machine_confirmed() -> None:
     fm = {"verified": [{"by": "Alice", "at": "2026-01-01"}]}
-    assert _derive_trust_tier(fm) == "unverified"
+    assert _derive_trust_tier(fm) == "machine-confirmed"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="producer_version", by="reference_agent/gemini-2.5-pro", expected="machine-confirmed"
+)
+@Parametrization.case(name="process", by="process:finance-nightly", expected="machine-confirmed")
+@Parametrization.case(name="other_prefix", by="bot:okf-schema", expected="machine-confirmed")
+@Parametrization.case(
+    name="dotted_producer", by="langchain.agents/0.3", expected="machine-confirmed"
+)
+@Parametrization.case(name="unrecognized", by="alice", expected="machine-confirmed")
+@Parametrization.case(name="human_without_id", by="human:", expected="machine-confirmed")
+@Parametrization.case(name="human", by="human:ahormati", expected="human-reviewed")
+@Parametrization.case(name="not_a_string", by=42, expected="unverified")
+@Parametrization.case(name="empty", by="", expected="unverified")
+def test_derive_trust_tier_actor_forms(by: object, expected: str) -> None:
+    fm = {"verified": [{"by": by, "at": "2026-01-01"}]}
+    assert _derive_trust_tier(fm) == expected
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+def test_derive_trust_tier_bare_mapping_producer_version_returns_machine_confirmed() -> None:
+    fm = {"verified": {"by": "reference_agent/gemini-2.5-pro", "at": "2026-01-01"}}
+    assert _derive_trust_tier(fm) == "machine-confirmed"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+def test_derive_trust_tier_producer_version_and_human_returns_human_reviewed() -> None:
+    fm = {
+        "verified": [
+            {"by": "reference_agent/gemini-2.5-pro", "at": "2026-01-01"},
+            {"by": "human:alice", "at": "2026-01-01"},
+        ]
+    }
+    assert _derive_trust_tier(fm) == "human-reviewed"
 
 
 def test_derive_trust_tier_bare_mapping_normalized_to_list() -> None:
@@ -395,13 +433,56 @@ def test_validate_okf2_verified_e9_missing_at(tmp_path: Path) -> None:
     assert any(f.code == "E9" for f in report.errors)
 
 
-def test_validate_okf2_verified_w10_malformed_actor(tmp_path: Path) -> None:
-    """W10: verified entry has malformed `by` actor string."""
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="capitalized_name", by="Alice")
+@Parametrization.case(name="bare_name", by="alice")
+@Parametrization.case(name="not_a_string", by=42)
+@Parametrization.case(name="human_without_id", by="human:")
+def test_validate_okf2_verified_w10_malformed_actor(tmp_path: Path, by: object) -> None:
+    """W10: verified entry has a `by` value in no OKF 0.2 actor form."""
     path = tmp_path / "f.md"
     path.touch()
     report = Report()
-    _validate_okf2_verified(path, {"verified": [{"by": "Alice", "at": "2026-01-01"}]}, report)
-    assert any(f.code == "W10" for f in report.warnings)
+    _validate_okf2_verified(path, {"verified": [{"by": by, "at": "2026-01-01"}]}, report)
+    assert [f.code for f in report.warnings] == ["W10"]
+    assert report.errors == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="producer_version", by="reference_agent/gemini-2.5-pro")
+@Parametrization.case(name="process", by="process:nightly-check")
+@Parametrization.case(name="human", by="human:alice")
+@Parametrization.case(name="other_prefix", by="bot:okf-schema")
+@Parametrization.case(name="dotted_producer", by="langchain.agents/0.3")
+@Parametrization.case(name="dotted_prefix", by="acme.ci:nightly")
+def test_validate_okf2_verified_accepts_okf02_actor_forms(tmp_path: Path, by: str) -> None:
+    path = tmp_path / "f.md"
+    path.touch()
+    report = Report()
+    _validate_okf2_verified(path, {"verified": [{"by": by, "at": "2026-01-01"}]}, report)
+    assert report.errors == []
+    assert report.warnings == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+def test_validate_okf2_verified_w10_message_names_entry_index(tmp_path: Path) -> None:
+    path = tmp_path / "f.md"
+    path.touch()
+    report = Report()
+    fm = {
+        "verified": [
+            {"by": "human:alice", "at": "2026-01-01"},
+            {"by": "alice", "at": "2026-01-01"},
+        ]
+    }
+    _validate_okf2_verified(path, fm, report)
+    messages = [f.message for f in report.warnings if f.code == "W10"]
+    assert len(messages) == 1
+    assert "verified entry [1] has malformed" in messages[0]
+    assert messages[0].endswith("Fix: correct the 'by' value in verified entry [1].")
+    assert "{i}" not in messages[0]
 
 
 def test_validate_okf2_verified_valid_entry_no_findings(tmp_path: Path) -> None:

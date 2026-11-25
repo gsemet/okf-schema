@@ -523,26 +523,36 @@ Stable code: `W9`
 
 ---
 
-### W10: Malformed Actor String in `verified[].by`
+### W10: Unrecognized Actor String in `verified[].by`
 
 **Severity**: Warning (OKF 0.2)
 
-**Description**: A `verified` entry has a `by` value that does not conform to the
-OKF actor string format `<prefix>:<identifier>`. Only well-formed `human:` actors
-promote the trust tier; malformed actors are ignored for tier derivation.
+**Description**: A `verified` entry's `by` is in none of the OKF 0.2 actor forms
+(spec section 7): `<producer>/<version>` for agents and tools
+(`reference_agent/gemini-2.5-pro`), `human:<id>` for a person, `process:<id>` for
+an automated process. okf-schema also accepts any `<prefix>:<identifier>`
+(`bot:okf-schema`). A dot is allowed in the producer and the prefix
+(`langchain.agents/0.3`). The warning does not change the trust tier: an entry
+whose `by` is `human:<id>` makes the concept human-reviewed, and any other
+non-empty actor, warned or not, makes it machine-confirmed. To be read as
+human-reviewed, the actor must be `human:` followed by an identifier: `human:`
+alone counts as machine-confirmed and is warned W10.
 
 **Example**:
 ```yaml
 verified:
-  - by: "Alice"     # malformed — should be "human:alice"
+  - by: "Alice"     # no recognized form: counts as machine-confirmed
     at: "2026-08-10"
 ```
 
 **How to Fix**:
-Use the `<prefix>:<identifier>` format:
+Write the actor in a recognized form, `human:<id>` for a person or
+`<producer>/<version>` for an agent:
 ```yaml
 verified:
   - by: "human:alice"
+    at: "2026-08-10"
+  - by: "reference_agent/gemini-2.5-pro"
     at: "2026-08-10"
 ```
 

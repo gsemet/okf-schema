@@ -364,7 +364,7 @@ for c in concepts:
 | W7 | Block-style lists | Frontmatter lists should use inline notation (e.g. `tags: [a, b]`) to keep frontmatter compact |
 | W8 | Legacy timestamp | Migrate `timestamp` to `generated.at` with `okf-schema lint` |
 | W9 | Legacy citations section | Move citations into `sources` and use footnotes |
-| W10 | Actor syntax | A `verified[].by` actor is not `<prefix>:<identifier>` |
+| W10 | Actor syntax | A `verified[].by` actor is not `<producer>/<version>`, `human:<id>`, `process:<id>` or `<prefix>:<identifier>`; it still counts as machine-confirmed |
 | W11 | Stale content | `stale_after` (ISO 8601 datetime with UTC offset, or bare date) is in the past |
 | W12 | Source footnote | A body footnote has no matching `sources[].id` |
 | W13 | Source resource | A local `sources[].resource` path does not resolve |

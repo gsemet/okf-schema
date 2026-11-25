@@ -2,6 +2,20 @@
 
 ## 2026-11-25
 
+### Trust tier actor forms
+
+- Why: OKF 0.2 sections 5.3 and 7. An actor written as `<producer>/<version>` read as
+  unverified and was warned W10.
+- What: [SwRS-OKFSCHEMA-CORE-006](swrs/core/SwRS-OKFSCHEMA-CORE-006.md) gained S5. Any
+  actor that is not `human:<id>` counts as machine-confirmed (`human:` alone included).
+  W10 accepts `<producer>/<version>` and `<prefix>:<identifier>`, with a dot allowed in
+  the producer and the prefix, and its message now prints the entry index.
+- Verification: `okfreq update-coverage`, `okfreq validate --prose --check-links`
+  (0 errors, 0 warnings), `okfreq lint --prose --check-links`, `okfreq trace --json`,
+  `just style-check`, `just lint`, `just typecheck` and `just requirements-lint` pass.
+  `just test` on Windows: 1118 passed, 14 skipped, 8 failed because the host refuses to
+  create symbolic links (`WinError 1314`).
+
 ### Show a concept by name, inside the bundle
 
 - Added [SwRS-OKFSCHEMA-CORE-010](swrs/core/SwRS-OKFSCHEMA-CORE-010.md) (S1 to S3) as

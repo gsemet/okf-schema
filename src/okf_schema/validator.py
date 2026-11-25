@@ -10,7 +10,7 @@ OKF 0.2 additions (E7-E9, W8-W13, W16):
   E9 – `verified` entry missing required `by` or `at` field
   W8  – Deprecated `timestamp` field; use `generated.at` instead
   W9  – Deprecated body `# Citations` section; use `sources` frontmatter
-  W10 – Malformed actor string in `verified[].by`
+  W10 – `verified[].by` actor in no OKF 0.2 form (`<producer>/<version>`, `<prefix>:<identifier>`)
   W11 – File is stale (`stale_after` date or instant has passed)
   W12 – Footnote `[^id]` with no matching `sources[].id`
   W13 – Broken path in path-form `resource` or `sources[].resource`
@@ -61,8 +61,9 @@ from okf_schema.okfkb.derivations import (
 )
 from okf_schema.projection import projection_problems
 
-# Matches OKF actor strings: <prefix>:<identifier>  e.g. human:alice, bot:ci
-_ACTOR_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*:.+$")
+# Matches OKF 0.2 actor strings (spec section 7): <producer>/<version> such as
+# reference_agent/gemini-2.5-pro, human:<id>, process:<id>, and any <prefix>:<identifier>.
+_ACTOR_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9._-]*[:/].+$")
 # Matches Markdown footnote references [^id] in body text
 _FOOTNOTE_REF_RE = re.compile(r"\[\^([^\]]+)\]")
 # Matches Markdown footnote definitions [^id]: ...
@@ -352,12 +353,22 @@ def validate_against_schema(
     return errors
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-006
 def _derive_trust_tier(frontmatter: dict) -> str:
-    """Derive the OKF 0.2 trust tier from `verified` entries.
+    """Derive the OKF 0.2 trust tier from `verified` entries (spec section 5.3).
 
-    Returns one of: ``"unverified"``, ``"machine-confirmed"``, or
-    ``"human-reviewed"``.  Only well-formed actor strings contribute to
-    tier promotion; malformed entries are ignored (W10).
+    An entry whose ``by`` is ``human:`` followed by an identifier makes the
+    concept ``"human-reviewed"``.
+    Any other non-empty string ``by``, well formed or not (W10), ``human:``
+    alone included, makes it ``"machine-confirmed"``.
+    An entry without a string ``by`` does not count.
+
+    Args:
+        frontmatter:
+            Parsed frontmatter mapping.
+
+    Returns:
+        ``"unverified"``, ``"machine-confirmed"``, or ``"human-reviewed"``.
     """
     verified = frontmatter.get("verified")
     if not verified:
@@ -375,9 +386,9 @@ def _derive_trust_tier(frontmatter: dict) -> str:
         if not isinstance(entry, dict):
             continue
         by = entry.get("by")
-        if not isinstance(by, str) or not _ACTOR_RE.match(by):
-            continue  # malformed actor — skip for tier derivation
-        if by.startswith("human:"):
+        if not isinstance(by, str) or not by:
+            continue  # no actor string (E9 or W10): it does not count
+        if by.startswith("human:") and by != "human:":
             return "human-reviewed"
         has_machine = True
 
@@ -581,6 +592,7 @@ def _check_resource_path(
     )
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-006
 def _validate_okf2_verified(
     path: Path,
     frontmatter: dict,
@@ -617,9 +629,11 @@ def _validate_okf2_verified(
             report.add_warning(
                 "W10",
                 f"File '{path}': verified entry [{i}] has malformed 'by' value '{by}'. "
-                "Actor strings must follow the format '<prefix>:<identifier>' "
-                "(e.g. 'human:alice', 'bot:ci'). "
-                "Fix: correct the 'by' value in verified entry [{i}].",
+                "OKF 0.2 actors are '<producer>/<version>' "
+                "(e.g. 'reference_agent/gemini-2.5-pro'), "
+                "'human:<id>' or 'process:<id>'; any '<prefix>:<identifier>' is also accepted. "
+                "Only a 'human:<id>' actor makes the concept human-reviewed. "
+                f"Fix: correct the 'by' value in verified entry [{i}].",
                 path,
             )
 

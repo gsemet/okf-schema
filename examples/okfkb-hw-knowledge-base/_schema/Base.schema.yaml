@@ -29,7 +29,7 @@ properties:
         type: string
         format: date-time
       by:
-        description: Actor string identifying the producer (e.g. 'human:alice', 'bot:ci').
+        description: Actor string (OKF 0.2 section 7), e.g. 'human:alice', 'process:nightly-check' or 'reference_agent/gemini-2.5-pro'.
         type: string
   timestamp:
     description: >-

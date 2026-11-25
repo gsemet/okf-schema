@@ -377,6 +377,42 @@ def test_validate_md_validate_md_exits_0_for_valid_files(tmp_path: Path) -> None
     assert "All files validated successfully" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S5
+def test_validate_md_strict_accepts_producer_version_actor(tmp_path: Path) -> None:
+    """validate-md --strict raises no W10 for a `<producer>/<version>` verification actor."""
+    test_file = tmp_path / "test.md"
+    content = (
+        "---\ntype: concept\ntitle: Test\ndescription: Test\n"
+        'generated: {at: "2024-01-01T00:00:00Z", by: reference_agent/gemini-2.5-pro}\n'
+        'verified: [{by: reference_agent/gemini-2.5-pro, at: "2024-01-02T00:00:00Z"}]\n'
+        "---\n\n# Test\n"
+    )
+    test_file.write_text(content, encoding="utf-8")
+
+    schemas_dir = tmp_path / "schemas"
+    schemas_dir.mkdir()
+    schema_file = schemas_dir / "concept.schema.json"
+    schema_text = (
+        '{"type": "object", "properties": {"type": {"type": "string"}}, "required": ["type"]}'
+    )
+    schema_file.write_text(schema_text, encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "validate-md",
+            "--input",
+            str(test_file),
+            "--schemas-dir",
+            str(schemas_dir),
+            "--strict",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "W10" not in result.output
+
+
 def test_validate_md_validate_md_exits_1_for_invalid_files(tmp_path: Path) -> None:
     """validate-md exits 1 for files with errors."""
     test_file = tmp_path / "test.md"
