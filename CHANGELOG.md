@@ -2,6 +2,12 @@
 
 ### Fix
 
+- **validate**: count every OKF 0.2 actor form in the trust tier
+
+## v0.18.1 (2026-11-25)
+
+### Fix
+
 - **release**: publish even when note generation fails
 - **release**: allow manually authored release notes
 
