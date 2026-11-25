@@ -17,6 +17,7 @@ annotation_exemption: false
 exemption_reason:
 derived_by: []
 implemented_in_files:
+- src/okf_schema/_internal/utils.py
 - src/okf_schema/api.py
 - src/okf_schema/cli.py
 - src/okf_schema/schemas/__init__.py
@@ -24,6 +25,7 @@ implemented_in_files:
 tested_in_files:
 - tests/test_api.py
 - tests/test_cli_core.py
+- tests/test_internal.py
 - tests/test_validator.py
 owner: okf-schema maintainers
 verification_method: test
@@ -36,6 +38,8 @@ scenarios:
   title: Reject an invalid document
 - id: S3
   title: Accept portable bundle contents
+- id: S4
+  title: Report broken links in index and log files
 default_owner_email: gaetan@xeberon.net
 ---
 
@@ -66,6 +70,14 @@ report actionable results without silently changing authored content.
 - WHEN the user runs the validation command
 - THEN the concept documents are validated at either location and the
   non-Markdown attachments do not produce document validation errors
+
+### Scenario S4: Report broken links in index and log files
+
+- GIVEN an `index.md` and a `log.md` that each hold a broken relative link, and a
+  concept that links `a.md#part` and `my%20file.md` to existing files
+- WHEN the user runs the validation command
+- THEN a W2 warning names the index link and the log link as written, and neither
+  the anchored nor the percent-encoded link is reported
 
 ### Verification notes
 

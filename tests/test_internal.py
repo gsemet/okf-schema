@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import doctest
+from collections.abc import Callable
 from pathlib import Path
+
+from parametrization import Parametrization
 
 from okf_schema._internal.models import (
     BundleStats,
@@ -18,6 +22,7 @@ from okf_schema._internal.utils import (
     find_broken_links,
     get_concept_info,
     has_markdown_files,
+    is_broken_link,
     resolve_link,
 )
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml, parse_yaml
@@ -371,6 +376,39 @@ def test_find_broken_links_multiple_links_mixed(tmp_path: Path) -> None:
     body = "[a](./exists.md) [b](./missing.md) [c](https://example.com)"
     result = find_broken_links(body, source, tmp_path)
     assert result == ["./missing.md"]
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="anchor_only", target="#top", broken=False)
+@Parametrization.case(name="anchor_on_existing", target="my file.md#part", broken=False)
+@Parametrization.case(name="encoded_existing", target="my%20file.md", broken=False)
+@Parametrization.case(name="encoded_missing", target="missing%20x.md", broken=True)
+@Parametrization.case(name="encoded_hash_in_the_name", target="a%23b.md", broken=False)
+@Parametrization.case(name="external", target="https://example.com/x#y", broken=False)
+@Parametrization.case(name="mailto", target="mailto:a@example.com", broken=False)
+@Parametrization.case(name="null_byte", target="a%00.md", broken=True)
+@Parametrization.case(name="only_decoded_looks_external", target="a%3A%2F%2Fb", broken=True)
+def test_is_broken_link(tmp_path: Path, target: str, broken: bool) -> None:
+    """Anchors are ignored and paths decoded before the existence check."""
+    (tmp_path / "my file.md").write_text("a", encoding="utf-8")
+    (tmp_path / "a#b.md").write_text("a", encoding="utf-8")
+
+    assert is_broken_link(target, tmp_path / "index.md", tmp_path) is broken
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="find_broken_links", function=find_broken_links)
+@Parametrization.case(name="is_broken_link", function=is_broken_link)
+def test_broken_link_doctests_pass(function: Callable[..., object]) -> None:
+    """The docstring examples of the broken-link checks run with the suite."""
+    runner = doctest.DocTestRunner()
+    for example in doctest.DocTestFinder().find(function):
+        runner.run(example)
+
+    assert runner.tries > 0
+    assert runner.failures == 0
 
 
 def test_has_markdown_files_has_markdown(tmp_path: Path) -> None:

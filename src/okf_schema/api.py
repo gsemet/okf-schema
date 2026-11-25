@@ -19,6 +19,7 @@ Examples:
 from __future__ import annotations
 
 import os
+import posixpath
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -36,9 +37,11 @@ from okf_schema._internal.models import (
 from okf_schema._internal.utils import (
     MARKDOWN_LINK_RE,
     RESERVED_FILES,
+    _is_external_link,
     collect_markdown_files,
     get_concept_info,
     has_markdown_files,
+    is_broken_link,
     resolve_link,
 )
 from okf_schema._internal.yaml import extract_frontmatter, parse_yaml
@@ -57,6 +60,11 @@ from okf_schema.validator import (
 )
 from okf_schema.validator import validate_bundle as _validate_bundle
 from okf_schema.validator import validate_markdown_files as _validate_markdown_files
+
+# A line that starts a list in a subdirectory index (applied to the stripped line).
+_LIST_ITEM_RE = re.compile(r"(?:[-*+]|[0-9]+[.)]) ")
+# Longest subdirectory summary taken from an introduction, ``...`` included.
+_SUMMARY_MAX_LENGTH = 120
 
 
 @dataclass
@@ -517,9 +525,31 @@ def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
 def index_bundle(bundle_path: str | Path) -> list[IndexUpdate]:
     """Regenerate all ``index.md`` files in an OKF bundle.
 
+    .. versionchanged:: 0.19.0
+        Subdirectory summaries no longer copy a list entry of the subdirectory
+        index; damaged and generic ones are recomputed, and a summary is kept
+        whatever the spelling of its subdirectory link.
+
     For each directory containing markdown files, generates or updates an
     ``index.md`` listing child concepts and subdirectories. Preserves
     bundle-root frontmatter if present.
+
+    The summary of a subdirectory entry comes, in this order, from:
+
+    1. the schema ``x-okf-summary`` (else ``description``) when all concepts of
+       the subdirectory share one type with a schema;
+    2. the summary already written in the parent index, kept as written
+       (a trailing ``[...]`` included) after ``<dir>/``, ``./<dir>/`` or
+       ``./<dir>``; the line is rewritten with the ``./<dir>/`` link;
+    3. the introduction of the subdirectory ``index.md``: all the text before
+       its first list, headings and HTML comment lines excluded, on one line,
+       with relative links rewritten to work from the parent index, cut at 120
+       characters without splitting a link; else a generic sentence (also when
+       the cut leaves nothing).
+
+    A written summary is recomputed from point 3 when it is the exact generic
+    sentence, or when it starts with a relative link broken from the parent
+    index but valid from the subdirectory.
 
     Args:
         bundle_path:
@@ -974,6 +1004,13 @@ def backlinks_bundle(
 def stats_bundle(bundle_path: str | Path) -> BundleStats:
     """Compute statistics for an OKF bundle.
 
+    .. versionchanged:: 0.19.0
+        Broken links are counted with the same check as the W2 warning:
+        ``#...`` anchors are ignored and paths are percent-decoded.
+
+    Links are counted in concept bodies only (``index.md``, ``log.md`` and
+    files without frontmatter are skipped).
+
     Args:
         bundle_path:
             Path to the OKF bundle directory.
@@ -1027,10 +1064,9 @@ def stats_bundle(bundle_path: str | Path) -> BundleStats:
                         tags_distribution[tag_str] = tags_distribution.get(tag_str, 0) + 1
 
         # Count links
-        for _text_part, target in re.compile(r"!?\[([^\]]*)\]\(([^)]+)\)").findall(body):
+        for _text_part, target in MARKDOWN_LINK_RE.findall(body):
             total_links += 1
-            resolved = resolve_link(target, path, bundle)
-            if resolved is not None and not resolved.exists():
+            if is_broken_link(target, path, bundle):
                 broken_links += 1
 
     return BundleStats(
@@ -1069,6 +1105,97 @@ def _get_immediate_subdirs_with_content(dir_path: Path) -> list[Path]:
     return subdirs
 
 
+def _generic_subdir_description(name: str) -> str:
+    """Return the generic summary of the subdirectory *name*."""
+    return f"Auto-generated index for concepts in `{name}`."
+
+
+def _extract_introduction(body: str) -> str:
+    """Return the text of an index *body* before its first list, on one line.
+
+    Blank lines, heading lines and HTML comment lines are skipped.
+    """
+    intro: list[str] = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if _LIST_ITEM_RE.match(stripped):
+            break
+        if stripped and not stripped.startswith(("#", "<!--")):
+            intro.append(stripped)
+    return " ".join(intro)
+
+
+def _rewrite_summary_links(text: str, subdir_name: str) -> str:
+    """Rewrite the relative links of *text* so they work from the parent index.
+
+    *text* comes from the ``index.md`` of the subdirectory *subdir_name*.
+    The rewrite is textual: it neither resolves nor percent-decodes a path.
+    External and ``/``-prefixed targets are kept as written.
+    """
+
+    def rewrite(match: re.Match[str]) -> str:
+        target = match.group(2)
+        if _is_external_link(target) or target.startswith("/"):
+            return match.group(0)
+        path, hash_sign, anchor = target.partition("#")
+        # An anchor-only target points at the subdirectory index itself.
+        path = posixpath.normpath(f"{subdir_name}/{path or 'index.md'}")
+        target_start = match.start(2) - match.start()
+        return f"{match.group(0)[:target_start]}{path}{hash_sign}{anchor})"
+
+    return MARKDOWN_LINK_RE.sub(rewrite, text)
+
+
+def _cut_summary(text: str) -> str:
+    """Cut *text* to 120 characters, ``...`` included, without splitting a link.
+
+    Returns an empty string when nothing is left before the cut.
+    """
+    if len(text) <= _SUMMARY_MAX_LENGTH:
+        return text
+    cut = _SUMMARY_MAX_LENGTH - len("...")
+    for match in MARKDOWN_LINK_RE.finditer(text):
+        if match.start() < cut < match.end():
+            cut = match.start()
+            break
+    kept = text[:cut].rstrip()
+    return f"{kept}..." if kept else ""
+
+
+def _is_damaged_summary(
+    summary: str,
+    parent_index: Path,
+    subdir_index: Path,
+    bundle_root: Path,
+) -> bool:
+    """Return whether *summary* was copied from the subdirectory index with its links.
+
+    Such a summary starts with a relative link that is broken from
+    *parent_index* but valid from *subdir_index*.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = Path(directory)
+        ...     (root / "api").mkdir()
+        ...     (root / "api" / "health-check.md").touch()
+        ...     parent, subdir = root / "index.md", root / "api" / "index.md"
+        ...     _is_damaged_summary("[Health Check](health-check.md)", parent, subdir, root)
+        ...     _is_damaged_summary("[Health Check](api/health-check.md)", parent, subdir, root)
+        True
+        False
+    """
+    match = MARKDOWN_LINK_RE.match(summary.strip())
+    if match is None:
+        return False
+    target = match.group(2)
+    # External and anchor-only targets are never broken, and a ``/`` target resolves
+    # the same from both places: only a relative path can pass both tests.
+    return is_broken_link(target, parent_index, bundle_root) and not is_broken_link(
+        target, subdir_index, bundle_root
+    )
+
+
 def _get_subdir_description(
     subdir: Path,
     schema_info: dict[str, dict] | None = None,
@@ -1077,8 +1204,9 @@ def _get_subdir_description(
 
     Prefers schema ``x-okf-summary`` (or ``description`` as fallback) when
     all concepts in the subdirectory share the same type and a matching
-    schema is available. Otherwise falls back to the subdirectory's
-    existing ``index.md`` body or a generic placeholder.
+    schema is available. Otherwise returns the introduction of the
+    subdirectory's ``index.md``, with its links rewritten for the parent index
+    and cut to 120 characters, or the generic sentence.
     """
     schema_info = schema_info or {}
 
@@ -1105,27 +1233,30 @@ def _get_subdir_description(
                     desc = desc[:117] + "..."
                 return desc
 
-    # Fallback: extract from existing index.md body
-    index_path = subdir / "index.md"
-    if not index_path.exists():
-        return f"Auto-generated index for concepts in `{subdir.name}`."
-
+    # Fallback: the introduction of the existing subdirectory index
+    generic = _generic_subdir_description(subdir.name)
     try:
-        text = index_path.read_text(encoding="utf-8")
+        text = (subdir / "index.md").read_text(encoding="utf-8")
         _fm_text, body = extract_frontmatter(text)
     except (OSError, UnicodeDecodeError):
-        return f"Auto-generated index for concepts in `{subdir.name}`."
+        return generic
 
-    for line in body.splitlines():
-        stripped = line.strip()
-        if stripped and not stripped.startswith("#"):
-            if stripped.startswith("- ") or stripped.startswith("* "):
-                stripped = stripped[2:].strip()
-            if len(stripped) > 120:
-                stripped = stripped[:117] + "..."
-            return stripped
+    intro = _rewrite_summary_links(_extract_introduction(body), subdir.name)
+    return _cut_summary(intro) or generic
 
-    return f"Auto-generated index for concepts in `{subdir.name}`."
+
+def _subdir_entry_key(target: str) -> str | None:
+    """Return ``./<name>/`` when an index link *target* names a subdirectory.
+
+    The accepted spellings are ``<name>/``, ``./<name>/`` and ``./<name>``
+    (a name ending with ``.md`` is then a concept). Other targets give ``None``.
+    """
+    name = target.removeprefix("./").removesuffix("/")
+    if not name or "/" in name:
+        return None
+    if target.endswith("/") or (target.startswith("./") and not name.endswith(".md")):
+        return f"./{name}/"
+    return None
 
 
 def _parse_existing_index(text: str) -> dict:
@@ -1133,6 +1264,11 @@ def _parse_existing_index(text: str) -> dict:
 
     Returns a dict with keys ``title``, ``intro``, and ``descriptions``
     (mapping link target -> description string).
+
+    The key of a subdirectory entry (``<name>/``, ``./<name>/`` or
+    ``./<name>``) is normalised to ``./<name>/`` and its description is kept as
+    written, a trailing ``[...]`` included. Any other target is a key as
+    written, and the trailing ``[...]`` type tag of its description is removed.
     """
     result: dict = {"title": "", "intro": "", "descriptions": {}}
     lines = text.splitlines()
@@ -1158,8 +1294,11 @@ def _parse_existing_index(text: str) -> dict:
             if match:
                 target = match.group(2)
                 desc = match.group(3).strip()
-                desc = re.sub(r"\s+\[[^\]]+\]\s*$", "", desc)
-                result["descriptions"][target] = desc
+                subdir_key = _subdir_entry_key(target)
+                if subdir_key is None:
+                    # Strip the type tag; generation adds it again.
+                    desc = re.sub(r"\s+\[[^\]]+\]\s*$", "", desc)
+                result["descriptions"][subdir_key or target] = desc
             continue
 
         if in_intro and stripped:
@@ -1258,21 +1397,29 @@ def _generate_index_content(
             if s_info.type:
                 subdir_types.add(s_info.type)
 
-        if len(subdir_types) == 1:
-            type_key = next(iter(subdir_types))
-            if type_key in schema_info:
-                # Schema info available: use it directly (replaces existing text)
-                summary = schema_info[type_key].get("x-okf-summary", "")
-                if summary:
-                    desc = summary
-                else:
-                    desc = schema_info[type_key].get("description", "")
-                    if len(desc) > 120:
-                        desc = desc[:117] + "..."
+        subdir_type = next(iter(subdir_types)) if len(subdir_types) == 1 else None
+
+        if subdir_type is not None and subdir_type in schema_info:
+            # Schema info available: use it directly (replaces existing text)
+            summary = schema_info[subdir_type].get("x-okf-summary", "")
+            if summary:
+                desc = summary
             else:
-                desc = preserved.get(subdir_rel, _get_subdir_description(subdir, schema_info))
+                desc = schema_info[subdir_type].get("description", "")
+                if len(desc) > 120:
+                    desc = desc[:117] + "..."
         else:
-            desc = preserved.get(subdir_rel, _get_subdir_description(subdir, schema_info))
+            written = preserved.get(subdir_rel)
+            if (
+                written is None
+                or written == _generic_subdir_description(subdir.name)
+                or _is_damaged_summary(
+                    written, dir_path / "index.md", subdir / "index.md", bundle_root
+                )
+            ):
+                desc = _get_subdir_description(subdir, schema_info)
+            else:
+                desc = written
         entries.append((subdir.name.lower(), f"- [{subdir.name}]({subdir_rel}) — {desc}"))
 
     entries.sort(key=lambda x: x[0])

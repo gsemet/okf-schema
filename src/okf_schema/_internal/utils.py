@@ -10,6 +10,7 @@ import contextlib
 import re
 from collections.abc import Iterable
 from pathlib import Path
+from urllib.parse import unquote
 
 from okf_schema._internal.models import ConceptInfo
 from okf_schema._internal.yaml import extract_frontmatter, parse_yaml
@@ -33,6 +34,11 @@ def collect_markdown_files(bundle: Path) -> Iterable[Path]:
     for path in sorted(bundle.rglob("*.md")):
         if path.is_file():
             yield path
+
+
+def _is_external_link(target: str) -> bool:
+    """Return whether *target* is an external destination (URL or ``mailto:``)."""
+    return "://" in target or target.startswith("mailto:")
 
 
 def resolve_link(
@@ -64,7 +70,7 @@ def resolve_link(
         >>> resolve_link("https://example.com", Path("index.md"), Path(".")) is None
         True
     """
-    if "://" in target or target.startswith("mailto:"):
+    if _is_external_link(target):
         return None
 
     if target.startswith("/"):
@@ -78,15 +84,75 @@ def resolve_link(
     return resolved
 
 
+def _link_path_for_check(target: str) -> str | None:
+    """Return the path an existence check must look for, or ``None``.
+
+    The ``#...`` anchor is removed and the remaining path is percent-decoded.
+    ``None`` means the target is anchor-only: it points at its own document.
+    """
+    path = target.partition("#")[0]
+    return unquote(path) if path else None
+
+
+def is_broken_link(
+    target: str,
+    source: Path,
+    bundle_root: Path,
+) -> bool:
+    """Return whether an internal Markdown link points at nothing on disk.
+
+    .. versionadded:: 0.19.0
+
+    External destinations are never broken, and neither is an anchor-only
+    target such as ``#top``. Otherwise the ``#...`` anchor is ignored (it is
+    not verified), the path is percent-decoded, then resolved with
+    :func:`resolve_link`. Directories are accepted as valid targets.
+
+    Args:
+        target:
+            Link destination as written in Markdown.
+        source:
+            Path of the document containing the link.
+        bundle_root:
+            Root used to resolve slash-prefixed bundle paths.
+
+    Returns:
+        ``True`` when the target is internal and its path does not exist.
+
+    Examples:
+        >>> is_broken_link("#top", Path("index.md"), Path("."))
+        False
+        >>> is_broken_link("https://example.com", Path("index.md"), Path("."))
+        False
+    """
+    if _is_external_link(target):
+        return False
+    path = _link_path_for_check(target)
+    if path is None:
+        return False
+    try:
+        resolved = resolve_link(path, source, bundle_root)
+    except ValueError:
+        return True  # for example ``%00``: no file can carry that name
+    # ``None``: only the decoded path looks external, so no such file exists.
+    return resolved is None or not resolved.exists()
+
+
+# @implements_req SwRS-OKFSCHEMA-CORE-001
 def find_broken_links(
     body: str,
     source: Path,
     bundle_root: Path,
 ) -> list[str]:
-    """Find broken internal links in markdown body text.
+    r"""Find broken internal links in markdown body text.
 
-    Returns a list of link targets that do not exist on disk.
-    External links are skipped. Directories are accepted as valid targets.
+    .. versionchanged:: 0.19.0
+        ``#...`` anchors are ignored and paths are percent-decoded before
+        they are checked.
+
+    Returns a list of link targets that do not exist on disk, each exactly as
+    written (encoding and anchor included). External links are skipped.
+    Directories are accepted as valid targets. See :func:`is_broken_link`.
 
     Args:
         body:
@@ -97,20 +163,25 @@ def find_broken_links(
             Root directory of the bundle.
 
     Returns:
-        Internal link targets whose resolved paths do not exist.
+        Internal link targets, as written, whose paths do not exist.
 
     Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> with TemporaryDirectory() as directory:
+        ...     root = Path(directory)
+        ...     _ = (root / "a.md").write_text("# A\n")
+        ...     find_broken_links("[a](a.md#part) [b](b.md#part)", root / "index.md", root)
+        ['b.md#part']
+        >>> find_broken_links("[top](#top)", Path("index.md"), Path("."))
+        []
         >>> find_broken_links("[web](https://example.com)", Path("index.md"), Path("."))
         []
     """
-    broken: list[str] = []
-    for _text, target in MARKDOWN_LINK_RE.findall(body):
-        resolved = resolve_link(target, source, bundle_root)
-        if resolved is None:
-            continue  # external link — can't check
-        if not resolved.exists():
-            broken.append(target)
-    return broken
+    return [
+        target
+        for _text, target in MARKDOWN_LINK_RE.findall(body)
+        if is_broken_link(target, source, bundle_root)
+    ]
 
 
 def has_markdown_files(dir_path: Path) -> bool:
