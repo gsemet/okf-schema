@@ -4,6 +4,7 @@
 
 - **index**: write subdirectory summaries without broken links
 - **validate**: count every OKF 0.2 actor form in the trust tier
+- **show**: accept names without .md and stay inside the bundle
 
 ## v0.18.1 (2026-11-25)
 
