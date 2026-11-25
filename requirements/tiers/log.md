@@ -2,6 +2,28 @@
 
 ## 2026-11-25
 
+### Show prints the stored file, and a trust command
+
+- Why: `show` re-serialized the frontmatter and printed a `trust:` line inside the
+  document. The trust tier moved to its own command.
+- [SwRS-OKFSCHEMA-CORE-005](swrs/core/SwRS-OKFSCHEMA-CORE-005.md) gained S5: `show`
+  prints the stored file, nothing added, without validating it, in any encoding.
+- [SwRS-OKFSCHEMA-CORE-006](swrs/core/SwRS-OKFSCHEMA-CORE-006.md) gained S6 (the `trust`
+  command), S7 (its refusal of a missing concept) and S8 (its refusal of a file that is
+  not valid UTF-8, one error line and exit 2), `depends_on`
+  SwRS-OKFSCHEMA-CORE-010 and a statement that covers inspection ("validated or
+  inspected", deriving the trust tier and staleness). S2 names `trust` instead of the
+  removed `show` line.
+- [SwRS-OKFSCHEMA-CORE-010](swrs/core/SwRS-OKFSCHEMA-CORE-010.md) covers `trust` too.
+- All three stay `proposed`; none is approved.
+- Verification, on Windows with Python 3.12: `okfreq update-coverage --check`,
+  `okfreq validate --prose --check-links` (0 errors, 0 warnings) and
+  `okfreq lint --check --check-links` pass, and `okfreq trace --json` lists the three
+  requirements as implemented and tested, with markers for the new scenarios.
+  `just preflight` passes: 1185 tests pass and 12 are skipped. The acceptance tests are
+  skipped on Windows by their fixture; the inspection and creation ones also pass when
+  run against an installed wheel through a local harness.
+
 ### Index summaries and broken links
 
 - Added scenario S3 to

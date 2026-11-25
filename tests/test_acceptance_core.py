@@ -210,7 +210,7 @@ def test_lint_and_index_are_deterministic_and_preserve_authored_content(
 def test_inspection_reports_matching_concepts_and_changes_no_file(
     installed_product: InstalledProduct, tmp_path: Path
 ) -> None:
-    """Searching, listing, showing and backlinks report matching concepts and write nothing."""
+    """Searching, listing, showing, trust and backlinks report on concepts and write nothing."""
     bundle = _initialize_bundle(installed_product, tmp_path)
     _write_concepts(bundle)
     installed_product.run("okf-schema", "lint", "--path", str(bundle), cwd=tmp_path, check=True)
@@ -225,14 +225,17 @@ def test_inspection_reports_matching_concepts_and_changes_no_file(
     listed = inspect("list", "--path", str(bundle))
     shown = inspect("show", "--path", str(bundle), "concepts/clock.md")
     shown_by_name = inspect("show", "--path", str(bundle), "concepts/clock")
+    trusted = inspect("trust", "--path", str(bundle), "concepts/clock")
     backlinks = inspect("backlinks", "--path", str(bundle), "concepts/timer")
     statistics = inspect("stats", "--path", str(bundle))
 
     assert found.split() == ["concepts/clock.md"]
     assert "concepts/clock.md" in listed
     assert "concepts/timer.md" in listed
-    assert "The clock ticks." in shown
+    assert shown == (bundle / "concepts" / "clock.md").read_text(encoding="utf-8")
+    assert "trust:" not in shown
     assert "The clock ticks." in shown_by_name
+    assert trusted.splitlines() == ["trust: unverified"]
     assert "concepts/timer.md ← concepts/clock.md" in backlinks
     assert "2 concepts" in statistics
     assert _snapshot(tmp_path) == before

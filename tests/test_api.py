@@ -590,6 +590,66 @@ def test_show_bundle_concept_without_frontmatter(tmp_path: Path) -> None:
     detail = show_bundle(bundle, "no-fm.md")
     assert detail.frontmatter == {}
     assert "# No Frontmatter" in detail.body
+    assert detail.raw == (bundle / "no-fm.md").read_bytes().decode("utf-8")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+def test_show_bundle_raw_holds_the_stored_text(tmp_path: Path) -> None:
+    """``raw`` keeps flow style, comments and unquoted values, beside the parsed fields."""
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    concept = bundle / "c.md"
+    concept.write_bytes(
+        b"---\ntitle: T  # keep\ntags: [a, b]\nstale_after: 2999-01-01T00:00:00Z\n---\n\n# T\n"
+    )
+
+    detail = show_bundle(bundle, "c.md")
+
+    assert detail.raw == concept.read_bytes().decode("utf-8")
+    assert detail.frontmatter == {
+        "title": "T",
+        "tags": ["a", "b"],
+        "stale_after": "2999-01-01T00:00:00+00:00",
+    }
+    assert detail.body == "\n# T\n"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+def test_show_bundle_raw_keeps_crlf_line_endings(tmp_path: Path) -> None:
+    """``raw`` keeps CRLF, while the parsed fields read it as a text file does."""
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "c.md").write_bytes(b"---\r\ntitle: T\r\n---\r\nBody\r\n")
+
+    detail = show_bundle(bundle, "c.md")
+
+    assert detail.raw == "---\r\ntitle: T\r\n---\r\nBody\r\n"
+    assert detail.frontmatter == {"title": "T"}
+    assert detail.body == "Body\n"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+def test_show_bundle_returns_the_stored_text_of_invalid_yaml(tmp_path: Path) -> None:
+    """Invalid YAML does not raise: the frontmatter is empty and ``raw`` is complete."""
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "c.md").write_bytes(b"---\ntitle: [unclosed\n---\nBody\n")
+
+    detail = show_bundle(bundle, "c.md")
+
+    assert detail.frontmatter == {}
+    assert detail.raw == "---\ntitle: [unclosed\n---\nBody\n"
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S5
+def test_show_bundle_refuses_a_file_that_is_not_utf8(tmp_path: Path) -> None:
+    """The API result holds text only, so a file that is not valid UTF-8 raises."""
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "c.md").write_bytes(b"---\ntitle: caf\xe9\n---\nBody\n")
+
+    with pytest.raises(UnicodeDecodeError):
+        show_bundle(bundle, "c.md")
 
 
 def test_show_bundle_trust_tier_unverified_for_new_concept(tmp_path: Path) -> None:
@@ -683,15 +743,21 @@ def _symlink_or_skip(link: Path, target: Path, *, target_is_directory: bool = Fa
 
 @pytest.fixture
 def read_paths(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
-    """Record every file read as text while the test runs."""
+    """Record every file read, as text or as bytes, while the test runs."""
     paths: list[Path] = []
-    original = Path.read_text
+    original_read_text = Path.read_text
+    original_read_bytes = Path.read_bytes
 
     def recording_read_text(self: Path, *args: Any, **kwargs: Any) -> str:
         paths.append(self)
-        return original(self, *args, **kwargs)
+        return original_read_text(self, *args, **kwargs)
+
+    def recording_read_bytes(self: Path) -> bytes:
+        paths.append(self)
+        return original_read_bytes(self)
 
     monkeypatch.setattr(Path, "read_text", recording_read_text)
+    monkeypatch.setattr(Path, "read_bytes", recording_read_bytes)
     return paths
 
 

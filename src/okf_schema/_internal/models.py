@@ -177,12 +177,31 @@ class ConceptSummary:
 
 @dataclass
 class ConceptDetail:
-    """Detailed view of a single concept file."""
+    """Detailed view of a single concept file.
+
+    .. versionchanged:: 0.19.0
+        Add ``raw``, the exact stored text.
+
+    Attributes:
+        frontmatter:
+            Parsed frontmatter, an empty mapping when it is absent or cannot be parsed.
+        body:
+            Text after the frontmatter.
+        trust_tier:
+            Trust tier derived from ``verified``:
+            ``unverified``, ``machine-confirmed`` or ``human-reviewed``.
+        stale:
+            ``True`` once ``stale_after`` has been reached.
+        raw:
+            The concept file's exact stored text, decoded as UTF-8,
+            line endings and any byte order mark kept.
+    """
 
     frontmatter: dict[str, object]
     body: str
     trust_tier: str = "unverified"
     stale: bool = False
+    raw: str = ""
 
 
 @dataclass

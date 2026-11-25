@@ -20,6 +20,7 @@ from okf_schema._internal.models import BundleStats
 from okf_schema._internal.utils import collect_markdown_files
 from okf_schema._internal.yaml import make_yaml
 from okf_schema.api import (
+    _resolve_concept_file,
     backlinks_bundle,
     index_bundle,
     lint_bundle,
@@ -734,14 +735,20 @@ def show(
     bundle_path: str,
     concept_path: str,
 ) -> None:
-    """Show a single concept's frontmatter and body.
+    """Print a concept file exactly as stored.
 
     .. versionchanged:: 0.18.2
         Accept a concept name without ``.md`` or with a leading ``/``,
         and refuse a path that leaves the bundle.
 
+    .. versionchanged:: 0.19.0
+        Print the stored bytes instead of a rewritten frontmatter and the body.
+        The trust tier and staleness moved to ``okf-schema trust``.
+
     The concept name starts from the bundle root (a leading ``/`` is allowed),
     the ``.md`` extension is optional, and a path outside the bundle is refused.
+    The file is not parsed or validated; nothing is added to it.
+    Use ``okf-schema trust`` for its trust tier and staleness.
 
     Args:
         ctx:
@@ -757,27 +764,79 @@ def show(
 
         okf-schema show --path bundle concepts/clock
     """
+    # @implements_req SwRS-OKFSCHEMA-CORE-005
     try:
-        detail = show_bundle(bundle_path, concept_path)
+        target = _resolve_concept_file(bundle_path, concept_path)
     except (FileNotFoundError, NotADirectoryError) as exc:
         click.echo(f"Error: {exc}", err=True)
         ctx.exit(2)
 
-    import io
+    # Bytes, not text: click.echo adds a newline, and a text stream translates "\n" on Windows.
+    stdout = click.get_binary_stream("stdout")
+    remaining = memoryview(target.read_bytes())
+    # Unbuffered (python -u), the stream is raw: one write may take a part only, or return None.
+    while remaining:
+        remaining = remaining[stdout.write(remaining) or 0 :]
+    stdout.flush()
 
-    from okf_schema._internal.yaml import make_yaml
 
-    y = make_yaml()
-    buf = io.StringIO()
-    y.dump(detail.frontmatter, buf)
-    fm_yaml = buf.getvalue().rstrip("\n")
-    click.echo(f"---\n{fm_yaml}\n---")
-    # OKF 0.2: show derived trust tier and staleness
+# ---------------------------------------------------------------------------
+# trust
+# ---------------------------------------------------------------------------
+
+
+@cli.command()
+@click.option(
+    "--path",
+    "bundle_path",
+    required=True,
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    help="Root directory of the OKF bundle.",
+)
+@click.argument("concept_path")
+@click.pass_context
+def trust(
+    ctx: click.Context,
+    bundle_path: str,
+    concept_path: str,
+) -> None:
+    """Print a concept's trust tier and staleness.
+
+    .. versionadded:: 0.19.0
+
+    Prints ``trust: <tier>`` (``unverified``, ``machine-confirmed``
+    or ``human-reviewed``, derived from the ``verified`` field)
+    and, when ``stale_after`` has been reached, ``stale: true``.
+    The concept is resolved as ``show`` resolves it.
+    A file that is not valid UTF-8 is refused with exit 2.
+    Nothing is written.
+
+    Args:
+        ctx:
+            Active Click command context.
+        bundle_path:
+            Root directory of the bundle containing the concept.
+        concept_path:
+            Name of the concept from the bundle root,
+            or absolute disk path inside the bundle.
+
+    Examples:
+        okf-schema trust --path bundle concepts/clock
+    """
+    # @implements_req SwRS-OKFSCHEMA-CORE-006
+    try:
+        target = _resolve_concept_file(bundle_path, concept_path)
+        detail = show_bundle(bundle_path, concept_path)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        ctx.exit(2)
+    except UnicodeDecodeError:
+        click.echo(f"Error: Concept file is not valid UTF-8: {target}", err=True)
+        ctx.exit(2)
+
     click.echo(f"trust: {detail.trust_tier}")
     if detail.stale:
         click.echo("stale: true")
-    if detail.body.strip():
-        click.echo(detail.body)
 
 
 # ---------------------------------------------------------------------------

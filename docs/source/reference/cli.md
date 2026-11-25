@@ -222,14 +222,28 @@ Output format: `path  type  title`
 
 ## `okf-schema show`
 
-Show a single concept's frontmatter and body.
+Print a concept file exactly as stored.
 
 ```bash
 okf-schema show --path BUNDLE CONCEPT_PATH
 ```
 
-The command prints the frontmatter, the derived trust tier, `stale: true` when
-the concept is stale, and the body. It writes no file.
+### Output
+
+Standard output is the file byte for byte: frontmatter style, comments, line
+endings, encoding and body. It writes no file.
+
+`show` does not parse or validate the file. A file without frontmatter, with
+invalid YAML or that is not valid UTF-8 is printed as is, with exit code `0`.
+Use `okf-schema validate` to check it.
+
+Nothing is added to the file, in particular no trust tier and no staleness line:
+use {ref}`okf-schema trust <cli-trust>`.
+
+The Python API `show_bundle` returns `trust_tier`, `stale` and `raw` (the stored
+text). It raises `UnicodeDecodeError` for a file that is not valid UTF-8.
+
+(cli-show-concept-path)=
 
 ### `CONCEPT_PATH`
 
@@ -296,6 +310,55 @@ the "outside the bundle" error is reported.
   install folder before `okf-schema` receives it (`/api/status` becomes
   `C:/Program Files/Git/api/status`), which is then refused as outside the bundle.
   Write the name without `/` (`api/status`), or set `MSYS_NO_PATHCONV=1`.
+
+---
+
+(cli-trust)=
+
+## `okf-schema trust`
+
+Print a concept's trust tier and staleness.
+
+```bash
+okf-schema trust --path BUNDLE CONCEPT_PATH
+```
+
+`CONCEPT_PATH` is read as for `show`: see
+{ref}`CONCEPT_PATH <cli-show-concept-path>`.
+
+### Output
+
+The first line is `trust: <tier>`. The tier is one of `unverified`,
+`machine-confirmed` or `human-reviewed`, and is derived from the concept's
+`verified` field only; a single mapping counts as one entry. For the actor forms,
+see W10 in the [validation codes](validation-codes.md).
+
+A second line, `stale: true`, follows when `stale_after` has been reached: an
+instant with its offset, or a bare date from that day on. There is no such line
+when `stale_after` is absent or unparseable (`okf-schema validate` reports W16).
+
+No score is printed.
+
+```console
+$ okf-schema trust --path my-bundle api/health-check
+trust: unverified
+```
+
+```console
+$ okf-schema trust --path my-bundle api/old-endpoint
+trust: human-reviewed
+stale: true
+```
+
+### Exit codes
+
+| Code | Case |
+|------|------|
+| `0` | Every tier, including `unverified`. A file without frontmatter or with invalid YAML gives `trust: unverified`. |
+| `2` | A missing concept, or a path leaving the bundle: `Error: ...`, as for `show`. |
+| `2` | A file that is not valid UTF-8, which `show` prints as is: the single line `Error: Concept file is not valid UTF-8: <path>`. |
+
+The command writes no file.
 
 ---
 

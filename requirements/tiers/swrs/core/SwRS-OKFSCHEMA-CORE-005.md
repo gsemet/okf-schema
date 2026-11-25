@@ -39,6 +39,8 @@ scenarios:
   title: Resolve a concept name without its extension
 - id: S4
   title: Read a name from the bundle root
+- id: S5
+  title: Show a concept as stored
 default_owner_email: gaetan@xeberon.net
 ---
 
@@ -79,6 +81,15 @@ When a user inspects an OKF bundle, okf-schema SHALL provide deterministic list,
   with no such file in the bundle (for example `/etc/passwd`) is reported as not
   found and nothing outside the bundle is read
 
+### Scenario S5: Show a concept as stored
+
+- GIVEN a concept file in the bundle, whatever its frontmatter style, comments, line
+  endings, encoding, or whether it has frontmatter or valid YAML at all
+- WHEN the user shows it
+- THEN the CLI writes the stored bytes to standard output, unchanged and with nothing
+  added (no trust or staleness line), exits 0 and writes nothing to standard error,
+  and the API result's `raw` holds the stored text of a UTF-8 file
+
 ### Verification notes
 
 - Method: public API and CLI tests for list, show, search, graph, backlinks, and
@@ -87,7 +98,9 @@ When a user inspects an OKF bundle, okf-schema SHALL provide deterministic list,
   fail explicitly, and fixture content remains unchanged. A concept path resolves
   with or without `.md`, from the bundle root with or without a leading `/`, a
   directory is never shown, and the paths `show` accepts are bounded by
-  SwRS-OKFSCHEMA-CORE-010.
+  SwRS-OKFSCHEMA-CORE-010. `show` output equals the stored file byte for byte,
+  including a file without frontmatter, with invalid YAML, with CRLF line endings,
+  or not valid UTF-8.
 
 <!-- okf:links:start -->
 ### Links

@@ -170,6 +170,53 @@ def _require_inside_bundle(
         )
 
 
+# @implements_req SwRS-OKFSCHEMA-CORE-005
+def _resolve_concept_file(bundle_path: str | Path, concept_path: str) -> Path:
+    """Return the file of a concept of a bundle, without reading it.
+
+    :func:`show_bundle` states how *concept_path* is read.
+
+    Args:
+        bundle_path:
+            Path to the OKF bundle directory.
+        concept_path:
+            Name from the bundle root, with or without a leading ``/``,
+            or absolute disk path inside the bundle, with or without ``.md``.
+
+    Returns:
+        The concept file. Its real path is inside the bundle.
+
+    Raises:
+        FileNotFoundError: When *bundle_path* does not exist,
+            when no concept file matches, a directory included,
+            or when the real path of the name or of its file is outside the bundle.
+        NotADirectoryError: When *bundle_path* is not a directory.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema.api import _resolve_concept_file
+        >>> with TemporaryDirectory() as directory:
+        ...     _ = (Path(directory) / "clock.md").write_text("# Clock", encoding="utf-8")
+        ...     _resolve_concept_file(directory, "/clock").name
+        'clock.md'
+    """
+    bundle = _resolve_bundle(bundle_path)
+    from_root = concept_path.startswith("/") and not _is_disk_path_in_bundle(bundle, concept_path)
+    # pathlib: an absolute name replaces the bundle.
+    raw = bundle / (concept_path.lstrip("/") if from_root else concept_path)
+
+    target = next((path for path in (raw, Path(f"{raw}.md")) if path.is_file()), None)
+    if target is None:
+        real = _real_path(raw)
+        # The bundle root is a directory like another: it is not found, not outside.
+        if real != bundle:
+            _require_inside_bundle(bundle, real, concept_path)
+        raise FileNotFoundError(f"Concept not found: {raw}")
+    _require_inside_bundle(bundle, _real_path(target), concept_path)
+    return target
+
+
 # @implements_req SwRS-OKFSCHEMA-CORE-001
 def validate_bundle(
     bundle_path: str | Path,
@@ -445,12 +492,15 @@ def list_bundle(bundle_path: str | Path) -> list[ConceptSummary]:
 # @implements_req SwRS-OKFSCHEMA-CORE-005
 # @implements_req SwRS-OKFSCHEMA-CORE-006
 def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
-    """Show a single concept's frontmatter and body.
+    """Show a concept's frontmatter, body, trust tier, staleness and stored text.
 
     .. versionchanged:: 0.18.2
         Accept a concept name without ``.md`` or with a leading ``/``,
         report a directory as not found,
         and refuse a path or symbolic link that leaves the bundle.
+
+    .. versionchanged:: 0.19.0
+        Return ``raw``, the exact stored text of the concept file.
 
     *concept_path* is read with the first rule that applies:
 
@@ -475,7 +525,11 @@ def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
             or absolute disk path inside the bundle, with or without ``.md``.
 
     Returns:
-        A :class:`ConceptDetail` with frontmatter dict and body text.
+        A :class:`ConceptDetail` with the parsed frontmatter dict, the body text,
+        the derived trust tier and staleness,
+        and ``raw``, the exact stored text of the file.
+        A file without frontmatter, or with frontmatter that cannot be parsed,
+        gets an empty dict.
 
     Raises:
         FileNotFoundError: When *bundle_path* does not exist,
@@ -483,6 +537,7 @@ def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
             or when the real path of the name or of its file is outside the bundle.
             A file outside the bundle is not read.
         NotADirectoryError: When *bundle_path* is not a directory.
+        UnicodeDecodeError: When the concept file is not valid UTF-8.
 
     Examples:
         >>> from pathlib import Path
@@ -493,21 +548,10 @@ def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
         ...     show_bundle(directory, "/clock").body
         '# Clock'
     """
-    bundle = _resolve_bundle(bundle_path)
-    from_root = concept_path.startswith("/") and not _is_disk_path_in_bundle(bundle, concept_path)
-    # pathlib: an absolute name replaces the bundle.
-    raw = bundle / (concept_path.lstrip("/") if from_root else concept_path)
-
-    target = next((path for path in (raw, Path(f"{raw}.md")) if path.is_file()), None)
-    if target is None:
-        real = _real_path(raw)
-        # The bundle root is a directory like another: it is not found, not outside.
-        if real != bundle:
-            _require_inside_bundle(bundle, real, concept_path)
-        raise FileNotFoundError(f"Concept not found: {raw}")
-    _require_inside_bundle(bundle, _real_path(target), concept_path)
-
-    text = target.read_text(encoding="utf-8")
+    target = _resolve_concept_file(bundle_path, concept_path)
+    raw = target.read_bytes().decode("utf-8")
+    # Parse the text a text-mode read gives (universal newlines); ``raw`` keeps the stored one.
+    text = raw.replace("\r\n", "\n").replace("\r", "\n")
     fm_text, body = extract_frontmatter(text)
     frontmatter: dict = {}
     if fm_text is not None:
@@ -518,7 +562,9 @@ def show_bundle(bundle_path: str | Path, concept_path: str) -> ConceptDetail:
     trust_tier = _derive_trust_tier(frontmatter)
     stale = _is_stale(frontmatter)
 
-    return ConceptDetail(frontmatter=frontmatter, body=body, trust_tier=trust_tier, stale=stale)
+    return ConceptDetail(
+        frontmatter=frontmatter, body=body, trust_tier=trust_tier, stale=stale, raw=raw
+    )
 
 
 # @implements_req SwRS-OKFSCHEMA-CORE-004
