@@ -153,6 +153,18 @@ If tagging succeeded but publication failed, rerun the failed release job or dis
 to retry. PyPI publication skips already uploaded files, allowing a retry
 to finish the GitHub release. Manual pushes of valid `vX.Y.Z` tags also run this workflow.
 
+If Copilot cannot generate notes, write user-facing Markdown from the exact release
+range and validate it with `uv run python scripts/release_notes.py --validate notes.md`.
+Then dispatch **Release** from `main`, supplying the existing tag and the file contents
+as `release_notes`:
+
+```bash
+gh workflow run publish.yml --ref main -f tag=vX.Y.Z -F release_notes=@notes.md
+```
+
+The workflow validates the supplied notes again before building or publishing. Leave
+`release_notes` empty to use the normal Copilot generator.
+
 To generate notes without publishing the package, dispatch **Generate release notes
 (manual)** from the default branch with an existing tag reachable from that branch.
 It uploads the validated Markdown and creates a draft GitHub release, refusing to overwrite
