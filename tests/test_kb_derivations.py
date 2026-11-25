@@ -60,9 +60,7 @@ def _bundle(tmp_path: Path) -> Path:
     return bundle
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-006
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S1
 def test_build_derivation_graph_reflects_authored_edges(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path)
     graph = build_derivation_graph(bundle)
@@ -95,6 +93,7 @@ def test_lint_check_reports_drift_without_writing(tmp_path: Path) -> None:
     assert path.read_text(encoding="utf-8") == original
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S3
 def test_validation_reports_stale_graph_read_only_then_lint_repairs(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path)
     path = bundle / "findings" / "observed-failure.md"

@@ -17,8 +17,8 @@ from okf_schema.okfreq.core import (
     validate_requirements,
 )
 
-# @tests_req SwRS-OKFSCHEMA-CORE-007
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-005
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S4
 
 
 def _link_schema(resolution: str, syntax: str = "plain") -> dict[str, object]:
@@ -297,7 +297,7 @@ def test_check_file_links_supports_wikilink_labels_and_fragments(tmp_path: Path)
     )
 
 
-# @tests_req StRS-OKFSCHEMA-CORE-003
+# @tests_req StRS-OKFSCHEMA-CORE-003#S1
 def test_inspect_file_links_exposes_successes_failures_and_suffixes(tmp_path: Path) -> None:
     """Structured inspection preserves identity, resolution, and parsed suffix metadata."""
     document = tmp_path / "docs" / "source.md"
@@ -605,6 +605,7 @@ def test_check_file_links_follows_local_refs_through_recursive_schemas(tmp_path:
     assert "missing.md" in deep_missing[0].message
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S4
 def test_check_file_links_deduplicates_composed_link_diagnostics(tmp_path: Path) -> None:
     """Repeated annotations in composed profiles report a missing target once."""
     schema = {
@@ -686,6 +687,7 @@ def test_check_file_links_skips_unresolvable_stem_candidates(tmp_path: Path, mon
     assert "workspace may be unavailable" in diagnostics[0].message
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S2
 def test_check_file_links_reports_invalid_annotations_and_values(tmp_path: Path) -> None:
     """Invalid metadata, values, wikilinks, and empty wikilinks are errors."""
     document = tmp_path / "source.md"
@@ -941,6 +943,8 @@ def test_normal_schema_validation_ignores_file_link_annotation() -> None:
     assert validate_against_schema({"target": "missing.md"}, schema, "concept") == []
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S3
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S5
 def test_validate_bundle_checks_links_only_when_opted_in(tmp_path: Path) -> None:
     """The generic API exposes opt-in checking without changing default validation."""
     bundle = tmp_path / "bundle"
@@ -1266,6 +1270,7 @@ def test_value_identity_is_an_unambiguous_json_pointer(tmp_path: Path) -> None:
     assert len(results) == 5
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-007#S5
 def test_malformed_target_does_not_interrupt_other_results(tmp_path: Path) -> None:
     """A user-provided NUL produces E10 and preserves subsequent valid results."""
     (tmp_path / "target.md").write_text("", encoding="utf-8")

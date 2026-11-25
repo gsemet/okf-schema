@@ -3,6 +3,8 @@
 Run from the repository root with ``uv run python
 examples/okfreq-examples/showcase.py``. The checked-in CSV example is preserved;
 all configuration, lifecycle changes and intentional failures stay temporary.
+Actual CSV behavior is verified in ``tests/test_export.py`` and end-to-end
+acceptance in ``tests/test_acceptance_export.py``.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ from jsonschema import Draft202012Validator
 from okf_schema._internal.yaml import dump_yaml, extract_frontmatter, make_yaml
 from okf_schema.file_links import inspect_file_links
 from okf_schema.okfreq.cli import okfreq
-from okf_schema.okfreq.core import load_requirements, report
+from okf_schema.okfreq.core import load_requirements, report, report_schema
 from okf_schema.projection import LINKS_START, strip_links_section
 
 # @implements_req SwRS-OKFSCHEMA-OKFREQ-008
@@ -127,8 +129,148 @@ def run_showcase(project: Path) -> dict[str, str]:
     config["strs_test_coverage_mode"] = "linked-swrs-and-validation-test"
     config_path.write_text(dump_yaml(config), encoding="utf-8")
     test_path.write_text(test_path.read_text() + f"# @verifies {parent}\n", encoding="utf-8")
+
+    # Exercise linked-swrs-and-acceptance-paths mode with custom @accepts markers.
+    strs_path = records[parent][0]
+    swrs_path = records[swrs][0]
+    strs_text = strs_path.read_text(encoding="utf-8")
+    strs_path.write_text(
+        strs_text
+        + "\n### Main paths\n\n"
+        + "#### Path S1: Export standard manifest\n\n"
+        + "1. Dispatch requests a standard manifest export.\n"
+        + "2. The portable manifest is written for offline review.\n\n"
+        + "#### Path S2: Export empty manifest\n\n"
+        + "1. Dispatch requests an export with no selected shipments.\n"
+        + "2. An empty manifest is produced without error.\n",
+        encoding="utf-8",
+    )
+    config["markers"]["accepts"] = "@accepts"
+    config["strs_test_coverage_mode"] = "linked-swrs-and-acceptance-paths"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+
+    # 1. W003 quotes the #### Path headings with a pasteable block; W004 flags missing acceptance.
+    initial_validation = json.loads(command("validate", str(root), "--json"))
+    w003_messages = [w for w in initial_validation["warnings"] if "W003" in w]
+    w004_messages = [w for w in initial_validation["warnings"] if "W004" in w]
+    assert any(
+        parent in msg
+        and "Export standard manifest" in msg
+        and "Export empty manifest" in msg
+        and "scenarios:" in msg
+        for msg in w003_messages
+    ), w003_messages
+    assert any(parent in msg for msg in w004_messages), w004_messages
+
+    # 2. Declare scenarios on the StRS and first SwRS (aligning SwRS headings); fragmentless errors.
+    edit(
+        strs_path,
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Export standard manifest"},
+                {"id": "S2", "title": "Export empty manifest"},
+            ]
+        },
+    )
+    edit(
+        swrs_path,
+        {
+            "scenarios": [
+                {"id": "S1", "title": "Write populated manifest"},
+                {"id": "S2", "title": "Write empty manifest"},
+            ]
+        },
+    )
+    swrs_path.write_text(
+        swrs_path.read_text(encoding="utf-8")
+        .replace("<nominal behavior>", "Write populated manifest")
+        .replace("<boundary or failure behavior>", "Write empty manifest"),
+        encoding="utf-8",
+    )
+    fragless_validation = json.loads(command("validate", str(root), "--json", expected=1))
+    fragless_errors = fragless_validation["errors"]
+    assert any(swrs in msg and "declares scenarios" in msg for msg in fragless_errors), (
+        fragless_errors
+    )
+    assert any(parent in msg and "declares scenarios" in msg for msg in fragless_errors), (
+        fragless_errors
+    )
+
+    def strs_cov(rep: dict) -> tuple[dict, dict[str, str]]:
+        entry = next(r for r in rep["requirements"] if r["id"] == parent)
+        cov = entry["stakeholder_test_coverage"]
+        return cov, {item["id"]: item["status"] for item in cov["linked_swrs"]}
+
+    fragless_cov, fragless_linked = strs_cov(report(root))
+    assert fragless_cov["paths"] == {"total": 2, "tested": 0, "accepted": 0}
+    assert fragless_cov["tested"] is False and fragless_cov["accepted"] is False
+    assert fragless_linked[replacement] == "covered"
+    assert fragless_linked[swrs] == "missing"
+
+    # 3. Unknown fragment #S9 fails validation.
+    test_path.write_text(
+        f"# @verifies {swrs}#S1\n# @verifies {swrs}#S2\n"
+        f"# @verifies {replacement}\n# @accepts {parent}#S9\n",
+        encoding="utf-8",
+    )
+    unknown_validation = json.loads(command("validate", str(root), "--json", expected=1))
+    assert any("#S9" in msg for msg in unknown_validation["errors"])
+
+    # 4. @accepts S1 alone -> accepted 1/2, tested 0/2, no W004; then add @verifies & @accepts S2.
+    test_path.write_text(
+        f"# @verifies {swrs}#S1\n# @verifies {replacement}\n# @accepts {parent}#S1\n",
+        encoding="utf-8",
+    )
+    partial_validation = json.loads(command("validate", str(root), "--json"))
+    assert not any("W004" in w for w in partial_validation["warnings"])
+    partial_cov, partial_linked = strs_cov(report(root))
+    assert partial_cov["paths"] == {"total": 2, "tested": 0, "accepted": 1}
+    assert partial_cov["tested"] is False and partial_cov["accepted"] is False
+    assert partial_cov["status"] == "missing"
+    assert partial_linked[swrs] == "missing"
+
+    # 5. Full transitions on SwRS-DELIVERY-001 + both paths tested and accepted -> covered.
+    test_path.write_text(
+        f"# @verifies {swrs}#S1\n# @verifies {swrs}#S2\n# @verifies {replacement}\n"
+        f"# @verifies {parent}#S1\n# @verifies {parent}#S2\n"
+        f"# @accepts {parent}#S1\n# @accepts {parent}#S2\n",
+        encoding="utf-8",
+    )
+    full_report = report(root)
+    full_cov, full_linked = strs_cov(full_report)
+    assert full_cov["paths"] == {"total": 2, "tested": 2, "accepted": 2}
+    assert full_cov["tested"] is True and full_cov["accepted"] is True
+    assert full_linked[swrs] == "covered"
+    assert full_cov["status"] == "covered"
+    assert full_report["stakeholder_test_coverage"]["covered"] == 1
+
+    # 6. @accepts on a SwRS is rejected by the schema-driven check.
+    test_path.write_text(
+        test_path.read_text(encoding="utf-8") + f"# @accepts {swrs}\n",
+        encoding="utf-8",
+    )
+    wrong_tier_validation = json.loads(command("validate", str(root), "--json", expected=1))
+    assert any(
+        swrs in msg and "StRS main path" in msg for msg in wrong_tier_validation["errors"]
+    ), wrong_tier_validation["errors"]
+
+    # 7. Report payload validates against the emitted format_version 2 schema.
+    Draft202012Validator(report_schema()).validate(full_report)
+    outcomes["acceptance_paths"] = (
+        "declared scenarios, #S<n> fragments, independent tested/accepted counters "
+        "and schema-valid v2 report"
+    )
+
+    # Restore the earlier mode and test file for the remaining showcase steps.
+    config["strs_test_coverage_mode"] = "linked-swrs-and-validation-test"
+    config_path.write_text(dump_yaml(config), encoding="utf-8")
+    test_path.write_text(
+        f"# @verifies {swrs}\n# @verifies {replacement}\n# @verifies {parent}\n",
+        encoding="utf-8",
+    )
     # These markers demonstrate linkage only. Actual CSV behavior is tested in
-    # tests/test_export.py in the checked-in example, not claimed by this fixture.
+    # tests/test_export.py and end-to-end acceptance in tests/test_acceptance_export.py
+    # in the checked-in example, not claimed by this fixture.
     preserved = load_requirements(root)[swrs][1]
     command("update-coverage", str(root), "--diff")
     command("update-coverage", str(root))

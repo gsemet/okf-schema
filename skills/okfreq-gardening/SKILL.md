@@ -46,7 +46,7 @@ unrelated implementation task.
 - Preserve requirement IDs, UUIDs, authored frontmatter, unknown properties,
   YAML comments, and Markdown bodies.
 - Never hand-edit `derived_by`, `supersedes`, `implemented_in_files`, `tested_in_files`,
-  `default_owner_email`, indexes or reports. Use explicit `okfreq` commands for generated data.
+  `accepted_in_files`, `default_owner_email`, indexes or reports. Use explicit `okfreq` commands for generated data.
 - Never claim implementation or test coverage without source evidence and
   markers. Markers are links, not proof that tests pass.
 - Never change lifecycle or approval state as an incidental edit.
@@ -162,8 +162,29 @@ formats instead of applying one generic requirement template:
   statement as `--description` and the stakeholder's underlying outcome as
   `--user-need`. Use the frontmatter title as the first heading. Complete `Normative behavior`, `User Need`,
   and `Rationale and constraints`. Do not add SwRS scenarios, verification
-  notes, or implementation markers to an StRS. Add a direct validation-test
-  marker only for a real stakeholder test, as required by the configured mode.
+  notes, or implementation markers to an StRS. In `linked-swrs-and-validation-test`
+  mode, add a direct `@tests_req <StRS-ID>` marker only for a real stakeholder
+  validation test. In `linked-swrs-and-acceptance-paths` mode:
+  - declare `scenarios:` in frontmatter from the existing `### Main paths` or
+    `### Scenario` headings (`S1`, `S2`, … in order; never reuse a retired
+    `S<n>` ID). Adding `scenarios:` alone to an `approved` requirement's
+    frontmatter without editing the body does not change its meaning and needs
+    no re-approval, provided it is logged in `tiers/log.md`; aligning body
+    headings (`#### Path S<n>: <title>` / `### Scenario S<n>: <title>`) is good
+    authoring practice, and any edit to an approved body still requires owner
+    review;
+  - update each existing `@tests_req` or `@accepts_req` marker on a requirement
+    that declares `scenarios:` to carry the `#S<n>` fragment of the scenario
+    its test actually exercises;
+  - use `@accepts_req <StRS-ID>#S<n>` on the acceptance test closest to the
+    final product (based on what the test actually verifies and its execution
+    cost: costly acceptance tests may run on the main-branch pipeline beside
+    cheaper `@tests_req` tests run on every PR; when tests are cheap, mark them
+    `@accepts_req` directly);
+  - use a justified whole-StRS waiver (`acceptance_exemption: true` with a
+    non-blank `acceptance_exemption_reason`) only when the whole StRS genuinely
+    cannot be acceptance-tested, never because a test is slow, and never invent
+    a test or marker to fill a counter.
 - **SwRS — software behavior:** provide one observable, bounded `SHALL`
   response as `--description` and at least one valid StRS parent with
   `--derives-from`. Complete nominal and boundary/failure GIVEN-WHEN-THEN

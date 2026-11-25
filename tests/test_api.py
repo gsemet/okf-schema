@@ -41,9 +41,7 @@ VALID_BUNDLE = BUNDLE_FIXTURES / "valid"
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S1
 def test_validate_bundle_returns_report_for_valid_bundle() -> None:
     """Returns a conformant Report for a valid bundle."""
     report = validate_bundle(VALID_BUNDLE)
@@ -51,6 +49,7 @@ def test_validate_bundle_returns_report_for_valid_bundle() -> None:
     assert report.is_conformant is True
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S2
 def test_validate_bundle_returns_report_for_invalid_bundle() -> None:
     """Returns a non-conformant Report for an invalid bundle."""
     invalid = BUNDLE_FIXTURES / "invalid" / "e1-no-frontmatter"
@@ -416,9 +415,7 @@ def test_validate_markdown_files_absolute_directory_path(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_bundle_returns_list_of_formatted_results() -> None:
     """Returns a list of FormattedResult objects."""
     results = format_bundle(VALID_BUNDLE)
@@ -427,6 +424,7 @@ def test_format_bundle_returns_list_of_formatted_results() -> None:
         assert isinstance(result, FormattedResult)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S2
 def test_format_bundle_check_mode_no_changes(tmp_path: Path) -> None:
     """Check mode does not modify files."""
     # Copy valid bundle to temp
@@ -469,9 +467,7 @@ def test_format_bundle_diff_mode(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-005
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
 def test_list_bundle_returns_sorted_concept_summaries() -> None:
     """Returns sorted list of ConceptSummary objects."""
     concepts = list_bundle(VALID_BUNDLE)
@@ -549,9 +545,7 @@ def test_list_bundle_datetime_stale_after_has_stale_true(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_show_bundle_returns_concept_detail() -> None:
     """Returns ConceptDetail with frontmatter and body."""
     detail = show_bundle(VALID_BUNDLE, "subdir/concept-a.md")
@@ -562,6 +556,7 @@ def test_show_bundle_returns_concept_detail() -> None:
     assert "# Concept A" in detail.body
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_show_bundle_invalid_concept_path_raises() -> None:
     """Raises FileNotFoundError for nonexistent concept path."""
     with pytest.raises(FileNotFoundError):
@@ -639,9 +634,7 @@ def test_show_bundle_stale_concept_detected(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-004
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S1
 def test_index_bundle_returns_index_updates() -> None:
     """Returns list of IndexUpdate objects."""
     updates = index_bundle(VALID_BUNDLE)
@@ -1636,6 +1629,7 @@ def test_rewrite_superseded_links_rewrites_link_to_superseded_doc(tmp_path: Path
     assert "old.md" not in text
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S2
 def test_rewrite_superseded_links_deferred_when_no_superseded_by(tmp_path: Path) -> None:
     """Defers superseded doc without superseded_by field."""
     from okf_schema.api import DeferredRewrite, rewrite_superseded_links
@@ -1867,7 +1861,7 @@ def test_update_bundle_superseded_rewrite_body_with_non_matching_links(tmp_path:
     assert "[Other](other.md)" in text  # preserved
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
 def test_validate_bundle_reports_schema_load_diagnostics(tmp_path: Path) -> None:
     """validate_bundle surfaces I1 in ``infos`` and W17 in ``warnings`` with the file path."""
     schema_dir = tmp_path / "schemas"

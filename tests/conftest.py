@@ -2,9 +2,110 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+import sysconfig
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+
+
+@dataclass(frozen=True)
+class InstalledWheelEnv:
+    """Isolated venv with the built okf-schema wheel installed (no source checkout)."""
+
+    bin_dir: Path
+    python: Path
+    env: dict[str, str]
+    repository_root: Path
+
+    def run(
+        self,
+        executable: str,
+        *args: str,
+        cwd: Path,
+        check: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        """Run an installed console script or python in the isolated environment."""
+        exe_path = self.python if executable == "python" else self.bin_dir / executable
+        return subprocess.run(
+            [str(exe_path), *args],
+            cwd=cwd,
+            check=check,
+            capture_output=True,
+            text=True,
+            env=self.env,
+        )
+
+
+def _link_runtime_dependencies(destination: Path) -> None:
+    source = Path(sysconfig.get_paths()["purelib"])
+    destination.mkdir()
+    for entry in source.iterdir():
+        if entry.suffix == ".pth" or entry.name.startswith("okf_schema"):
+            continue
+        (destination / entry.name).symlink_to(entry, target_is_directory=entry.is_dir())
+
+
+@pytest.fixture(scope="session")
+def installed_wheel_env(tmp_path_factory: pytest.TempPathFactory) -> InstalledWheelEnv:
+    """Build the wheel once per worker and install it in an isolated POSIX venv."""
+    if sys.platform == "win32":
+        pytest.skip("Installed-wheel acceptance tests require POSIX venv bin layout")
+
+    base = tmp_path_factory.mktemp("okf-schema-installed-wheel")
+    repository_root = Path(__file__).parents[1]
+    wheel_directory = base / "wheel"
+    subprocess.run(
+        ["uv", "build", "--offline", "--wheel", "--out-dir", str(wheel_directory)],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    wheel_path = next(wheel_directory.glob("*.whl"))
+    environment = base / "venv"
+    subprocess.run(
+        ["uv", "venv", "--python", sys.executable, str(environment)],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    interpreter = environment / "bin" / "python"
+    subprocess.run(
+        ["uv", "pip", "install", "--python", str(interpreter), "--no-deps", str(wheel_path)],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    runtime_dependencies = base / "runtime-dependencies"
+    _link_runtime_dependencies(runtime_dependencies)
+    isolated_environment = os.environ.copy()
+    isolated_environment.pop("PYTHONPATH", None)
+    isolated_environment["PYTHONPATH"] = str(runtime_dependencies)
+    isolated_environment["PYTHONNOUSERSITE"] = "1"
+
+    imported_module = subprocess.run(
+        [str(interpreter), "-c", "import okf_schema; print(okf_schema.__file__)"],
+        cwd=base,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=isolated_environment,
+    )
+    assert str(repository_root) not in imported_module.stdout
+
+    return InstalledWheelEnv(
+        bin_dir=environment / "bin",
+        python=interpreter,
+        env=isolated_environment,
+        repository_root=repository_root,
+    )
 
 
 @pytest.fixture

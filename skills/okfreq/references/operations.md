@@ -75,9 +75,10 @@ lifecycle:
 markers:
   implements: '@implements_req'
   tests: '@tests_req'
+  accepts: '@accepts_req'
   id_pattern: '[A-Za-z][A-Za-z0-9_-]*'
 generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,
-  default_owner_email, status, verified]
+  accepted_in_files, default_owner_email, status, verified]
 retired_ids: []
 scopes:
   core: {id_token: CORE, folder: core, source_dirs: [src], test_dirs: [tests]}
@@ -107,13 +108,51 @@ scopes:
   lateral links that mean neither derivation nor replacement; it has no inverse,
   so declare it on one side only. A legacy scalar `superseded_by: ID` is still read
   (validation adds the informational `I2`); convert it to a list.
-- Only the seven listed `generated_fields` are supported. Omitting a generated
-  field leaves it unmanaged; unsupported names fail. StRS never carries generated
-  source/test file arrays, even when the setting lists those fields.
+- Only the eight listed `generated_fields` are supported (`derived_by`,
+  `supersedes`, `implemented_in_files`, `tested_in_files`, `accepted_in_files`,
+  `default_owner_email`, `status`, `verified`). Omitting a generated field leaves
+  it unmanaged; unsupported names fail. A StRS never carries
+  `implemented_in_files`; it carries `tested_in_files` and `accepted_in_files`
+  only in `linked-swrs-and-acceptance-paths` mode (and in older modes
+  `update-coverage` removes both from StRS).
 - The default StRS mode is `linked-swrs`: every linked SwRS needs a test marker
-  and at least one SwRS must exist. The stricter mode also needs a direct
-  `@tests_req StRS-...` marker in a configured test file. This is a defined
-  validation test, not proof of execution. Do not put implementation markers on StRS.
+  and at least one SwRS must exist. `linked-swrs-and-validation-test` also needs
+  a direct `@tests_req StRS-...` marker in a configured test file.
+  `linked-swrs-and-acceptance-paths` adds declared `scenarios:` (`S1`, `S2`, …)
+  and two independent StRS counters — `tested` (from `@tests_req`) and
+  `accepted` (from `@accepts_req`, StRS only, never SwRS):
+  - **One fragment rule:** whenever a requirement declares `scenarios:`, every
+    `@tests_req` or `@accepts_req` marker targeting it must carry a declared
+    `#S<n>` fragment (fragmentless markers fail validation and do not count);
+    when it declares none, markers must carry no fragment (a fragment fails
+    validation).
+  - **Coverage:** a SwRS with `scenarios:` is test-covered only when every
+    declared `S<n>` has a counting `@tests_req SwRS-ID#S<n>`. A StRS is
+    `covered` when every linked SwRS is test-covered (or individually exempted
+    with `annotation_exemption: true` and a non-blank `exemption_reason`) AND
+    either every declared path has a counting `@accepts_req StRS-ID#S<n>` (or a
+    fragmentless `@accepts_req StRS-ID` when no `scenarios:` are declared) or
+    the owner recorded a justified whole-StRS waiver (`acceptance_exemption: true`
+    with a non-blank `acceptance_exemption_reason`).
+  - **Fixing findings:**
+    - *Fragment missing*: append `#S<n>` naming the declared scenario the test
+      exercises.
+    - *Unknown fragment*: fix the `#S<n>` to match a declared `scenarios:` entry,
+      or remove the fragment if the requirement declares no `scenarios:`.
+    - *`@accepts_req` on a SwRS*: replace with `@tests_req <SwRS-ID>#S<n>` (or
+      `@tests_req <SwRS-ID>` when the SwRS declares no `scenarios:`).
+    - *`accepted_in_files is not refused`*: update the bundle's
+      `tiers/_schema/swrs.schema.yaml` to add the `accepted_in_files` (`maxItems: 0`)
+      property printed in the error message.
+    - *`W003`* (live StRS with no `scenarios:`): paste the suggested `scenarios:`
+      block into the StRS frontmatter only (and log the edit in `tiers/log.md`
+      if the StRS is `approved`), then update markers to include `#S<n>`.
+    - *`W004`* (live StRS with no counting `@accepts_req`): mark the acceptance
+      test closest to the final product for each main path with
+      `@accepts_req StRS-ID#S<n>`, or record a justified whole-StRS waiver if
+      the StRS genuinely cannot be acceptance-tested.
+  This is a defined validation or acceptance link, not proof of execution. Do
+  not put implementation markers on StRS.
 - `annotation_exemption: true` needs a non-empty `exemption_reason`. Use only
   for an agreed exception; report it separately, never as observed coverage.
 - Unknown producer metadata is preserved. `external_id` and `external_url`

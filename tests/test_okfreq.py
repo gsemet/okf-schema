@@ -64,6 +64,8 @@ def add_requirements(root: Path) -> tuple[Path, Path]:
     return strs, swrs
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S1
 def test_init_and_new_requirements(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     strs, swrs = add_requirements(root)
@@ -75,6 +77,7 @@ def test_init_and_new_requirements(tmp_path: Path) -> None:
     assert load_config(root)["strs_test_coverage_mode"] == "linked-swrs"
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S3
 def test_new_requirement_bodies_use_distinct_tier_templates(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     stakeholder_behavior = "The reporting capability SHALL let users export a report."
@@ -120,6 +123,7 @@ def test_new_requirement_bodies_use_distinct_tier_templates(tmp_path: Path) -> N
     assert "### Rationale and constraints" not in swrs_text
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S3
 def test_strs_keeps_missing_user_need_explicit(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     requirement = create_requirement(
@@ -212,7 +216,7 @@ def test_preserves_body_and_updates_only_generated_coverage(tmp_path: Path) -> N
 
 
 def test_validation_reports_structural_and_graph_errors(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-005
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-005#S2#S2
     root = make_bundle(tmp_path)
     requirement, _ = add_requirements(root)
     content = requirement.read_text(encoding="utf-8").replace("uuid:", "uuid: bad-")
@@ -226,6 +230,7 @@ def test_validation_reports_structural_and_graph_errors(tmp_path: Path) -> None:
     assert any("unknown derives_from" in error for error in validate_requirements(root))
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-003#S2
 def test_marker_scan_warns_for_missing_scope_dirs_and_unknown_ids(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     (tmp_path / "src").mkdir()
@@ -282,10 +287,10 @@ def test_marker_scan_ignores_markers_inside_source_strings_and_cache_files(
     assert "Unknown-2" not in result["missing_ids"]
 
 
-# @tests_req StRS-OKFSCHEMA-OKFREQ-001
+# @tests_req StRS-OKFSCHEMA-OKFREQ-001#S2
 def test_report_and_cli_surface(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-004
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-001
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-004#S1
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S1
     root = make_bundle(tmp_path)
     add_requirements(root)
     assert report(root)["totals"]["requirements"] == 2
@@ -461,8 +466,8 @@ def test_report_computes_configured_stakeholder_test_coverage(tmp_path: Path) ->
 
 
 def test_cli_lifecycle_and_new(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-002
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-007
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S1
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-007#S1
     project = tmp_path / "project"
     project.mkdir()
     runner = CliRunner()
@@ -586,7 +591,7 @@ def test_init_creates_split_layout_with_guideline(tmp_path: Path) -> None:
     assert "The same requirement ID may appear more than once in a file" in guideline
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-001
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S4
 def test_init_force_replaces_only_the_installed_guideline(tmp_path: Path) -> None:
     """`init` keeps an edited guideline; `init --force` replaces it and spares project files."""
     root = tmp_path / "requirements"
@@ -664,6 +669,7 @@ def test_missing_schema_is_reported_explicitly(tmp_path: Path) -> None:
         validate_requirements(root)
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S2
 def test_invalid_config_and_missing_parent_are_rejected(tmp_path: Path) -> None:
     root = tmp_path / "requirements"
     root.mkdir()
@@ -692,7 +698,7 @@ def test_invalid_stakeholder_test_coverage_mode_is_rejected(tmp_path: Path) -> N
 
 
 def test_custom_markers_and_missing_directories(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-003
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-003#S1
     root = make_bundle(tmp_path)
     config = root / "config.yml"
     config.write_text(
@@ -734,6 +740,7 @@ def test_marker_scan_handles_non_mapping_and_non_list_scopes(tmp_path: Path) -> 
     assert marker_scan(root)["warnings"] == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-003#S3
 def test_marker_scan_reports_non_leaf_and_accepts_repeated_markers(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     create_requirement(
@@ -825,12 +832,11 @@ def test_schema_requires_non_empty_exemption_reason(tmp_path: Path) -> None:
 def test_update_coverage_rejects_unknown_generated_field(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     config = root / "config.yml"
+    raw = config.read_text(encoding="utf-8")
+    idx = raw.index("generated_fields:")
+    end = raw.index("\n", raw.index("]", idx))
     config.write_text(
-        config.read_text(encoding="utf-8").replace(
-            "generated_fields: [derived_by, supersedes, implemented_in_files, tested_in_files,\n"
-            "  default_owner_email, status, verified]",
-            "generated_fields: [unknown]",
-        ),
+        raw[:idx] + "generated_fields: [unknown]" + raw[end:],
         encoding="utf-8",
     )
 
@@ -978,6 +984,7 @@ def test_cli_error_and_preview_paths(tmp_path: Path) -> None:
     )
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-007#S2
 def test_supersede_rejects_unknown_replacement_without_writing(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _, requirement = add_requirements(root)
@@ -1085,7 +1092,7 @@ scopes:
 
 
 def test_explicit_config_merge_preserves_unknown_keys_and_reports_conflicts(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-006
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-006#S2
     root = make_bundle(tmp_path)
     source = tmp_path / "import.yml"
     source.write_text("version: 2\nexternal_key: preserved\n", encoding="utf-8")
@@ -1127,6 +1134,7 @@ def test_duplicate_ids_are_rejected(tmp_path: Path) -> None:
 @Parametrization.case("non_mapping", text="---\n- value\n---\n")
 @Parametrization.case("missing_id", text="---\ntype: StRS\n---\n")
 @Parametrization.case("non_string_id", text="---\nid: 42\n---\n")
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-004#S3
 def test_unindexable_requirements_fail_validation_and_reporting(tmp_path: Path, text: str) -> None:
     """Invalid documents cannot disappear from validation, reports or generated updates."""
     root = make_bundle(tmp_path)
@@ -1185,7 +1193,7 @@ def test_overlapping_scope_paths_list_a_file_once(tmp_path: Path) -> None:
     assert repeated["implemented"]["SwRS-default-001"] == ["src/implementation.py"]
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
 def test_validate_reports_schema_file_diagnostics(tmp_path: Path) -> None:
     """Extra empty or broken schema files are reported without failing validation."""
     root = init_requirements(tmp_path)
@@ -1237,6 +1245,7 @@ def make_swrs(root: Path, title: str = "Write") -> Path:
     )
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-002#S4
 def test_new_requirement_never_reuses_a_deleted_number(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     add_requirements(root)
@@ -1251,7 +1260,7 @@ def test_new_requirement_never_reuses_a_deleted_number(tmp_path: Path) -> None:
 
 
 def test_retire_records_id_deletes_file_and_logs(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-011
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S1
     root = make_bundle(tmp_path)
     add_requirements(root)
     draft = make_swrs(root, "Draft")
@@ -1295,6 +1304,7 @@ def test_retire_appends_to_todays_log_section_and_creates_missing_log(tmp_path: 
     name="derives_from", field="derives_from", match="referenced by SwRS-default-002"
 )
 @Parametrization.case(name="depends_on", field="depends_on", match="referenced by SwRS-default-002")
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S2
 def test_retire_refuses_a_referenced_requirement(tmp_path: Path, field: str, match: str) -> None:
     root = make_bundle(tmp_path)
     add_requirements(root)
@@ -1350,6 +1360,7 @@ def test_retire_refuses_unknown_published_and_marked_requirements(tmp_path: Path
     assert load_config(root)["retired_ids"] == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-011#S3
 def test_validation_flags_a_requirement_with_a_retired_id(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     add_requirements(root)
@@ -1374,6 +1385,7 @@ def test_malformed_retired_ids_are_rejected(tmp_path: Path, value: str) -> None:
         load_config(root)
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-006#S1
 def test_scaffold_config_declares_empty_retired_ids_and_merge_unions_them(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     assert "retired_ids: []" in (root / "config.yml").read_text(encoding="utf-8")
@@ -1487,7 +1499,7 @@ def frontmatter_of(path: Path) -> dict:
 
 
 def test_supersede_records_several_replacements_as_a_list(tmp_path: Path) -> None:
-    # @tests_req SwRS-OKFSCHEMA-OKFREQ-012
+    # @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S1
     root, paths = make_family(tmp_path)
     old = paths["SwRS-default-001"]
     before = extract_frontmatter(old.read_text(encoding="utf-8"))[1]
@@ -1538,6 +1550,7 @@ def test_supersede_refuses_bad_replacements_without_writing(
     assert paths["SwRS-default-001"].read_text(encoding="utf-8") == before
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S4
 def test_supersede_refuses_a_cycle_and_an_unknown_target(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     supersede_requirement(root, "SwRS-default-001", ["SwRS-default-002"])
@@ -1621,6 +1634,7 @@ def test_cli_supersede_requires_a_replacement_and_confirmation(tmp_path: Path) -
     fields={"relates_to": ["SwRS-default-002", "SwRS-default-002"]},
     expected="duplicate relates_to target SwRS-default-002",
 )
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S3
 def test_validation_rejects_inconsistent_relations(
     tmp_path: Path, fields: dict, expected: str
 ) -> None:
@@ -1659,6 +1673,7 @@ def test_a_chain_of_replacements_is_valid(tmp_path: Path) -> None:
     assert validate_requirements(root) == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S5
 def test_legacy_scalar_superseded_by_is_accepted_with_an_informational_finding(
     tmp_path: Path,
 ) -> None:
@@ -1687,6 +1702,7 @@ def test_legacy_scalar_superseded_by_is_accepted_with_an_informational_finding(
     assert record["superseded_by"] == ["SwRS-default-002"]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S2
 def test_update_coverage_generates_supersedes_and_detects_stale_values(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     update_coverage(root)
@@ -1725,6 +1741,7 @@ def test_supersedes_is_not_written_when_it_is_not_a_generated_field(tmp_path: Pa
     assert graph(root)["supersedes"]["SwRS-default-002"] == ["SwRS-default-001"]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-004#S2
 def test_graph_and_report_expose_the_new_relations(tmp_path: Path) -> None:
     from jsonschema import Draft202012Validator
 
@@ -1750,6 +1767,7 @@ def test_graph_and_report_expose_the_new_relations(tmp_path: Path) -> None:
     assert records["StRS-default-001"]["relates_to"] == []
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-012#S6
 def test_graph_reports_unknown_relation_targets(tmp_path: Path) -> None:
     root, paths = make_family(tmp_path)
     set_fields(paths["SwRS-default-001"], relates_to=["nope"])
@@ -1777,6 +1795,7 @@ def test_retire_refuses_a_requirement_referenced_by_a_relation(
     assert paths["SwRS-default-001"].exists()
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-001#S3
 def test_scaffold_schema_annotates_the_relation_fields(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     base = make_yaml().load((tiers_path(root) / "_schema" / "base.schema.yaml").read_text("utf-8"))
@@ -1814,7 +1833,7 @@ def _edit_config(root: Path, old: str, new: str) -> None:
     config.write_text(text.replace(old, new), encoding="utf-8")
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S1
 def test_generated_config_states_tiers_lock_and_lifecycle_field(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     config = load_config(root)
@@ -1832,7 +1851,7 @@ def test_generated_config_states_tiers_lock_and_lifecycle_field(tmp_path: Path) 
     ]
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S4
 def test_lifecycle_values_come_from_the_schema_enum_unless_legacy_values_are_set(
     tmp_path: Path,
 ) -> None:
@@ -1850,7 +1869,7 @@ def test_lifecycle_values_come_from_the_schema_enum_unless_legacy_values_are_set
     assert lifecycle_values(root, load_config(root)) == ["draft", "proposed"]
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S1
 def test_legacy_levels_key_is_read_and_cannot_be_mixed_with_tiers(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _edit_config(root, "tiers:\n", "levels:\n")
@@ -1866,7 +1885,7 @@ def test_legacy_levels_key_is_read_and_cannot_be_mixed_with_tiers(tmp_path: Path
 @Parametrization.case(name="tier_default", scope="other", expected=(False, "tier@x.org"))
 @Parametrization.case(name="scope_owner", scope="ui", expected=(False, "scope@x.org"))
 @Parametrization.case(name="scope_tier", scope="api", expected=(True, "api@x.org"))
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S5
 def test_owner_policy_prefers_scope_tier_then_scope_then_tier(
     scope: str, expected: tuple[bool, str]
 ) -> None:
@@ -1886,7 +1905,7 @@ def test_owner_policy_prefers_scope_tier_then_scope_then_tier(
     assert owner_policy(config, "SwRS", scope) == expected
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S6
 def test_lock_defaults_to_top_tiers_when_unset() -> None:
     config = {"tiers": {"StRS": {"derives_from": []}, "SwRS": {"derives_from": ["StRS"]}}}
 
@@ -1894,7 +1913,7 @@ def test_lock_defaults_to_top_tiers_when_unset() -> None:
     assert owner_policy(config, "SwRS", "default") == (False, None)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S5
 def test_default_owner_email_is_generated_and_removed_with_the_config(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     strs, swrs = add_requirements(root)
@@ -1910,7 +1929,7 @@ def test_default_owner_email_is_generated_and_removed_with_the_config(tmp_path: 
     assert swrs.is_file()
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S6
 def test_approved_requirement_needs_the_owner_agreement_fields(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     strs, _ = add_requirements(root)
@@ -1932,7 +1951,7 @@ def test_approved_requirement_needs_the_owner_agreement_fields(tmp_path: Path) -
     assert validate_requirements(root) == []
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S6
 def test_approved_is_refused_where_approval_lock_is_false(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _, swrs = add_requirements(root)
@@ -1962,7 +1981,7 @@ def test_approved_is_refused_where_approval_lock_is_false(tmp_path: Path) -> Non
 @Parametrization.case(
     name="owner", setting="owner_email: nobody", match="owner_email is not an email address"
 )
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S7
 def test_malformed_ownership_settings_are_reported(
     tmp_path: Path, setting: str, match: str
 ) -> None:
@@ -1972,7 +1991,7 @@ def test_malformed_ownership_settings_are_reported(
     assert any(match in finding for finding in validate_requirements(root))
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S4
 def test_new_can_start_a_requirement_as_proposed(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     result = CliRunner().invoke(
@@ -2010,7 +2029,7 @@ def test_new_can_start_a_requirement_as_proposed(tmp_path: Path) -> None:
 @Parametrization.autodetect_parameters()
 @Parametrization.case(name="legacy_import", destination="tiers", incoming="levels")
 @Parametrization.case(name="legacy_destination", destination="levels", incoming="tiers")
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S2
 def test_config_merge_normalizes_legacy_levels_to_tiers(
     tmp_path: Path, destination: str, incoming: str
 ) -> None:
@@ -2029,7 +2048,7 @@ def test_config_merge_normalizes_legacy_levels_to_tiers(
     assert list(config["tiers"]) == ["StRS", "SwRS", "SwRT"]
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S2
 def test_config_merge_refuses_a_legacy_lifecycle_values_list_over_a_field(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     source = tmp_path / "import.yml"
@@ -2049,7 +2068,7 @@ def test_config_merge_refuses_a_legacy_lifecycle_values_list_over_a_field(tmp_pa
 @Parametrization.case(
     name="null_scope_lock_falls_back", scope="web", expected=(False, "tier@x.org")
 )
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S5
 def test_owner_policy_scope_matching_and_null_lock(scope: str, expected: tuple[bool, str]) -> None:
     config = {
         "tiers": {
@@ -2064,7 +2083,7 @@ def test_owner_policy_scope_matching_and_null_lock(scope: str, expected: tuple[b
     assert owner_policy(config, "SwRS", scope) == expected
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S6
 def test_null_lock_everywhere_and_custom_top_tier_default_to_lockable() -> None:
     config = {
         "tiers": {"Need": {"folder": "need", "approval_lock": None}},
@@ -2075,7 +2094,7 @@ def test_null_lock_everywhere_and_custom_top_tier_default_to_lockable() -> None:
     assert owner_policy({"tiers": {"Goal": {"folder": "goal"}}}, "Goal", "x") == (True, None)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S4
 def test_new_rejects_an_unknown_initial_lifecycle(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     result = CliRunner().invoke(
@@ -2094,7 +2113,7 @@ def test_new_rejects_an_unknown_initial_lifecycle(tmp_path: Path) -> None:
 @Parametrization.case(
     name="superseded", lifecycle="superseded", extra={"superseded_by": ["SwRS-default-002"]}
 )
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S6
 def test_retired_requirement_may_keep_its_approval_record(
     tmp_path: Path, lifecycle: str, extra: dict
 ) -> None:
@@ -2110,7 +2129,7 @@ def test_retired_requirement_may_keep_its_approval_record(
     assert validate_requirements(root) == []
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-013
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-013#S3
 def test_lifecycle_field_names_a_custom_frontmatter_field(tmp_path: Path) -> None:
     root = make_bundle(tmp_path)
     _edit_config(root, "  field: req_lifecycle\n", "  field: state\n")
@@ -2145,3 +2164,400 @@ def test_lifecycle_field_names_a_custom_frontmatter_field(tmp_path: Path) -> Non
     assert requirements["StRS-default-002"][1]["status"] == "deprecated"
     assert "req_lifecycle" not in requirements["StRS-default-002"][1]
     assert validate_requirements(root) == []
+
+
+def _enable_acceptance_paths_mode(root: Path) -> None:
+    _edit_config(
+        root,
+        "strs_test_coverage_mode: linked-swrs",
+        "strs_test_coverage_mode: linked-swrs-and-acceptance-paths",
+    )
+
+
+def _make_matrix_bundle(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
+    """Build the shared D1-D9 fixture from the acceptance-paths specification."""
+    root = make_bundle(tmp_path)
+    (tmp_path / "src").mkdir(exist_ok=True)
+    (tmp_path / "tests").mkdir(exist_ok=True)
+    strs_a = create_requirement(
+        root,
+        "StRS",
+        "Export data",
+        "Users SHALL export data.",
+        project="demo",
+        scope="default",
+        origin="native",
+        user_need="Operators export reports.",
+        lifecycle="proposed",
+    )
+    strs_b = create_requirement(
+        root,
+        "StRS",
+        "Audit logs",
+        "Users SHALL inspect logs.",
+        project="demo",
+        scope="default",
+        origin="native",
+        user_need="Auditors review logs.",
+        lifecycle="proposed",
+    )
+    strs_c = create_requirement(
+        root,
+        "StRS",
+        "Draft capability",
+        "Users SHALL preview drafts.",
+        project="demo",
+        scope="default",
+        origin="native",
+        user_need="Users preview drafts.",
+        lifecycle="draft",
+    )
+    swrs_a = create_requirement(
+        root,
+        "SwRS",
+        "Serialize CSV",
+        "The exporter SHALL serialize CSV.",
+        project="demo",
+        scope="default",
+        origin="native",
+        derives_from=["StRS-default-001"],
+        lifecycle="proposed",
+    )
+    set_fields(
+        strs_a,
+        scenarios=[
+            {"id": "S1", "title": "Export populated table"},
+            {"id": "S2", "title": "Export empty table"},
+        ],
+    )
+    strs_a.write_text(
+        strs_a.read_text(encoding="utf-8")
+        + "\n### Main paths\n\n#### Path S1: Export populated table\n\n"
+        + "#### Path S2: Export empty table\n",
+        encoding="utf-8",
+    )
+    set_fields(
+        swrs_a,
+        scenarios=[
+            {"id": "S1", "title": "Serialize rows"},
+            {"id": "S2", "title": "Reject invalid schema"},
+        ],
+    )
+    (tmp_path / "src" / "app.py").write_text(
+        "# @implements_req SwRS-default-001\n", encoding="utf-8"
+    )
+    (tmp_path / "tests" / "test_app.py").write_text(
+        "# @accepts_req StRS-default-001#S1\n"
+        "# @tests_req StRS-default-001#S2\n"
+        "# @tests_req StRS-default-001\n"
+        "# @tests_req StRS-default-002\n"
+        "# @tests_req SwRS-default-001\n"
+        "# @tests_req SwRS-default-001#S9\n"
+        "# @accepts_req SwRS-default-001\n"
+        "# @accepts_req StRS-default-003\n",
+        encoding="utf-8",
+    )
+    return root, {
+        "StRS-A": strs_a,
+        "StRS-B": strs_b,
+        "StRS-C": strs_c,
+        "SwRS-A": swrs_a,
+    }
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S1
+def test_acceptance_paths_config_init_and_marker_scan(tmp_path: Path) -> None:
+    root = make_bundle(tmp_path)
+    config = load_config(root)
+    assert config["markers"]["accepts"] == "@accepts_req"
+    assert "accepted_in_files" in config["generated_fields"]
+
+    # Check 2: scaffolded schemas
+    base_schema = (tiers_path(root) / "_schema" / "base.schema.yaml").read_text(encoding="utf-8")
+    strs_schema = (tiers_path(root) / "_schema" / "strs.schema.yaml").read_text(encoding="utf-8")
+    swrs_schema = (tiers_path(root) / "_schema" / "swrs.schema.yaml").read_text(encoding="utf-8")
+    assert "scenarios:" in base_schema
+    assert "tested_in_files:" in strs_schema and "accepted_in_files:" in strs_schema
+    assert "acceptance_exemption:" in strs_schema and "acceptance_exemption_reason:" in strs_schema
+    assert "accepted_in_files:" in swrs_schema and "maxItems: 0" in swrs_schema
+
+    # Check 1: unsupported mode lists all three modes; duplicate keywords fail in every mode
+    _edit_config(root, "strs_test_coverage_mode: linked-swrs", "strs_test_coverage_mode: bad-mode")
+    with pytest.raises(RequirementError) as exc:
+        load_config(root)
+    for mode in (
+        "linked-swrs",
+        "linked-swrs-and-validation-test",
+        "linked-swrs-and-acceptance-paths",
+    ):
+        assert mode in str(exc.value)
+    _edit_config(root, "strs_test_coverage_mode: bad-mode", "strs_test_coverage_mode: linked-swrs")
+
+    _edit_config(root, "accepts: '@accepts_req'", "accepts: '@tests_req'")
+    with pytest.raises(RequirementError, match="same keyword"):
+        load_config(root)
+    _edit_config(root, "accepts: '@tests_req'", "accepts: '@accepts_req'")
+
+    # Check 3: marker_scan captures fragments, boundaries, unknown IDs, ignores @accepts_req in src/
+    add_requirements(root)
+    (tmp_path / "src").mkdir(exist_ok=True)
+    (tmp_path / "tests").mkdir(exist_ok=True)
+    (tmp_path / "src" / "app.py").write_text(
+        "# @implements_req SwRS-default-001\n# @accepts_req StRS-default-001#S1\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "tests" / "test_app.py").write_text(
+        "# @accepts_req StRS-default-001#S1\n"
+        "# @accepts_req StRS-default-001#S2\n"
+        "# @tests_req StRS-default-001#path1\n"
+        "# @tests_req StRS-default-001#S1a\n"
+        "# @tests_req StRS-default-001#\n"
+        "# @tests_req StRS-default-001#S0\n"
+        "# @accepts_req StRS-default-999#S1\n",
+        encoding="utf-8",
+    )
+    scan = marker_scan(root)
+    assert scan["accepted"] == {"StRS-default-001": ["tests/test_app.py"]}
+    assert "StRS-default-999" in scan["missing_ids"]
+    sm = scan["scenario_markers"]
+    accepted_frags = [
+        m["fragment"] for m in sm if m["marker"] == "accepts" and m["id"] == "StRS-default-001"
+    ]
+    assert accepted_frags == ["S1", "S2"]
+    test_frags = [
+        m["fragment"] for m in sm if m["marker"] == "tests" and m["id"] == "StRS-default-001"
+    ]
+    assert test_frags == [None, "S0"]
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S2
+def test_acceptance_paths_matrix_d1_d2_d3_d5_d6(tmp_path: Path) -> None:
+    from jsonschema import Draft202012Validator
+
+    from okf_schema.okfreq.core import report_schema, write_markdown_report
+
+    # D1: default linked-swrs mode
+    d1_dir = tmp_path / "d1"
+    d1_dir.mkdir()
+    root_d1, _ = _make_matrix_bundle(d1_dir)
+    assert validate_requirements(root_d1) == []
+    rep_d1 = report(root_d1)
+    assert rep_d1["format_version"] == 2
+    assert "paths" not in rep_d1["stakeholder_test_coverage"]
+    Draft202012Validator(report_schema()).validate(rep_d1)
+    with pytest.raises(RequirementError, match="test_app.py"):
+        retire_requirement(root_d1, "StRS-default-003")
+
+    # D2: linked-swrs-and-validation-test
+    d2_dir = tmp_path / "d2"
+    d2_dir.mkdir()
+    root_d2, _ = _make_matrix_bundle(d2_dir)
+    _edit_config(
+        root_d2,
+        "strs_test_coverage_mode: linked-swrs",
+        "strs_test_coverage_mode: linked-swrs-and-validation-test",
+    )
+    assert validate_requirements(root_d2) == []
+    rep_d2 = report(root_d2)
+    assert rep_d2["format_version"] == 2
+    assert "paths" not in rep_d2["stakeholder_test_coverage"]
+    Draft202012Validator(report_schema()).validate(rep_d2)
+
+    # D3: linked-swrs-and-acceptance-paths
+    d3_dir = tmp_path / "d3"
+    d3_dir.mkdir()
+    root_d3, paths_d3 = _make_matrix_bundle(d3_dir)
+    _enable_acceptance_paths_mode(root_d3)
+    findings = validate_requirements(root_d3)
+    assert any("StRS-default-001" in f and "#S<n>" in f for f in findings)
+    assert any("SwRS-default-001" in f and "#S<n>" in f for f in findings)
+    assert any("#S9" in f for f in findings)
+    assert any("SwRS-default-001" in f and "StRS main path" in f for f in findings)
+    assert any("W003" in f and "StRS-default-002" in f for f in findings)
+    assert any("W003" in f and "StRS-default-003" in f for f in findings)
+    assert any("W004" in f and "StRS-default-002" in f for f in findings)
+    assert not any("W004" in f and "StRS-default-001" in f for f in findings)
+
+    update_coverage(root_d3)
+    loaded_a = load_requirements(root_d3)["StRS-default-001"][1]
+    assert loaded_a["tested_in_files"] == ["tests/test_app.py"]
+    assert loaded_a["accepted_in_files"] == ["tests/test_app.py"]
+    rep_d3 = report(root_d3)
+    assert rep_d3["format_version"] == 2
+    Draft202012Validator(report_schema()).validate(rep_d3)
+    strs_a_rec = next(r for r in rep_d3["requirements"] if r["id"] == "StRS-default-001")
+    stc = strs_a_rec["stakeholder_test_coverage"]
+    assert stc["paths"] == {"total": 2, "tested": 1, "accepted": 1}
+    assert stc["tested"] is False and stc["accepted"] is False
+    assert stc["validation_tests"] == stc["acceptance_tests"]
+    md_path = d3_dir / "report.md"
+    write_markdown_report(root_d3, md_path)
+    md = md_path.read_text(encoding="utf-8")
+    assert "1/2" in md
+    assert "no paths" in md
+
+    # D5: pre-0.18 config without accepted_in_files in generated_fields leaves StRS untouched
+    d5_dir = tmp_path / "d5"
+    d5_dir.mkdir()
+    root_d5, _ = _make_matrix_bundle(d5_dir)
+    _enable_acceptance_paths_mode(root_d5)
+    _edit_config(root_d5, "accepted_in_files, ", "")
+    _edit_config(root_d5, "  accepts: '@accepts_req'\n", "")
+    assert load_config(root_d5)["markers"]["accepts"] == "@accepts_req"
+    update_coverage(root_d5)
+    loaded_d5 = load_requirements(root_d5)["StRS-default-001"][1]
+    assert "accepted_in_files" not in loaded_d5
+
+    # D6: pre-0.18 swrs.schema.yaml without accepted_in_files fails clearly in new mode
+    d6_dir = tmp_path / "d6"
+    d6_dir.mkdir()
+    root_d6, _ = _make_matrix_bundle(d6_dir)
+    _enable_acceptance_paths_mode(root_d6)
+    swrs_schema_path = tiers_path(root_d6) / "_schema" / "swrs.schema.yaml"
+    from okf_schema._internal.yaml import dump_yaml, make_yaml
+
+    yaml_rt = make_yaml()
+    swrs_schema_data = yaml_rt.load(swrs_schema_path.read_text(encoding="utf-8"))
+    swrs_schema_data["allOf"][1]["properties"].pop("accepted_in_files", None)
+    swrs_schema_path.write_text(dump_yaml(swrs_schema_data), encoding="utf-8")
+    d6_findings = validate_requirements(root_d6)
+    assert any("accepted_in_files" in f and "swrs.schema.yaml" in f for f in d6_findings)
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S3
+def test_acceptance_paths_waivers_d8_d9_and_rule7(tmp_path: Path) -> None:
+    from jsonschema import Draft202012Validator
+
+    from okf_schema.okfreq.core import report_schema, write_markdown_report
+
+    root, paths = _make_matrix_bundle(tmp_path)
+    _enable_acceptance_paths_mode(root)
+    # Clean valid markers: StRS-A has S1 accepted (S2 unaccepted), SwRS-A has S1 and S2 tested
+    (tmp_path / "tests" / "test_app.py").write_text(
+        "# @accepts_req StRS-default-001#S1\n"
+        "# @tests_req StRS-default-001#S2\n"
+        "# @tests_req SwRS-default-001#S1\n"
+        "# @tests_req SwRS-default-001#S2\n",
+        encoding="utf-8",
+    )
+    # Remove StRS-B and StRS-C so bundle is focused on StRS-A/SwRS-A
+    paths["StRS-B"].unlink()
+    paths["StRS-C"].unlink()
+    set_fields(
+        paths["StRS-A"],
+        acceptance_exemption=True,
+        acceptance_exemption_reason="Path S2 requires hardware-in-the-loop review.",
+    )
+    assert validate_requirements(root) == []
+    update_coverage(root)
+    # Waiver fields preserved
+    loaded = load_requirements(root)["StRS-default-001"][1]
+    assert loaded["acceptance_exemption"] is True
+    assert "hardware-in-the-loop" in loaded["acceptance_exemption_reason"]
+
+    rep = report(root)
+    Draft202012Validator(report_schema()).validate(rep)
+    stc = next(r for r in rep["requirements"] if r["id"] == "StRS-default-001")[
+        "stakeholder_test_coverage"
+    ]
+    assert stc["status"] == "covered"
+    assert stc["accepted"] is False
+    assert stc["paths"] == {"total": 2, "tested": 1, "accepted": 1}
+    assert "hardware-in-the-loop" in stc["acceptance_exemption"]["reason"]
+    md_path = tmp_path / "waived.md"
+    write_markdown_report(root, md_path)
+    assert "exempt" in md_path.read_text(encoding="utf-8")
+
+    # D9: removing one SwRS transition makes StRS-A missing until SwRS-A is exempted
+    (tmp_path / "tests" / "test_app.py").write_text(
+        "# @accepts_req StRS-default-001#S1\n# @tests_req SwRS-default-001#S1\n",
+        encoding="utf-8",
+    )
+    rep_missing = report(root)
+    stc_missing = next(r for r in rep_missing["requirements"] if r["id"] == "StRS-default-001")[
+        "stakeholder_test_coverage"
+    ]
+    assert stc_missing["status"] == "missing"
+
+    set_fields(
+        paths["SwRS-A"],
+        annotation_exemption=True,
+        exemption_reason="Verified manually during release inspection.",
+    )
+    rep_exempt = report(root)
+    stc_exempt = next(r for r in rep_exempt["requirements"] if r["id"] == "StRS-default-001")[
+        "stakeholder_test_coverage"
+    ]
+    assert stc_exempt["status"] == "covered"
+    assert stc_exempt["linked_swrs"] == [{"id": "SwRS-default-001", "status": "exempt"}]
+
+    # Rule 7: approved StRS gaining scenarios: validates
+    set_fields(
+        paths["StRS-A"],
+        req_lifecycle="approved",
+        approved_by="owner@example.com",
+        approved_at="2026-11-25T10:00:00+00:00",
+    )
+    assert validate_requirements(root) == []
+
+
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-015#S4
+def test_acceptance_paths_templates_and_duplicate_scenarios(tmp_path: Path) -> None:
+    # Old mode: create_requirement does not pre-fill scenarios
+    old_dir = tmp_path / "old"
+    old_dir.mkdir()
+    old_root = make_bundle(old_dir)
+    old_strs = create_requirement(
+        old_root,
+        "StRS",
+        "Legacy path",
+        "The system SHALL work.",
+        project="demo",
+        scope="default",
+        origin="native",
+        user_need="Users need it.",
+    )
+    assert "scenarios:" not in old_strs.read_text(encoding="utf-8")
+
+    # New mode: create_requirement pre-fills scenarios and ### Main paths
+    new_dir = tmp_path / "new"
+    new_dir.mkdir()
+    new_root = make_bundle(new_dir)
+    _enable_acceptance_paths_mode(new_root)
+    new_strs = create_requirement(
+        new_root,
+        "StRS",
+        "New path",
+        "The system SHALL work.",
+        project="demo",
+        scope="default",
+        origin="native",
+        user_need="Users need it.",
+    )
+    new_swrs = create_requirement(
+        new_root,
+        "SwRS",
+        "New software req",
+        "The module SHALL work.",
+        project="demo",
+        scope="default",
+        origin="native",
+        derives_from=["StRS-default-001"],
+    )
+    strs_text = new_strs.read_text(encoding="utf-8")
+    swrs_text = new_swrs.read_text(encoding="utf-8")
+    assert (
+        "scenarios:" in strs_text and "### Main paths" in strs_text and "#### Path S1:" in strs_text
+    )
+    assert (
+        "scenarios:" in swrs_text
+        and "### Scenario S1:" in swrs_text
+        and "### Scenario S2:" in swrs_text
+    )
+
+    # Duplicate scenario IDs rejected in new mode
+    set_fields(
+        new_strs,
+        scenarios=[{"id": "S1", "title": "First"}, {"id": "S1", "title": "Duplicate"}],
+    )
+    assert any("duplicate" in f.lower() for f in validate_requirements(new_root))

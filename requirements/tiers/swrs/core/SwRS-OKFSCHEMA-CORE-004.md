@@ -27,6 +27,11 @@ verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Regenerate deterministic indexes
+- id: S2
+  title: Defer an unsafe superseded-link rewrite
 ---
 
 ## Maintain indexes and superseded links
@@ -35,14 +40,14 @@ default_owner_email: gaetan@xeberon.net
 
 When bundle maintenance is requested, okf-schema SHALL regenerate deterministic indexes and rewrite resolvable links to superseding concepts while reporting deferred rewrites.
 
-### Scenario: Regenerate deterministic indexes
+### Scenario S1: Regenerate deterministic indexes
 
 - GIVEN a bundle whose concepts or directory descriptions changed
 - WHEN index or update maintenance runs
 - THEN affected indexes are regenerated in deterministic order while preserved
   index frontmatter and authored descriptions remain intact
 
-### Scenario: Defer an unsafe superseded-link rewrite
+### Scenario S2: Defer an unsafe superseded-link rewrite
 
 - GIVEN a link targets a superseded concept without a resolvable replacement
 - WHEN bundle update runs

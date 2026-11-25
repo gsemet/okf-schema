@@ -75,6 +75,7 @@ def test_load_schema_database_skips_invalid_json5(tmp_path: Path) -> None:
     assert schemas == {}
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S3
 def test_load_schema_database_skips_invalid_yaml(tmp_path: Path) -> None:
     """Skips files with invalid YAML."""
     (tmp_path / "bad.schema.yaml").write_text("{not yaml")
@@ -97,7 +98,7 @@ def test_load_schema_database_skips_oserror(tmp_path: Path) -> None:
     assert schemas == {}
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-008
+# @tests_req SwRS-OKFSCHEMA-CORE-008#S2
 @Parametrization.autodetect_parameters()
 @Parametrization.case("json_empty", filename="t.schema.json", text="")
 @Parametrization.case("json_blank", filename="t.schema.json", text="  \n")
@@ -765,9 +766,7 @@ def test_validate_log_log_valid_dates_no_w5(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-001
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S1
 def test_validate_bundle_valid_valid_bundle_is_conformant() -> None:
     """Valid bundle has no errors and no warnings."""
     bundle = BUNDLE_FIXTURES / "valid"
@@ -995,6 +994,7 @@ def test_root_concept_is_allowed(tmp_path: Path) -> None:
     assert report.errors == []
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S3
 def test_non_markdown_attachment_is_allowed(tmp_path: Path) -> None:
     """Non-markdown files may be attached to a concept without validation errors."""
     assets = tmp_path / "assets"

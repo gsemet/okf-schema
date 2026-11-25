@@ -46,6 +46,15 @@ tested_in_files:
 - tests/test_skill_resources.py
 - tests/test_tutorial_okfreq.py
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Operate without the tool source checkout
+- id: S2
+  title: Diagnose incomplete evidence and invalid documents
+- id: S3
+  title: Run the shipping-manifest demonstration safely
+- id: S4
+  title: Follow the adoption tutorial without inferred project setup
 ---
 
 ## Ship usable standalone requirements guidance
@@ -56,7 +65,7 @@ When requirements guidance is installed, the okfreq distribution SHALL provide
 self-contained operating instructions and executable examples of authoring,
 evidence, reports, navigation and recovery.
 
-### Scenario: Operate without the tool source checkout
+### Scenario S1: Operate without the tool source checkout
 
 - GIVEN an installed okfreq skill family, the CLI and a target project
 - WHEN an agent follows the bundled operations reference
@@ -64,21 +73,21 @@ evidence, reports, navigation and recovery.
   inspect links, update evidence and generate reports without this tool's code
   or documentation site
 
-### Scenario: Diagnose incomplete evidence and invalid documents
+### Scenario S2: Diagnose incomplete evidence and invalid documents
 
 - GIVEN a missing ID, unavailable root, ambiguous target or incomplete markers
 - WHEN the agent inspects CLI findings and the packaged recovery instructions
 - THEN it can distinguish a structural error, skipped check and coverage gap
   without inventing evidence or claiming test execution
 
-### Scenario: Run the shipping-manifest demonstration safely
+### Scenario S3: Run the shipping-manifest demonstration safely
 
 - GIVEN an empty disposable project
 - WHEN the executable showcase exercises configuration, markers, file links,
   reports, exemptions and lifecycle transitions
 - THEN every scenario verifies its output and preserves the live project bundle
 
-### Scenario: Follow the adoption tutorial without inferred project setup
+### Scenario S4: Follow the adoption tutorial without inferred project setup
 
 - GIVEN the tutorial snippets and an installed compatible CLI/test environment
 - WHEN the existing CSV feature is backfilled and its contract extended

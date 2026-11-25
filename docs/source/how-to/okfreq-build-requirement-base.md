@@ -29,10 +29,13 @@ For the boundary between marker linkage and executed test-result evidence, see
    this repository).
    Add scopes for each independently scanned part of the project and adjust
    `source_dirs` and `test_dirs` before scanning. Keep these mappings scoped:
-   implementation and test evidence can belong to different directories. Set
-   `strs_test_coverage_mode` to `linked-swrs` for decomposition-based
-   stakeholder coverage, or to `linked-swrs-and-validation-test` when each
-   stakeholder outcome also needs a directly marked validation-test definition.
+   implementation and test evidence can belong to different directories.    Set `strs_test_coverage_mode` to `linked-swrs` for decomposition-based
+   stakeholder coverage, to `linked-swrs-and-validation-test` when each
+   stakeholder outcome also needs a directly marked validation-test definition,
+   or to `linked-swrs-and-acceptance-paths` when you want declared `scenarios:`
+   paths and separate `@tests_req` / `@accepts_req` counters (see
+   [Why `okfreq` measures acceptance paths](../explanation/okfreq-acceptance-paths.md)
+   and the [Acceptance paths reference](../reference/okfreq-acceptance-paths.md)).
 4. Create a stakeholder requirement:
    `okfreq new strs "Export report" --description "When report export is requested, the reporting capability SHALL make a portable report available." --user-need "Users need a portable report for offline review." --project demo`.
    This creates a draft `StRS` with a generated UUID and stable ID such as

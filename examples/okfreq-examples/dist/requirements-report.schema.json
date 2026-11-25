@@ -23,7 +23,7 @@
     },
     "format_version": {
       "type": "integer",
-      "const": 1
+      "const": 2
     },
     "generated_at": {
       "type": "string",
@@ -80,7 +80,8 @@
         "stakeholder_test_coverage_mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
         },
         "stakeholder_tests": {
@@ -150,7 +151,8 @@
         "mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
         },
         "requirements": {
@@ -165,6 +167,29 @@
           "type": "number",
           "minimum": 0,
           "maximum": 100
+        },
+        "paths": {
+          "type": "object",
+          "required": [
+            "total",
+            "tested",
+            "accepted"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tested": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "accepted": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
         }
       }
     },
@@ -307,6 +332,28 @@
         "stakeholder_test_coverage": {
           "$ref": "#/$defs/stakeholder_requirement_coverage"
         },
+        "transitions": {
+          "type": "object",
+          "required": [
+            "tested",
+            "missing"
+          ],
+          "properties": {
+            "tested": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "missing": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
         "execution": {
           "type": "object",
           "required": [
@@ -372,7 +419,8 @@
         "mode": {
           "enum": [
             "linked-swrs",
-            "linked-swrs-and-validation-test"
+            "linked-swrs-and-validation-test",
+            "linked-swrs-and-acceptance-paths"
           ]
         },
         "linked_swrs": {
@@ -390,9 +438,91 @@
               "status": {
                 "enum": [
                   "covered",
-                  "missing"
+                  "missing",
+                  "exempt"
                 ]
               }
+            }
+          }
+        },
+        "paths": {
+          "type": "object",
+          "required": [
+            "total",
+            "tested",
+            "accepted"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tested": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "accepted": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "tested": {
+          "type": "boolean"
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "tests": {
+          "type": "object",
+          "required": [
+            "status",
+            "files",
+            "count"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "defined",
+                "missing"
+              ]
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "acceptance_tests": {
+          "type": "object",
+          "required": [
+            "status",
+            "files",
+            "count"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "defined",
+                "missing"
+              ]
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0
             }
           }
         },
@@ -421,6 +551,19 @@
               "minimum": 0
             }
           }
+        },
+        "acceptance_exemption": {
+          "type": "object",
+          "required": [
+            "reason"
+          ],
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
         }
       }
     }

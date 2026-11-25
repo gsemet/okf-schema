@@ -436,16 +436,25 @@ def search(query: str, path: str) -> None:
 def trace(path: str, as_json: bool) -> None:
     """Scan configured source and test directories for markers.
 
+    .. versionchanged:: 0.18.0
+        Scan ``markers.accepts`` (``@accepts_req``), include ``accepted`` and
+        ``scenario_markers`` in ``--json`` output, and print ``accepted: N``
+        in the plain summary.
+
     Args:
         path:
             Project or requirements-bundle path.
         as_json:
             Emit marker locations and diagnostics as JSON.
     """
-    result = marker_scan(_root(path))
+    try:
+        result = marker_scan(_root(path))
+    except RequirementError as exc:
+        raise _fail(exc) from exc
     summary = (
         f"implemented: {len(result['implemented'])}; "
         f"tested: {len(result['tested'])}; "
+        f"accepted: {len(result['accepted'])}; "
         f"missing IDs: {len(result['missing_ids'])}"
     )
     click.echo(json.dumps(result, indent=2) if as_json else summary)
@@ -581,7 +590,10 @@ def coverage(
 
             okfreq update-coverage requirements --check
     """
-    changed = update_coverage(_root(path), check=check, show_diff=show_diff)
+    try:
+        changed = update_coverage(_root(path), check=check, show_diff=show_diff)
+    except RequirementError as exc:
+        raise _fail(exc) from exc
     click.echo(f"{len(changed)} files {'would change' if check or show_diff else 'updated'}")
     if check and changed:
         raise click.exceptions.Exit(1)

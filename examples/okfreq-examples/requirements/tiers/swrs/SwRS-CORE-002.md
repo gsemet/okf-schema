@@ -15,6 +15,11 @@ derives_from:
 - StRS-CORE-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Return a Rust CSV row
+- id: S2
+  title: Export an empty Rust row
 derived_by: []
 implemented_in_files:
 - src/rust_export.rs
@@ -28,13 +33,13 @@ tested_in_files:
 
 When Rust export is requested, the service SHALL return the selected row as a newline-terminated CSV record.
 
-### Scenario: Return a Rust CSV row
+### Scenario S1: Return a Rust CSV row
 
 - GIVEN a Rust report row with two fields
 - WHEN Rust CSV export is requested
 - THEN the service returns the fields as one newline-terminated CSV record
 
-### Scenario: Export an empty Rust row
+### Scenario S2: Export an empty Rust row
 
 - GIVEN a Rust report row with two empty fields
 - WHEN Rust CSV export is requested

@@ -33,10 +33,8 @@ CONTENT_DIRS = {
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-001
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S1
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
 def test_kb_help_kb_help_lists_init_and_install() -> None:
     """kb --help lists both init and install-skills subcommands."""
     runner = CliRunner()
@@ -233,6 +231,7 @@ def test_kb_validate_kb_validate_valid_bundle(tmp_path: Path) -> None:
     assert "conformant" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S4
 def test_kb_validate_forwards_file_checks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """KB checking uses the generic API with explicit link and root options."""
     import okf_schema.okfkb.cli as cli_module
@@ -260,6 +259,7 @@ def test_kb_validate_forwards_file_checks(tmp_path: Path, monkeypatch: pytest.Mo
     assert calls == [(True, tmp_path)]
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S3
 def test_kb_default_links_are_checked_by_base_api_and_cli(tmp_path: Path) -> None:
     """Both layers check generated KB annotations, and validation never rewrites a bundle."""
     runner = CliRunner()
@@ -328,6 +328,7 @@ def test_kb_legacy_schema_is_not_migrated_by_file_checks(tmp_path: Path) -> None
     assert all(path.read_bytes() == content for path, content in snapshot.items())
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFKB-001#S2
 def test_kb_validate_kb_validate_invalid_bundle(tmp_path: Path) -> None:
     """kb validate exits 1 on an invalid bundle (strict mode treats warnings as errors)."""
     runner = CliRunner()

@@ -46,9 +46,7 @@ SCHEMA_FILES = {
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
-
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
 def test_scaffold_kb_creates_layout_creates_all_content_dirs(tmp_path: Path) -> None:
     """Creates the 8 canonical content directories."""
     target = tmp_path / "kb"

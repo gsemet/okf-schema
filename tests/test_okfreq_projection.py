@@ -21,7 +21,7 @@ from okf_schema.okfreq.core import (
 from okf_schema.projection import LINKS_START
 from okf_schema.validator import validate_bundle
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-014
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S1
 
 
 def _family(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
@@ -116,6 +116,7 @@ def test_lifecycle_commands_write_the_status(tmp_path: Path) -> None:
     )
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S2
 def test_validate_reports_a_status_that_disagrees_with_the_lifecycle(tmp_path: Path) -> None:
     root, paths = _family(tmp_path)
     _edit(paths["SwRS-default-001"], req_lifecycle="deprecated")
@@ -158,6 +159,7 @@ def test_validate_reports_malformed_projection_annotations(tmp_path: Path) -> No
     )
 
 
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-014#S3
 def test_lint_check_fails_on_a_stale_links_section_and_a_log_heading(tmp_path: Path) -> None:
     root, paths = _family(tmp_path)
     runner = CliRunner()

@@ -6,9 +6,8 @@ from pathlib import Path
 
 import pytest
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-002
 
-
+# @tests_req SwRS-OKFSCHEMA-OKFKB-002#S1
 def test_init_patterns_is_dict() -> None:
     """INIT_PATTERNS must be a dict mapping str to callable."""
     from okf_schema.okfkb.patterns import INIT_PATTERNS

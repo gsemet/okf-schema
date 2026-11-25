@@ -47,8 +47,11 @@ properties:
         usual plan and review, without an explicit owner agreement.
       - approved: frozen by its owner. Any significant change (normative statement,
         scenarios, criteria, deprecation or supersession) needs the owner's explicit,
-        justified agreement, recorded in approved_by and approved_at. Allowed only where
-        approval_lock is true for the requirement's tier and scope.
+        justified agreement, recorded in approved_by and approved_at. Exception:
+        adding or updating only the frontmatter scenarios: list to match existing
+        body headings, without changing the body or other frontmatter fields, does
+        not require re-approval. Allowed only where approval_lock is true for the
+        requirement's tier and scope.
       - deprecated: no longer in force and not replaced; kept for history.
       - superseded: replaced by the requirements listed in superseded_by; kept for history.
       OKF consumers read the generated status mapped by x-okf-status-projection.
@@ -208,6 +211,25 @@ properties:
   owner:
     type: string
     description: Project team responsible for maintaining the contract.
+  scenarios:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: '^S[1-9][0-9]*$'
+          description: Stable scenario identifier (S1, S2, ...), never reused after removal.
+        title:
+          type: string
+          minLength: 1
+          description: Short human-readable title matching the corresponding body heading.
+      required: [id, title]
+      additionalProperties: false
+    description: >-
+      Authored list of main paths (on StRS) or observable transitions (on SwRS)
+      tracked by #S<n> marker fragments in linked-swrs-and-acceptance-paths mode.
 required: [type, id, uuid, title, description, project, scope, req_lifecycle, origin,
   tier]
 additionalProperties: true

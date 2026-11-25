@@ -81,3 +81,69 @@ def test_install_skills_agent_copilot_selector_matches_default(
     destination = home / ".copilot" / "skills"
     assert result.exit_code == 0, result.output
     assert (destination / "okfreq" / "SKILL.md").is_file()
+
+
+def test_acceptance_paths_cli_surface(tmp_path: Path) -> None:
+    """CLI commands enforce acceptance paths, W003/W004, trace, report, new, and retire."""
+    runner = CliRunner()
+    req_dir = tmp_path / "requirements"
+    assert runner.invoke(okfreq, ["init", str(req_dir)]).exit_code == 0
+
+    cfg = req_dir / "config.yml"
+    cfg.write_text(
+        cfg.read_text(encoding="utf-8").replace(
+            "strs_test_coverage_mode: linked-swrs",
+            "strs_test_coverage_mode: linked-swrs-and-acceptance-paths",
+        ),
+        encoding="utf-8",
+    )
+
+    new_strs = runner.invoke(
+        okfreq,
+        [
+            "new",
+            "strs",
+            "Export CSV",
+            "--path",
+            str(req_dir),
+            "--project",
+            "demo",
+            "--user-need",
+            "Users export CSV.",
+            "--description",
+            "The tool SHALL export CSV.",
+        ],
+    )
+    assert new_strs.exit_code == 0, new_strs.output
+    strs_file = next((req_dir / "tiers" / "strs").rglob("StRS-*.md"))
+    assert "### Main paths" in strs_file.read_text(encoding="utf-8")
+
+    # W004 warning exits 0 and prints W004
+    val_warn = runner.invoke(okfreq, ["validate", str(req_dir)])
+    assert val_warn.exit_code == 0, val_warn.output
+    assert "W004" in val_warn.output
+
+    # Add @accepts_req marker -> trace prints accepted:, retire refuses draft
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir(exist_ok=True)
+    (tests_dir / "test_acc.py").write_text("# @accepts_req StRS-default-001#S1\n", encoding="utf-8")
+    traced = runner.invoke(okfreq, ["trace", str(req_dir)])
+    assert traced.exit_code == 0, traced.output
+    assert "accepted:" in traced.output
+
+    retired = runner.invoke(okfreq, ["retire", "StRS-default-001", "--path", str(req_dir), "--yes"])
+    assert retired.exit_code != 0
+    assert "test_acc.py" in retired.output
+
+    # update-coverage writes accepted_in_files on StRS; generate-report writes Markdown columns
+    upd = runner.invoke(okfreq, ["update-coverage", str(req_dir)])
+    assert upd.exit_code == 0, upd.output
+    assert "accepted_in_files:" in strs_file.read_text(encoding="utf-8")
+
+    rep_md = tmp_path / "report.md"
+    gen = runner.invoke(
+        okfreq,
+        ["generate-report", str(req_dir), "--output-summary-md", str(rep_md)],
+    )
+    assert gen.exit_code == 0, gen.output
+    assert "Accepted" in rep_md.read_text(encoding="utf-8")

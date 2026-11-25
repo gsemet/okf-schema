@@ -25,9 +25,7 @@ from okf_schema.validator import (
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-006
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S1
 def test_derive_trust_tier_no_verified_returns_unverified() -> None:
     assert _derive_trust_tier({}) == "unverified"
 
@@ -143,6 +141,7 @@ def test_is_stale_datetime_forms(value: object, expected: bool) -> None:
     assert _is_stale({"stale_after": value}) is expected
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S2
 def test_is_stale_compares_instants_across_offsets() -> None:
     """The same wall-clock time is a different instant in each offset."""
     soon = datetime.now(timezone.utc) + timedelta(hours=1)
@@ -161,6 +160,7 @@ def test_is_stale_compares_instants_across_offsets() -> None:
 @Parametrization.case(name="number", value=20260101)
 @Parametrization.case(name="boolean", value=True)
 @Parametrization.case(name="list", value=["2026-01-01"])
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S3
 def test_parse_stale_after_rejects_unusable_values(value: object) -> None:
     assert _parse_stale_after(value) is None
 
@@ -189,6 +189,7 @@ def test_validate_okf2_generated_e7_generated_missing_at(tmp_path: Path) -> None
     assert any(f.code == "E7" for f in report.errors)
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-006#S4
 def test_validate_okf2_generated_w8_timestamp_present_no_generated(tmp_path: Path) -> None:
     """W8: deprecated `timestamp` field emits W8."""
     path = tmp_path / "f.md"

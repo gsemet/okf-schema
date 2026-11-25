@@ -37,6 +37,11 @@ agent_skill_files:
 example_files:
 - docs/source/tutorials/okfkb-workflow.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Record one finding
+- id: S2
+  title: Preserve earlier evidence
 ---
 
 ## Capture immutable knowledge findings
@@ -46,14 +51,14 @@ default_owner_email: gaetan@xeberon.net
 When a user records an empirical observation, the `okfkb` CLI SHALL create one
 new immutable Finding containing the supplied observation context and provenance.
 
-### Scenario: Record one finding
+### Scenario S1: Record one finding
 
 - GIVEN a valid knowledge bundle and observation metadata
 - WHEN the user invokes the finding-recording command once
 - THEN exactly one new Finding document is created with a unique identity and the
   supplied evidence context
 
-### Scenario: Preserve earlier evidence
+### Scenario S2: Preserve earlier evidence
 
 - GIVEN a bundle containing existing Finding documents
 - WHEN another observation is recorded

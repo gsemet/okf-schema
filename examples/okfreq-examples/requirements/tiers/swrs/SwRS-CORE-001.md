@@ -15,6 +15,11 @@ derives_from:
 - StRS-CORE-001
 annotation_exemption: false
 exemption_reason:
+scenarios:
+- id: S1
+  title: Export selected rows
+- id: S2
+  title: Export an empty selection
 derived_by: []
 implemented_in_files:
 - src/export.py
@@ -28,13 +33,13 @@ tested_in_files:
 
 When export is requested, the service SHALL write the report as CSV output.
 
-### Scenario: Export selected rows
+### Scenario S1: Export selected rows
 
 - GIVEN a report containing selected rows
 - WHEN CSV export is requested
 - THEN the service returns UTF-8 CSV with one record per selected row
 
-### Scenario: Export an empty selection
+### Scenario S2: Export an empty selection
 
 - GIVEN a report with no selected rows
 - WHEN CSV export is requested

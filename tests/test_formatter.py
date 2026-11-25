@@ -62,9 +62,7 @@ def test_flatten_value_mixed_nesting() -> None:
 # ---------------------------------------------------------------------------
 
 
-# @tests_req SwRS-OKFSCHEMA-CORE-003
-
-
+# @tests_req SwRS-OKFSCHEMA-CORE-003#S1
 def test_format_frontmatter_no_frontmatter() -> None:
     """Returns None when no frontmatter is present."""
     text = "# Hello\n\nBody text.\n"

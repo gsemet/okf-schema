@@ -1,5 +1,26 @@
 # Update Log
 
+## 2026-11-25
+
+### StRS acceptance paths with declared scenarios
+
+- Added [SwRS-OKFSCHEMA-OKFREQ-015](swrs/okfreq/SwRS-OKFSCHEMA-OKFREQ-015.md):
+  introduced `strs_test_coverage_mode: linked-swrs-and-acceptance-paths`,
+  declared `scenarios:` lists, `#S<n>` marker fragments, `@accepts_req`
+  acceptance markers on StRS, independent `tested`/`accepted` counters,
+  whole-StRS `acceptance_exemption` waivers, `W003`/`W004` warnings, and
+  `format_version: 2` JSON/Markdown reports while preserving legacy modes.
+- Migrated this bundle to `linked-swrs-and-acceptance-paths`: declared
+  `scenarios:` on all 5 StRS and 30 SwRS, aligned body headings, updated
+  existing `@tests_req` markers with per-test `#S<n>` fragments, added
+  installed-wheel acceptance tests (`tests/test_acceptance_core.py`,
+  `tests/test_acceptance_okfkb.py`, `tests/test_acceptance_okfreq.py`) covering
+  all 12 executable StRS main paths, waived
+  [StRS-OKFSCHEMA-OKFKB-001](strs/okfkb/StRS-OKFSCHEMA-OKFKB-001.md) for
+  human-in-the-loop path S3, and exempted
+  [SwRS-OKFSCHEMA-OKFKB-005](swrs/okfkb/SwRS-OKFSCHEMA-OKFKB-005.md).
+- Verification: `just preflight`.
+
 ## 2026-10-30
 
 ### Native OKF projection

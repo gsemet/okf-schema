@@ -46,6 +46,10 @@ allOf:
             id_marker: id
             show_line_number: true
         description: Generated exact test-file paths relative to the project root.
+      accepted_in_files:
+        not: {}
+        description: >-
+          Never present. @accepts_req names a StRS main path; mark a SwRS test with @tests_req.
       verification_method:
         type: string
         description: Author-selected verification method.

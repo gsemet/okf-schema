@@ -1,9 +1,10 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: strs.schema.yaml
 title: okfreq strs requirement profile
-description: StRS records stakeholder intent and does not carry implementation
-  or source coverage fields. Stakeholder test coverage is computed from linked
-  SwRS according to configuration.
+description: StRS records stakeholder intent and carries no implementation
+  fields; in mode linked-swrs-and-acceptance-paths it carries the generated
+  tested_in_files and accepted_in_files. Stakeholder test coverage is computed
+  from linked SwRS according to configuration.
 allOf:
 - $ref: base.schema.yaml
 - type: object
@@ -18,8 +19,53 @@ allOf:
       type: string
       minLength: 1
       description: The stakeholder need this requirement formalizes.
+    acceptance_exemption:
+      type: boolean
+      description: True when automated acceptance testing is not possible for
+        the whole StRS; requires a justified acceptance_exemption_reason.
+    acceptance_exemption_reason:
+      type: string
+      description: Explicit rationale explaining why automated acceptance
+        testing is not possible for this StRS. Required and non-empty when
+        acceptance_exemption is true.
+    tested_in_files:
+      type: array
+      description: Generated test paths.
+      items:
+        type: string
+        x-okf-link:
+          resolution: project-relative
+          syntax: plain
+          basename_marker: '@tests_req'
+          id_marker: id
+          show_line_number: true
+    accepted_in_files:
+      type: array
+      description: 'Generated acceptance-test paths: files of @accepts_req markers
+        that count, in mode linked-swrs-and-acceptance-paths.'
+      items:
+        type: string
+        x-okf-link:
+          resolution: project-relative
+          syntax: plain
+          basename_marker: '@accepts_req'
+          id_marker: id
+          show_line_number: true
   required:
   - type
   - tier
   - user_need
+- if:
+    properties:
+      acceptance_exemption:
+        const: true
+    required:
+    - acceptance_exemption
+  then:
+    required:
+    - acceptance_exemption_reason
+    properties:
+      acceptance_exemption_reason:
+        type: string
+        minLength: 1
 

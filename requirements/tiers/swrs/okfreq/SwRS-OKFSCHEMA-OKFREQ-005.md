@@ -38,6 +38,17 @@ example_files:
 - examples/okfreq-examples/showcase.py
 - examples/okfreq-examples/README.md
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Validate a conforming requirement graph
+- id: S2
+  title: Refuse to omit an invalid document
+- id: S3
+  title: Keep prose guidance advisory
+- id: S4
+  title: Check requirement navigation and implementation evidence
+- id: S5
+  title: Keep target checks explicitly opt-in
 ---
 
 ## Validate requirement bundles
@@ -46,7 +57,7 @@ default_owner_email: gaetan@xeberon.net
 
 When a requirement bundle is validated, okfreq SHALL check schemas, identities, hierarchy links, lifecycle values, and optional EARS prose while keeping prose findings advisory.
 
-### Scenario: Validate a conforming requirement graph
+### Scenario S1: Validate a conforming requirement graph
 
 - GIVEN requirements that satisfy the configured schema, tiers, lifecycle, and
   parent hierarchy
@@ -54,7 +65,7 @@ When a requirement bundle is validated, okfreq SHALL check schemas, identities, 
 - THEN structural validation succeeds and reports the number of inspected
   requirements
 
-### Scenario: Refuse to omit an invalid document
+### Scenario S2: Refuse to omit an invalid document
 
 - GIVEN a non-reserved requirement with absent or malformed mapping frontmatter,
   or a missing non-empty string ID
@@ -62,14 +73,14 @@ When a requirement bundle is validated, okfreq SHALL check schemas, identities, 
 - THEN the operation fails with the document path instead of silently omitting
   the requirement from counts or generating a misleading report
 
-### Scenario: Keep prose guidance advisory
+### Scenario S3: Keep prose guidance advisory
 
 - GIVEN a structurally valid requirement with an incomplete EARS body
 - WHEN validation runs with prose checks enabled
 - THEN the tool reports a prose warning without changing the successful
   structural-validation exit status
 
-### Scenario: Check requirement navigation and implementation evidence
+### Scenario S4: Check requirement navigation and implementation evidence
 
 - GIVEN annotated `derives_from`, `derived_by`, or `depends_on` requirement IDs with matching
   Markdown basenames, and project-relative `implemented_in_files`/`tested_in_files` paths
@@ -77,7 +88,7 @@ When a requirement bundle is validated, okfreq SHALL check schemas, identities, 
 - THEN the base file-link API checks targets using filename-stem and project-relative semantics
   while the requirement graph continues to validate frontmatter IDs independently
 
-### Scenario: Keep target checks explicitly opt-in
+### Scenario S5: Keep target checks explicitly opt-in
 
 - GIVEN an existing requirements bundle whose local schemas may not contain annotations
 - WHEN validation runs without `--check-links`

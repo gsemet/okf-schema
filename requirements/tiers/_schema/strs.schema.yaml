@@ -19,7 +19,58 @@ allOf:
         type: string
         minLength: 1
         description: Preserved stakeholder outcome.
+      tested_in_files:
+        type: array
+        items:
+          type: string
+          x-okf-link:
+            resolution: project-relative
+            syntax: plain
+            basename_marker: '@tests_req'
+            id_marker: id
+            show_line_number: true
+        description: >-
+          Generated exact test-file paths of counting @tests_req markers for this StRS
+          in linked-swrs-and-acceptance-paths mode.
+      accepted_in_files:
+        type: array
+        items:
+          type: string
+          x-okf-link:
+            resolution: project-relative
+            syntax: plain
+            basename_marker: '@accepts_req'
+            id_marker: id
+            show_line_number: true
+        description: >-
+          Generated exact test-file paths of counting @accepts_req markers for this StRS
+          in linked-swrs-and-acceptance-paths mode.
+      acceptance_exemption:
+        type: boolean
+        description: >-
+          Authored whole-StRS acceptance waiver. Effective only in
+          linked-swrs-and-acceptance-paths mode when true with a non-blank
+          acceptance_exemption_reason.
+      acceptance_exemption_reason:
+        type: [string, 'null']
+        minLength: 1
+        description: >-
+          Required justification when acceptance_exemption is true. Explain why
+          automated acceptance testing of this StRS is not possible rather than
+          asserting that acceptance happened.
     required: [type, tier, user_need]
+    allOf:
+      - if:
+          required: [acceptance_exemption]
+          properties:
+            acceptance_exemption:
+              const: true
+        then:
+          required: [acceptance_exemption_reason]
+          properties:
+            acceptance_exemption_reason:
+              type: string
+              minLength: 1
 examples:
   - type: StRS
     id: StRS-OKFSCHEMA-CORE-001

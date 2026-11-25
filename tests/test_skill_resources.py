@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
-import sys
 import sysconfig
 from importlib import resources
 from pathlib import Path
@@ -99,7 +97,6 @@ def _build_wheel(repository_root: Path, wheel_directory: Path) -> Path:
     return next(wheel_directory.glob("*.whl"))
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-005
 def test_built_wheel_contains_canonical_skill_trees_unchanged(tmp_path: Path) -> None:
     """A wheel contains exactly the canonical skill files under package resources."""
     repository_root = Path(__file__).parents[1]
@@ -146,44 +143,9 @@ def test_base_skills_document_cli_and_agent_skill_installation(skill_root: str) 
 
 def test_installed_wheel_commands_install_complete_families_without_source_checkout(
     tmp_path: Path,
+    installed_wheel_env,
 ) -> None:
     """Installed console scripts deploy packaged families and nested resources in isolation."""
-    if sys.platform == "win32":
-        return
-
-    repository_root = Path(__file__).parents[1]
-    wheel_directory = tmp_path / "wheel"
-    subprocess.run(
-        ["uv", "build", "--offline", "--wheel", "--out-dir", str(wheel_directory)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    wheel_path = next(wheel_directory.glob("*.whl"))
-    environment = tmp_path / "venv"
-    subprocess.run(
-        ["uv", "venv", "--python", sys.executable, str(environment)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    interpreter = environment / "bin" / "python"
-    subprocess.run(
-        ["uv", "pip", "install", "--python", str(interpreter), "--no-deps", str(wheel_path)],
-        cwd=repository_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-
-    runtime_dependencies = tmp_path / "runtime-dependencies"
-    _link_runtime_dependencies(runtime_dependencies)
-    isolated_environment = os.environ.copy()
-    isolated_environment.pop("PYTHONPATH", None)
-    isolated_environment["PYTHONPATH"] = str(runtime_dependencies)
-    isolated_environment["PYTHONNOUSERSITE"] = "1"
     destinations = {
         "okf-schema": ("okf-schema",),
         "okfkb": ("okfkb", "okfkb-distill", "okfkb-gardening", "okfkb-record-findings"),
@@ -195,25 +157,10 @@ def test_installed_wheel_commands_install_complete_families_without_source_check
         "okfreq": "references/operations.md",
     }
 
-    imported_module = subprocess.run(
-        [str(interpreter), "-c", "import okf_schema; print(okf_schema.__file__)"],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-        text=True,
-        env=isolated_environment,
-    )
-    assert str(repository_root) not in imported_module.stdout
-
     for executable, skill_roots in destinations.items():
         destination = tmp_path / f"installed-{executable}"
-        result = subprocess.run(
-            [str(environment / "bin" / executable), "install-skills", str(destination)],
-            cwd=tmp_path,
-            check=True,
-            capture_output=True,
-            text=True,
-            env=isolated_environment,
+        result = installed_wheel_env.run(
+            executable, "install-skills", str(destination), cwd=tmp_path
         )
         assert f"Destination: {destination}" in result.stdout
         for skill_root in skill_roots:
@@ -255,7 +202,8 @@ def test_source_checkout_commands_install_families(
         assert (destination / skill_root / "SKILL.md").is_file()
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-008
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-008#S2
 def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) -> None:
     """Operational links remain usable when the installation has no docs/source tree."""
     from okf_schema.skill_installer import install_skill_family
@@ -271,7 +219,7 @@ def test_installed_okfreq_skill_references_are_self_contained(tmp_path: Path) ->
             assert resource.is_file(), (document, target)
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S1
 def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
     tmp_path: Path,
 ) -> None:
@@ -290,7 +238,9 @@ def test_okfreq_skills_read_the_installed_guideline_instead_of_embedding_it(
         assert "references/requirements.guidelines.md" not in text
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFREQ-010
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S1
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S2
+# @tests_req SwRS-OKFSCHEMA-OKFREQ-010#S3
 def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: Path) -> None:
     """The setup skill ships with the okfreq family and states its stop rules and delivery."""
     from okf_schema.skill_installer import install_skill_family
@@ -318,3 +268,35 @@ def test_installed_okfreq_setup_skill_is_complete_and_self_contained(tmp_path: P
         if "://" in target or target.startswith("#"):
             continue
         assert (skill.parent / target.split("#")[0]).resolve().is_file(), target
+
+
+def test_shipped_okfreq_skills_and_guideline_document_acceptance_paths() -> None:
+    """Shipped okfreq skills and guideline document the acceptance-paths contract."""
+    root = Path(__file__).parents[1]
+    for rel in (
+        "skills/okfreq/SKILL.md",
+        "skills/okfreq/references/operations.md",
+        "skills/okfreq-gardening/SKILL.md",
+        "skills/okfreq-setup/SKILL.md",
+    ):
+        text = (root / rel).read_text(encoding="utf-8")
+        for token in (
+            "linked-swrs-and-acceptance-paths",
+            "@accepts_req",
+            "scenarios:",
+            "#S<n>",
+        ):
+            assert token in text, (rel, token)
+
+    guideline = (
+        root / "src/okf_schema/data/requirements/guidelines/requirements.guidelines.md"
+    ).read_text(encoding="utf-8")
+    for token in (
+        "@tests_req",
+        "@accepts_req",
+        "linked-swrs-and-acceptance-paths",
+        "scenarios:",
+        "#S<n>",
+        "acceptance_exemption",
+    ):
+        assert token in guideline, token

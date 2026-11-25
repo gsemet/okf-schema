@@ -19,8 +19,19 @@ never touched. Our paths, scopes and checks follow; where they specialize the ba
 
 - Store requirements under `requirements/tiers/strs/<scope>/` and
   `requirements/tiers/swrs/<scope>/`, named like `SwRS-OKFSCHEMA-OKFREQ-002.md`.
-- This project uses `linked-swrs-and-validation-test`: add a direct StRS marker
-  only to a real stakeholder validation test.
+- This project uses `linked-swrs-and-acceptance-paths`:
+  - Mark every SwRS test with `@tests_req <ID>#S<n>` matching the declared
+    scenario(s) the test actually exercises, and keep `@tests_req <StRS-ID>#S<n>`
+    on in-process tests that exercise a declared StRS main path.
+  - An acceptance test (`@accepts_req <StRS-ID>#S<n>`) in this repository builds
+    the wheel (`uv build --offline --wheel`), installs it in an isolated venv, and
+    exercises the installed console scripts (`okf-schema`, `okfkb`, `okfreq`) in
+    subprocesses in a fresh temporary project with no source checkout on
+    `PYTHONPATH` (or, for the Python navigation API path `StRS-OKFSCHEMA-CORE-003#S1`,
+    invokes the installed wheel's Python API in an isolated subprocess).
+  - Never invent nominal markers or fake acceptance tests; use a justified
+    whole-StRS `acceptance_exemption` or SwRS `annotation_exemption` only when
+    automated verification is genuinely not possible.
 - Keep core `okf-schema`, knowledge-base `okfkb`, and requirements `okfreq`
   concerns in their configured scopes rather than combining unrelated claims.
 
@@ -47,9 +58,12 @@ validation/tests fail.
 
 ## Exercise the project contract
 
-- Keep the three supported generated fields enabled and refresh them through
-  `okfreq update-coverage`; `--check` must fail when they are stale.
-- Keep the strict StRS coverage mode and direct validation-test evidence current.
+- Keep the generated coverage and projection fields enabled and refresh them
+  through `okfreq update-coverage`; `--check` must fail when they are stale.
+- Keep `linked-swrs-and-acceptance-paths` current: declared `scenarios:` on StRS
+  and SwRS, `#S<n>` fragments on every test marker, installed-wheel acceptance
+  tests for every executable StRS main path, and justified exemptions only where
+  automated verification is not possible.
 - Maintain authored `documentation_files`, `agent_skill_files`, `example_files`,
   dependencies and verification criteria as actual existing project evidence.
 - Review `docs/source/explanation/project-feature-coverage.md` for feature usage.

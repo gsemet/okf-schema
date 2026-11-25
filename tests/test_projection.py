@@ -25,7 +25,7 @@ from okf_schema.projection import (
 )
 from okf_schema.validator import log_heading_findings
 
-# @tests_req SwRS-OKFSCHEMA-CORE-009
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S1
 
 SCHEMA = dedent(
     """\
@@ -135,6 +135,7 @@ def test_schema_projection_reads_links_in_schema_order_and_the_status_mapping() 
     prop={"enum": ["a", "b"], "x-okf-status-projection": {"a": "draft"}},
     expected="has no OKF status for b",
 )
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S3
 def test_projection_problems_report_malformed_annotations(prop: dict, expected: str) -> None:
     problems = projection_problems({"properties": {"field": prop}})
 
@@ -217,6 +218,7 @@ def test_link_graph_skips_the_generated_links_section(tmp_path: Path) -> None:
     assert "links: [root.md]" in (bundle / "child.md").read_text(encoding="utf-8")
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-009#S2
 def test_renaming_then_removing_an_annotation_updates_every_links_section(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path)
     lint_bundle(bundle)
@@ -324,7 +326,7 @@ def test_cli_lint_check_fails_on_a_non_conforming_log_heading(tmp_path: Path) ->
     assert "[W5]" in result.output and "'### Topic' sub-heading" in result.output
 
 
-# @tests_req SwRS-OKFSCHEMA-OKFKB-006
+# @tests_req SwRS-OKFSCHEMA-OKFKB-006#S2
 def test_okfkb_update_projects_derivations_as_markdown_links(tmp_path: Path) -> None:
     kb = tmp_path / "kb"
     scaffold_kb(kb)

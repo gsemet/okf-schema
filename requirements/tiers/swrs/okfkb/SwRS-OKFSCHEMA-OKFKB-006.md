@@ -30,6 +30,13 @@ verification_method: test
 verification_criteria: Focused regression tests and the complete project
   preflight pass.
 default_owner_email: gaetan@xeberon.net
+scenarios:
+- id: S1
+  title: Materialize reciprocal derivations
+- id: S2
+  title: Project derivations as Markdown links
+- id: S3
+  title: Detect stale or invalid computed graph data
 ---
 
 ## Materialize reciprocal knowledge derivations
@@ -38,7 +45,7 @@ default_owner_email: gaetan@xeberon.net
 
 When an OKFKB bundle is maintained or validated, the CLI SHALL deterministically materialize and verify computed reverse derivation links from authored canonical source paths without changing authored derivation fields.
 
-### Scenario: Materialize reciprocal derivations
+### Scenario S1: Materialize reciprocal derivations
 
 - GIVEN an OKFKB bundle whose documents use canonical extensionless
   `derived_from` paths
@@ -46,7 +53,7 @@ When an OKFKB bundle is maintained or validated, the CLI SHALL deterministically
 - THEN every document contains the deterministic `derives_to` reflection of
   those authored edges without changing `derived_from`
 
-### Scenario: Project derivations as Markdown links
+### Scenario S2: Project derivations as Markdown links
 
 - GIVEN the shipped `Base.schema.yaml`, whose `derived_from` and `derives_to`
   carry the `link-projection` labels `Derived from` and `Derives to`
@@ -54,7 +61,7 @@ When an OKFKB bundle is maintained or validated, the CLI SHALL deterministically
 - THEN each document with derivations ends with a generated Links section that a
   plain OKF consumer reads as edges; the authored body above it is unchanged
 
-### Scenario: Detect stale or invalid computed graph data
+### Scenario S3: Detect stale or invalid computed graph data
 
 - GIVEN an OKFKB document with a missing or stale `derives_to` value, or a
   non-canonical `derived_from` source
