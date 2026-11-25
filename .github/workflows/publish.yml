@@ -59,11 +59,14 @@ jobs:
           fi
           python3 -c 'import tomllib; p=tomllib.load(open("pyproject.toml", "rb")); l=tomllib.load(open("uv.lock", "rb")); raise SystemExit(next(x for x in l["package"] if x["name"] == "okf-schema")["version"] != p["project"]["version"])'
       - name: Generate user-facing release notes
+        id: generate_notes
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.release_notes == '' }}
+        continue-on-error: true
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: uv run python scripts/release_notes.py --to-ref "$RELEASE_TAG"
       - name: Validate manually supplied release notes
+        id: manual_notes
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.release_notes != '' }}
         env:
           RELEASE_NOTES: ${{ inputs.release_notes }}
@@ -71,6 +74,7 @@ jobs:
           printf '%s\n' "$RELEASE_NOTES" > release-notes.md
           uv run python scripts/release_notes.py --validate release-notes.md
       - name: Upload validated notes
+        if: ${{ steps.generate_notes.outcome == 'success' || steps.manual_notes.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: release-notes-${{ env.RELEASE_TAG }}
@@ -82,9 +86,15 @@ jobs:
         with:
           skip-existing: true
       - name: Attach distributions to GitHub release
+        if: ${{ steps.generate_notes.outcome == 'success' || steps.manual_notes.outcome == 'success' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           body_path: release-notes.md
           draft: false
           files: dist/okf_schema-*
+      - name: Report release note generation failure
+        if: ${{ !cancelled() && steps.generate_notes.outcome == 'failure' }}
+        run: |
+          echo "::error::Release notes could not be generated. PyPI publication was attempted; the GitHub release was not created. Retry with manually supplied notes."
+          exit 1

@@ -123,12 +123,14 @@ entry of `uv.lock` must match it.
 	release job verifies the tag, manifest, and default-branch ancestry, generates user-facing
 	notes from the previous reachable release's Git diff through `gh copilot`, builds the
 	package, publishes to PyPI, and attaches the distributions and notes to a GitHub release.
+	If note generation fails, it still attempts PyPI publication, skips the GitHub release
+	and fails the job with a recovery message.
 
 	CI starts the workflow with `gh workflow run publish.yml -f tag=vX.Y.Z` (the tagging
 	job has `actions: write`) rather than calling it as a reusable workflow, because PyPI
 	Trusted Publishing is bound to the `publish.yml` workflow file and does not support
 	reusable workflows.
-	A first release uses all history. Note generation must succeed before publication.
+	A first release uses all history. Valid notes are required for the GitHub release.
 
 ### GitHub Configuration
 
@@ -153,7 +155,8 @@ If tagging succeeded but publication failed, rerun the failed release job or dis
 to retry. PyPI publication skips already uploaded files, allowing a retry
 to finish the GitHub release. Manual pushes of valid `vX.Y.Z` tags also run this workflow.
 
-If Copilot cannot generate notes, write user-facing Markdown from the exact release
+If Copilot cannot generate notes, check the PyPI publication step's result, then write
+user-facing Markdown from the exact release
 range and validate it with `uv run python scripts/release_notes.py --validate notes.md`.
 Then dispatch **Release** from `main`, supplying the existing tag and the file contents
 as `release_notes`:
