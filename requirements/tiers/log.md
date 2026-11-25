@@ -1,5 +1,29 @@
 # Update Log
 
+## 2026-11-25
+
+### Show a concept by name, inside the bundle
+
+- Added [SwRS-OKFSCHEMA-CORE-010](swrs/core/SwRS-OKFSCHEMA-CORE-010.md) (S1 to S3) as
+  the shared "stay inside the bundle" rule: a concept path whose real path, symbolic
+  links followed, is outside the bundle is refused without being read. It is applied to
+  `show` only so far, and its known issue names the commands that still follow outside
+  links.
+- [SwRS-OKFSCHEMA-CORE-005](swrs/core/SwRS-OKFSCHEMA-CORE-005.md) gained S3 (a name
+  resolves without `.md`) and S4 (a leading `/` reads from the bundle root, OKF 0.2
+  section 6.1), a widened S2 that includes a directory, and `depends_on`
+  SwRS-OKFSCHEMA-CORE-010.
+- Reason: `show` read files outside the bundle and refused names without `.md`.
+- Both stay `proposed`; neither is approved.
+- Verification, on Windows with Python 3.12: `okfreq update-coverage --check`,
+  `okfreq validate --prose --check-links` and `okfreq lint --check --check-links` pass,
+  and `okfreq trace --json` lists both requirements as implemented and tested.
+  `just preflight` stops at its test step: 1112 tests pass, 21 are skipped, and 8
+  tests of other capabilities fail because this host does not permit symbolic links
+  (WinError 1314). The 7 new symlink tests are skipped for that reason and the
+  acceptance test of `show` is skipped on Windows. The examples, report and
+  documentation steps pass when run on their own.
+
 ## 2026-11-24
 
 ### Acceptance paths

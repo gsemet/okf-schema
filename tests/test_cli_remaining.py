@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from click.testing import CliRunner
 
 from okf_schema.cli import cli
@@ -130,6 +131,62 @@ def test_show_show_exits_2_on_invalid_bundle(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli, ["show", "--path", str(tmp_path / "nonexistent"), "concept-a.md"])
     assert result.exit_code == 2
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S3
+def test_show_show_accepts_a_name_without_extension(tmp_path: Path) -> None:
+    """show prints the same output with and without the .md extension."""
+    bundle = _make_bundle(tmp_path)
+    runner = CliRunner()
+    expected = runner.invoke(cli, ["show", "--path", str(bundle), "concept-a.md"])
+    result = runner.invoke(cli, ["show", "--path", str(bundle), "concept-a"])
+    assert result.exit_code == 0
+    assert result.output == expected.output
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S2
+def test_show_show_exits_2_on_directory_without_traceback(tmp_path: Path) -> None:
+    """show reports a directory as a concept not found, with no traceback."""
+    bundle = _make_bundle(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["show", "--path", str(bundle), "subdir"])
+    assert result.exit_code == 2
+    assert "Error: Concept not found" in result.output
+    assert "Traceback" not in result.output
+    assert isinstance(result.exception, SystemExit)
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S1
+def test_show_show_exits_2_on_path_outside_the_bundle(tmp_path: Path) -> None:
+    """show refuses a path leaving the bundle."""
+    bundle = _make_bundle(tmp_path)
+    (tmp_path / "outside.md").write_text("# Outside\n", encoding="utf-8")
+    runner = CliRunner()
+    result = runner.invoke(cli, ["show", "--path", str(bundle), "../outside.md"])
+    assert result.exit_code == 2
+    assert "Error: Concept path is outside the bundle" in result.output
+    assert "# Outside" not in result.output
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S4
+def test_show_show_reads_names_from_the_bundle_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A name, with or without a leading /, starts from the bundle root, from any folder."""
+    bundle = _make_bundle(tmp_path)
+    runner = CliRunner()
+    expected = runner.invoke(cli, ["show", "--path", str(bundle), "concept-a.md"])
+
+    rooted = runner.invoke(cli, ["show", "--path", str(bundle), "/concept-a"])
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    relative = runner.invoke(cli, ["show", "--path", str(bundle.resolve()), "concept-a"])
+
+    assert rooted.exit_code == 0
+    assert rooted.output == expected.output
+    assert relative.exit_code == 0
+    assert relative.output == expected.output
 
 
 # ---------------------------------------------------------------------------

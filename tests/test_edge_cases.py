@@ -277,17 +277,19 @@ def test_path_edge_cases_nonexistent_bundle_path(tmp_path: Path) -> None:
         validate_bundle(tmp_path / "does-not-exist")
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-010#S3
 def test_path_edge_cases_concept_path_with_parent_references(tmp_path: Path) -> None:
-    """Concept path with '..' is resolved safely."""
+    """Concept path with '..' staying inside the bundle is resolved."""
     bundle = tmp_path / "bundle"
     bundle.mkdir()
+    (bundle / "sub").mkdir()
     (bundle / "concept.md").write_text(
         "---\ntype: concept\ntitle: Concept\n---\n\nBody.\n",
         encoding="utf-8",
     )
 
     # show_bundle should resolve the path
-    detail = show_bundle(bundle, "concept.md")
+    detail = show_bundle(bundle, "sub/../concept.md")
     assert detail.frontmatter.get("title") == "Concept"
 
 
