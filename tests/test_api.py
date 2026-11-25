@@ -19,7 +19,9 @@ from okf_schema._internal.models import (
     SearchResult,
 )
 from okf_schema.api import (
+    _generic_subdir_description,
     _get_subdir_description,
+    _parse_existing_index,
     backlinks_bundle,
     format_bundle,
     graph_bundle,
@@ -1047,15 +1049,13 @@ def test_index_bundle_subdir_description_oserror(tmp_path: Path) -> None:
 
     subdir = tmp_path / "subdir"
     subdir.mkdir()
-    index_path = subdir / "index.md"
-    index_path.write_text("# S\n", encoding="utf-8")
-    # Make file unreadable
-    index_path.chmod(0o000)
-    try:
-        desc = _get_subdir_description(subdir)
-        assert "Auto-generated index" in desc
-    finally:
-        index_path.chmod(0o644)
+    # A directory named index.md cannot be read as a file, on every host.
+    (subdir / "index.md").mkdir()
+
+    desc = _get_subdir_description(subdir)
+
+    assert desc == _generic_subdir_description("subdir")
+    assert desc == "Auto-generated index for concepts in `subdir`."
 
 
 def test_index_bundle_generate_index_content_empty(tmp_path: Path) -> None:
@@ -1296,6 +1296,493 @@ def test_index_bundle_get_subdir_description_truncates_long_desc(tmp_path: Path)
     schema_info = {"myconcept": {"description": long_desc}}
     result = _get_subdir_description(subdir, schema_info)
     assert result == "C" * 117 + "..."
+
+
+# ---------------------------------------------------------------------------
+# index_bundle: subdirectory summaries
+# ---------------------------------------------------------------------------
+
+_API_GENERIC = "Auto-generated index for concepts in `api`."
+_LIST_ONLY_INDEX = "# api\n\n- [Health Check](health-check.md)  [API Endpoint]\n"
+
+
+def _write(root: Path, relative: str, text: str) -> Path:
+    """Write *text* to *relative* under *root*, creating parent folders."""
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def _concept(concept_type: str = "concept", body: str = "") -> str:
+    """Return a minimal concept document."""
+    return f"---\ntype: {concept_type}\ntitle: T\n---\n\n# T\n\n{body}\n"
+
+
+def _api_bundle(tmp_path: Path, api_index: str = _LIST_ONLY_INDEX) -> Path:
+    """Create a bundle with one concept in ``api/`` and its subdirectory index."""
+    bundle = tmp_path / "bundle"
+    _write(bundle, "api/health-check.md", _concept("API Endpoint"))
+    _write(bundle, "api/index.md", api_index)
+    return bundle
+
+
+def _lines(path: Path) -> list[str]:
+    """Return the lines of a UTF-8 file."""
+    return path.read_text(encoding="utf-8").splitlines()
+
+
+def _actions(bundle: Path) -> set[str]:
+    """Run ``index_bundle`` and return the set of actions it reports."""
+    return {update.action for update in index_bundle(bundle)}
+
+
+def _broken_link_warnings(bundle: Path) -> list[str]:
+    """Return the W2 messages of a bundle validation."""
+    return [f.message for f in validate_bundle(bundle).warnings if f.code == "W2"]
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_issue_57_damaged_root_line_gets_generic_summary(tmp_path: Path) -> None:
+    """The line copied from a list-only subdirectory index is repaired and then stable."""
+    bundle = _api_bundle(tmp_path)
+    _write(
+        bundle,
+        "index.md",
+        "# bundle\n\n- [api](./api/) — [Health Check](health-check.md)  [API Endpoint]\n",
+    )
+
+    index_bundle(bundle)
+
+    assert f"- [api](./api/) — {_API_GENERIC}" in _lines(bundle / "index.md")
+    assert _actions(bundle) == {"unchanged"}
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_fresh_bundle_never_copies_a_list_entry(tmp_path: Path) -> None:
+    """Without a root summary, a list-only subdirectory index gives the generic sentence."""
+    bundle = _api_bundle(tmp_path)
+
+    index_bundle(bundle)
+
+    content = (bundle / "index.md").read_text(encoding="utf-8")
+    assert f"- [api](./api/) — {_API_GENERIC}" in content.splitlines()
+    assert "health-check.md" not in content
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="relative_and_parent_links",
+    intro="See [guide](guide.md#setup) and [up](../README.md).",
+    summary="See [guide](api/guide.md#setup) and [up](README.md).",
+)
+@Parametrization.case(
+    name="anchor_only_link",
+    intro="Back to [top](#top).",
+    summary="Back to [top](api/index.md#top).",
+)
+@Parametrization.case(
+    name="percent_encoded_link",
+    intro="Read [f](my%20file.md).",
+    summary="Read [f](api/my%20file.md).",
+)
+@Parametrization.case(
+    name="external_and_bundle_rooted_links",
+    intro="[w](https://example.com/a#b) [m](mailto:a@example.com) [r](/api/guide.md)",
+    summary="[w](https://example.com/a#b) [m](mailto:a@example.com) [r](/api/guide.md)",
+)
+@Parametrization.case(
+    name="image_link",
+    intro="![logo](./guide.md) first.",
+    summary="![logo](api/guide.md) first.",
+)
+def test_index_bundle_rewrites_introduction_links(tmp_path: Path, intro: str, summary: str) -> None:
+    """Links of the introduction are rewritten to work from the parent index."""
+    bundle = _api_bundle(tmp_path, f"# api\n\n{intro}\n\n- [Guide](guide.md)\n")
+    _write(bundle, "api/guide.md", _concept())
+    _write(bundle, "api/my file.md", _concept())
+    _write(bundle, "README.md", _concept())
+
+    index_bundle(bundle)
+
+    assert f"- [api](./api/) — {summary}" in _lines(bundle / "index.md")
+    assert _broken_link_warnings(bundle) == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_rewrites_links_relative_to_a_nested_parent(tmp_path: Path) -> None:
+    """For ``a/b/index.md`` the links are rewritten relative to ``a/``."""
+    bundle = tmp_path / "bundle"
+    _write(bundle, "a/x.md", _concept())
+    _write(bundle, "a/b/c.md", _concept())
+    _write(
+        bundle,
+        "a/b/index.md",
+        "# b\n\nSee [c](c.md), [up](../x.md) and [top](#top).\n\n- [C](c.md)\n",
+    )
+
+    index_bundle(bundle)
+
+    expected = "- [b](./b/) — See [c](b/c.md), [up](x.md) and [top](b/index.md#top)."
+    assert expected in _lines(bundle / "a" / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="plain_link", written="[Health Check](health-check.md)")
+@Parametrization.case(name="image_link", written="![Health Check](health-check.md) trailing")
+@Parametrization.case(name="anchored_link", written="[Health Check](health-check.md#part)")
+def test_index_bundle_recomputes_a_damaged_summary(tmp_path: Path, written: str) -> None:
+    """A leading link broken from the parent but valid from the subdirectory is repaired."""
+    bundle = _api_bundle(tmp_path, "# api\n\nHealth endpoints.\n\n- [H](health-check.md)\n")
+    _write(bundle, "index.md", f"# bundle\n\n- [api](./api/) — {written}\n")
+
+    index_bundle(bundle)
+
+    assert "- [api](./api/) — Health endpoints." in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_recomputes_damaged_schema_folder_summary(tmp_path: Path) -> None:
+    """The ``_schema`` line of the issue is repaired when the entry exists."""
+    bundle = tmp_path / "bundle"
+    _write(bundle, "concept.md", _concept())
+    _write(bundle, "_schema/_base.schema.yaml", "type: object\n")
+    _write(bundle, "_schema/index.md", "# _schema\n\n- [base](_base.schema.yaml)\n")
+    _write(
+        bundle,
+        "index.md",
+        "# bundle\n\n- [_schema](./_schema/) — [_base.schema.yaml](_base.schema.yaml)\n",
+    )
+
+    index_bundle(bundle)
+
+    expected = "- [_schema](./_schema/) — Auto-generated index for concepts in `_schema`."
+    assert expected in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_drops_entry_of_a_folder_without_markdown(tmp_path: Path) -> None:
+    """A subdirectory holding only YAML schemas gets no entry."""
+    bundle = tmp_path / "bundle"
+    _write(bundle, "concept.md", _concept())
+    _write(bundle, "_schema/_base.schema.yaml", "type: object\n")
+    _write(
+        bundle,
+        "index.md",
+        "# bundle\n\n- [_schema](./_schema/) — [_base.schema.yaml](_base.schema.yaml)\n",
+    )
+
+    index_bundle(bundle)
+
+    assert "_schema" not in (bundle / "index.md").read_text(encoding="utf-8")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="no_leading_link", written="Endpoints, see [H](health-check.md)", w2=1)
+@Parametrization.case(name="valid_from_the_parent", written="[Readme](README.md) here", w2=0)
+@Parametrization.case(name="broken_from_both", written="[Nope](nope.md)", w2=1)
+@Parametrization.case(name="external_link", written="[Site](https://example.com)", w2=0)
+@Parametrization.case(name="anchor_only_link", written="[Top](#top)", w2=0)
+@Parametrization.case(name="bundle_rooted_link", written="[H](/api/health-check.md)", w2=0)
+def test_index_bundle_keeps_a_summary_without_the_damage_signature(
+    tmp_path: Path, written: str, w2: int
+) -> None:
+    """Other authored summaries are kept as written; W2 reports their broken links."""
+    bundle = _api_bundle(tmp_path, "# api\n\nIntroduction.\n\n- [H](health-check.md)\n")
+    _write(bundle, "README.md", _concept())
+    _write(bundle, "index.md", f"# bundle\n\n- [api](./api/) — {written}\n")
+
+    index_bundle(bundle)
+
+    assert f"- [api](./api/) — {written}" in _lines(bundle / "index.md")
+    assert len(_broken_link_warnings(bundle)) == w2
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="file_only_in_the_subdirectory", location="api", kept=False)
+@Parametrization.case(name="file_at_the_parent", location=".", kept=True)
+def test_index_bundle_decodes_paths_to_detect_damage(
+    tmp_path: Path, location: str, kept: bool
+) -> None:
+    """The damage test percent-decodes the path, like W2."""
+    bundle = _api_bundle(tmp_path)
+    _write(bundle, f"{location}/my file.md", _concept())
+    _write(bundle, "index.md", "# bundle\n\n- [api](./api/) — [a](my%20file.md)\n")
+
+    index_bundle(bundle)
+
+    summary = "[a](my%20file.md)" if kept else _API_GENERIC
+    assert f"- [api](./api/) — {summary}" in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_recomputes_the_generic_summary(tmp_path: Path) -> None:
+    """An introduction added later replaces the generic sentence."""
+    bundle = _api_bundle(tmp_path)
+    index_bundle(bundle)
+    assert f"- [api](./api/) — {_API_GENERIC}" in _lines(bundle / "index.md")
+    _write(bundle, "api/index.md", "# api\n\nHealth endpoints.\n\n- [H](health-check.md)\n")
+
+    index_bundle(bundle)
+
+    assert "- [api](./api/) — Health endpoints." in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_keeps_a_text_close_to_the_generic_one(tmp_path: Path) -> None:
+    """A summary differing from the generic sentence by one character is authored."""
+    close = _API_GENERIC.removesuffix(".")
+    bundle = _api_bundle(tmp_path, "# api\n\nHealth endpoints.\n\n- [H](health-check.md)\n")
+    _write(bundle, "index.md", f"# bundle\n\n- [api](./api/) — {close}\n")
+
+    index_bundle(bundle)
+
+    assert f"- [api](./api/) — {close}" in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="heading_before_list", api_index="# api\n\n## Section\n\n- [C](c.md)\n")
+@Parametrization.case(name="dash_list", api_index="# api\n\n- [C](c.md)\n\nAfter.\n")
+@Parametrization.case(name="star_list", api_index="# api\n\n* [C](c.md)\n")
+@Parametrization.case(name="plus_list", api_index="# api\n\n+ [C](c.md)\n")
+@Parametrization.case(name="numbered_dot_list", api_index="# api\n\n1. [C](c.md)\n")
+@Parametrization.case(name="numbered_paren_list", api_index="# api\n\n  12) [C](c.md)\n")
+@Parametrization.case(name="comment_only", api_index="# api\n\n<!-- note -->\n\n- [C](c.md)\n")
+@Parametrization.case(name="empty_body", api_index="---\nnote: x\n---\n")
+def test_index_bundle_never_uses_a_heading_or_list_entry(tmp_path: Path, api_index: str) -> None:
+    """Without text before the first list the summary is the generic sentence."""
+    bundle = _api_bundle(tmp_path, api_index)
+
+    index_bundle(bundle)
+
+    assert f"- [api](./api/) — {_API_GENERIC}" in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="all_paragraphs_before_the_list",
+    api_index=(
+        "# api\n\nFirst paragraph.\nSecond line of it.\n\n"
+        "Another paragraph. With two sentences.\n\n- [H](health-check.md)\n"
+    ),
+    summary="First paragraph. Second line of it. Another paragraph. With two sentences.",
+)
+@Parametrization.case(name="no_list", api_index="# api\n\nOnly text.\n", summary="Only text.")
+@Parametrization.case(
+    name="headings_and_comments_skipped",
+    api_index="# api\n\n<!-- note -->\n  Indented text.  \n## More\nEnd.\n",
+    summary="Indented text. End.",
+)
+def test_index_bundle_takes_the_whole_introduction(
+    tmp_path: Path, api_index: str, summary: str
+) -> None:
+    """All the text before the first list is written on one line."""
+    bundle = _api_bundle(tmp_path, api_index)
+
+    index_bundle(bundle)
+
+    assert f"- [api](./api/) — {summary}" in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="exactly_120_kept", intro="A" * 120, summary="A" * 120)
+@Parametrization.case(
+    name="plain_text_cut_and_stripped",
+    intro="A" * 116 + " " + "B" * 33,
+    summary="A" * 116 + "...",
+)
+@Parametrization.case(
+    name="cut_moves_to_the_link_start",
+    intro="A" * 100 + " see [guide](guide.md) and more " + "B" * 40,
+    summary="A" * 100 + " see...",
+)
+@Parametrization.case(
+    name="link_before_the_cut_kept_whole",
+    intro="A" * 50 + " [guide](guide.md) " + "B" * 100,
+    summary="A" * 50 + " [guide](api/guide.md) " + "B" * 44 + "...",
+)
+def test_index_bundle_cuts_a_long_introduction(tmp_path: Path, intro: str, summary: str) -> None:
+    """The summary holds at most 120 characters and never part of a link."""
+    bundle = _api_bundle(tmp_path, f"# api\n\n{intro}\n\n- [H](health-check.md)\n")
+
+    index_bundle(bundle)
+
+    assert len(summary) <= 120
+    assert f"- [api](./api/) — {summary}" in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_writes_generic_summary_when_the_cut_leaves_nothing(tmp_path: Path) -> None:
+    """A leading link covering the cut gives the generic sentence, recomputed later."""
+    long_link = "[" + "g" * 130 + "](guide.md) here."
+    bundle = _api_bundle(tmp_path, f"# api\n\n{long_link}\n\n- [H](health-check.md)\n")
+
+    index_bundle(bundle)
+
+    assert f"- [api](./api/) — {_API_GENERIC}" in _lines(bundle / "index.md")
+    assert _actions(bundle) == {"unchanged"}
+
+    _write(bundle, "api/index.md", "# api\n\nShort intro.\n\n- [H](health-check.md)\n")
+    index_bundle(bundle)
+
+    assert "- [api](./api/) — Short intro." in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_keeps_trailing_brackets_of_an_introduction(tmp_path: Path) -> None:
+    """An introduction ending with a bracketed word is stable between runs."""
+    bundle = _api_bundle(tmp_path, "# api\n\nWork in progress [draft]\n\n- [H](health-check.md)\n")
+    expected = "- [api](./api/) — Work in progress [draft]"
+
+    index_bundle(bundle)
+    assert expected in _lines(bundle / "index.md")
+
+    assert _actions(bundle) == {"unchanged"}
+    assert expected in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+def test_index_bundle_keeps_type_like_tag_of_a_subdirectory_entry(tmp_path: Path) -> None:
+    """A subdirectory entry keeps its tag; a concept entry carries its tag once."""
+    bundle = _api_bundle(tmp_path)
+    _write(bundle, "concept.md", "---\ntype: concept\ntitle: C\ndescription: D\n---\n\n# C\n")
+    line = "- [api](./api/) — Endpoints of the service  [API Endpoint]"
+    _write(bundle, "index.md", f"# bundle\n\n{line}\n")
+
+    index_bundle(bundle)
+    index_bundle(bundle)
+
+    root_lines = _lines(bundle / "index.md")
+    assert line in root_lines
+    assert "- [C](concept.md) — D  [concept]" in root_lines
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="bare_marker_and_dash", written="* [Tables](tables/) - Toutes les tables"
+)
+@Parametrization.case(
+    name="dot_slash_with_slash", written="- [tables](./tables/) — Toutes les tables"
+)
+@Parametrization.case(name="dot_slash_only", written="- [Tables](./tables) — Toutes les tables")
+def test_index_bundle_keeps_summary_for_every_subdirectory_spelling(
+    tmp_path: Path, written: str
+) -> None:
+    """``tables/``, ``./tables/`` and ``./tables`` name the same subdirectory."""
+    bundle = tmp_path / "bundle"
+    _write(bundle, "tables/c.md", _concept("table"))
+    _write(bundle, "tables/index.md", "# tables\n\n- [C](c.md)\n")
+    _write(bundle, "index.md", f"# bundle\n\n{written}\n")
+
+    index_bundle(bundle)
+
+    entries = [line for line in _lines(bundle / "index.md") if line.startswith(("- ", "* "))]
+    assert entries == ["- [tables](./tables/) — Toutes les tables"]
+    assert _actions(bundle) == {"unchanged"}
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="damaged_under_bare_slash", written="- [tables](tables/) — [C](c.md)")
+@Parametrization.case(
+    name="generic_under_dot_slash",
+    written="- [tables](./tables) — Auto-generated index for concepts in `tables`.",
+)
+def test_index_bundle_recomputes_summary_under_other_spellings(
+    tmp_path: Path, written: str
+) -> None:
+    """Damaged and generic summaries are recomputed whatever the link spelling."""
+    bundle = tmp_path / "bundle"
+    _write(bundle, "tables/c.md", _concept("table"))
+    _write(bundle, "tables/index.md", "# tables\n\nAll the tables.\n\n- [C](c.md)\n")
+    _write(bundle, "index.md", f"# bundle\n\n{written}\n")
+
+    index_bundle(bundle)
+
+    assert "- [tables](./tables/) — All the tables." in _lines(bundle / "index.md")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="dot_slash_after_bare_slash",
+    earlier="- [tables](tables/) — Earlier summary",
+    later="- [tables](./tables/) — Later summary",
+)
+@Parametrization.case(
+    name="bare_slash_after_dot_slash",
+    earlier="- [tables](./tables/) — Earlier summary",
+    later="* [Tables](tables/) - Later summary",
+)
+@Parametrization.case(
+    name="dot_slash_without_slash_after_dot_slash",
+    earlier="- [tables](./tables/) — Earlier summary",
+    later="- [Tables](./tables) — Later summary",
+)
+def test_index_bundle_keeps_the_later_line_of_two_subdirectory_spellings(
+    tmp_path: Path, earlier: str, later: str
+) -> None:
+    """Two spellings of one subdirectory: the later line gives the summary."""
+    bundle = tmp_path / "bundle"
+    _write(bundle, "tables/c.md", _concept("table"))
+    _write(bundle, "tables/index.md", "# tables\n\n- [C](c.md)\n")
+    _write(bundle, "index.md", f"# bundle\n\n{earlier}\n{later}\n")
+
+    index_bundle(bundle)
+
+    entries = [line for line in _lines(bundle / "index.md") if line.startswith(("- ", "* "))]
+    assert entries == ["- [tables](./tables/) — Later summary"]
+    assert _actions(bundle) == {"unchanged"}
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-004#S3
+@Parametrization.autodetect_parameters()
+@Parametrization.case(
+    name="dot_slash_subdirectory_tag_kept",
+    line="- [api](./api/) — Text [X]",
+    descriptions={"./api/": "Text [X]"},
+)
+@Parametrization.case(
+    name="concept_tag_stripped",
+    line="- [c](c.md) — Text  [X]",
+    descriptions={"c.md": "Text"},
+)
+@Parametrization.case(
+    name="bare_slash_normalised",
+    line="* [Tables](tables/) - Toutes les tables [X]",
+    descriptions={"./tables/": "Toutes les tables [X]"},
+)
+@Parametrization.case(
+    name="dot_slash_without_slash_normalised",
+    line="- [t](./tables) — Toutes les tables [X]",
+    descriptions={"./tables/": "Toutes les tables [X]"},
+)
+@Parametrization.case(
+    name="dot_slash_concept_kept_as_written",
+    line="- [c](./c.md) — Text  [X]",
+    descriptions={"./c.md": "Text"},
+)
+@Parametrization.case(
+    name="bare_name_not_normalised",
+    line="- [t](tables) — Text",
+    descriptions={"tables": "Text"},
+)
+@Parametrization.case(
+    name="deeper_path_not_normalised",
+    line="- [t](a/b/) — Text",
+    descriptions={"a/b/": "Text"},
+)
+def test_parse_existing_index_subdirectory_keys(line: str, descriptions: dict[str, str]) -> None:
+    """Subdirectory keys are normalised and keep their trailing brackets."""
+    assert _parse_existing_index(f"{line}\n")["descriptions"] == descriptions
 
 
 # ---------------------------------------------------------------------------
@@ -1731,6 +2218,28 @@ def test_stats_bundle_counts_broken_links(tmp_path: Path) -> None:
     stats = stats_bundle(bundle)
     assert stats.total_links == 1
     assert stats.broken_links == 1
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
+def test_stats_bundle_counts_broken_links_like_w2(tmp_path: Path) -> None:
+    """Anchors are ignored and paths decoded, so ``stats`` and W2 agree."""
+    bundle = tmp_path / "bundle"
+    for name in ("other.md", "my file.md", "café.md"):
+        _write(bundle, name, _concept())
+    links = (
+        "[a](other.md#part) [t](#top) [b](my%20file.md) [c](caf%C3%A9.md#x) "
+        "[d](missing.md#part) [e](missing%20x.md)"
+    )
+    source = _write(bundle, "a.md", _concept(body=links))
+
+    stats = stats_bundle(bundle)
+
+    assert stats.total_links == 6
+    assert stats.broken_links == 2
+    assert sorted(_broken_link_warnings(bundle)) == [
+        f"Broken cross-link 'missing%20x.md' in '{source.resolve()}'",
+        f"Broken cross-link 'missing.md#part' in '{source.resolve()}'",
+    ]
 
 
 def test_stats_bundle_no_tags_means_empty_distribution(tmp_path: Path) -> None:

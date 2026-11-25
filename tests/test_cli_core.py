@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from click.testing import CliRunner
+from parametrization import Parametrization
 
 import okf_schema.skill_cli as skill_cli
 from okf_schema.cli import cli
@@ -509,6 +510,28 @@ def test_validate_info_alone_does_not_fail_strict(tmp_path: Path) -> None:
     result = CliRunner().invoke(cli, ["validate", "--path", str(bundle), "--strict"])
     assert result.exit_code == 0, result.output
     assert "[I1] schema file 'other.schema.yaml' is empty" in result.output
+
+
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="index", filename="index.md", text="# Index\n\n- [gone](missing.md)\n")
+@Parametrization.case(
+    name="log", filename="log.md", text="## 2026-01-01\n\n- Removed [old](missing.md).\n"
+)
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+def test_validate_strict_fails_on_broken_reserved_file_link(
+    tmp_path: Path, filename: str, text: str
+) -> None:
+    """A broken link in index.md or log.md alone fails ``validate --strict``."""
+    bundle = _bundle_with_schema_files(tmp_path, {"task.schema.json": '{"type": "object"}'})
+    clean = CliRunner().invoke(cli, ["validate", "--path", str(bundle), "--strict"])
+    (bundle / filename).write_text(text, encoding="utf-8")
+
+    result = CliRunner().invoke(cli, ["validate", "--strict", "--path", str(bundle)])
+
+    assert clean.exit_code == 0, clean.output
+    assert result.exit_code != 0
+    assert "W2" in result.output
+    assert "Broken cross-link 'missing.md'" in result.output
 
 
 def test_validate_validate_not_a_directory() -> None:

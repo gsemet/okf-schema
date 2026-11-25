@@ -307,6 +307,71 @@ Regenerate all `index.md` files in an OKF bundle.
 okf-schema index --path BUNDLE
 ```
 
+The bundle root always gets an `index.md`. Another directory gets one when it
+directly holds a Markdown file and also holds a concept (a Markdown file other
+than `index.md` and `log.md`) or a direct, non-hidden subdirectory with Markdown
+files at any depth. So a non-root directory that holds only `index.md` or
+`log.md`, without such a subdirectory, is skipped: its index is not regenerated.
+A non-root directory with no Markdown file of its own, only subdirectories, gets
+no `index.md`.
+
+Each index lists the concepts of its directory and those subdirectories, one
+`- [<dir>](./<dir>/) — <summary>` line per subdirectory.
+The command prints how many indexes it updated, created and left unchanged.
+
+### Subdirectory summaries
+
+The summary of a `./<dir>/` entry comes from the first of these that applies:
+
+1. **The schema.** When all concepts of `<dir>` share one type with a schema, the
+   schema `x-okf-summary` is used, else its `description` (cut at 120
+   characters). It replaces any text already written.
+2. **The summary already written** in the parent index, kept exactly as written,
+   a trailing `[...]` included, whether the entry links `<dir>/`, `./<dir>/` or
+   `./<dir>`. The line is rewritten in the `- [<dir>](./<dir>/) — <summary>`
+   form. Two kinds of summary are recomputed instead (point 3):
+   - the generic sentence ``Auto-generated index for concepts in `<dir>`.``,
+     so that an introduction written later reaches the parent index;
+   - a summary damaged by an earlier version: it starts with a relative link
+     that is broken from the parent index but valid from `<dir>/`.
+3. **The introduction** of `<dir>/index.md`, else the generic sentence.
+
+The introduction is all the text before the first list of the subdirectory
+index (a line starting with `- `, `* `, `+ `, or a number followed by `. ` or
+`) `), or the whole body when it has no list. Blank lines, headings and lines
+starting with `<!--` are skipped, and the remaining lines are joined with spaces
+into one line. A list entry or a heading is never used as a summary. Then:
+
+- Relative links are rewritten to work from the parent index: in `api/index.md`,
+  `[guide](guide.md#setup)` becomes `[guide](api/guide.md#setup)`,
+  `[up](../README.md)` becomes `[up](README.md)` and `[top](#top)` becomes
+  `[top](api/index.md#top)`. External and `/`-prefixed links are kept as
+  written. A link already broken stays broken, and `validate` reports it (W2).
+- A result longer than 120 characters is cut at character 117 and ends with
+  `...`. A link is never split: the cut moves to its start. When nothing is left
+  before that link, the generic sentence is written.
+
+For example, with `api/index.md` holding only a list of concepts, an earlier
+version copied its first entry, with a link broken from the bundle root:
+
+```markdown
+- [api](./api/) — [Health Check](health-check.md)  [API Endpoint]
+```
+
+`okf-schema index` now writes, and repairs the line above into:
+
+```markdown
+- [api](./api/) — Auto-generated index for concepts in `api`.
+```
+
+The bundle root is processed before its subdirectories. On the first run of a new
+bundle, an introduction is only picked up if the subdirectory `index.md` already
+exists; otherwise the next run picks it up.
+
+**Limit:** an introduction once copied into a parent index is then kept as an
+authored summary. It is not refreshed when the subdirectory introduction changes
+later; delete the entry line and run `index` again to recompute it.
+
 ---
 
 ## `okf-schema stats`
@@ -316,6 +381,11 @@ Show compact statistics for an OKF bundle.
 ```bash
 okf-schema stats --path BUNDLE
 ```
+
+Broken links are counted in concept bodies with the same check as the
+[W2 warning](validation-codes.md): `#...` anchors are ignored and paths are
+percent-decoded. Each one costs 10 health points (at most 30). Links in
+`index.md` and `log.md` are not counted; run `validate` for those.
 
 ---
 

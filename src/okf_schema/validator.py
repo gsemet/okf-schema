@@ -733,6 +733,29 @@ def _has_block_lists(fm_text: str) -> bool:
     return False
 
 
+def _check_broken_links(
+    body: str,
+    path: Path,
+    report: Report,
+    bundle_root: Path,
+) -> None:
+    """Add one W2 warning per broken link of *body*, the body of *path*.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema._internal.models import Report
+        >>> report = Report()
+        >>> with TemporaryDirectory() as directory:
+        ...     root = Path(directory)
+        ...     body = "[top](#top) [gone](missing.md#part)"
+        ...     _check_broken_links(body, root / "index.md", report, root)
+        >>> [finding.message.split("'")[1] for finding in report.warnings]
+        ['missing.md#part']
+    """
+    for target in find_broken_links(body, path, bundle_root):
+        report.add_warning("W2", f"Broken cross-link '{target}' in '{path}'", path)
+
+
 # @implements_req SwRS-OKFSCHEMA-CORE-006
 def validate_concept(
     path: Path,
@@ -863,9 +886,7 @@ def validate_concept(
         )
 
     # W2 — broken cross-links
-    broken = find_broken_links(body, path, bundle_root)
-    for target in broken:
-        report.add_warning("W2", f"Broken cross-link '{target}' in '{path}'", path)
+    _check_broken_links(body, path, report, bundle_root)
 
     # OKF 0.2: validate generated, sources, verified, and lifecycle fields
     _validate_okf2_generated(path, frontmatter, report)
@@ -881,7 +902,11 @@ def validate_index(
 ) -> None:
     r"""Validate an ``index.md`` file.
 
-    Checks E3 (non-root index.md must NOT have frontmatter).
+    .. versionchanged:: 0.19.0
+        Broken links in the body are reported (W2).
+
+    Checks E3 (non-root index.md must NOT have frontmatter) and W2 (broken
+    cross-links in the body, frontmatter excluded).
 
     Args:
         path:
@@ -902,7 +927,7 @@ def validate_index(
         ...     validate_index(path, report, Path(directory))
     """
     text = path.read_text(encoding="utf-8")
-    fm_text, _body = extract_frontmatter(text)
+    fm_text, body = extract_frontmatter(text)
 
     # Bundle-root index.md MAY have frontmatter with okf_version
     is_root = path.parent.resolve() == bundle_root.resolve()
@@ -913,6 +938,8 @@ def validate_index(
             "(only bundle-root index.md may have frontmatter)",
             path,
         )
+
+    _check_broken_links(body, path, report, bundle_root)
 
 
 def log_heading_findings(path: Path) -> list[Finding]:
@@ -980,24 +1007,44 @@ def log_heading_findings(path: Path) -> list[Finding]:
 def validate_log(
     path: Path,
     report: Report,
+    bundle_root: Path | None = None,
 ) -> None:
-    """Validate a ``log.md`` file.
-
-    Checks E3 (no frontmatter), W5 (ISO 8601 date headings) and W18
-    (one heading per date, newest first).
+    r"""Validate a ``log.md`` file.
 
     .. versionchanged:: 0.17.0
         A heading must be exactly ``YYYY-MM-DD``; W18 reports repeated and
         out-of-order dates.
+
+    .. versionchanged:: 0.19.0
+        Broken links in the body are reported (W2); new ``bundle_root``
+        parameter.
+
+    Checks E3 (no frontmatter), W5 (ISO 8601 date headings), W18
+    (one heading per date, newest first) and W2 (broken cross-links, old
+    entries included).
 
     Args:
         path:
             Path to the ``log.md`` file.
         report:
             Report to append findings to.
+        bundle_root:
+            Root directory of the OKF bundle, used to resolve ``/``-prefixed
+            links. Defaults to the folder of *path*.
+
+    Examples:
+        >>> from tempfile import TemporaryDirectory
+        >>> from okf_schema._internal.models import Report
+        >>> with TemporaryDirectory() as directory:
+        ...     log = Path(directory) / "log.md"
+        ...     _ = log.write_text("## 2026-01-01\n\n- Removed [old](deleted.md).\n")
+        ...     report = Report()
+        ...     validate_log(log, report)
+        ...     [finding.code for finding in report.warnings]
+        ['W2']
     """
     text = path.read_text(encoding="utf-8")
-    fm_text, _body = extract_frontmatter(text)
+    fm_text, body = extract_frontmatter(text)
 
     if fm_text is not None:
         report.add_error(
@@ -1008,6 +1055,8 @@ def validate_log(
 
     for finding in log_heading_findings(path):
         report.add_warning(finding.code, finding.message, path)
+
+    _check_broken_links(body, path, report, bundle_root or path.parent)
 
 
 def _check_reserved_file_naming(
@@ -1097,7 +1146,7 @@ def validate_bundle(
             if filename == "index.md":
                 validate_index(path, report, bundle)
             elif filename == "log.md":
-                validate_log(path, report)
+                validate_log(path, report, bundle)
             _check_reserved_file_naming(path, report, bundle)
         else:
             validate_concept(

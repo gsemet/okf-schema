@@ -286,6 +286,27 @@ def test_stats_stats_shows_broken_links_in_health(tmp_path: Path) -> None:
     assert "1 broken link" in result.output
 
 
+# @tests_req SwRS-OKFSCHEMA-CORE-005#S1
+def test_stats_ignores_anchors_and_encoding_of_valid_links(tmp_path: Path) -> None:
+    """Anchored and percent-encoded links to existing files cost no health points."""
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    for name in ("other.md", "my file.md"):
+        (bundle / name).write_text("---\ntitle: T\ntype: concept\n---\n\n# T\n", encoding="utf-8")
+    (bundle / "a.md").write_text(
+        "---\ntitle: A\ntype: concept\n---\n\n# A\n\n"
+        "[a](other.md#part) [t](#top) [b](my%20file.md)\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(cli, ["stats", "--path", str(bundle)])
+
+    assert result.exit_code == 0
+    assert "all clear" in result.output
+    assert "broken link" not in result.output
+    assert "broken)" not in result.output
+
+
 # @tests_req SwRS-OKFSCHEMA-CORE-005#S2
 def test_stats_stats_exits_2_on_invalid_bundle(tmp_path: Path) -> None:
     """stats exits 2 on nonexistent bundle path."""

@@ -2,6 +2,24 @@
 
 ## 2026-11-25
 
+### Index summaries and broken links
+
+- Added scenario S3 to
+  [SwRS-OKFSCHEMA-CORE-004](swrs/core/SwRS-OKFSCHEMA-CORE-004.md): subdirectory
+  summaries written by `index` work from the parent index.
+- Added scenario S4 to
+  [SwRS-OKFSCHEMA-CORE-001](swrs/core/SwRS-OKFSCHEMA-CORE-001.md): W2 covers
+  `index.md` and `log.md`, ignores anchors and decodes percent-encoded paths.
+- [SwRS-OKFSCHEMA-CORE-005](swrs/core/SwRS-OKFSCHEMA-CORE-005.md) S1: `stats`
+  counts broken links with the same check as W2; no new scenario.
+- Reason: issue 57, `index` copied the first list entry of a subdirectory index
+  into the parent index, with a link broken from the bundle root that `validate`
+  did not report. Decisions index-links-Q1 to Q16.
+- Verification: `just preflight` on Windows (Python 3.13, symlink creation
+  enabled) passed. It runs the API, CLI and validator tests linked to these
+  scenarios: 1187 tests passed, 12 installed-wheel acceptance tests were skipped
+  (they do not run on Windows), coverage 95.68%.
+
 ### Trust tier actor forms
 
 - Why: OKF 0.2 sections 5.3 and 7. An actor written as `<producer>/<version>` read as

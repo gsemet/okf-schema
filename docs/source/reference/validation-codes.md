@@ -312,7 +312,20 @@ description: A brief, one-sentence summary of what this concept is about
 
 **Severity**: Warning (OKF bundle validation only)
 
-**Description**: A markdown link in the file body points to a file that does not exist.
+**Description**: A markdown link in the body of a concept, of any `index.md`
+(root and nested, frontmatter excluded) or of `log.md` points to a file that
+does not exist. A directory is a valid target, and external links (`://`,
+`mailto:`) are not checked.
+
+Before the check:
+
+- the `#...` anchor is ignored, so `page.md#part` only needs `page.md`, and an
+  anchor-only link such as `#top` is never broken (the anchor itself is not
+  verified);
+- the path is percent-decoded, so `my%20file.md` finds `my file.md` and
+  `caf%C3%A9.md` finds `café.md`.
+
+A broken target is reported as written, encoding and anchor included.
 
 **Example**:
 ```markdown
@@ -326,6 +339,15 @@ Either:
 1. Create the referenced file, or
 2. Update the link to point to a file that exists, or
 3. Remove the broken link
+
+For a subdirectory summary in an `index.md` that an earlier version copied with
+its links, run `okf-schema index`: it repairs the line.
+
+**Compatibility note**: since 0.19.0, `index.md` and `log.md` are checked too. A
+bundle with a broken link in an index, or in `log.md` (an old entry linking to a
+deleted file), gets new W2 warnings, so `validate --strict` can start failing
+until `okf-schema index` or a manual fix removes them. `okfkb validate` and
+`okfreq validate` report them as well.
 
 ---
 
@@ -830,7 +852,7 @@ When validating an OKF bundle, the following checks are applied:
 
 **All Markdown files**: E1, E2, E4, E5, E7-E10, W1, W2, W3, W6-W16
 **Schema directory**: W17, I1 (reported for every schema file that yields no schema)
-**Reserved files**: E3, E6
+**Reserved files**: E3, E6, and W2 for `index.md` and `log.md`
 **Bundle structure**: W4
 
 Non-Markdown files are not concept documents and are ignored by document

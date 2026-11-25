@@ -769,6 +769,149 @@ def test_validate_log_log_valid_dates_no_w5(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# W2 in concepts, index.md and log.md
+# ---------------------------------------------------------------------------
+
+
+def _write_linking_document(bundle: Path, name: str, links: str) -> Path:
+    """Write the concept, index or log *name* holding *links* in its body."""
+    if name == "log.md":
+        text = f"## 2026-01-01\n\n- {links}\n"
+    elif name.endswith("index.md"):
+        text = f"# Index\n\n- {links}\n"
+    else:
+        text = f"---\ntype: concept\ntitle: A\n---\n\n# A\n\n{links}\n"
+    path = bundle / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path.resolve()
+
+
+def _write_targets(bundle: Path, *names: str) -> None:
+    """Write one concept per name, to be linked to."""
+    for name in names:
+        (bundle / name).write_text("---\ntype: concept\ntitle: T\n---\n\n# T\n", encoding="utf-8")
+
+
+def _w2_messages(bundle: Path) -> list[str]:
+    """Return the W2 messages of a bundle validation."""
+    return sorted(f.message for f in validate_bundle(bundle).warnings if f.code == "W2")
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="root_index_with_frontmatter", relative="index.md", header=True)
+@Parametrization.case(name="nested_index", relative="sub/index.md", header=False)
+def test_validate_index_reports_broken_link(tmp_path: Path, relative: str, header: bool) -> None:
+    """A broken link of any index.md is W2, worded as for concepts."""
+    from okf_schema._internal.models import Report
+
+    path = _write_linking_document(tmp_path, relative, "[gone](missing.md)")
+    if header:
+        text = path.read_text(encoding="utf-8")
+        path.write_text(f"---\nokf_version: '0.2'\n---\n\n{text}", encoding="utf-8")
+    report = Report()
+
+    validate_index(path, report, tmp_path)
+
+    assert [(f.code, f.message, f.path) for f in report.warnings] == [
+        ("W2", f"Broken cross-link 'missing.md' in '{path}'", path)
+    ]
+    assert report.errors == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+def test_validate_index_valid_link_no_w2(tmp_path: Path) -> None:
+    """Valid links, bundle-rooted ones included, give no W2."""
+    from okf_schema._internal.models import Report
+
+    _write_targets(tmp_path, "other.md")
+    path = _write_linking_document(
+        tmp_path, "sub/index.md", "[a](../other.md) [b](/other.md) [c](../sub/)"
+    )
+    report = Report()
+
+    validate_index(path, report, tmp_path)
+
+    assert report.warnings == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+def test_validate_index_ignores_links_of_the_frontmatter(tmp_path: Path) -> None:
+    """Only the body of the root index.md is checked."""
+    from okf_schema._internal.models import Report
+
+    path = tmp_path / "index.md"
+    path.write_text("---\nnote: '[gone](missing.md)'\n---\n\n# Index\n", encoding="utf-8")
+    report = Report()
+
+    validate_index(path, report, tmp_path)
+
+    assert report.warnings == []
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="concept", relative="a.md")
+@Parametrization.case(name="index", relative="index.md")
+@Parametrization.case(name="log", relative="log.md")
+def test_validate_bundle_w2_ignores_anchors(tmp_path: Path, relative: str) -> None:
+    """Anchors are ignored; a broken target is reported as written."""
+    _write_targets(tmp_path, "other.md")
+    path = _write_linking_document(
+        tmp_path, relative, "[a](other.md#part) [t](#top) [m](missing.md#part)"
+    )
+
+    assert _w2_messages(tmp_path) == [f"Broken cross-link 'missing.md#part' in '{path}'"]
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+@Parametrization.autodetect_parameters()
+@Parametrization.case(name="concept", relative="a.md")
+@Parametrization.case(name="index", relative="index.md")
+@Parametrization.case(name="log", relative="log.md")
+def test_validate_bundle_w2_decodes_percent_encoded_paths(tmp_path: Path, relative: str) -> None:
+    """Percent-encoded paths to existing files are valid on every host."""
+    _write_targets(tmp_path, "my file.md", "café.md")
+    path = _write_linking_document(
+        tmp_path, relative, "[a](my%20file.md) [b](caf%C3%A9.md#x) [c](missing%20x.md)"
+    )
+
+    assert _w2_messages(tmp_path) == [f"Broken cross-link 'missing%20x.md' in '{path}'"]
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+def test_validate_log_reports_link_to_a_deleted_file(tmp_path: Path) -> None:
+    """An old log entry linking to a deleted file is W2."""
+    from okf_schema._internal.models import Report
+
+    path = _write_linking_document(tmp_path, "log.md", "Removed [old](deleted.md).")
+    report = Report()
+
+    validate_log(path, report, tmp_path)
+
+    assert [(f.code, f.message) for f in report.warnings] == [
+        ("W2", f"Broken cross-link 'deleted.md' in '{path}'")
+    ]
+    assert _w2_messages(tmp_path) == [f"Broken cross-link 'deleted.md' in '{path}'"]
+    assert [f.path for f in validate_bundle(tmp_path).warnings if f.code == "W2"] == [path]
+
+
+# @tests_req SwRS-OKFSCHEMA-CORE-001#S4
+def test_validate_log_existing_link_no_w2(tmp_path: Path) -> None:
+    """A log entry linking to an existing file gives no warning."""
+    from okf_schema._internal.models import Report
+
+    _write_targets(tmp_path, "kept.md")
+    path = _write_linking_document(tmp_path, "log.md", "Added [kept](kept.md) and [r](/kept.md).")
+    report = Report()
+
+    validate_log(path, report, tmp_path)
+
+    assert report.warnings == []
+
+
+# ---------------------------------------------------------------------------
 # validate_bundle — fixture-based integration tests
 # ---------------------------------------------------------------------------
 

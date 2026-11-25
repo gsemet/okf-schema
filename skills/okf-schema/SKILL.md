@@ -133,8 +133,8 @@ okf-schema validate --path my-bundle --strict
 | `lint --path <bundle>` | Lint frontmatter: flatten nested lists and convert block-style to inline |
 | `list --path <bundle>` | List all concepts in a bundle |
 | `show --path <bundle> <concept>` | Show a single concept's frontmatter and body; `.md` is optional; names start from the bundle root (a leading `/` is allowed); paths and symlinks leaving the bundle are refused (exit 2) |
-| `index --path <bundle>` | Regenerate all `index.md` files. Uses schema `title` and `x-okf-summary` for richer headings and descriptions when a directory contains a single concept type |
-| `stats --path <bundle>` | Show bundle statistics |
+| `index --path <bundle>` | Regenerate all `index.md` files. Uses schema `title` and `x-okf-summary` for richer headings and descriptions when a directory contains a single concept type. Otherwise a subdirectory summary already written is kept, whatever the spelling of its link (`tables/`, `./tables/`, `./tables`); a missing or generic one comes from the whole introduction before the first list of the subdirectory `index.md` (links rewritten, cut at 120 characters; never a list entry or heading), else a generic sentence. Summaries damaged by copied links that only work from the subdirectory are repaired |
+| `stats --path <bundle>` | Show bundle statistics. Broken links are counted in concept bodies as W2 counts them (`#...` anchors ignored, paths percent-decoded) |
 | `backlinks --path <bundle> <target>...` | List concepts that link to the given target(s) |
 
 Global options: `--version`, `--verbose` (`-v`), `--quiet` (`-q`).
@@ -356,7 +356,7 @@ for c in concepts:
 |------|------|-------------|
 | W0 | Standalone input | A `validate-md` input path is not a file |
 | W1 | Missing recommended fields | `title` or `description` is missing or empty |
-| W2 | Broken cross-links | Internal markdown link points to a non-existent file |
+| W2 | Broken cross-links | Internal markdown link in a concept, an `index.md` or `log.md` points to a non-existent file. `#...` anchors are ignored (not verified) and the path is percent-decoded before the check; the target is reported as written |
 | W3 | Missing provenance timestamp | No `generated.at` (or legacy `timestamp`) in frontmatter |
 | W4 | Missing `index.md` | Directory with markdown files has no `index.md` |
 | W5 | Non-ISO date heading | `log.md` date heading is not exactly `YYYY-MM-DD`; put a topic in a `### Topic` sub-heading |

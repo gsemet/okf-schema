@@ -31,6 +31,8 @@ scenarios:
   title: Regenerate deterministic indexes
 - id: S2
   title: Defer an unsafe superseded-link rewrite
+- id: S3
+  title: Write subdirectory summaries valid from the parent index
 default_owner_email: gaetan@xeberon.net
 ---
 
@@ -53,6 +55,19 @@ When bundle maintenance is requested, okf-schema SHALL regenerate deterministic 
 - WHEN bundle update runs
 - THEN the link remains unchanged and the result reports why its rewrite was
   deferred
+
+### Scenario S3: Write subdirectory summaries valid from the parent index
+
+- GIVEN a subdirectory index with or without an introduction, and a parent index
+  entry for that subdirectory that is missing, generic or damaged, with no schema
+  summary applying
+- WHEN index runs
+- THEN the summary is the whole introduction before the first list, on one line,
+  with its relative links rewritten to work from the parent index and cut at 120
+  characters without splitting a link, or the generic sentence (also when the cut
+  leaves nothing); other authored summaries are kept as written, whether the entry
+  links `tables/`, `./tables/` or `./tables`; once every subdirectory index
+  exists, a second run changes nothing
 
 ### Verification notes
 
