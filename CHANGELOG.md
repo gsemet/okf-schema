@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Feat
+
+- **cli**: print concepts as stored and add a trust command
+
 ### Fix
 
 - **index**: write subdirectory summaries without broken links
